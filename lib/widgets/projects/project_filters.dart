@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import '../models/project_model.dart';
+import '../../models/project_model.dart';
 
 class ProjectFilters extends StatelessWidget {
   final String selectedFilter;
@@ -27,7 +27,7 @@ class ProjectFilters extends StatelessWidget {
         itemBuilder: (context, index) {
           final filter = filters[index];
           final isSelected = selectedFilter == filter;
-          
+
           return Padding(
             padding: EdgeInsets.only(right: index < filters.length - 1 ? 8 : 0),
             child: FilterChip(
@@ -37,10 +37,12 @@ class ProjectFilters extends StatelessWidget {
               backgroundColor: Colors.transparent,
               selectedColor: AppColors.accentGold.withOpacity(0.1),
               side: BorderSide(
-                color: isSelected ? AppColors.accentGold : AppColors.borderColor,
+                color:
+                    isSelected ? AppColors.accentGold : AppColors.borderColor,
               ),
               labelStyle: TextStyle(
-                color: isSelected ? AppColors.accentGold : AppColors.textSecondary,
+                color:
+                    isSelected ? AppColors.accentGold : AppColors.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
               showCheckmark: false,

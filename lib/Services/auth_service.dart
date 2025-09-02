@@ -57,7 +57,7 @@ class AuthService {
   Future<UserCredential> signInWithGoogle() async {
     try {
       UserCredential userCredential;
-      
+
       if (kIsWeb) {
         // Login via popup para web
         final provider = GoogleAuthProvider();
@@ -65,27 +65,27 @@ class AuthService {
       } else {
         // Login via GoogleSignIn para mobile
         final googleUser = await _googleSignIn?.signIn();
-        
+
         if (googleUser == null) {
           throw const AuthException(
             code: 'ERROR_ABORTED_BY_USER',
             message: 'Login cancelado pelo usuário',
           );
         }
-        
+
         final googleAuth = await googleUser.authentication;
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
           idToken: googleAuth.idToken,
         );
-        
+
         userCredential = await _auth.signInWithCredential(credential);
       }
 
       final user = userCredential.user!;
       print('🔐 Usuário autenticado: ${user.email} (UID: ${user.uid})');
       await _checkAndSetupUser(user);
-      
+
       return userCredential;
     } on FirebaseAuthException catch (e) {
       print('❌ Erro de autenticação: ${e.code} - ${e.message}');
@@ -107,7 +107,7 @@ class AuthService {
       // Configurar ou atualizar usuário no Firestore
       final userRef = _firestore.collection('users').doc(user.uid);
       final doc = await userRef.get();
-      
+
       final userData = {
         'email': user.email,
         'displayName': user.displayName,
@@ -156,7 +156,7 @@ class AuthService {
     try {
       final user = currentUser;
       if (user == null) return null;
-      
+
       final doc = await _firestore.collection('users').doc(user.uid).get();
       return doc.exists ? doc.data() : null;
     } catch (e) {
@@ -172,7 +172,7 @@ class AuthService {
   Stream<Map<String, dynamic>?> get userDataStream {
     final user = currentUser;
     if (user == null) return Stream.value(null);
-    
+
     return _firestore
         .collection('users')
         .doc(user.uid)
@@ -190,12 +190,12 @@ class AuthService {
           message: 'Nenhum usuário logado',
         );
       }
-      
+
       await _firestore
           .collection('users')
           .doc(user.uid)
           .set(data, SetOptions(merge: true));
-      
+
       print('📝 Dados do usuário atualizados');
     } catch (e) {
       print('❌ Erro ao atualizar dados: $e');
@@ -219,16 +219,15 @@ class AuthService {
       print('  - UID: ${user.uid}');
       print('  - Email: ${user.email}');
       print('  - Display Name: ${user.displayName}');
-      
+
       final token = await user.getIdToken();
       print('  - Token presente: ${token?.isNotEmpty}');
       print('  - Token length: ${token?.length}');
-      
+
       // Verificar se token é válido
       final tokenResult = await user.getIdTokenResult();
       print('  - Token válido até: ${tokenResult.expirationTime}');
       print('  - Claims: ${tokenResult.claims?.keys.toList()}');
-      
     } catch (e) {
       print('❌ Erro no debug do token: $e');
     }
@@ -262,7 +261,7 @@ class AuthService {
     try {
       final userData = await getUserData();
       if (userData == null) return false;
-      
+
       final permissions = userData['permissions'] as List<dynamic>? ?? [];
       return permissions.contains(permission);
     } catch (e) {
@@ -276,7 +275,7 @@ class AuthService {
     try {
       final userData = await getUserData();
       if (userData == null) return false;
-      
+
       return userData['status'] == 'ativo';
     } catch (e) {
       print('❌ Erro ao verificar status do usuário: $e');
@@ -288,10 +287,10 @@ class AuthService {
   Future<void> testEmulatorConnection() async {
     try {
       print('🧪 === TESTE DE CONEXÃO AUTH/FIRESTORE ===');
-      
+
       // Teste 1: Verificar se está usando emulador
       print('🔧 Modo Debug: $kDebugMode');
-      
+
       // Teste 2: Verificar usuário atual
       final user = currentUser;
       if (user != null) {
@@ -307,13 +306,12 @@ class AuthService {
         'timestamp': FieldValue.serverTimestamp(),
         'test': 'emulator_connection',
       });
-      
+
       final result = await testDoc.get();
       if (result.exists) {
         print('✅ Firestore funcionando');
         await testDoc.delete(); // Limpar teste
       }
-
     } catch (e) {
       print('❌ Erro no teste de conexão: $e');
       rethrow;
@@ -326,10 +324,7 @@ class AuthException implements Exception {
   final String code;
   final String message;
 
-  const AuthException({
-    required this.code,
-    required this.message,
-  });
+  const AuthException({required this.code, required this.message});
 
   @override
   String toString() => message;

@@ -41,7 +41,7 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
-    
+
     return StreamBuilder(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
@@ -49,7 +49,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const SplashScreen();
         }
-        
+
         // Se tem usuário logado
         if (snapshot.hasData && snapshot.data != null) {
           return FutureBuilder<bool>(
@@ -58,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
               if (activeSnapshot.connectionState == ConnectionState.waiting) {
                 return const SplashScreen();
               }
-              
+
               // Verificar se usuário está ativo
               if (activeSnapshot.data == true) {
                 return const MainLayout();
@@ -72,7 +72,7 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         }
-        
+
         // Não tem usuário logado
         return const LoginPage();
       },
@@ -120,10 +120,7 @@ class SplashScreen extends StatelessWidget {
               SizedBox(height: 20),
               Text(
                 'Carregando...',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 16),
               ),
             ],
           ),

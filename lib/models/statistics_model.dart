@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
 enum TrendType { up, down, neutral }
+
 enum ChartType { pie, line, bar }
 
 class StatisticData {
@@ -29,11 +30,7 @@ class ChartData {
   final double value;
   final Color? color;
 
-  ChartData({
-    required this.label,
-    required this.value,
-    this.color,
-  });
+  ChartData({required this.label, required this.value, this.color});
 }
 
 class StatisticsModel {
@@ -77,26 +74,10 @@ class StatisticsModel {
   ];
 
   static List<ChartData> get projectStatusData => [
-    ChartData(
-      label: 'Em Andamento',
-      value: 12,
-      color: AppColors.accentBlue,
-    ),
-    ChartData(
-      label: 'Planejamento',
-      value: 6,
-      color: AppColors.accentGold,
-    ),
-    ChartData(
-      label: 'Finalizando',
-      value: 4,
-      color: AppColors.accentGreen,
-    ),
-    ChartData(
-      label: 'Pausado',
-      value: 2,
-      color: AppColors.accentRed,
-    ),
+    ChartData(label: 'Em Andamento', value: 12, color: AppColors.accentBlue),
+    ChartData(label: 'Planejamento', value: 6, color: AppColors.accentGold),
+    ChartData(label: 'Finalizando', value: 4, color: AppColors.accentGreen),
+    ChartData(label: 'Pausado', value: 2, color: AppColors.accentRed),
   ];
 
   static List<ChartData> get monthlyRevenueData => [

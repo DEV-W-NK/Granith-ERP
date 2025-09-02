@@ -16,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
-    
+
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: SingleChildScrollView(
@@ -26,14 +26,14 @@ class _HomePageState extends State<HomePage> {
           children: [
             // Header
             _buildHeader(),
-            
+
             const SizedBox(height: 24),
-            
+
             // Estatísticas principais
             _buildMainStats(isDesktop),
-            
+
             const SizedBox(height: 24),
-            
+
             // Gráficos e atividades recentes
             _buildChartsAndActivities(isDesktop),
           ],
@@ -46,10 +46,7 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Dashboard',
-          style: Theme.of(context).textTheme.headlineLarge,
-        ),
+        Text('Dashboard', style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 8),
         Text(
           'Visão geral das suas obras e projetos',
@@ -63,7 +60,7 @@ class _HomePageState extends State<HomePage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = isDesktop ? 4 : 2;
-        
+
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -96,15 +93,9 @@ class _HomePageState extends State<HomePage> {
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            flex: 2,
-            child: _buildCharts(),
-          ),
+          Expanded(flex: 2, child: _buildCharts()),
           const SizedBox(width: 24),
-          Expanded(
-            flex: 1,
-            child: const RecentActivities(),
-          ),
+          Expanded(flex: 1, child: const RecentActivities()),
         ],
       );
     } else {

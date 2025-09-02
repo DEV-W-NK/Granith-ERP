@@ -53,18 +53,21 @@ class ProjectImageWidget extends StatelessWidget {
       fit: fit,
       loadingBuilder: (context, child, loadingProgress) {
         if (loadingProgress == null) return child;
-        
+
         return Center(
           child: SizedBox(
             width: 30,
             height: 30,
             child: CircularProgressIndicator(
-              value: loadingProgress.expectedTotalBytes != null
-                  ? loadingProgress.cumulativeBytesLoaded /
-                      loadingProgress.expectedTotalBytes!
-                  : null,
+              value:
+                  loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
               strokeWidth: 2,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.accentGold),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                AppColors.accentGold,
+              ),
             ),
           ),
         );
@@ -139,9 +142,9 @@ class ProjectImageWidget extends StatelessWidget {
   bool _isValidUrl(String url) {
     try {
       final uri = Uri.parse(url);
-      return uri.isAbsolute && 
-             (uri.scheme == 'http' || uri.scheme == 'https') &&
-             uri.host.isNotEmpty;
+      return uri.isAbsolute &&
+          (uri.scheme == 'http' || uri.scheme == 'https') &&
+          uri.host.isNotEmpty;
     } catch (e) {
       return false;
     }
@@ -152,10 +155,7 @@ class ProjectImageWidget extends StatelessWidget {
 class ProjectCardImageExample extends StatelessWidget {
   final String? projectImageUrl;
 
-  const ProjectCardImageExample({
-    super.key,
-    required this.projectImageUrl,
-  });
+  const ProjectCardImageExample({super.key, required this.projectImageUrl});
 
   @override
   Widget build(BuildContext context) {

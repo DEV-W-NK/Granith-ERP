@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:project_granith/Services/auth_service.dart';
+import 'package:project_granith/themes/app_theme.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -12,16 +13,12 @@ class LoginPage extends StatefulWidget {
   _LoginPageState createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
-  // Service de autenticação
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final AuthService _authService = AuthService();
-  
-  // Estados da UI
   String? _errorMessage;
   bool _isLoading = false;
   bool _isDisposed = false;
-  
-  // Animações
   late AnimationController _animationController;
   late Animation<double> _fadeInAnimation;
 
@@ -39,7 +36,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     super.dispose();
   }
 
-  /// Inicializar Firebase
   Future<void> _initializeFirebase() async {
     try {
       await Firebase.initializeApp();
@@ -48,7 +44,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     }
   }
 
-  /// Configurar animações
   void _setupAnimation() {
     _animationController = AnimationController(
       vsync: this,
@@ -63,16 +58,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
-  /// Verificar se o widget ainda está montado antes de atualizar o estado
   void _setStateIfMounted(VoidCallback fn) {
     if (mounted && !_isDisposed) {
       setState(fn);
     }
   }
 
-  /// Lidar com o login do Google
   Future<void> _handleGoogleSignIn() async {
-    // Mostrar loading
     EasyLoading.show(status: 'Fazendo login...');
     _setStateIfMounted(() {
       _isLoading = true;
@@ -80,25 +72,20 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     });
 
     try {
-      // Usar o service para fazer login
       await _authService.signInWithGoogle();
-      
-      // Login bem-sucedido - navegar para home
+
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/home');
       }
     } on AuthException catch (e) {
-      // Tratar erros de autenticação
       _setStateIfMounted(() {
         _errorMessage = e.message;
       });
     } catch (e) {
-      // Tratar outros erros
       _setStateIfMounted(() {
         _errorMessage = 'Erro inesperado: ${e.toString()}';
       });
     } finally {
-      // Esconder loading
       EasyLoading.dismiss();
       _setStateIfMounted(() {
         _isLoading = false;
@@ -106,7 +93,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     }
   }
 
-  /// Limpar mensagem de erro
   void _clearError() {
     _setStateIfMounted(() {
       _errorMessage = null;
@@ -120,11 +106,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         width: double.infinity,
         height: double.infinity,
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
+          color: AppColors.backgroundDark, // Fundo escuro do theme
         ),
         child: Center(
           child: SingleChildScrollView(
@@ -141,75 +123,90 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
-  /// Construir o card de login
   Widget _buildLoginCard(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Logo da aplicação
-        
+        // Logo da aplicação - Adicione sua logo Granith aqui
+        const SizedBox(height: 20),
+        Icon(
+          Icons.home_work_outlined,
+          size: 80,
+          color: AppColors.accentGold, // Dourado do theme
+        ),
+        const SizedBox(height: 20),
+        Text(
+          'GRANITH',
+          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+            color: AppColors.accentGold, // Dourado do theme
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 40),
+
         // Card principal
         Container(
           width: MediaQuery.of(context).size.width * 0.85,
           constraints: const BoxConstraints(maxWidth: 400),
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surfaceDark, // Superfície escura do theme
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Colors.black26,
+                color: Colors.black.withOpacity(0.4),
                 blurRadius: 20,
-                offset: Offset(0, 10),
+                offset: const Offset(0, 10),
               ),
             ],
           ),
           child: Column(
             children: [
               // Título
-              const Text(
+              Text(
                 'Bem-vindo',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A11CB),
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.textPrimary, // Texto primário do theme
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               // Subtítulo
-              const Text(
+              Text(
                 'Use sua conta Google para continuar',
-                style: TextStyle(fontSize: 16, color: Colors.black54),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary, // Texto secundário do theme
+                ),
               ),
               const SizedBox(height: 40),
-              
+
               // Botão do Google
               _buildGoogleButton(),
-              
+
               // Mensagem de erro (se houver)
               if (_errorMessage != null) ...[
                 const SizedBox(height: 24),
                 _buildErrorBox(),
               ],
-              
+
               const SizedBox(height: 30),
-              
+
               // Copyright
               Text(
-                '© ${DateTime.now().year} Enebras',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                '© ${DateTime.now().year} Granith',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textMuted, // Texto muted do theme
+                ),
               ),
-              
+
               // Indicador de plataforma (apenas para debug)
               if (kDebugMode) ...[
                 const SizedBox(height: 8),
                 Text(
                   kIsWeb ? 'Web Version' : 'Mobile Version',
-                  style: TextStyle(
-                    color: Colors.grey.shade400,
-                    fontSize: 10,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
                 ),
               ],
             ],
@@ -219,91 +216,61 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 
-  /// Construir botão do Google
   Widget _buildGoogleButton() {
-    return Material(
-      color: Colors.white,
-      elevation: 3,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: _isLoading ? null : () {
-          _clearError();
-          _handleGoogleSignIn();
-        },
-        child: Container(
-          height: 56,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [              
-              // Divisor
-              VerticalDivider(color: Colors.grey.shade300),
-              const SizedBox(width: 16),
-              
-              // Texto do botão
-              const Expanded(
-                child: Text(
-                  'Entrar com Google',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
+    return ElevatedButton(
+      onPressed: _isLoading ? null : _handleGoogleSignIn,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accentGold, // Dourado do theme
+        foregroundColor: AppColors.primaryDark, // Texto escuro
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 3,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Ícone do Google (mantido do original)
+          // Texto do botão
+          if (_isLoading)
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation(AppColors.primaryDark),
               ),
-              
-              // Loading indicator
-              if (_isLoading)
-                const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation(Color(0xFF6A11CB)),
-                  ),
-                ),
-            ],
-          ),
-        ),
+            )
+          else
+            const Text(
+              'Entrar com Google',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+        ],
       ),
     );
   }
 
-
-  /// Construir caixa de erro
   Widget _buildErrorBox() {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: AppColors.accentRed.withOpacity(0.1), // Vermelho com opacidade
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: AppColors.accentRed),
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline, color: Colors.red.shade400),
+          Icon(Icons.error_outline, color: AppColors.accentRed),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(
-                color: Colors.red.shade700,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: AppColors.accentRed, fontSize: 14),
             ),
           ),
-          // Botão para fechar o erro
           InkWell(
             onTap: _clearError,
-            child: Icon(
-              Icons.close,
-              size: 18,
-              color: Colors.red.shade400,
-            ),
+            child: Icon(Icons.close, size: 18, color: AppColors.accentRed),
           ),
         ],
       ),

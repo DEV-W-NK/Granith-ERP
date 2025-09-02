@@ -52,9 +52,8 @@ class StatCard extends StatelessWidget {
                 Flexible(child: _buildTrendIcon()),
               ],
             ),
-            
+
             const SizedBox(height: 12), // Reduced spacing
-            
             // Valor principal
             Flexible(
               child: Text(
@@ -68,9 +67,9 @@ class StatCard extends StatelessWidget {
                 maxLines: 1,
               ),
             ),
-            
+
             const SizedBox(height: 4),
-            
+
             // Título
             Flexible(
               child: Text(
@@ -84,9 +83,9 @@ class StatCard extends StatelessWidget {
                 maxLines: 1,
               ),
             ),
-            
+
             const SizedBox(height: 2),
-            
+
             // Subtítulo
             Flexible(
               child: Text(
@@ -108,7 +107,7 @@ class StatCard extends StatelessWidget {
   Widget _buildTrendIcon() {
     Color trendColor;
     IconData trendIcon;
-    
+
     switch (trend) {
       case TrendType.up:
         trendColor = AppColors.accentGreen;
@@ -125,7 +124,10 @@ class StatCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2), // Reduced padding
+      padding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 2,
+      ), // Reduced padding
       decoration: BoxDecoration(
         color: trendColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),

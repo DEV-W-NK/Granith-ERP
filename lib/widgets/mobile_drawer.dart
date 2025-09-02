@@ -20,18 +20,12 @@ class MobileDrawer extends StatelessWidget {
         children: [
           // Header
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppColors.secondaryDark,
-            ),
+            decoration: const BoxDecoration(color: AppColors.secondaryDark),
             child: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.business,
-                    color: AppColors.accentGold,
-                    size: 40,
-                  ),
+                  Icon(Icons.business, color: AppColors.accentGold, size: 40),
                   SizedBox(height: 8),
                   Text(
                     'GRANITH',
@@ -44,16 +38,13 @@ class MobileDrawer extends StatelessWidget {
                   ),
                   Text(
                     'ERP System',
-                    style: TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                   ),
                 ],
               ),
             ),
           ),
-          
+
           // Menu items
           Expanded(
             child: ListView.builder(
@@ -61,17 +52,24 @@ class MobileDrawer extends StatelessWidget {
               itemBuilder: (context, index) {
                 final item = SidebarMenu.menuItems[index];
                 final isSelected = selectedIndex == item.index;
-                
+
                 return ListTile(
                   leading: Icon(
                     item.icon,
-                    color: isSelected ? AppColors.accentGold : AppColors.textSecondary,
+                    color:
+                        isSelected
+                            ? AppColors.accentGold
+                            : AppColors.textSecondary,
                   ),
                   title: Text(
                     item.title,
                     style: TextStyle(
-                      color: isSelected ? AppColors.accentGold : AppColors.textSecondary,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color:
+                          isSelected
+                              ? AppColors.accentGold
+                              : AppColors.textSecondary,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,

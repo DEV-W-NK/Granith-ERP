@@ -1,67 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:project_granith/contants/projects_constants.dart';
-import 'package:project_granith/controllers/projects_controller.dart';
+import 'package:project_granith/contants/budget_type_constants.dart';
+import 'package:project_granith/controllers/budget_type_controller.dart';
+import 'package:project_granith/models/budget_type.dart';
+import 'package:project_granith/widgets/Budget_Type/budget_type_card.dart';
+import 'package:project_granith/widgets/Budget_Type/budget_type_filters.dart';
+import 'package:project_granith/widgets/Budget_Type/budget_type_form_dialog.dart';
 import 'package:provider/provider.dart';
-import 'package:project_granith/Services/service_projetos.dart';
-import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/widgets/projects/project_card.dart';
-import 'package:project_granith/widgets/projects/project_filters.dart';
-import 'package:project_granith/helpers/projects_helpers.dart'; // Import the helpers
 
-class ProjectsPage extends StatelessWidget {
-  const ProjectsPage({super.key});
+
+class BudgetTypesPage extends StatelessWidget {
+  const BudgetTypesPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create:
-          (context) => ProjectsController(ServiceProjetos())..loadProjects(),
-      child: const _ProjectsPageView(),
+      create: (context) => BudgetTypeController(BudgetTypeService())..loadBudgetTypes(),
+      child: const _BudgetTypesPageView(),
     );
   }
 }
 
-class _ProjectsPageView extends StatelessWidget {
-  const _ProjectsPageView();
+class _BudgetTypesPageView extends StatelessWidget {
+  const _BudgetTypesPageView();
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
-        final isDesktop =
-            MediaQuery.of(context).size.width >
-            ProjectsPageConstants.desktopBreakpoint;
+        final isDesktop = MediaQuery.of(context).size.width > BudgetTypeConstants.desktopBreakpoint;
 
         return Scaffold(
           backgroundColor: AppColors.backgroundDark,
           body: RefreshIndicator(
-            onRefresh: () => controller.loadProjects(forceRefresh: true),
+            onRefresh: () => controller.loadBudgetTypes(forceRefresh: true),
             backgroundColor: AppColors.surfaceDark,
             color: AppColors.accentGold,
             child: Column(
               children: [
-                _ProjectsHeader(isDesktop: isDesktop),
-                if (!controller.isLoading) const _ProjectsFilters(),
-                Expanded(child: _ProjectsContent(isDesktop: isDesktop)),
+                _BudgetTypesHeader(isDesktop: isDesktop),
+                if (!controller.isLoading) const _BudgetTypesFilters(),
+                Expanded(child: _BudgetTypesContent(isDesktop: isDesktop)),
               ],
             ),
           ),
-          floatingActionButton: _ProjectsFAB(),
+          floatingActionButton: _BudgetTypesFAB(),
         );
       },
     );
   }
 }
 
-class _ProjectsHeader extends StatelessWidget {
+class _BudgetTypesHeader extends StatelessWidget {
   final bool isDesktop;
 
-  const _ProjectsHeader({required this.isDesktop});
+  const _BudgetTypesHeader({required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         return Container(
           padding: EdgeInsets.all(isDesktop ? 32 : 20),
@@ -90,7 +88,7 @@ class _ProjectsHeader extends StatelessWidget {
               Expanded(
                 child: _HeaderTitle(
                   isDesktop: isDesktop,
-                  projectCount: controller.projects.length,
+                  budgetTypeCount: controller.budgetTypes.length,
                   isLoading: controller.isLoading,
                 ),
               ),
@@ -105,12 +103,12 @@ class _ProjectsHeader extends StatelessWidget {
 
 class _HeaderTitle extends StatelessWidget {
   final bool isDesktop;
-  final int projectCount;
+  final int budgetTypeCount;
   final bool isLoading;
 
   const _HeaderTitle({
     required this.isDesktop,
-    required this.projectCount,
+    required this.budgetTypeCount,
     required this.isLoading,
   });
 
@@ -120,7 +118,7 @@ class _HeaderTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Projetos',
+          'Tipos de Orçamento',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.w700,
@@ -138,9 +136,9 @@ class _HeaderTitle extends StatelessWidget {
           )
         else
           Text(
-            projectCount == 0
-                ? 'Nenhum projeto encontrado'
-                : '$projectCount ${projectCount == 1 ? 'projeto' : 'projetos'}',
+            budgetTypeCount == 0
+                ? 'Nenhum tipo de orçamento encontrado'
+                : '$budgetTypeCount ${budgetTypeCount == 1 ? 'tipo' : 'tipos'} de orçamento',
             style: TextStyle(
               color: AppColors.textMuted.withOpacity(0.8),
               fontSize: 14,
@@ -158,25 +156,19 @@ class _HeaderActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Botão de alternar visualização (Grid/Lista)
             _ViewToggleButtons(isDesktop: isDesktop),
-
             if (isDesktop) const SizedBox(width: 16),
-
-            // Botão de exportar (apenas se houver projetos)
-            if (controller.projects.isNotEmpty) ...[
+            if (controller.budgetTypes.isNotEmpty) ...[
               if (!isDesktop) const SizedBox(width: 12),
-              _ExportButton(hasProjects: controller.projects.isNotEmpty),
+              _ExportButton(hasData: controller.budgetTypes.isNotEmpty),
             ],
-
             if (isDesktop) ...[
               const SizedBox(width: 16),
-              // Botão de recarregar
               _RefreshButton(),
             ],
           ],
@@ -193,7 +185,7 @@ class _ViewToggleButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         return Container(
           padding: const EdgeInsets.all(2),
@@ -248,10 +240,9 @@ class _ViewToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? AppColors.accentGold.withOpacity(0.15)
-                  : Colors.transparent,
+          color: isSelected 
+              ? AppColors.accentGold.withOpacity(0.15)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
@@ -268,30 +259,28 @@ class _ViewToggleButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label:
-          isSelected
-              ? 'Modo de visualização ativo'
-              : 'Alternar modo de visualização',
+      label: isSelected 
+          ? 'Modo de visualização ativo'
+          : 'Alternar modo de visualização',
       child: button,
     );
   }
 }
 
 class _ExportButton extends StatelessWidget {
-  final bool hasProjects;
+  final bool hasData;
 
-  const _ExportButton({required this.hasProjects});
+  const _ExportButton({required this.hasData});
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Exportar Projetos',
+      message: 'Exportar Tipos de Orçamento',
       child: IconButton(
-        onPressed: hasProjects ? () => _showExportOptions(context) : null,
+        onPressed: hasData ? () => _showExportOptions(context) : null,
         icon: const Icon(Icons.download_rounded),
         style: IconButton.styleFrom(
-          foregroundColor:
-              hasProjects ? AppColors.textSecondary : AppColors.textMuted,
+          foregroundColor: hasData ? AppColors.textSecondary : AppColors.textMuted,
         ),
       ),
     );
@@ -312,21 +301,19 @@ class _ExportButton extends StatelessWidget {
 class _RefreshButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         return Tooltip(
           message: 'Atualizar',
           child: IconButton(
-            onPressed:
-                controller.isLoading
-                    ? null
-                    : () => controller.loadProjects(forceRefresh: true),
+            onPressed: controller.isLoading 
+                ? null
+                : () => controller.loadBudgetTypes(forceRefresh: true),
             icon: Icon(
               Icons.refresh_rounded,
-              color:
-                  controller.isLoading
-                      ? AppColors.textMuted.withOpacity(0.5)
-                      : AppColors.textSecondary,
+              color: controller.isLoading 
+                  ? AppColors.textMuted.withOpacity(0.5)
+                  : AppColors.textSecondary,
             ),
           ),
         );
@@ -345,10 +332,10 @@ class _ExportOptionsSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Exportar Projetos',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
+            'Exportar Tipos de Orçamento',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 16),
           _ExportOption(
@@ -397,17 +384,14 @@ class _ExportOption extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: AppColors.accentGold),
       title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: AppColors.textMuted),
-      ),
+      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textMuted)),
       onTap: onTap,
     );
   }
 }
 
-class _ProjectsFilters extends StatelessWidget {
-  const _ProjectsFilters();
+class _BudgetTypesFilters extends StatelessWidget {
+  const _BudgetTypesFilters();
 
   @override
   Widget build(BuildContext context) {
@@ -423,7 +407,11 @@ class _ProjectsFilters extends StatelessWidget {
         ),
       ),
       child: Column(
-        children: [_SearchField(), const SizedBox(height: 16), _FiltersRow()],
+        children: [
+          _SearchField(),
+          const SizedBox(height: 16),
+          _FiltersRow(),
+        ],
       ),
     );
   }
@@ -432,10 +420,10 @@ class _ProjectsFilters extends StatelessWidget {
 class _SearchField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         return Semantics(
-          label: 'Campo de busca de projetos',
+          label: 'Campo de busca de tipos de orçamento',
           child: Container(
             decoration: BoxDecoration(
               boxShadow: [
@@ -449,7 +437,7 @@ class _SearchField extends StatelessWidget {
             child: TextField(
               onChanged: controller.updateSearchQuery,
               decoration: InputDecoration(
-                hintText: 'Buscar projetos por nome, cliente ou localização...',
+                hintText: 'Buscar tipos por nome, descrição ou categoria...',
                 hintStyle: TextStyle(
                   color: AppColors.textMuted.withOpacity(0.7),
                   fontSize: 15,
@@ -466,25 +454,24 @@ class _SearchField extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                suffixIcon:
-                    controller.searchQuery.isNotEmpty
-                        ? IconButton(
-                          icon: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: AppColors.textMuted.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              color: AppColors.textMuted,
-                              size: 16,
-                            ),
+                suffixIcon: controller.searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: AppColors.textMuted.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          onPressed: () => controller.updateSearchQuery(''),
-                          tooltip: 'Limpar busca',
-                        )
-                        : null,
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: AppColors.textMuted,
+                            size: 16,
+                          ),
+                        ),
+                        onPressed: () => controller.updateSearchQuery(''),
+                        tooltip: 'Limpar busca',
+                      )
+                    : null,
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 border: OutlineInputBorder(
@@ -527,9 +514,9 @@ class _SearchField extends StatelessWidget {
 class _FiltersRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
-        return ProjectFilters(
+        return BudgetTypeFilters(
           selectedFilter: controller.selectedFilter,
           onFilterChanged: controller.updateFilter,
         );
@@ -538,40 +525,36 @@ class _FiltersRow extends StatelessWidget {
   }
 }
 
-class _ProjectsContent extends StatelessWidget {
+class _BudgetTypesContent extends StatelessWidget {
   final bool isDesktop;
 
-  const _ProjectsContent({required this.isDesktop});
+  const _BudgetTypesContent({required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
         if (controller.isLoading) {
           return const _LoadingState();
         }
 
         if (controller.hasError) {
-          // ← Agora reconhece hasError
           return _ErrorState(
             message: controller.errorMessage ?? 'Erro desconhecido',
-            onRetry: () => controller.loadProjects(forceRefresh: true),
+            onRetry: () => controller.loadBudgetTypes(forceRefresh: true),
           );
         }
 
-        if (controller.filteredProjects.isEmpty) {
+        if (controller.filteredBudgetTypes.isEmpty) {
           return _EmptyState(
-            hasFilters:
-                controller
-                    .hasActiveFilters, // ← Agora reconhece hasActiveFilters
-            onClearFilters:
-                controller.clearFilters, // ← Nome corrigido do método
-            onCreateProject: () => showProjectDialog(context),
+            hasFilters: controller.hasActiveFilters,
+            onClearFilters: controller.clearFilters,
+            onCreateBudgetType: () => _showBudgetTypeDialog(context),
           );
         }
 
-        return _ProjectsList(
-          projects: controller.filteredProjects,
+        return _BudgetTypesList(
+          budgetTypes: controller.filteredBudgetTypes,
           isGridView: controller.isGridView,
           isDesktop: isDesktop,
         );
@@ -613,7 +596,7 @@ class _LoadingState extends StatelessWidget {
                 ),
               ),
               const Icon(
-                Icons.construction_rounded,
+                Icons.category_outlined,
                 color: AppColors.accentGold,
                 size: 20,
               ),
@@ -621,7 +604,7 @@ class _LoadingState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'Carregando projetos...',
+            'Carregando tipos de orçamento...',
             style: TextStyle(
               color: AppColors.textMuted.withOpacity(0.8),
               fontSize: 16,
@@ -642,15 +625,92 @@ class _LoadingState extends StatelessWidget {
   }
 }
 
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.accentRed.withOpacity(0.2),
+                    Colors.transparent,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: Icon(
+                Icons.error_outline_rounded,
+                size: 56,
+                color: AppColors.accentRed.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Oops! Algo deu errado',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: AppColors.textMuted.withOpacity(0.8),
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Tentar novamente'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentGold,
+                foregroundColor: AppColors.primaryDark,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyState extends StatelessWidget {
   final bool hasFilters;
   final VoidCallback onClearFilters;
-  final VoidCallback onCreateProject;
+  final VoidCallback onCreateBudgetType;
 
   const _EmptyState({
     required this.hasFilters,
     required this.onClearFilters,
-    required this.onCreateProject,
+    required this.onCreateBudgetType,
   });
 
   @override
@@ -685,12 +745,11 @@ class _EmptyState extends StatelessWidget {
                     child: Icon(
                       hasFilters
                           ? Icons.search_off_rounded
-                          : Icons.construction_rounded,
+                          : Icons.category_outlined,
                       size: 64,
-                      color:
-                          hasFilters
-                              ? AppColors.accentBlue.withOpacity(0.7)
-                              : AppColors.accentGold.withOpacity(0.7),
+                      color: hasFilters
+                          ? AppColors.accentBlue.withOpacity(0.7)
+                          : AppColors.accentGold.withOpacity(0.7),
                     ),
                   ),
                 );
@@ -699,8 +758,8 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 32),
             Text(
               hasFilters
-                  ? 'Nenhum projeto encontrado'
-                  : 'Seus projetos aparecerão aqui',
+                  ? 'Nenhum tipo encontrado'
+                  : 'Seus tipos de orçamento aparecerão aqui',
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
@@ -713,79 +772,45 @@ class _EmptyState extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 400),
               child: Text(
                 hasFilters
-                    ? 'Tente ajustar os filtros de busca ou criar um novo projeto'
-                    : 'Comece criando seu primeiro projeto e acompanhe o progresso das suas obras',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textMuted,
+                    ? 'Tente ajustar os filtros de busca ou criar um novo tipo de orçamento'
+                    : 'Organize seus orçamentos criando diferentes tipos como Material, Mão de Obra, Equipamentos e Serviços',
+                style: TextStyle(
+                  color: AppColors.textMuted.withOpacity(0.8),
+                  fontSize: 16,
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
               ),
             ),
-            const SizedBox(height: 40),
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              alignment: WrapAlignment.center,
-              children: [
-                if (hasFilters) ...[
-                  OutlinedButton.icon(
-                    onPressed: onClearFilters,
-                    icon: const Icon(Icons.clear_all_rounded, size: 20),
-                    label: const Text('Limpar Filtros'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textSecondary,
-                      side: BorderSide(
-                        color: AppColors.borderColor.withOpacity(0.5),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ],
-                Container(
-                  decoration: BoxDecoration(
+            const SizedBox(height: 32),
+            if (hasFilters) ...[
+              OutlinedButton.icon(
+                onPressed: onClearFilters,
+                icon: const Icon(Icons.clear_all_rounded),
+                label: const Text('Limpar filtros'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accentBlue,
+                  side: BorderSide(color: AppColors.accentBlue.withOpacity(0.5)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.accentGold.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: onCreateProject,
-                    icon: const Icon(Icons.add_rounded, size: 20),
-                    label: Text(
-                      hasFilters
-                          ? 'Criar Novo Projeto'
-                          : 'Criar Primeiro Projeto',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGold,
-                      foregroundColor: AppColors.primaryDark,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
                   ),
                 ),
-              ],
+              ),
+              const SizedBox(height: 16),
+            ],
+            ElevatedButton.icon(
+              onPressed: onCreateBudgetType,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Criar primeiro tipo'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentGold,
+                foregroundColor: AppColors.primaryDark,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ],
         ),
@@ -794,64 +819,13 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorState({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.accentRed.withOpacity(0.7),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Erro ao carregar projetos',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              message,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tentar Novamente'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentGold,
-              foregroundColor: AppColors.primaryDark,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProjectsList extends StatelessWidget {
-  final List<Project> projects;
+class _BudgetTypesList extends StatelessWidget {
+  final List<BudgetType> budgetTypes;
   final bool isGridView;
   final bool isDesktop;
 
-  const _ProjectsList({
-    required this.projects,
+  const _BudgetTypesList({
+    required this.budgetTypes,
     required this.isGridView,
     required this.isDesktop,
   });
@@ -859,56 +833,45 @@ class _ProjectsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isGridView) {
-      return _ProjectsGrid(projects: projects, isDesktop: isDesktop);
+      return _GridView(budgetTypes: budgetTypes, isDesktop: isDesktop);
     } else {
-      return _ProjectsListView(projects: projects);
+      return _ListView(budgetTypes: budgetTypes);
     }
   }
 }
 
-class _ProjectsGrid extends StatelessWidget {
-  final List<Project> projects;
+class _GridView extends StatelessWidget {
+  final List<BudgetType> budgetTypes;
   final bool isDesktop;
 
-  const _ProjectsGrid({required this.projects, required this.isDesktop});
+  const _GridView({
+    required this.budgetTypes,
+    required this.isDesktop,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    int crossAxisCount;
-    double childAspectRatio;
-    double spacing;
-
-    if (isDesktop) {
-      crossAxisCount = ProjectsPageConstants.desktopGridColumns;
-      childAspectRatio = 0.75;
-      spacing = 20;
-    } else if (screenWidth > ProjectsPageConstants.tabletBreakpoint) {
-      crossAxisCount = ProjectsPageConstants.tabletGridColumns;
-      childAspectRatio = 0.8;
-      spacing = 16;
-    } else {
-      crossAxisCount = ProjectsPageConstants.mobileGridColumns;
-      childAspectRatio = 0.85;
-      spacing = 12;
-    }
-
+    final crossAxisCount = isDesktop ? 4 : 2;
+    
     return Padding(
-      padding: EdgeInsets.all(spacing),
+      padding: const EdgeInsets.all(16),
       child: GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: crossAxisCount,
-          crossAxisSpacing: spacing,
-          mainAxisSpacing: spacing,
-          childAspectRatio: childAspectRatio,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: isDesktop ? 1.2 : 0.9,
         ),
-        itemCount: projects.length,
+        itemCount: budgetTypes.length,
         itemBuilder: (context, index) {
-          return AnimatedContainer(
-            duration: Duration(milliseconds: 200 + (index % 3) * 100),
-            curve: Curves.easeOutBack,
-            child: _ProjectCardWrapper(project: projects[index]),
+          final budgetType = budgetTypes[index];
+          return BudgetTypeCard(
+            budgetType: budgetType,
+            isListView: false,
+            onEdit: () => _showBudgetTypeDialog(context, budgetType),
+            onDelete: () => _showDeleteConfirmation(context, budgetType),
+            onTap: () => _handleBudgetTypeTap(context, budgetType),
+            onToggleStatus: () => _toggleBudgetTypeStatus(context, budgetType),
           );
         },
       ),
@@ -916,80 +879,177 @@ class _ProjectsGrid extends StatelessWidget {
   }
 }
 
-class _ProjectsListView extends StatelessWidget {
-  final List<Project> projects;
+class _ListView extends StatelessWidget {
+  final List<BudgetType> budgetTypes;
 
-  const _ProjectsListView({required this.projects});
+  const _ListView({required this.budgetTypes});
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
+    return ListView.separated(
       padding: const EdgeInsets.all(16),
-      itemCount: projects.length,
+      itemCount: budgetTypes.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 200 + (index % 3) * 100),
-            curve: Curves.easeOutBack,
-            child: _ProjectCardWrapper(
-              project: projects[index],
-              isListView: true,
-            ),
-          ),
+        final budgetType = budgetTypes[index];
+        return BudgetTypeCard(
+          budgetType: budgetType,
+          isListView: true,
+          onEdit: () => _showBudgetTypeDialog(context, budgetType),
+          onDelete: () => _showDeleteConfirmation(context, budgetType),
+          onTap: () => _handleBudgetTypeTap(context, budgetType),
+          onToggleStatus: () => _toggleBudgetTypeStatus(context, budgetType),
         );
       },
     );
   }
 }
 
-class _ProjectCardWrapper extends StatelessWidget {
-  final Project project;
-  final bool isListView;
-
-  const _ProjectCardWrapper({required this.project, this.isListView = false});
-
+class _BudgetTypesFAB extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<ProjectsController>(
+    return Consumer<BudgetTypeController>(
       builder: (context, controller, child) {
-        return ProjectCard(
-          project: project,
-          isListView: isListView,
-          onEdit: () => showProjectDialog(context, project: project),
-          onDelete: () => showDeleteDialog(context, project),
-          onTap: () => showProjectDetails(context, project),
+        return FloatingActionButton.extended(
+          onPressed: () => _showBudgetTypeDialog(context),
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Novo Tipo'),
+          backgroundColor: AppColors.accentGold,
+          foregroundColor: AppColors.primaryDark,
+          elevation: 4,
+          extendedPadding: const EdgeInsets.symmetric(horizontal: 20),
         );
       },
     );
   }
 }
 
-class _ProjectsFAB extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentGold.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+// Helper functions
+void _showBudgetTypeDialog(BuildContext context, [BudgetType? budgetType]) {
+  final controller = Provider.of<BudgetTypeController>(context, listen: false);
+  
+  // Implementation will depend on your dialog structure
+  // This would typically open the BudgetTypeFormDialog
+  showDialog(
+    context: context,
+    builder: (context) => BudgetTypeFormDialog(
+      budgetType: budgetType,
+      onSave: (newBudgetType) async {
+        if (budgetType == null) {
+          await controller.createBudgetType(newBudgetType);
+        } else {
+          await controller.updateBudgetType(newBudgetType);
+        }
+      },
+    ),
+  );
+}
+
+void _showDeleteConfirmation(BuildContext context, BudgetType budgetType) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: AppColors.surfaceDark,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      title: Row(
+        children: [
+          Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.accentRed,
+            size: 24,
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Confirmar Exclusão',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
-      child: FloatingActionButton.extended(
-        onPressed: () => showProjectDialog(context),
-        backgroundColor: AppColors.accentGold,
-        foregroundColor: AppColors.primaryDark,
-        elevation: 0,
-        icon: const Icon(Icons.add_rounded, size: 24),
-        label: const Text(
-          'Novo Projeto',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+      content: Text(
+        'Tem certeza que deseja excluir o tipo "${budgetType.name}"?\n\nEsta ação não pode ser desfeita.',
+        style: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 16,
+          height: 1.4,
         ),
       ),
-    );
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Cancelar',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            Navigator.of(context).pop();
+            final controller = Provider.of<BudgetTypeController>(context, listen: false);
+            await controller.deleteBudgetType(budgetType.id);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accentRed,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: const Text('Excluir'),
+        ),
+      ],
+    ),
+  );
+}
+
+void _handleBudgetTypeTap(BuildContext context, BudgetType budgetType) {
+  // Navigate to budget type details or perform any action on tap
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Visualizando: ${budgetType.name}'),
+      backgroundColor: AppColors.accentBlue,
+      duration: const Duration(seconds: 2),
+    ),
+  );
+}
+
+void _toggleBudgetTypeStatus(BuildContext context, BudgetType budgetType) async {
+  final controller = Provider.of<BudgetTypeController>(context, listen: false);
+  
+  try {
+    await controller.toggleBudgetTypeStatus(budgetType.id, !budgetType.isActive);
+    
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            budgetType.isActive 
+                ? 'Tipo "${budgetType.name}" foi desativado'
+                : 'Tipo "${budgetType.name}" foi ativado',
+          ),
+          backgroundColor: AppColors.accentGreen,
+          action: SnackBarAction(
+            label: 'Desfazer',
+            textColor: Colors.white,
+            onPressed: () async {
+              await controller.toggleBudgetTypeStatus(budgetType.id, budgetType.isActive);
+            },
+          ),
+        ),
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro ao alterar status: $e'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    }
   }
 }

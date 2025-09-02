@@ -84,26 +84,22 @@ class RecentActivities extends StatelessWidget {
                   },
                   child: const Text(
                     'Ver todas',
-                    style: TextStyle(
-                      color: AppColors.accentGold,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppColors.accentGold, fontSize: 12),
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Lista de atividades
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
-              separatorBuilder: (context, index) => const Divider(
-                color: AppColors.dividerColor,
-                height: 1,
-              ),
+              separatorBuilder:
+                  (context, index) =>
+                      const Divider(color: AppColors.dividerColor, height: 1),
               itemBuilder: (context, index) {
                 final activity = activities[index];
                 return _buildActivityItem(activity);
@@ -127,15 +123,11 @@ class RecentActivities extends StatelessWidget {
               color: activity.color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              activity.icon,
-              color: activity.color,
-              size: 16,
-            ),
+            child: Icon(activity.icon, color: activity.color, size: 16),
           ),
-          
+
           const SizedBox(width: 12),
-          
+
           // Conteúdo
           Expanded(
             child: Column(
@@ -160,14 +152,11 @@ class RecentActivities extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Tempo
           Text(
             activity.time,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 10,
-            ),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
           ),
         ],
       ),
