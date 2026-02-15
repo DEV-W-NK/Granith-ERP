@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/contants/supplier_constants.dart';
+import 'package:project_granith/constants/supplier_constants.dart';
 
 class SupplierFormDialog extends StatefulWidget {
   final Supplier? supplier;

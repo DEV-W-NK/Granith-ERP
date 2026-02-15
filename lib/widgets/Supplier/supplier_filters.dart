@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/contants/supplier_constants.dart';
+import 'package:project_granith/constants/supplier_constants.dart';
 
 class SupplierFilters extends StatelessWidget {
   final String selectedFilter;

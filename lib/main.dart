@@ -1,131 +1,111 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
-import 'package:project_granith/firebase_options.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:provider/provider.dart'; // Importante para injeção de dependência
 import 'package:project_granith/themes/app_theme.dart';
-import 'screens/main_layout.dart';
-import 'screens/login_page.dart'; // Importar a tela de login
-import 'services/auth_service.dart'; // Importar o serviço de auth
+import 'package:project_granith/firebase_options.dart';
+import 'package:project_granith/screens/main_layout.dart';
+import 'package:project_granith/screens/login_page.dart';
+import 'package:project_granith/screens/subscription_page.dart';
+import 'package:project_granith/services/auth_service.dart';
+import 'package:project_granith/controllers/auth_controller.dart';
+import 'package:project_granith/controllers/subscription_controller.dart'; // Importe o controller aqui
 
+/**
+ * TIPO: Entry Point
+ * FUNÇÃO: Inicializa Firebase, Configura Providers Globais e Emuladores.
+ */
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const GranithApp());
+  
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  if (kDebugMode) {
+    try {
+      String host = kIsWeb ? 'localhost' : (defaultTargetPlatform == TargetPlatform.android ? '10.0.2.2' : 'localhost');
+
+      debugPrint('--- [GRANITH] CONECTANDO EMULADORES EM: $host ---');
+
+      await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+      FirebaseFirestore.instance.useFirestoreEmulator(host, 8085);
+      await FirebaseStorage.instance.useStorageEmulator(host, 9199);
+      
+      debugPrint('🟢 [GRANITH] AMBIENTE LOCAL PRONTO: Auth(9099), Firestore(8085)');
+    } catch (e) {
+      debugPrint('🔴 [GRANITH] ERRO NA INICIALIZAÇÃO LOCAL: $e');
+    }
+  }
+
+  await initializeDateFormatting('pt_BR', null);
+  
+  // AQUI ESTÁ A CORREÇÃO: Envolvemos o MyApp com MultiProvider
+  runApp(
+    MultiProvider(
+      providers: [
+        // Disponibiliza o AuthController para todo o app
+        ChangeNotifierProvider(create: (_) => AuthController()),
+        // Disponibiliza o SubscriptionController para todo o app (Resolve o seu erro)
+        ChangeNotifierProvider(create: (_) => SubscriptionController()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class GranithApp extends StatelessWidget {
-  const GranithApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Granith ERP',
       theme: AppTheme.darkTheme,
-      home: const AuthWrapper(), // Usar wrapper de autenticação
+      themeMode: ThemeMode.dark,
       debugShowCheckedModeBanner: false,
-      // Configuração de rotas
-      routes: {
-        '/login': (context) => const LoginPage(),
-        '/home': (context) => const MainLayout(),
-      },
-      // Configurar EasyLoading
       builder: EasyLoading.init(),
+      home: const AuthWrapper(),
+      onGenerateRoute: (RouteSettings settings) {
+        if (settings.name == '/subscription') {
+          return MaterialPageRoute(
+            builder: (context) => const SubscriptionPage(),
+          );
+        }
+        return null;
+      },
     );
   }
 }
 
-/// Widget que gerencia o estado de autenticação
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Usamos o AuthService diretamente para o stream, mas o AuthController já está disponível via Provider se precisar
     final authService = AuthService();
 
-    return StreamBuilder(
+    return StreamBuilder<User?>(
       stream: authService.authStateChanges,
       builder: (context, snapshot) {
-        // Enquanto carrega
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SplashScreen();
-        }
-
-        // Se tem usuário logado
-        if (snapshot.hasData && snapshot.data != null) {
-          return FutureBuilder<bool>(
-            future: authService.isUserActive(),
-            builder: (context, activeSnapshot) {
-              if (activeSnapshot.connectionState == ConnectionState.waiting) {
-                return const SplashScreen();
-              }
-
-              // Verificar se usuário está ativo
-              if (activeSnapshot.data == true) {
-                return const MainLayout();
-              } else {
-                // Usuário inativo - fazer logout
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  authService.signOut();
-                });
-                return const LoginPage();
-              }
-            },
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator(color: AppColors.accentGold)),
           );
         }
-
-        // Não tem usuário logado
+        
+        if (snapshot.hasData && snapshot.data != null) {
+          return const MainLayout();
+        }
+        
         return const LoginPage();
       },
-    );
-  }
-}
-
-/// Tela de splash/loading
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF6A11CB), Color(0xFF2575FC)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo ou nome do app
-              Text(
-                'GRANITH ERP',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 2,
-                ),
-              ),
-              SizedBox(height: 30),
-              // Loading indicator
-              CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Colors.white),
-                strokeWidth: 3,
-              ),
-              SizedBox(height: 20),
-              Text(
-                'Carregando...',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

@@ -14,7 +14,7 @@ class ProjectFilters extends StatelessWidget {
 
   static final List<String> filters = [
     'Todos',
-    ...ProjectStatus.values.map((e) => e.displayName).toList(),
+    ...ProjectStatus.values.map((e) => e.displayName),
   ];
 
   @override

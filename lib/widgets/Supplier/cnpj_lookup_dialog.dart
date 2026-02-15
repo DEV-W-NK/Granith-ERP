@@ -504,14 +504,12 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           orElse: () => null as dynamic,
         );
 
-        if (existingSupplier != null) {
-          setState(() {
-            _errorMessage = 'CNPJ já cadastrado no sistema';
-            _isLoading = false;
-          });
-          return;
-        }
-
+        setState(() {
+          _errorMessage = 'CNPJ já cadastrado no sistema';
+          _isLoading = false;
+        });
+        return;
+      
         setState(() {
           _cnpjData = cnpjData;
           _isLoading = false;

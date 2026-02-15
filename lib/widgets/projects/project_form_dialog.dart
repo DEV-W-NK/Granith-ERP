@@ -1,11 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:project_granith/Services/service_projetos.dart';
+import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import '../../models/project_model.dart';
 import 'package:project_granith/widgets/projects/keep_alive.dart';
@@ -761,7 +760,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             ],
           ),
           child: DropdownButtonFormField<ProjectStatus>(
-            value: _selectedStatus,
+            initialValue: _selectedStatus,
             style: const TextStyle(color: AppColors.textPrimary),
             dropdownColor: AppColors.secondaryDark,
             decoration: InputDecoration(

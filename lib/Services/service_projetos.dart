@@ -30,8 +30,8 @@ class ServiceProjetos {
     // Configurar emulators em modo debug
     if (kDebugMode) {
       try {
-        _storage.useStorageEmulator('localhost', 9911);
-        print('🔥 Storage Emulator ativo em localhost:9911');
+        _storage.useStorageEmulator('localhost', 9199);
+        print('🔥 Storage Emulator ativo em localhost:9199');
       } catch (e) {
         print('Storage Emulator já configurado ou erro: $e');
       }
@@ -434,7 +434,7 @@ class ServiceProjetos {
     required String projectId,
     bool replaceExisting = true,
   }) async {
-    final uploadKey = 'upload_${projectId}';
+    final uploadKey = 'upload_$projectId';
 
     // MELHORIA: Controle específico para uploads
     if (_imagesBeingUploaded.contains(uploadKey)) {

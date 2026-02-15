@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:project_granith/contants/supplier_constants.dart';
+import 'package:project_granith/constants/supplier_constants.dart';
 import 'package:project_granith/controllers/supplier_controller.dart';
 import 'package:project_granith/models/supplier_model.dart';
-import 'package:project_granith/widgets/Supplier/supplier_card.dart';
-import 'package:project_granith/widgets/Supplier/supplier_filters.dart';
-import 'package:project_granith/widgets/Supplier/supplier_form_dialog.dart';
-import 'package:project_granith/widgets/Supplier/cnpj_lookup_dialog.dart';
+import 'package:project_granith/widgets/supplier/supplier_card.dart';
+import 'package:project_granith/widgets/supplier/supplier_filters.dart';
+import 'package:project_granith/widgets/supplier/supplier_form_dialog.dart';
+import 'package:project_granith/widgets/supplier/cnpj_lookup_dialog.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/services/supplier_service.dart' as services;
 import 'package:project_granith/themes/app_theme.dart';

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
+// Enum para tendência
 enum TrendType { up, down, neutral }
 
-enum ChartType { pie, line, bar }
-
-class StatisticData {
+// Classe de dados para os cards de estatística
+class StatItem {
   final String title;
   final String value;
   final String subtitle;
@@ -14,7 +14,7 @@ class StatisticData {
   final TrendType trend;
   final String trendValue;
 
-  StatisticData({
+  StatItem({
     required this.title,
     required this.value,
     required this.subtitle,
@@ -25,67 +25,57 @@ class StatisticData {
   });
 }
 
-class ChartData {
-  final String label;
-  final double value;
-  final Color? color;
-
-  ChartData({required this.label, required this.value, this.color});
-}
-
 class StatisticsModel {
-  static List<StatisticData> get mainStats => [
-    StatisticData(
-      title: 'Projetos Ativos',
-      value: '24',
-      subtitle: 'Em andamento',
+  // Dados para o Gráfico de Pizza (Status dos Projetos)
+  static const Map<String, double> projectStatusData = {
+    'Em Andamento': 45.0,
+    'Concluídos': 30.0,
+    'Atrasados': 15.0,
+    'Planejamento': 10.0,
+  };
+
+  // Dados para o Gráfico de Linha (Receita)
+  static const List<double> monthlyRevenueData = [
+    120000.0, 135000.0, 128000.0, 150000.0, 142000.0, 180000.0
+  ];
+
+  // Adicionando a lista mainStats que estava faltando para o Controller
+  static List<StatItem> get mainStats => [
+    StatItem(
+      title: 'Obras Ativas',
+      value: '12',
+      subtitle: '3 com prazo crítico',
       icon: Icons.construction,
-      color: AppColors.accentBlue,
-      trend: TrendType.up,
-      trendValue: '+3',
-    ),
-    StatisticData(
-      title: 'Receita Mensal',
-      value: 'R\$ 450K',
-      subtitle: 'Este mês',
-      icon: Icons.trending_up,
-      color: AppColors.accentGreen,
-      trend: TrendType.up,
-      trendValue: '+12%',
-    ),
-    StatisticData(
-      title: 'Materiais',
-      value: '89%',
-      subtitle: 'Em estoque',
-      icon: Icons.inventory_2,
       color: AppColors.accentGold,
-      trend: TrendType.down,
-      trendValue: '-5%',
+      trend: TrendType.up,
+      trendValue: '+2',
     ),
-    StatisticData(
-      title: 'Equipes',
-      value: '18',
-      subtitle: 'Trabalhando',
-      icon: Icons.groups,
-      color: AppColors.textSecondary,
+    StatItem(
+      title: 'Funcionários',
+      value: '48',
+      subtitle: '42 presentes hoje',
+      icon: Icons.engineering,
+      color: AppColors.accentBlue,
       trend: TrendType.neutral,
       trendValue: '0',
     ),
-  ];
-
-  static List<ChartData> get projectStatusData => [
-    ChartData(label: 'Em Andamento', value: 12, color: AppColors.accentBlue),
-    ChartData(label: 'Planejamento', value: 6, color: AppColors.accentGold),
-    ChartData(label: 'Finalizando', value: 4, color: AppColors.accentGreen),
-    ChartData(label: 'Pausado', value: 2, color: AppColors.accentRed),
-  ];
-
-  static List<ChartData> get monthlyRevenueData => [
-    ChartData(label: 'Jan', value: 320),
-    ChartData(label: 'Fev', value: 280),
-    ChartData(label: 'Mar', value: 390),
-    ChartData(label: 'Abr', value: 420),
-    ChartData(label: 'Mai', value: 380),
-    ChartData(label: 'Jun', value: 450),
+    StatItem(
+      title: 'Gastos (Mês)',
+      value: 'R\$ 142k',
+      subtitle: '85% do orçamento',
+      icon: Icons.attach_money,
+      color: AppColors.accentRed,
+      trend: TrendType.down,
+      trendValue: '12%',
+    ),
+    StatItem(
+      title: 'Materiais',
+      value: '350',
+      subtitle: 'Itens em estoque baixo',
+      icon: Icons.inventory_2,
+      color: AppColors.accentGreen,
+      trend: TrendType.down,
+      trendValue: '-5',
+    ),
   ];
 }

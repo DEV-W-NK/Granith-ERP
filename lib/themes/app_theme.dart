@@ -54,13 +54,18 @@ class AppTheme {
         ),
       ),
       
-      cardTheme: CardTheme(
-        color: AppColors.surfaceDark,
-        elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+    cardTheme: CardThemeData(
+      color: AppColors.surfaceDark,
+      elevation: 0, // Remova a elevação padrão para controlar com border/boxShadow nos widgets
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16), // Bordas mais arredondadas (moderno)
+        side: const BorderSide(
+          color: AppColors.borderColor, // Borda sutil global
+          width: 1,
         ),
       ),
+      margin: EdgeInsets.zero,
+    ),
       
       textTheme: const TextTheme(
         headlineLarge: TextStyle(

@@ -1,4 +1,6 @@
-  class Supplier {
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class Supplier {
   final String id;
   final String name;
   final String cnpj;
@@ -16,13 +18,26 @@
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
+    // Função auxiliar para tratar datas vindas de diferentes fontes (Firestore ou API)
+    DateTime parseDate(dynamic value) {
+      if (value is Timestamp) {
+        return value.toDate();
+      } else if (value is String) {
+        return DateTime.parse(value);
+      } else if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      return DateTime.now(); // Fallback seguro para evitar crash
+    }
+
     return Supplier(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      cnpj: json['cnpj'] as String,
+      id: json['id'] as String? ?? '', // Garante string vazia se nulo
+      name: json['name'] as String? ?? '',
+      cnpj: json['cnpj'] as String? ?? '',
       isActive: json['isActive'] as bool? ?? true,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      // Usa a função auxiliar para ler as datas corretamente
+      createdAt: parseDate(json['createdAt']),
+      updatedAt: parseDate(json['updatedAt']),
     );
   }
 

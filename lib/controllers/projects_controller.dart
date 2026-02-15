@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:project_granith/Services/service_projetos.dart';
+import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/models/project_model.dart';
 
 class ProjectsController extends ChangeNotifier {
@@ -195,11 +195,11 @@ class ProjectsController extends ChangeNotifier {
 
   // NOVA: Atualizar projeto com debounce
   Future<void> updateProject(Project project) async {
-    if (project.id == null || project.id!.isEmpty) {
+    if (project.id.isEmpty) {
       throw Exception('ID do projeto é obrigatório para atualização');
     }
 
-    final operationKey = project.id!;
+    final operationKey = project.id;
 
     // Verificar se já existe operação pendente para este projeto
     if (_pendingUpdateOperations.containsKey(operationKey)) {
@@ -597,10 +597,8 @@ class ProjectsController extends ChangeNotifier {
     // Ordenar por data de criação (mais recente primeiro) ou nome
     filtered.sort((a, b) {
       // Se ambos têm startDate, ordenar por ela
-      if (a.startDate != null && b.startDate != null) {
-        return b.startDate!.compareTo(a.startDate!);
-      }
-      // Caso contrário, ordenar por nome
+      return b.startDate.compareTo(a.startDate);
+          // Caso contrário, ordenar por nome
       return a.name.compareTo(b.name);
     });
 

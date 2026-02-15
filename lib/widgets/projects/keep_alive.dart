@@ -3,7 +3,7 @@ import 'package:flutter/widgets.dart';
 class PageKeepAlive extends StatefulWidget {
   final Widget child;
 
-  const PageKeepAlive({Key? key, required this.child}) : super(key: key);
+  const PageKeepAlive({super.key, required this.child});
 
   @override
   State<PageKeepAlive> createState() => _PageKeepAliveState();

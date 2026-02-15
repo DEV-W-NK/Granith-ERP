@@ -212,8 +212,4 @@ class BudgetTypeController extends ChangeNotifier {
     }
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

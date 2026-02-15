@@ -22,44 +22,45 @@
       }
     }
   },
-  "emulators": {
-    "singleProjectMode": true,
-    "auth": {
-      "port": 9199
-    },
-    "functions": {
-      "port": 5001
-    },
-    "storage": {
-      "port": 9911
-    },
-    "ui": {
-      "enabled": true
-    }
+  "functions": {
+    "source": "functions"
   },
-  "functions": [
-    {
-      "source": "functions",
-      "codebase": "default",
-      "ignore": [
-        "node_modules",
-        ".git",
-        "firebase-debug.log",
-        "firebase-debug.*.log",
-        "*.local"
-      ],
-      "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint"
-      ]
-    }
-  ],
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
   "storage": {
     "rules": "storage.rules"
   },
-  "firestore": {
-    "database": "(default)",
-    "location": "southamerica-east1",
-    "rules": "firestore.rules",
-    "indexes": "firestore.indexs.json"
+  "emulators": {
+    "singleProjectMode": true,
+    "auth": {
+      "host": "0.0.0.0",
+      "port": 9099
+    },
+    "functions": {
+      "host": "0.0.0.0",
+      "port": 5001
+    },
+    "firestore": {
+      "host": "0.0.0.0",
+      "port": 8089
+    },
+    "database": {
+      "host": "0.0.0.0",
+      "port": 9005
+    },
+    "storage": {
+      "host": "0.0.0.0",
+      "port": 9199
+    },
+    "ui": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 4000
+    }
   }
 }

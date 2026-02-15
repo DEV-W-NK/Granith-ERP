@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/services/service_orcamentos.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/widgets/Budgets/budget_card.dart';
+import 'package:project_granith/widgets/budgets/budget_card.dart';
 import 'package:project_granith/widgets/budgets/budget_form_dialog.dart';
 
 class BudgetsPage extends StatefulWidget {

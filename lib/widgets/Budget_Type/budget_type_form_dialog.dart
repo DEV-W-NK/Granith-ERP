@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project_granith/contants/budget_type_constants.dart';
+import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
@@ -301,7 +301,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             ),
           ),
           child: DropdownButtonFormField<String>(
-            value: _selectedCategory,
+            initialValue: _selectedCategory,
             onChanged: (value) {
               if (value != null) {
                 setState(() {
@@ -552,7 +552,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
                 _isActive = value;
               });
             },
-            activeColor: AppColors.accentGold,
+            activeThumbColor: AppColors.accentGold,
             activeTrackColor: AppColors.accentGold.withOpacity(0.3),
             inactiveThumbColor: AppColors.textMuted,
             inactiveTrackColor: AppColors.textMuted.withOpacity(0.3),

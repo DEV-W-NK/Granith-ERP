@@ -54,92 +54,80 @@ class ProjectCard extends StatelessWidget {
     );
   }
 
-  Widget _buildGridContent() {
+Widget _buildGridContent() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header com imagem
+        // Header com Imagem e Badge
         Expanded(
-          flex: 3,
+          flex: 4, // Aumentei um pouco a área da imagem
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              // Imagem do projeto
-              ProjectImageWidget(
-                imageUrl: project.imageUrl,
-                width: double.infinity,
-                height: double.infinity,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
-                fit: BoxFit.cover,
-              ),
-
-              // Overlay gradient
-              Container(
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
-                  ),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Colors.black26],
-                  ),
+              // Imagem
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                child: ProjectImageWidget(
+                  imageUrl: project.imageUrl,
+                  width: double.infinity,
+                  height: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
-
-              // Status badge e menu
-              Positioned(
-                top: 12,
-                left: 12,
-                right: 12,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildStatusChip(),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: _buildPopupMenu(iconColor: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Progress overlay
+              
+              // Gradiente apenas na parte inferior para o texto
               Positioned(
                 bottom: 0,
                 left: 0,
                 right: 0,
+                height: 80, // Altura fixa para o gradiente
                 child: Container(
-                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.transparent,
-                        Colors.black.withOpacity(0.7),
+                        AppColors.surfaceDark.withOpacity(0.8),
+                        AppColors.surfaceDark,
                       ],
                     ),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
+                  ),
+                ),
+              ),
+
+              // Status Badge (Floating)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceDark.withOpacity(0.9), // Fundo sólido para leitura
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                      )
+                    ],
+                    border: Border.all(
+                      color: project.status.color.withOpacity(0.5),
+                      width: 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Expanded(child: _buildProgressBar(isOverlay: true)),
-                      const SizedBox(width: 8),
+                      CircleAvatar(
+                        radius: 3,
+                        backgroundColor: project.status.color,
+                      ),
+                      const SizedBox(width: 6),
                       Text(
-                        '${project.progressPercentage.toInt()}%',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
+                        project.status.displayName,
+                        style: TextStyle(
+                          color: AppColors.textPrimary, // Texto branco para contraste
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -147,125 +135,119 @@ class ProjectCard extends StatelessWidget {
                   ),
                 ),
               ),
+
+              // Menu
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    shape: BoxShape.circle,
+                  ),
+                  child: _buildPopupMenu(iconColor: Colors.white),
+                ),
+              ),
             ],
           ),
         ),
 
-        // Conteúdo inferior
+        // Conteúdo
         Expanded(
-          flex: 2,
+          flex: 3,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Nome do projeto
-                Text(
-                  project.name,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 4),
-
-                // Cliente
-                Text(
-                  project.client,
-                  style: TextStyle(
-                    color: AppColors.accentGold.withOpacity(0.8),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-
-                const SizedBox(height: 8),
-
-                // Localização
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: AppColors.textMuted.withOpacity(0.8),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        project.location,
-                        style: TextStyle(
-                          color: AppColors.textMuted.withOpacity(0.9),
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      project.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      project.client,
+                      style: const TextStyle(
+                        color: AppColors.accentGold,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-
-                const Spacer(),
-
-                // Divider
-                Container(
-                  height: 1,
-                  color: AppColors.borderColor.withOpacity(0.5),
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                ),
-
-                // Informações financeiras
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                
+                // Barra de Progresso com Informações
+                Column(
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Gasto atual',
+                          'Progresso',
                           style: TextStyle(
-                            color: AppColors.textMuted.withOpacity(0.8),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            color: AppColors.textMuted,
+                            fontSize: 12,
                           ),
                         ),
                         Text(
-                          project.formattedCurrentCost,
-                          style: const TextStyle(
-                            color: AppColors.accentGreen,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
+                          '${project.progressPercentage.toInt()}%',
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Orçamento',
-                          style: TextStyle(
-                            color: AppColors.textMuted.withOpacity(0.8),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                    const SizedBox(height: 8),
+                    // Barra de progresso mais moderna
+                    Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundDark,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Row(
+                        children: [
+                          Flexible(
+                            flex: project.progressPercentage.toInt(),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    project.status.color.withOpacity(0.7),
+                                    project.status.color,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: project.status.color.withOpacity(0.4),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        Text(
-                          project.formattedBudget,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                          Flexible(
+                            flex: 100 - project.progressPercentage.toInt(),
+                            child: Container(),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

@@ -71,7 +71,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
 
   // Variáveis para Budget Types múltiplos
   List<BudgetType> _availableBudgetTypes = [];
-  List<BudgetTypeItem> _selectedBudgetTypeItems = [];
+  final List<BudgetTypeItem> _selectedBudgetTypeItems = [];
   bool _isLoadingBudgetTypes = false;
   double _totalValue = 0.0;
 
@@ -383,8 +383,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
               primary: AppColors.accentGold,
               surface: AppColors.surfaceDark,
               onSurface: AppColors.textPrimary,
-            ),
-            dialogBackgroundColor: AppColors.surfaceDark,
+            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.surfaceDark),
           ),
           child: child!,
         );
@@ -962,7 +961,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                         }
                       });
                     },
-                    activeColor: AppColors.accentGold,
+                    activeThumbColor: AppColors.accentGold,
                     activeTrackColor: AppColors.accentGold.withOpacity(0.3),
                     inactiveThumbColor: AppColors.textMuted,
                     inactiveTrackColor: AppColors.borderColor,

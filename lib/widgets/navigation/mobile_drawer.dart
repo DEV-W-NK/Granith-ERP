@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'sidebar_menu.dart';
+import 'sidebar_menu.dart'; // Reutiliza a classe MenuItem e a lista estática
 
 class MobileDrawer extends StatelessWidget {
   final int selectedIndex;
@@ -15,39 +15,42 @@ class MobileDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: AppColors.primaryDark,
+      backgroundColor: AppColors.surfaceDark,
       child: Column(
         children: [
           // Header
           DrawerHeader(
-            decoration: const BoxDecoration(color: AppColors.secondaryDark),
-            child: const Center(
+            decoration: const BoxDecoration(
+              color: AppColors.primaryDark,
+            ),
+            child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.business, color: AppColors.accentGold, size: 40),
-                  SizedBox(height: 8),
-                  Text(
+                  const Icon(Icons.business, color: AppColors.accentGold, size: 48),
+                  const SizedBox(height: 12),
+                  const Text(
                     'GRANITH',
                     style: TextStyle(
                       color: AppColors.accentGold,
-                      fontSize: 20,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 2,
                     ),
                   ),
                   Text(
-                    'ERP System',
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                    'Mobile Access',
+                    style: TextStyle(color: AppColors.textMuted.withOpacity(0.7), fontSize: 12),
                   ),
                 ],
               ),
             ),
           ),
-
-          // Menu items
+          
+          // Itens (Usando a mesma lista do SidebarMenu para consistência)
           Expanded(
             child: ListView.builder(
+              padding: EdgeInsets.zero,
               itemCount: SidebarMenu.menuItems.length,
               itemBuilder: (context, index) {
                 final item = SidebarMenu.menuItems[index];
@@ -56,20 +59,13 @@ class MobileDrawer extends StatelessWidget {
                 return ListTile(
                   leading: Icon(
                     item.icon,
-                    color:
-                        isSelected
-                            ? AppColors.accentGold
-                            : AppColors.textSecondary,
+                    color: isSelected ? AppColors.accentGold : AppColors.textSecondary,
                   ),
                   title: Text(
                     item.title,
                     style: TextStyle(
-                      color:
-                          isSelected
-                              ? AppColors.accentGold
-                              : AppColors.textSecondary,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                      color: isSelected ? AppColors.accentGold : AppColors.textPrimary,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,

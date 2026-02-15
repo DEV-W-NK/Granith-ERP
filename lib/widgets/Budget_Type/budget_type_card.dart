@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:project_granith/contants/budget_type_constants.dart';
+import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
