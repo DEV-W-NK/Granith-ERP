@@ -13,6 +13,24 @@ class LoginController extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  String _email = '';
+  String get email => _email;
+
+  String _password = '';
+  String get password => _password;
+
+  void setEmail(String value) {
+    if (_isDisposed) return;
+    _email = value;
+    notifyListeners();
+  }
+
+  void setPassword(String value) {
+    if (_isDisposed) return;
+    _password = value;
+    notifyListeners();
+  }
+
   // 1. Mantemos a variável de segurança para evitar o erro "used after disposed"
   bool _isDisposed = false;
 
@@ -64,6 +82,28 @@ class LoginController extends ChangeNotifier {
         _setLoading(false);
       }
     }
+    return false;
+  }
+
+  Future<bool> handleEmailPasswordSignIn() async {
+    if (_isDisposed) return false;
+
+    _setLoading(true);
+    _errorMessage = null;
+    await EasyLoading.show(status: 'Autenticando com email...');
+
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (_email.trim().isEmpty || _password.isEmpty) {
+      _errorMessage = 'Informe e-mail e senha para prosseguir.';
+      _setLoading(false);
+      await EasyLoading.dismiss();
+      return false;
+    }
+
+    _errorMessage = 'Login por e-mail/senha ainda não implementado; use Google.';
+    _setLoading(false);
+    await EasyLoading.dismiss();
     return false;
   }
 

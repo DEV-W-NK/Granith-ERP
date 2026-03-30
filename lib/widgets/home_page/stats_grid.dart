@@ -1,67 +1,95 @@
 import 'package:flutter/material.dart';
-import 'package:project_granith/widgets/home_page/stat_card.dart';
-import 'package:provider/provider.dart';
-import 'package:project_granith/controllers/home_controller.dart';
+import 'package:project_granith/ViewModels/HomeViewModel.dart';
+import 'package:project_granith/themes/app_theme.dart';
 
 class StatsGrid extends StatelessWidget {
   final bool isDesktop;
-  final AnimationController animationController;
+  final List<StatItem> stats;
 
-  const StatsGrid({
-    super.key, 
-    required this.isDesktop, 
-    required this.animationController,
-  });
+  const StatsGrid({super.key, required this.isDesktop, required this.stats});
+
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<HomeController>();
-    // Ajuste de layout responsivo
-    final crossAxisCount = isDesktop ? 4 : (MediaQuery.of(context).size.width > 600 ? 2 : 1);
+    if (stats.isEmpty) return const SizedBox();
 
-    if (controller.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    final cards = stats.map((stat) => _buildStatCard(stat)).toList();
+
+    if (isDesktop) {
+      return Row(
+        children: cards
+            .expand((c) => [Expanded(child: c), const SizedBox(width: 12)])
+            .toList()
+          ..removeLast(),
+      );
     }
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        // Aspect Ratio ajustado para o card não ficar muito esticado
-        childAspectRatio: isDesktop ? 1.4 : 1.6,
-      ),
-      itemCount: controller.mainStats.length,
-      itemBuilder: (context, index) {
-        final stat = controller.mainStats[index];
-        
-        // Animação stagger (cascata)
-        final animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-          CurvedAnimation(
-            parent: animationController,
-            curve: Interval(
-              0.2 + (index * 0.1), 
-              0.6 + (index * 0.1), 
-              curve: Curves.easeOutBack,
-            ),
-          ),
-        );
+    return Column(children: [
+      Row(children: [
+        Expanded(child: cards[0]),
+        const SizedBox(width: 10),
+        Expanded(child: cards[1]),
+      ]),
+      const SizedBox(height: 10),
+      Row(children: [
+        Expanded(child: cards[2]),
+        const SizedBox(width: 10),
+        if (cards.length > 3) Expanded(child: cards[3]),
+      ]),
+    ]);
+  }
 
-        return ScaleTransition(
-          scale: animation,
-          child: StatCard(
-            title: stat.title,
-            value: stat.value,
-            subtitle: stat.subtitle,
-            icon: stat.icon,
-            color: stat.color,
-            trend: stat.trend,
-            trendValue: stat.trendValue,
+  Widget _buildStatCard(StatItem stat) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 28, height: 28,
+            decoration: BoxDecoration(
+              color: stat.accent.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(stat.icon, color: stat.accent, size: 15),
           ),
-        );
-      },
+          const Spacer(),
+          Container(
+            width: 28, height: 2,
+            decoration: BoxDecoration(
+                color: stat.accent, borderRadius: BorderRadius.circular(2)),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        Text(stat.label,
+            style: const TextStyle(
+                color: AppColors.textSecondary, fontSize: 9,
+                fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+        const SizedBox(height: 5),
+        Text(stat.value,
+            style: TextStyle(
+                color: stat.accent, fontSize: 18,
+                fontWeight: FontWeight.w700, letterSpacing: -0.5)),
+        const SizedBox(height: 4),
+        Row(children: [
+          Icon(
+              stat.deltaUp
+                  ? Icons.arrow_upward_rounded
+                  : Icons.arrow_downward_rounded,
+              size: 10,
+              color: stat.deltaUp ? AppColors.accentGreen : AppColors.accentRed),
+          const SizedBox(width: 3),
+          Flexible(
+            child: Text(stat.delta,
+                style: TextStyle(
+                    color: stat.deltaUp ? AppColors.accentGreen : AppColors.accentRed, fontSize: 10)),
+          ),
+        ]),
+      ]),
     );
   }
 }

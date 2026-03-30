@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_granith/models/budget_model.dart';
+import 'package:project_granith/models/project_model.dart';
+
 
 class ServiceOrcamentos {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final String _collectionName = 'budgets';
+
+  ServiceOrcamentos({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<void> addBudget(Budget budget) async {
     try {
@@ -341,4 +345,78 @@ class ServiceOrcamentos {
       throw Exception('Erro ao buscar estatísticas de orçamentos: $e');
     }
   }
+  // ─────────────────────────────────────────────────────────────────────────────
+// PATCH — ServiceOrcamentos
+// Adicione este método dentro da classe ServiceOrcamentos.
+//
+// Dependências necessárias no topo do arquivo (adicione se não existirem):
+//   import 'package:project_granith/models/project_model.dart';
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Aprova um orçamento e cria o projeto vinculado atomicamente.
+///
+/// Regra #21: orçamento aprovado → projeto criado automaticamente.
+///
+/// O que faz em batch único:
+///   1. Muda budget.status → approved
+///   2. Cria documento em /projects com dados do orçamento
+///   3. Vincula budget.projectId → ID do projeto criado
+///
+/// Retorna o ID do projeto criado.
+Future<String> approveBudget(Budget budget) async {
+  if (budget.status == BudgetStatus.approved && budget.projectId != null) {
+    // Já aprovado e vinculado — retorna o projeto existente sem duplicar.
+    return budget.projectId!;
+  }
+
+  final db = _firestore;
+  final batch = db.batch();
+
+  // ── 1. Referência do novo projeto (ID gerado pelo Firestore) ──────────────
+  final projectRef = db.collection('projects').doc();
+
+  // ── 2. Monta o Project a partir dos dados do Budget ───────────────────────
+  final now = DateTime.now();
+  final project = Project(
+    id:          projectRef.id,
+    name:        budget.projectName,
+    client:      budget.clientName,
+    description: budget.description,
+    status:      ProjectStatus.planning,   // começa em planejamento
+    startDate:   now,
+    endDate:     budget.expirationDate,    // prazo do orçamento vira prazo do projeto
+    budget:      budget.totalValue,
+    currentCost: 0,
+    location:    '',                        // usuário preenche depois no projeto
+    tags:        ['Gerado por orçamento'],
+    teamSize:    0,
+  );
+
+  // ── 3. Batch: cria projeto ────────────────────────────────────────────────
+  batch.set(projectRef, {
+    ...project.toMap(),
+    // Rastreabilidade: qual orçamento originou este projeto
+    'sourceBudgetId': budget.id,
+    'createdAt':      Timestamp.fromDate(now),
+    'updatedAt':      Timestamp.fromDate(now),
+  });
+
+  // ── 4. Batch: atualiza orçamento → approved + projectId ──────────────────
+  final budgetRef = db.collection(_collectionName).doc(budget.id);
+  batch.update(budgetRef, {
+    'status':    BudgetStatus.approved.index,
+    'projectId': projectRef.id,
+  });
+
+  await batch.commit();
+
+  return projectRef.id;
+}
+
+/// Rejeita um orçamento (sem efeitos colaterais).
+Future<void> rejectBudget(String budgetId) async {
+  await _firestore.collection(_collectionName).doc(budgetId).update({
+    'status': BudgetStatus.rejected.index,
+  });
+}
 }

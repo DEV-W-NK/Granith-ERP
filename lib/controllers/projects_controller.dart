@@ -599,7 +599,6 @@ class ProjectsController extends ChangeNotifier {
       // Se ambos têm startDate, ordenar por ela
       return b.startDate.compareTo(a.startDate);
           // Caso contrário, ordenar por nome
-      return a.name.compareTo(b.name);
     });
 
     _filteredProjects = filtered;

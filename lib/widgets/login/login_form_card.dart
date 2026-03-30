@@ -75,28 +75,97 @@ class _CardContent extends StatelessWidget {
     final controller = context.watch<LoginController>();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Bem-vindo ao Futuro',
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.left,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: AppColors.textPrimary,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Text(
           'Acesse sua central de gestão integrada',
-          textAlign: TextAlign.center,
+          textAlign: TextAlign.left,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
-        const SizedBox(height: 48),
+        const SizedBox(height: 24),
+
+        TextField(
+          onChanged: controller.setEmail,
+          keyboardType: TextInputType.emailAddress,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            labelText: 'E-mail',
+            labelStyle: const TextStyle(color: AppColors.textSecondary),
+            hintText: 'seu@email.com.br',
+            hintStyle: const TextStyle(color: AppColors.textMuted),
+            filled: true,
+            fillColor: AppColors.surfaceDark.withOpacity(0.72),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        TextField(
+          onChanged: controller.setPassword,
+          obscureText: true,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: InputDecoration(
+            labelText: 'Senha',
+            labelStyle: const TextStyle(color: AppColors.textSecondary),
+            hintText: '••••••••',
+            hintStyle: const TextStyle(color: AppColors.textMuted),
+            filled: true,
+            fillColor: AppColors.surfaceDark.withOpacity(0.72),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: controller.isLoading
+                ? null
+                : () async {
+                    final success = await controller.handleEmailPasswordSignIn();
+                    if (success && context.mounted) {
+                      Navigator.pushReplacementNamed(context, '/home');
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentBlue,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              elevation: 2,
+            ),
+            child: controller.isLoading
+                ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(AppColors.primaryDark)))
+                : const Text('Entrar com e-mail', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: Divider(color: AppColors.borderColor)),
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('ou', style: TextStyle(color: AppColors.textSecondary))),
+          Expanded(child: Divider(color: AppColors.borderColor)),
+        ]),
+        const SizedBox(height: 16),
+
         _buildGoogleButton(context, controller),
+
         if (controller.errorMessage != null) ...[
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           _buildErrorBox(context, controller),
         ],
-        const SizedBox(height: 40),
+
+        const SizedBox(height: 20),
         _buildFooter(context),
       ],
     );

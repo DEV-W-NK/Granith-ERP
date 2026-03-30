@@ -11,10 +11,10 @@ import 'package:project_granith/models/user_model.dart';
 /// RESPEITA: SRP (Single Responsibility Principle).
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   late final GoogleSignIn? _googleSignIn;
 
-  AuthService() {
+  AuthService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance {
     _initializeGoogleSignIn();
   }
 

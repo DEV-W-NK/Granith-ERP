@@ -6,8 +6,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/project_model.dart';
 
 class ServiceProjetos {
-  final CollectionReference _projectsRef = FirebaseFirestore.instance
-      .collection('projetos');
+  final FirebaseFirestore _firestore;
+  late final CollectionReference _projectsRef;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -26,7 +26,10 @@ class ServiceProjetos {
   // Timeout mais rigoroso para detecção de duplicatas (5 segundos)
   static const Duration _duplicateDetectionWindow = Duration(seconds: 5);
 
-  ServiceProjetos() {
+  ServiceProjetos({FirebaseFirestore? firestore})
+      : _firestore = firestore ?? FirebaseFirestore.instance {
+    _projectsRef = _firestore.collection('projetos');
+
     // Configurar emulators em modo debug
     if (kDebugMode) {
       try {
@@ -162,7 +165,7 @@ class ServiceProjetos {
       );
 
       // MELHORIA: Usar transação com verificação temporal rigorosa
-      final result = await FirebaseFirestore.instance.runTransaction((
+      final result = await _firestore.runTransaction((
         transaction,
       ) async {
         final now = DateTime.now();
@@ -282,7 +285,7 @@ class ServiceProjetos {
 
       print('🔄 Iniciando atualização do projeto: ${project.id}');
 
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
+      await _firestore.runTransaction((transaction) async {
         // 1. Verificar se o documento existe
         final docRef = _projectsRef.doc(project.id);
         final docSnapshot = await transaction.get(docRef);
@@ -403,7 +406,7 @@ class ServiceProjetos {
 
       print('🔄 Iniciando exclusão do projeto: $projectId');
 
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
+      await _firestore.runTransaction((transaction) async {
         final docRef = _projectsRef.doc(projectId);
         final docSnapshot = await transaction.get(docRef);
 

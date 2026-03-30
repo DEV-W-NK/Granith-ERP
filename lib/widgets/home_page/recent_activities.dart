@@ -1,55 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
-class ActivityItem {
-  final String title;
-  final String description;
-  final String time;
-  final IconData icon;
-  final Color color;
-
-  ActivityItem({
-    required this.title,
-    required this.description,
-    required this.time,
-    required this.icon,
-    required this.color,
-  });
-}
-
 class RecentActivities extends StatelessWidget {
-  const RecentActivities({super.key});
+  final List<ActivityItem> activities;
 
-  static final List<ActivityItem> activities = [
-    ActivityItem(
-      title: 'Projeto Residencial Alpha',
-      description: 'Orçamento aprovado pelo cliente',
-      time: '2h atrás',
-      icon: Icons.check_circle_outline,
-      color: AppColors.accentGreen,
-    ),
-    ActivityItem(
-      title: 'Material de Construção',
-      description: 'Estoque de cimento baixo (15%)',
-      time: '4h atrás',
-      icon: Icons.warning_amber_rounded,
-      color: AppColors.accentRed,
-    ),
-    ActivityItem(
-      title: 'Equipe Bravo',
-      description: 'Iniciou trabalho na obra Beta',
-      time: '6h atrás',
-      icon: Icons.groups_outlined,
-      color: AppColors.accentBlue,
-    ),
-    ActivityItem(
-      title: 'Pagamento Recebido',
-      description: 'R\$ 85.000 - Projeto Gamma',
-      time: '1d atrás',
-      icon: Icons.payments_outlined,
-      color: AppColors.accentGold,
-    ),
-  ];
+  const RecentActivities({super.key, this.activities = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -103,23 +59,29 @@ class RecentActivities extends StatelessWidget {
             ),
           ),
 
-          // Lista de atividades
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: activities.length,
-            padding: const EdgeInsets.only(bottom: 16),
-            separatorBuilder: (context, index) => Divider(
-              color: AppColors.dividerColor.withOpacity(0.5), 
-              height: 1, 
-              indent: 70, 
-              endIndent: 24
+          if (activities.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Center(child: Text("Nenhuma atividade recente.", style: TextStyle(color: AppColors.textSecondary))),
+            )
+          else
+            // Lista de atividades
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: activities.length,
+              padding: const EdgeInsets.only(bottom: 16),
+              separatorBuilder: (context, index) => Divider(
+                color: AppColors.dividerColor.withOpacity(0.5), 
+                height: 1, 
+                indent: 70, 
+                endIndent: 24
+              ),
+              itemBuilder: (context, index) {
+                final activity = activities[index];
+                return _buildActivityItem(activity);
+              },
             ),
-            itemBuilder: (context, index) {
-              final activity = activities[index];
-              return _buildActivityItem(activity);
-            },
-          ),
         ],
       ),
     );
@@ -134,15 +96,13 @@ class RecentActivities extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: activity.color.withOpacity(0.1),
+              color: activity.iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: activity.color.withOpacity(0.2)),
+              border: Border.all(color: activity.iconColor.withOpacity(0.2)),
             ),
-            child: Icon(activity.icon, color: activity.color, size: 20),
+            child: Icon(activity.icon, color: activity.iconColor, size: 20),
           ),
-
           const SizedBox(width: 16),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,7 +131,7 @@ class RecentActivities extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  activity.description,
+                  activity.subtitle,
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 13,

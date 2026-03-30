@@ -1,72 +1,48 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
 class HomeHeader extends StatelessWidget {
-  final AnimationController animationController;
-
-  const HomeHeader({super.key, required this.animationController});
+  const HomeHeader({super.key});
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final dateString = DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(now);
-    // Capitaliza a primeira letra
-    final formattedDate = dateString.replaceFirst(dateString[0], dateString[0].toUpperCase());
+    final weekdays = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    final months   = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    final dateStr  = '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
 
-    final headerAnimation = Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(
-      CurvedAnimation(parent: animationController, curve: const Interval(0.0, 0.4, curve: Curves.easeOut)),
-    );
-
-    final fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: animationController, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
-    );
-
-    return SlideTransition(
-      position: headerAnimation,
-      child: FadeTransition(
-        opacity: fadeAnimation,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  formattedDate,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Olá, Gestor',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.accentGold, width: 2),
-              ),
-              child: const CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.surfaceDark,
-                child: Icon(Icons.person, color: Colors.white),
-              ),
-            ),
-          ],
+    return Row(children: [
+      Container(
+        width: 40, height: 40,
+        decoration: BoxDecoration(
+          color: AppColors.goldDim,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
         ),
+        child: const Icon(Icons.home_rounded, color: AppColors.gold, size: 20),
       ),
-    );
+      const SizedBox(width: 12),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Text('Visão Geral',
+              style: TextStyle(
+                  color: AppColors.tx, fontSize: 17,
+                  fontWeight: FontWeight.w600, letterSpacing: -0.3)),
+          const SizedBox(height: 2),
+          Text('Granith · $dateStr',
+              style: const TextStyle(color: AppColors.tx3, fontSize: 12)),
+        ]),
+      ),
+      Container(
+        width: 36, height: 36,
+        decoration: BoxDecoration(
+          color: AppColors.s2,
+          borderRadius: BorderRadius.circular(9),
+          border: Border.all(color: AppColors.border2),
+        ),
+        child: const Icon(Icons.notifications_none_rounded,
+            color: AppColors.tx2, size: 18),
+      ),
+    ]);
   }
 }

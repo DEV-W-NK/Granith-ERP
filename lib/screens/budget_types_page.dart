@@ -5,6 +5,7 @@ import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_card.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_filters.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_form_dialog.dart';
+import 'package:project_granith/widgets/budget_type/budget_types_header.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -39,7 +40,7 @@ class _BudgetTypesPageView extends StatelessWidget {
             color: AppColors.accentGold,
             child: Column(
               children: [
-                _BudgetTypesHeader(isDesktop: isDesktop),
+                BudgetTypesHeader(isDesktop: isDesktop),
                 if (!controller.isLoading) const _BudgetTypesFilters(),
                 Expanded(child: _BudgetTypesContent(isDesktop: isDesktop)),
               ],

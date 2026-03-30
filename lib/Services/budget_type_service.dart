@@ -2,8 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:project_granith/models/budget_type.dart';
 
 class BudgetTypeService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   final String _collection = 'budget_types';
+
+  BudgetTypeService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Obter referência da coleção
   CollectionReference get _budgetTypesRef => _firestore.collection(_collection);
