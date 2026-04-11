@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class BudgetType {
   final String id;
@@ -30,8 +30,8 @@ class BudgetType {
       description: map['description'] ?? '',
       category: map['category'] ?? '',
       isActive: map['isActive'] ?? true,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
       iconName: map['iconName'],
       color: map['color'],
     );
@@ -43,8 +43,8 @@ class BudgetType {
       'description': description,
       'category': category,
       'isActive': isActive,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': DbValue.toPrimitive(createdAt),
+      'updatedAt': DbValue.toPrimitive(updatedAt),
       'iconName': iconName,
       'color': color,
     };

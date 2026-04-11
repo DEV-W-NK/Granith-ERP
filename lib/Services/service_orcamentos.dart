@@ -1,20 +1,17 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/models/project_model.dart';
 
-
 class ServiceOrcamentos {
-  final FirebaseFirestore _firestore;
   final String _collectionName = 'budgets';
-
-  ServiceOrcamentos({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final String _projectsTable = 'projects';
 
   Future<void> addBudget(Budget budget) async {
     try {
-      await _firestore
-          .collection(_collectionName)
-          .doc(budget.id)
-          .set(budget.toMap());
+      await AppSupabase.client
+          .from(_collectionName)
+          .insert(DbValue.normalizeMap(budget.toMap()));
     } catch (e) {
       throw Exception('Erro ao adicionar orçamento: $e');
     }
@@ -22,10 +19,10 @@ class ServiceOrcamentos {
 
   Future<void> updateBudget(Budget budget) async {
     try {
-      await _firestore
-          .collection(_collectionName)
-          .doc(budget.id)
-          .update(budget.toMap());
+      await AppSupabase.client
+          .from(_collectionName)
+          .update(DbValue.normalizeMap(budget.toMap()))
+          .eq('id', budget.id);
     } catch (e) {
       throw Exception('Erro ao atualizar orçamento: $e');
     }
@@ -33,51 +30,63 @@ class ServiceOrcamentos {
 
   Future<void> deleteBudget(String id) async {
     try {
-      await _firestore.collection(_collectionName).doc(id).delete();
+      await AppSupabase.client.from(_collectionName).delete().eq('id', id);
     } catch (e) {
       throw Exception('Erro ao deletar orçamento: $e');
     }
   }
 
   Stream<List<Budget>> getBudgets() {
-    return _firestore
-        .collection(_collectionName)
-        .orderBy('creationDate', descending: true)
-        .snapshots()
-        .asyncMap((snapshot) async {
-          final budgets =
-              snapshot.docs.map((doc) => Budget.fromMap(doc.data())).toList();
+    return getBudgetsStream();
+  }
 
-          // Verificar e atualizar orçamentos expirados
-          final updatedBudgets = await _checkAndUpdateExpiredBudgetsSync(
-            budgets,
-          );
+  Stream<List<Budget>> getBudgetsStream({String? clientAccountId}) {
+    final stream = clientAccountId != null && clientAccountId.trim().isNotEmpty
+        ? AppSupabase.client
+            .from(_collectionName)
+            .stream(primaryKey: ['id'])
+            .eq('clientAccountId', clientAccountId.trim())
+        : AppSupabase.client
+            .from(_collectionName)
+            .stream(primaryKey: ['id']);
 
-          return updatedBudgets;
+    return stream.order('creationDate', ascending: false).asyncMap((rows) async {
+          final budgets = rows
+              .map((row) => Budget.fromMap(Map<String, dynamic>.from(row)))
+              .toList();
+
+          return _checkAndUpdateExpiredBudgetsSync(budgets);
         });
+  }
+
+  Future<List<Budget>> fetchBudgets({String? clientAccountId}) async {
+    try {
+      var query = AppSupabase.client.from(_collectionName).select();
+      if (clientAccountId != null && clientAccountId.trim().isNotEmpty) {
+        query = query.eq('clientAccountId', clientAccountId.trim());
+      }
+
+      final response = await query.order('creationDate', ascending: false);
+      final budgets = (response as List)
+          .map((row) => Budget.fromMap(Map<String, dynamic>.from(row as Map)))
+          .toList();
+      return _checkAndUpdateExpiredBudgetsSync(budgets);
+    } catch (e) {
+      throw Exception('Erro ao carregar orcamentos: $e');
+    }
   }
 
   Future<Budget> getBudget(String id) async {
     try {
-      final doc = await _firestore.collection(_collectionName).doc(id).get();
-      final budget = Budget.fromMap(doc.data() as Map<String, dynamic>);
+      final doc = await AppSupabase.client
+          .from(_collectionName)
+          .select()
+          .eq('id', id)
+          .single();
+      final budget = Budget.fromMap(Map<String, dynamic>.from(doc));
 
-      // Verificar se este orçamento específico expirou
       if (_shouldMarkAsExpired(budget)) {
-        final expiredBudget = Budget(
-          id: budget.id,
-          clientName: budget.clientName,
-          projectName: budget.projectName,
-          totalValue: budget.totalValue,
-          creationDate: budget.creationDate,
-          expirationDate: budget.expirationDate,
-          status: BudgetStatus.expired,
-          description: budget.description,
-          items: budget.items,
-          projectId: budget.projectId,
-        );
-
-        // Atualizar no banco de dados
+        final expiredBudget = budget.copyWith(status: BudgetStatus.expired);
         await updateBudget(expiredBudget);
         return expiredBudget;
       }
@@ -89,32 +98,26 @@ class ServiceOrcamentos {
   }
 
   Stream<List<Budget>> getBudgetsByStatus(BudgetStatus status) {
-    return _firestore
-        .collection(_collectionName)
-        .where('status', isEqualTo: status.index)
-        .orderBy('creationDate', descending: true)
-        .snapshots()
-        .asyncMap((snapshot) async {
-          final budgets =
-              snapshot.docs.map((doc) => Budget.fromMap(doc.data())).toList();
+    return AppSupabase.client
+        .from(_collectionName)
+        .stream(primaryKey: ['id'])
+        .eq('status', status.index)
+        .order('creationDate', ascending: false)
+        .asyncMap((rows) async {
+          final budgets = rows
+              .map((row) => Budget.fromMap(Map<String, dynamic>.from(row)))
+              .toList();
 
-          // Verificar e atualizar orçamentos expirados
-          final updatedBudgets = await _checkAndUpdateExpiredBudgetsSync(
-            budgets,
-          );
-
-          return updatedBudgets;
+          return _checkAndUpdateExpiredBudgetsSync(budgets);
         });
   }
 
-  /// Verifica se um orçamento deve ser marcado como expirado
   bool _shouldMarkAsExpired(Budget budget) {
     return budget.expirationDate != null &&
         DateTime.now().isAfter(budget.expirationDate!) &&
         budget.status == BudgetStatus.pending;
   }
 
-  /// Versão síncrona que aguarda a atualização antes de retornar
   Future<List<Budget>> _checkAndUpdateExpiredBudgetsSync(
     List<Budget> budgets,
   ) async {
@@ -122,30 +125,13 @@ class ServiceOrcamentos {
 
     for (final budget in budgets) {
       if (_shouldMarkAsExpired(budget)) {
-        print(
-          '🔄 Atualizando orçamento expirado: ${budget.id} - Cliente: ${budget.clientName}',
-        );
-
-        final expiredBudget = Budget(
-          id: budget.id,
-          clientName: budget.clientName,
-          projectName: budget.projectName,
-          totalValue: budget.totalValue,
-          creationDate: budget.creationDate,
-          expirationDate: budget.expirationDate,
-          status: BudgetStatus.expired,
-          description: budget.description,
-          items: budget.items,
-          projectId: budget.projectId,
-        );
+        final expiredBudget = budget.copyWith(status: BudgetStatus.expired);
 
         try {
           await updateBudget(expiredBudget);
           updatedBudgets.add(expiredBudget);
-          print('✅ Orçamento ${budget.id} atualizado para expirado');
-        } catch (e) {
-          print('❌ Erro ao atualizar orçamento expirado ${budget.id}: $e');
-          updatedBudgets.add(budget); // Manter original em caso de erro
+        } catch (_) {
+          updatedBudgets.add(budget);
         }
       } else {
         updatedBudgets.add(budget);
@@ -155,44 +141,28 @@ class ServiceOrcamentos {
     return updatedBudgets;
   }
 
-  /// Verifica e atualiza orçamentos expirados automaticamente (versão assíncrona)
   Future<void> _checkAndUpdateExpiredBudgets(List<Budget> budgets) async {
     final expiredBudgets = budgets.where(_shouldMarkAsExpired).toList();
 
     for (final budget in expiredBudgets) {
-      final expiredBudget = Budget(
-        id: budget.id,
-        clientName: budget.clientName,
-        projectName: budget.projectName,
-        totalValue: budget.totalValue,
-        creationDate: budget.creationDate,
-        expirationDate: budget.expirationDate,
-        status: BudgetStatus.expired,
-        description: budget.description,
-        items: budget.items,
-        projectId: budget.projectId,
-      );
-
       try {
-        await updateBudget(expiredBudget);
-      } catch (e) {
-        print('Erro ao atualizar orçamento expirado ${budget.id}: $e');
+        await updateBudget(budget.copyWith(status: BudgetStatus.expired));
+      } catch (_) {
+        // Mantém o fluxo mesmo se um item falhar.
       }
     }
   }
 
-  /// Método para verificar manualmente orçamentos expirados
-  /// Pode ser chamado periodicamente ou em momentos específicos
   Future<void> checkExpiredBudgets() async {
     try {
-      final querySnapshot =
-          await _firestore
-              .collection(_collectionName)
-              .where('status', isEqualTo: BudgetStatus.pending.index)
-              .get();
+      final querySnapshot = await AppSupabase.client
+          .from(_collectionName)
+          .select()
+          .eq('status', BudgetStatus.pending.index);
 
-      final budgets =
-          querySnapshot.docs.map((doc) => Budget.fromMap(doc.data())).toList();
+      final budgets = (querySnapshot as List)
+          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
+          .toList();
 
       await _checkAndUpdateExpiredBudgets(budgets);
     } catch (e) {
@@ -200,7 +170,6 @@ class ServiceOrcamentos {
     }
   }
 
-  /// Busca orçamentos que expiram em X dias
   Future<List<Budget>> getBudgetsExpiringInDays(int days) async {
     try {
       final targetDate = DateTime.now().add(Duration(days: days));
@@ -211,22 +180,15 @@ class ServiceOrcamentos {
       );
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
-      final querySnapshot =
-          await _firestore
-              .collection(_collectionName)
-              .where('status', isEqualTo: BudgetStatus.pending.index)
-              .where(
-                'expirationDate',
-                isGreaterThanOrEqualTo: startOfDay.millisecondsSinceEpoch,
-              )
-              .where(
-                'expirationDate',
-                isLessThan: endOfDay.millisecondsSinceEpoch,
-              )
-              .get();
+      final querySnapshot = await AppSupabase.client
+          .from(_collectionName)
+          .select()
+          .eq('status', BudgetStatus.pending.index)
+          .gte('expirationDate', startOfDay.toUtc().toIso8601String())
+          .lt('expirationDate', endOfDay.toUtc().toIso8601String());
 
-      return querySnapshot.docs
-          .map((doc) => Budget.fromMap(doc.data()))
+      return (querySnapshot as List)
+          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
           .toList();
     } catch (e) {
       throw Exception(
@@ -235,73 +197,37 @@ class ServiceOrcamentos {
     }
   }
 
-  /// Força a verificação e atualização de todos os orçamentos expirados
-  /// Use este método quando precisar garantir que todos os orçamentos estejam atualizados
   Future<void> forceUpdateExpiredBudgets() async {
     try {
-      print('🔍 Iniciando verificação forçada de orçamentos expirados...');
+      final querySnapshot = await AppSupabase.client
+          .from(_collectionName)
+          .select()
+          .eq('status', BudgetStatus.pending.index);
 
-      final querySnapshot =
-          await _firestore
-              .collection(_collectionName)
-              .where('status', isEqualTo: BudgetStatus.pending.index)
-              .get();
+      final budgets = (querySnapshot as List)
+          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
+          .toList();
 
-      final budgets =
-          querySnapshot.docs.map((doc) => Budget.fromMap(doc.data())).toList();
-
-      print(
-        '📊 Encontrados ${budgets.length} orçamentos pendentes para verificação',
-      );
-
-      int updatedCount = 0;
       for (final budget in budgets) {
         if (_shouldMarkAsExpired(budget)) {
-          final expiredBudget = Budget(
-            id: budget.id,
-            clientName: budget.clientName,
-            projectName: budget.projectName,
-            totalValue: budget.totalValue,
-            creationDate: budget.creationDate,
-            expirationDate: budget.expirationDate,
-            status: BudgetStatus.expired,
-            description: budget.description,
-            items: budget.items,
-            projectId: budget.projectId,
-          );
-
-          try {
-            await updateBudget(expiredBudget);
-            updatedCount++;
-            print(
-              '✅ Orçamento ${budget.id} (${budget.clientName}) marcado como expirado',
-            );
-          } catch (e) {
-            print('❌ Erro ao atualizar orçamento ${budget.id}: $e');
-          }
+          await updateBudget(budget.copyWith(status: BudgetStatus.expired));
         }
       }
-
-      print(
-        '🏁 Verificação concluída. $updatedCount orçamentos foram atualizados para expirado',
-      );
     } catch (e) {
-      print('❌ Erro na verificação forçada: $e');
       throw Exception('Erro ao forçar atualização de orçamentos expirados: $e');
     }
   }
 
-  /// Busca estatísticas de orçamentos
   Future<Map<String, int>> getBudgetStats() async {
     try {
-      final querySnapshot = await _firestore.collection(_collectionName).get();
-      final budgets =
-          querySnapshot.docs.map((doc) => Budget.fromMap(doc.data())).toList();
+      final querySnapshot =
+          await AppSupabase.client.from(_collectionName).select();
+      final budgets = (querySnapshot as List)
+          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
+          .toList();
 
-      // Verificar orçamentos expirados primeiro
       await _checkAndUpdateExpiredBudgets(budgets);
 
-      // Contar por status
       final stats = <String, int>{
         'total': budgets.length,
         'pending': 0,
@@ -321,7 +247,6 @@ class ServiceOrcamentos {
         switch (status) {
           case BudgetStatus.pending:
             stats['pending'] = stats['pending']! + 1;
-            // Verificar se expira em 7 dias
             if (budget.expirationDate != null &&
                 budget.expirationDate!.isAfter(now) &&
                 budget.expirationDate!.isBefore(in7Days)) {
@@ -345,78 +270,76 @@ class ServiceOrcamentos {
       throw Exception('Erro ao buscar estatísticas de orçamentos: $e');
     }
   }
-  // ─────────────────────────────────────────────────────────────────────────────
-// PATCH — ServiceOrcamentos
-// Adicione este método dentro da classe ServiceOrcamentos.
-//
-// Dependências necessárias no topo do arquivo (adicione se não existirem):
-//   import 'package:project_granith/models/project_model.dart';
-// ─────────────────────────────────────────────────────────────────────────────
 
-/// Aprova um orçamento e cria o projeto vinculado atomicamente.
-///
-/// Regra #21: orçamento aprovado → projeto criado automaticamente.
-///
-/// O que faz em batch único:
-///   1. Muda budget.status → approved
-///   2. Cria documento em /projects com dados do orçamento
-///   3. Vincula budget.projectId → ID do projeto criado
-///
-/// Retorna o ID do projeto criado.
-Future<String> approveBudget(Budget budget) async {
-  if (budget.status == BudgetStatus.approved && budget.projectId != null) {
-    // Já aprovado e vinculado — retorna o projeto existente sem duplicar.
-    return budget.projectId!;
+  Future<String> approveBudget(Budget budget) async {
+    if (budget.status == BudgetStatus.approved && budget.projectId != null) {
+      return budget.projectId!;
+    }
+
+    final now = DateTime.now();
+    final projectPayload = DbValue.normalizeMap({
+      'name': budget.projectName,
+      'client': budget.clientName,
+      'description': budget.description,
+      'status': ProjectStatus.planning.name,
+      'startDate': now,
+      'endDate': budget.expirationDate,
+      'budget': budget.totalValue,
+      'currentCost': 0,
+      'location': '',
+      'tags': const ['Gerado por orçamento'],
+      'teamSize': 0,
+      'sourceBudgetId': budget.id,
+      'createdAt': now,
+      'created_at': now,
+      'updatedAt': now,
+      'updated_at': now,
+      'projectKey':
+          '${budget.projectName.trim().toLowerCase()}_${budget.clientName.trim().toLowerCase()}',
+      'clientAccountId': budget.clientAccountId,
+      'client_account_id': budget.clientAccountId,
+      'clientAccountName': budget.clientAccountName,
+      'client_account_name': budget.clientAccountName,
+    });
+
+    try {
+      final existingProject = await AppSupabase.client
+          .from(_projectsTable)
+          .select('id')
+          .eq('sourceBudgetId', budget.id)
+          .maybeSingle();
+
+      final String projectId;
+
+      if (existingProject != null) {
+        projectId = existingProject['id'].toString();
+      } else {
+        final projectRow = await AppSupabase.client
+            .from(_projectsTable)
+            .insert(projectPayload)
+            .select('id')
+            .single();
+        projectId = projectRow['id'].toString();
+      }
+
+      await AppSupabase.client.from(_collectionName).update({
+        'status': BudgetStatus.approved.index,
+        'projectId': projectId,
+        'clientAccountId': budget.clientAccountId,
+        'client_account_id': budget.clientAccountId,
+        'clientAccountName': budget.clientAccountName,
+        'client_account_name': budget.clientAccountName,
+      }).eq('id', budget.id);
+
+      return projectId;
+    } catch (e) {
+      throw Exception('Erro ao aprovar orçamento: $e');
+    }
   }
 
-  final db = _firestore;
-  final batch = db.batch();
-
-  // ── 1. Referência do novo projeto (ID gerado pelo Firestore) ──────────────
-  final projectRef = db.collection('projects').doc();
-
-  // ── 2. Monta o Project a partir dos dados do Budget ───────────────────────
-  final now = DateTime.now();
-  final project = Project(
-    id:          projectRef.id,
-    name:        budget.projectName,
-    client:      budget.clientName,
-    description: budget.description,
-    status:      ProjectStatus.planning,   // começa em planejamento
-    startDate:   now,
-    endDate:     budget.expirationDate,    // prazo do orçamento vira prazo do projeto
-    budget:      budget.totalValue,
-    currentCost: 0,
-    location:    '',                        // usuário preenche depois no projeto
-    tags:        ['Gerado por orçamento'],
-    teamSize:    0,
-  );
-
-  // ── 3. Batch: cria projeto ────────────────────────────────────────────────
-  batch.set(projectRef, {
-    ...project.toMap(),
-    // Rastreabilidade: qual orçamento originou este projeto
-    'sourceBudgetId': budget.id,
-    'createdAt':      Timestamp.fromDate(now),
-    'updatedAt':      Timestamp.fromDate(now),
-  });
-
-  // ── 4. Batch: atualiza orçamento → approved + projectId ──────────────────
-  final budgetRef = db.collection(_collectionName).doc(budget.id);
-  batch.update(budgetRef, {
-    'status':    BudgetStatus.approved.index,
-    'projectId': projectRef.id,
-  });
-
-  await batch.commit();
-
-  return projectRef.id;
-}
-
-/// Rejeita um orçamento (sem efeitos colaterais).
-Future<void> rejectBudget(String budgetId) async {
-  await _firestore.collection(_collectionName).doc(budgetId).update({
-    'status': BudgetStatus.rejected.index,
-  });
-}
+  Future<void> rejectBudget(String budgetId) async {
+    await AppSupabase.client.from(_collectionName).update({
+      'status': BudgetStatus.rejected.index,
+    }).eq('id', budgetId);
+  }
 }

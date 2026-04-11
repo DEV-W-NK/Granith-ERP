@@ -1,63 +1,68 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/item_model.dart';
 
 class ItemService {
-  final FirebaseFirestore _firestore;
   final String _collection = 'items';
 
-  ItemService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
-
-  CollectionReference get _itemsRef => _firestore.collection(_collection);
-
-  // Criar Item
   Future<String> addItem(Item item) async {
     try {
-      final docRef = await _itemsRef.add(item.toMap());
-      return docRef.id;
+      final response = await AppSupabase.client
+          .from(_collection)
+          .insert(DbValue.normalizeMap(item.toMap()))
+          .select('id')
+          .single();
+      return response['id'] as String;
     } catch (e) {
       throw Exception('Erro ao adicionar item: $e');
     }
   }
 
-  // Atualizar Item
   Future<void> updateItem(Item item) async {
     try {
-      await _itemsRef.doc(item.id).update(
-        item.copyWith(updatedAt: DateTime.now()).toMap(),
-      );
+      await AppSupabase.client
+          .from(_collection)
+          .update(
+            DbValue.normalizeMap(item.copyWith(updatedAt: DateTime.now()).toMap()),
+          )
+          .eq('id', item.id);
     } catch (e) {
       throw Exception('Erro ao atualizar item: $e');
     }
   }
 
-  // Deletar Item
   Future<void> deleteItem(String id) async {
     try {
-      await _itemsRef.doc(id).delete();
+      await AppSupabase.client.from(_collection).delete().eq('id', id);
     } catch (e) {
       throw Exception('Erro ao deletar item: $e');
     }
   }
 
-  // Stream de Itens (Tempo Real)
   Stream<List<Item>> getItemsStream() {
-    return _itemsRef
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Item.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+    return AppSupabase.client
+        .from(_collection)
+        .stream(primaryKey: ['id'])
+        .order('name')
+        .map((rows) => rows
+            .map((row) => Item.fromMap(
+                  Map<String, dynamic>.from(row),
+                  row['id'] as String,
+                ))
             .toList());
   }
 
-  // Buscar itens por nome (para pesquisa)
   Future<List<Item>> searchItems(String query) async {
-    final snapshot = await _itemsRef
-        .where('name', isGreaterThanOrEqualTo: query)
-        .where('name', isLessThanOrEqualTo: '$query\uf8ff')
-        .get();
-        
-    return snapshot.docs
-        .map((doc) => Item.fromMap(doc.data() as Map<String, dynamic>, doc.id))
+    final response = await AppSupabase.client
+        .from(_collection)
+        .select()
+        .ilike('name', '$query%');
+
+    return (response as List)
+        .map((row) => Item.fromMap(
+              Map<String, dynamic>.from(row as Map),
+              row['id'] as String,
+            ))
         .toList();
   }
 }

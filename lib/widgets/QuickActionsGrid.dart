@@ -56,16 +56,19 @@ class QuickActionsGrid extends StatelessWidget {
         constraints: const BoxConstraints(minHeight: 88),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
         decoration: BoxDecoration(
-          color: AppColors.s2,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border2),
+          gradient: AppColors.cardGradient,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.6)),
+          boxShadow: AppColors.glowShadows(color),
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(9),
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+              border: Border.all(color: color.withValues(alpha: 0.18)),
+              boxShadow: AppColors.auraShadows(color),
             ),
             child: Icon(icon, color: color, size: 18),
           ),
@@ -83,9 +86,9 @@ class QuickActionsGrid extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.s2,
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(color: AppColors.border),
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.55)),
       ),
       child: Row(children: [
         Container(
@@ -93,11 +96,7 @@ class QuickActionsGrid extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.green,
             shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                  color: AppColors.green.withOpacity(0.5),
-                  blurRadius: 4, spreadRadius: 1),
-            ],
+            boxShadow: AppColors.auraShadows(AppColors.green),
           ),
         ),
         const SizedBox(width: 8),

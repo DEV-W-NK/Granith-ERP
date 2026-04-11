@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
+import 'package:project_granith/themes/app_theme.dart';
 
 // =============================================================================
 // GRANIT CARD
@@ -37,9 +38,11 @@ class GranitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final decoration = BoxDecoration(
-      color: backgroundColor ?? GranitTokens.surface1,
+      gradient: AppColors.cardGradient,
+      color: backgroundColor ?? AppColors.surfaceDark.withValues(alpha: 0.76),
       borderRadius: borderRadius ?? GranitTokens.cardRadius,
-      border: customBorder ?? Border.all(color: GranitTokens.border),
+      border: customBorder ?? Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
+      boxShadow: AppColors.glowShadows(),
     );
 
     if (onTap != null) {

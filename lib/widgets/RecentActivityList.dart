@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/AppCard.dart';
-import 'package:project_granith/widgets/home_page/recent_activities.dart';
 
 class RecentActivityList extends StatelessWidget {
   final List<ActivityItem> activities;
@@ -22,9 +21,9 @@ class RecentActivityList extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
             decoration: BoxDecoration(
-              color: AppColors.s2,
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(color: AppColors.border2),
+              gradient: AppColors.cardGradient,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.55)),
             ),
             child: const Text('Ver tudo',
                 style: TextStyle(
@@ -48,8 +47,10 @@ class RecentActivityList extends StatelessWidget {
         Container(
           width: 32, height: 32,
           decoration: BoxDecoration(
-            color: item.iconColor.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(8),
+            color: item.iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: item.iconColor.withValues(alpha: 0.18)),
+            boxShadow: AppColors.auraShadows(item.iconColor),
           ),
           child: Icon(item.icon, color: item.iconColor, size: 15),
         ),

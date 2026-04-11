@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class JobRoleModel {
   final String id;
@@ -32,7 +32,7 @@ class JobRoleModel {
         'hourlyRate':   hourlyRate,
         'requirements': requirements,
         'isActive':     isActive,
-        'createdAt':    Timestamp.fromDate(createdAt),
+        'createdAt':    DbValue.toPrimitive(createdAt),
       };
 
   factory JobRoleModel.fromMap(Map<String, dynamic> map, String docId) =>
@@ -45,7 +45,7 @@ class JobRoleModel {
         hourlyRate:   (map['hourlyRate'] ?? 0.0).toDouble(),
         requirements: List<String>.from(map['requirements'] ?? []),
         isActive:     map['isActive'] ?? true,
-        createdAt:    (map['createdAt'] as Timestamp).toDate(),
+        createdAt:    DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
       );
 
   JobRoleModel copyWith({

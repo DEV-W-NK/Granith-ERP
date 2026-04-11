@@ -140,7 +140,15 @@ class MaterialRequisitionModel {
 
   double get totalQuantity =>
       items.fold(0.0, (s, i) => s + i.quantity);
+  
   int get itemCount => items.length;
+
+  // Helper para exibir resumo rápido de itens
+  String get itemsSummary => items.isEmpty 
+    ? 'Nenhum item' 
+    : items.length == 1 
+      ? items.first.itemName 
+      : '${items.first.itemName} e mais ${items.length - 1}';
 
   Map<String, dynamic> toMap() => {
         'projectId':       projectId,
@@ -209,20 +217,20 @@ class MaterialRequisitionModel {
     DateTime? approvedAt, String? rejectionReason,
     String? purchaseId, DateTime? createdAt,
   }) => MaterialRequisitionModel(
-    id:              id              ?? this.id,
-    projectId:       projectId       ?? this.projectId,
-    projectName:     projectName     ?? this.projectName,
-    requesterName:   requesterName   ?? this.requesterName,
-    requesterId:     requesterId     ?? this.requesterId,
-    requestDate:     requestDate     ?? this.requestDate,
-    status:          status          ?? this.status,
-    items:           items           ?? List.from(this.items),
-    priority:        priority        ?? this.priority,
-    approvedBy:      approvedBy      ?? this.approvedBy,
-    approvedByName:  approvedByName  ?? this.approvedByName,
-    approvedAt:      approvedAt      ?? this.approvedAt,
-    rejectionReason: rejectionReason ?? this.rejectionReason,
-    purchaseId:      purchaseId      ?? this.purchaseId,
-    createdAt:       createdAt       ?? this.createdAt,
+    id:               id               ?? this.id,
+    projectId:        projectId        ?? this.projectId,
+    projectName:      projectName      ?? this.projectName,
+    requesterName:    requesterName    ?? this.requesterName,
+    requesterId:      requesterId      ?? this.requesterId,
+    requestDate:      requestDate      ?? this.requestDate,
+    status:           status           ?? this.status,
+    items:            items            ?? List.from(this.items),
+    priority:         priority         ?? this.priority,
+    approvedBy:       approvedBy       ?? this.approvedBy,
+    approvedByName:   approvedByName   ?? this.approvedByName,
+    approvedAt:       approvedAt       ?? this.approvedAt,
+    rejectionReason:  rejectionReason  ?? this.rejectionReason,
+    purchaseId:       purchaseId       ?? this.purchaseId,
+    createdAt:        createdAt        ?? this.createdAt,
   );
 }

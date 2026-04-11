@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
-import 'package:project_granith/controllers/home_controller.dart';
+import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/widgets/components/GranitCard.dart';
 import 'package:project_granith/widgets/components/GranitSectionHeader.dart';
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/models/budget_type.dart';
 
 class Budget {
@@ -11,11 +12,13 @@ class Budget {
   final BudgetStatus status;
   final String description;
   final List<BudgetItem> items;
-  final String? projectId; // Referência ao projeto relacionado
-  final String? budgetTypeId; // ID do tipo de orçamento
-  final BudgetType? budgetType; // Objeto do tipo de orçamento (não persistido)
+  final String? projectId;
+  final String? budgetTypeId;
+  final BudgetType? budgetType;
+  final String? clientAccountId;
+  final String? clientAccountName;
 
-  Budget({
+  const Budget({
     required this.id,
     required this.clientName,
     required this.projectName,
@@ -28,6 +31,8 @@ class Budget {
     this.projectId,
     this.budgetTypeId,
     this.budgetType,
+    this.clientAccountId,
+    this.clientAccountName,
   });
 
   Map<String, dynamic> toMap() {
@@ -43,31 +48,53 @@ class Budget {
       'items': items.map((item) => item.toMap()).toList(),
       'projectId': projectId,
       'budgetTypeId': budgetTypeId,
+      'clientAccountId': clientAccountId,
+      'client_account_id': clientAccountId,
+      'clientAccountName': clientAccountName,
+      'client_account_name': clientAccountName,
     };
   }
 
   static Budget fromMap(Map<String, dynamic> map) {
+    final creationDateValue = map['creationDate'] ?? map['created_at'];
+    final expirationDateValue = map['expirationDate'];
+
+    DateTime parseDate(dynamic value) {
+      if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      return DbValue.toDateTime(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    DateTime? parseNullableDate(dynamic value) {
+      if (value == null) return null;
+      if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      return DbValue.toDateTime(value);
+    }
+
     return Budget(
-      id: map['id'] ?? '',
-      clientName: map['clientName'] ?? '',
-      projectName: map['projectName'] ?? '',
+      id: (map['id'] ?? '').toString(),
+      clientName: (map['clientName'] ?? '').toString(),
+      projectName: (map['projectName'] ?? '').toString(),
       totalValue: (map['totalValue'] ?? 0.0).toDouble(),
-      creationDate: DateTime.fromMillisecondsSinceEpoch(map['creationDate'] ?? 0),
-      expirationDate: map['expirationDate'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['expirationDate'])
-          : null,
-      status: BudgetStatus.values[map['status'] ?? 0],
-      description: map['description'] ?? '',
+      creationDate: parseDate(creationDateValue),
+      expirationDate: parseNullableDate(expirationDateValue),
+      status: BudgetStatus.values[(map['status'] ?? 0) as int],
+      description: (map['description'] ?? '').toString(),
       items: List<BudgetItem>.from(
         map['items']?.map((item) => BudgetItem.fromMap(item)) ?? [],
       ),
-      projectId: map['projectId'],
-      budgetTypeId: map['budgetTypeId'],
-      // budgetType será carregado separadamente quando necessário
+      projectId: map['projectId']?.toString(),
+      budgetTypeId: map['budgetTypeId']?.toString(),
+      clientAccountId:
+          map['clientAccountId']?.toString() ?? map['client_account_id']?.toString(),
+      clientAccountName: map['clientAccountName']?.toString() ??
+          map['client_account_name']?.toString(),
     );
   }
 
-  // Método copyWith para facilitar atualizações
   Budget copyWith({
     String? id,
     String? clientName,
@@ -81,6 +108,8 @@ class Budget {
     String? projectId,
     String? budgetTypeId,
     BudgetType? budgetType,
+    String? clientAccountId,
+    String? clientAccountName,
   }) {
     return Budget(
       id: id ?? this.id,
@@ -95,6 +124,8 @@ class Budget {
       projectId: projectId ?? this.projectId,
       budgetTypeId: budgetTypeId ?? this.budgetTypeId,
       budgetType: budgetType ?? this.budgetType,
+      clientAccountId: clientAccountId ?? this.clientAccountId,
+      clientAccountName: clientAccountName ?? this.clientAccountName,
     );
   }
 }
@@ -122,7 +153,7 @@ class BudgetItem {
 
   static BudgetItem fromMap(Map<String, dynamic> map) {
     return BudgetItem(
-      description: map['description'] ?? '',
+      description: (map['description'] ?? '').toString(),
       quantity: map['quantity'] ?? 0,
       unitPrice: (map['unitPrice'] ?? 0.0).toDouble(),
     );

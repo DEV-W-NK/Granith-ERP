@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class TeamModel {
   final String id;
@@ -31,8 +31,8 @@ class TeamModel {
       'leaderId': leaderId,
       'projectId': projectId,
       'isActive': isActive,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': DbValue.toPrimitive(createdAt),
+      'updatedAt': DbValue.toPrimitive(updatedAt),
     };
   }
 
@@ -45,8 +45,8 @@ class TeamModel {
       leaderId: map['leaderId'] as String?,
       projectId: map['projectId'] as String?,
       isActive: map['isActive'] ?? true,
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
     );
   }
 

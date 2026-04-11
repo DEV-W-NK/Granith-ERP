@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/models/budget_type.dart';
+import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/services/budget_type_service.dart';
+import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
 // Classe para representar um tipo de orçamento com valor
@@ -63,6 +65,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
 
   // Novo serviço para tipos de orçamento
   final BudgetTypeService _budgetTypeService = BudgetTypeService();
+  final ClientAccountService _clientAccountService = ClientAccountService();
 
   BudgetStatus _selectedStatus = BudgetStatus.pending;
   DateTime _creationDate = DateTime.now();
@@ -74,6 +77,8 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
   final List<BudgetTypeItem> _selectedBudgetTypeItems = [];
   bool _isLoadingBudgetTypes = false;
   double _totalValue = 0.0;
+  List<ClientAccount> _clientAccounts = [];
+  String? _selectedClientAccountId;
 
   final List<int> _expirationDaysOptions = [7, 15, 30, 45, 60, 90];
   int? _selectedExpirationDays = 30;
@@ -154,6 +159,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
 
     // Carregar tipos de orçamento primeiro
     _loadBudgetTypes();
+    _loadClientAccounts();
 
     if (widget.budget != null) {
       _clientController.text = widget.budget!.clientName;
@@ -164,6 +170,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
       _expirationDate = widget.budget!.expirationDate;
       _hasExpirationDate = _expirationDate != null;
       _totalValue = widget.budget!.totalValue;
+      _selectedClientAccountId = widget.budget!.clientAccountId;
 
       // Carregar os tipos de orçamento existentes após carregar os tipos disponíveis
       _loadExistingBudgetTypes();
@@ -180,6 +187,24 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
       _expirationDate = _creationDate.add(
         Duration(days: _selectedExpirationDays!),
       );
+    }
+  }
+
+  Future<void> _loadClientAccounts() async {
+    try {
+      final accounts = await _clientAccountService.getClientAccounts();
+      if (!mounted) return;
+      setState(() {
+        _clientAccounts = accounts;
+        if (_selectedClientAccountId == null &&
+            widget.budget == null &&
+            accounts.length == 1) {
+          _selectedClientAccountId = accounts.first.id;
+          _clientController.text = accounts.first.name;
+        }
+      });
+    } catch (_) {
+      // Mantem o fluxo do formulario.
     }
   }
 
@@ -1370,6 +1395,42 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                               ),
                             ],
                           ),
+                          if (_clientAccounts.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            DropdownButtonFormField<String>(
+                              initialValue: _selectedClientAccountId,
+                              decoration: const InputDecoration(
+                                labelText: 'Conta do cliente no portal',
+                              ),
+                              items: [
+                                const DropdownMenuItem<String>(
+                                  value: '',
+                                  child: Text('Sem vinculo de portal'),
+                                ),
+                                ..._clientAccounts.map(
+                                  (account) => DropdownMenuItem<String>(
+                                    value: account.id,
+                                    child: Text(account.name),
+                                  ),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedClientAccountId =
+                                      value == null || value.isEmpty ? null : value;
+                                  final selected = _clientAccounts
+                                      .cast<ClientAccount?>()
+                                      .firstWhere(
+                                        (account) => account?.id == _selectedClientAccountId,
+                                        orElse: () => null,
+                                      );
+                                  if (selected != null) {
+                                    _clientController.text = selected.name;
+                                  }
+                                });
+                              },
+                            ),
+                          ],
                           const SizedBox(height: 24),
 
                           // Seção de Tipos de Orçamento
@@ -1518,6 +1579,15 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                                     .first
                                                     .budgetType
                                                 : null,
+                                        clientAccountId: _selectedClientAccountId,
+                                        clientAccountName: _clientAccounts
+                                            .cast<ClientAccount?>()
+                                            .firstWhere(
+                                              (account) =>
+                                                  account?.id == _selectedClientAccountId,
+                                              orElse: () => null,
+                                            )
+                                            ?.name,
                                       );
 
                                       widget.onSave(budget);

@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:project_granith/models/client_account_model.dart';
+import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import '../../models/project_model.dart';
@@ -37,11 +39,14 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Uint8List? _webImage;
 
   final ServiceProjetos _service = ServiceProjetos();
+  final ClientAccountService _clientAccountService = ClientAccountService();
 
   ProjectStatus _selectedStatus = ProjectStatus.planning;
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   List<String> _tags = [];
+  List<ClientAccount> _clientAccounts = [];
+  String? _selectedClientAccountId;
 
   // Estados de controle melhorados
   bool _isSaving = false;
@@ -64,6 +69,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     _initializeControllers();
     _initializeProjectData();
     _initializeAnimations();
+    _loadClientAccounts();
   }
 
   void _initializeAnimations() {
@@ -108,6 +114,25 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       _startDate = widget.project!.startDate;
       _endDate = widget.project!.endDate;
       _tags = List.from(widget.project!.tags);
+      _selectedClientAccountId = widget.project!.clientAccountId;
+    }
+  }
+
+  Future<void> _loadClientAccounts() async {
+    try {
+      final accounts = await _clientAccountService.getClientAccounts();
+      if (!mounted) return;
+      setState(() {
+        _clientAccounts = accounts;
+        if (_selectedClientAccountId == null &&
+            widget.project == null &&
+            accounts.length == 1) {
+          _selectedClientAccountId = accounts.first.id;
+          _clientController.text = accounts.first.name;
+        }
+      });
+    } catch (_) {
+      // Mantem o formulario operando mesmo sem a lista.
     }
   }
 
@@ -128,6 +153,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
+    final padding = isDesktop ? 24.0 : 16.0;
 
     return SlideTransition(
       position: _slideAnimation,
@@ -137,10 +163,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.all(isDesktop ? 40 : 16),
         child: Container(
-          width: isDesktop ? 800 : double.infinity,
+          width: isDesktop ? 700 : double.infinity, // Reduzido de 800 para 700 para um layout mais focado
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
-            minHeight: 600,
+            maxHeight: MediaQuery.of(context).size.height * 0.85, // 85% da tela no máximo
+            // Removido minHeight: 600 para não esticar em telas menores
           ),
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -162,11 +188,12 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             ],
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min, // Ocupa apenas o necessário
             children: [
-              _buildEnhancedHeader(),
-              _buildProgressIndicator(),
-              Expanded(child: _buildPageView()),
-              _buildEnhancedActions(),
+              _buildEnhancedHeader(padding),
+              _buildProgressIndicator(padding),
+              Expanded(child: _buildPageView(padding)),
+              _buildEnhancedActions(padding),
             ],
           ),
         ),
@@ -174,9 +201,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildEnhancedHeader() {
+  Widget _buildEnhancedHeader(double padding) {
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.primaryDark, AppColors.primaryDark.withBlue(20)],
@@ -196,10 +223,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.accentGold.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: AppColors.accentGold.withOpacity(0.3),
                 width: 1,
@@ -210,7 +237,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   ? Icons.edit_outlined
                   : Icons.add_business_outlined,
               color: AppColors.accentGold,
-              size: 24,
+              size: 22,
             ),
           ),
           const SizedBox(width: 16),
@@ -222,21 +249,23 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   widget.project != null ? 'Editar Projeto' : 'Novo Projeto',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 24,
+                    fontSize: 20, // Fonte levemente menor para melhor encaixe
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.5,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   widget.project != null
                       ? 'Modifique as informações do projeto'
                       : 'Preencha os dados para criar um novo projeto',
                   style: TextStyle(
                     color: AppColors.textSecondary.withOpacity(0.8),
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w400,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -251,6 +280,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
               tooltip: _isSaving ? 'Aguarde a conclusão' : 'Fechar',
               splashRadius: 20,
+              padding: const EdgeInsets.all(8),
+              constraints: const BoxConstraints(),
             ),
           ),
         ],
@@ -258,9 +289,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildProgressIndicator() {
+  Widget _buildProgressIndicator(double padding) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 12),
       child: Row(
         children: [
           _buildProgressStep(0, 'Básico', Icons.info_outline),
@@ -279,7 +310,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Column(
           children: [
             AnimatedContainer(
@@ -289,7 +320,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 color:
                     isActive
                         ? AppColors.accentGold
-                        : AppColors.textMuted.withOpacity(0.2),
+                        : AppColors.textMuted.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
                 boxShadow:
                     isCurrent
@@ -334,39 +365,40 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           color:
               isActive
                   ? AppColors.accentGold
-                  : AppColors.textMuted.withOpacity(0.2),
+                  : AppColors.textMuted.withOpacity(0.15),
           borderRadius: BorderRadius.circular(1),
         ),
       ),
     );
   }
 
-  Widget _buildPageView() {
+  Widget _buildPageView(double padding) {
     return PageView(
       controller: _pageController,
+      physics: const NeverScrollableScrollPhysics(), // Evita swipe indesejado se tiver forms longos
       onPageChanged: (page) {
         setState(() {
           _currentPage = page;
         });
       },
       children: [
-        PageKeepAlive(child: _buildBasicInfoPage()),
-        PageKeepAlive(child: _buildDetailsPage()),
-        PageKeepAlive(child: _buildFinalizePage()),
+        PageKeepAlive(child: _buildBasicInfoPage(padding)),
+        PageKeepAlive(child: _buildDetailsPage(padding)),
+        PageKeepAlive(child: _buildFinalizePage(padding)),
       ],
     );
   }
 
-  Widget _buildBasicInfoPage() {
+  Widget _buildBasicInfoPage(double padding) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(padding),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle('Informações Básicas', Icons.business_outlined),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             _buildEnhancedTextField(
               controller: _nameController,
               label: 'Nome do Projeto',
@@ -374,7 +406,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               icon: Icons.work_outline,
               required: true,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildEnhancedTextField(
               controller: _clientController,
               label: 'Cliente',
@@ -382,6 +414,53 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               icon: Icons.person_outline,
               required: true,
             ),
+            if (_clientAccounts.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                initialValue: _selectedClientAccountId,
+                dropdownColor: AppColors.secondaryDark,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Conta do cliente no portal',
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.secondaryDark.withOpacity(0.7),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accentGold, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                items: [
+                  const DropdownMenuItem<String>(
+                    value: '',
+                    child: Text('Sem vínculo de portal'),
+                  ),
+                  ..._clientAccounts.map(
+                    (account) => DropdownMenuItem<String>(
+                      value: account.id,
+                      child: Text(account.name),
+                    ),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedClientAccountId = value == null || value.isEmpty ? null : value;
+                    final selectedAccount = _clientAccounts.cast<ClientAccount?>().firstWhere(
+                          (account) => account?.id == _selectedClientAccountId,
+                          orElse: () => null,
+                        );
+                    if (selectedAccount != null) {
+                      _clientController.text = selectedAccount.name;
+                    }
+                  });
+                },
+              ),
+            ],
             const SizedBox(height: 20),
             _buildEnhancedImagePicker(),
             const SizedBox(height: 20),
@@ -390,7 +469,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               label: 'Descrição',
               hint: 'Descrição detalhada do projeto',
               icon: Icons.description_outlined,
-              maxLines: 4,
+              maxLines: 3, // Reduzido de 4 para 3 para economizar espaço
             ),
           ],
         ),
@@ -398,27 +477,27 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildDetailsPage() {
+  Widget _buildDetailsPage(double padding) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle('Detalhes do Projeto', Icons.settings_outlined),
-          const SizedBox(height: 24),
-          _buildEnhancedStatusDropdown(),
           const SizedBox(height: 20),
+          _buildEnhancedStatusDropdown(),
+          const SizedBox(height: 16),
           _buildEnhancedTextField(
             controller: _locationController,
             label: 'Localização',
             hint: 'Endereço da obra',
             icon: Icons.location_on_outlined,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _buildEnhancedDateFields(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _buildEnhancedFinancialFields(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           _buildEnhancedTextField(
             controller: _teamSizeController,
             label: 'Tamanho da Equipe',
@@ -431,16 +510,16 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildFinalizePage() {
+  Widget _buildFinalizePage(double padding) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle('Finalização', Icons.check_circle_outline),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           _buildEnhancedTagsSection(),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           _buildProjectSummary(),
         ],
       ),
@@ -451,19 +530,19 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: AppColors.accentGold.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: AppColors.accentGold, size: 20),
+          child: Icon(icon, color: AppColors.accentGold, size: 18),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Text(
           title,
           style: const TextStyle(
             color: AppColors.textPrimary,
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -488,7 +567,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             text: label,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
             children:
@@ -502,7 +581,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     : null,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -521,7 +600,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             enabled: _canInteract(),
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 15,
+              fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
@@ -531,13 +610,14 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 fontWeight: FontWeight.w400,
               ),
               prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 12),
+                padding: const EdgeInsets.only(left: 14, right: 10),
                 child: Icon(
                   icon,
                   color: AppColors.accentGold.withOpacity(0.7),
                   size: 20,
                 ),
               ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 40),
               filled: true,
               fillColor: AppColors.secondaryDark.withOpacity(0.7),
               border: OutlineInputBorder(
@@ -558,7 +638,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   width: 2,
                 ),
               ),
-              contentPadding: const EdgeInsets.all(20),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             ),
             validator:
                 required
@@ -585,14 +665,14 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           'Imagem do Projeto',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
                 color: AppColors.primaryDark.withOpacity(0.2),
@@ -602,17 +682,17 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             child: imageWidget,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: AppColors.accentGold.withOpacity(0.3),
-              width: 1.5,
+              width: 1,
             ),
           ),
           child: Material(
@@ -622,7 +702,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               borderRadius: BorderRadius.circular(10),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
+                  vertical: 10,
                   horizontal: 16,
                 ),
                 child: Row(
@@ -631,7 +711,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     Icon(
                       Icons.photo_camera_outlined,
                       color: AppColors.accentGold.withOpacity(0.8),
-                      size: 20,
+                      size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -639,6 +719,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       style: TextStyle(
                         color: AppColors.accentGold.withOpacity(0.9),
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -652,87 +733,66 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   }
 
   Widget _buildImageWidget() {
+    const double imageHeight = 130.0; // Altura otimizada para o card
+
     if (kIsWeb && _webImage != null) {
       return Image.memory(
         _webImage!,
-        height: 180,
+        height: imageHeight,
         width: double.infinity,
         fit: BoxFit.cover,
       );
     } else if (!kIsWeb && _selectedFile != null) {
       return Image.file(
         _selectedFile!,
-        height: 180,
+        height: imageHeight,
         width: double.infinity,
         fit: BoxFit.cover,
       );
     } else if (widget.project?.imageUrl != null) {
       return Image.network(
         widget.project!.imageUrl!,
-        height: 180,
+        height: imageHeight,
         width: double.infinity,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return Container(
-            height: 180,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.secondaryDark.withOpacity(0.5),
-                  AppColors.primaryDark.withOpacity(0.3),
-                ],
-              ),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.broken_image_outlined,
-                    size: 48,
-                    color: AppColors.textMuted,
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Erro ao carregar imagem',
-                    style: TextStyle(color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return _buildPlaceholderImage(imageHeight, isError: true);
         },
       );
     } else {
-      return Container(
-        height: 180,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.secondaryDark.withOpacity(0.5),
-              AppColors.primaryDark.withOpacity(0.3),
-            ],
-          ),
-        ),
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.add_photo_alternate_outlined,
-                size: 48,
-                color: AppColors.textMuted,
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Adicionar imagem',
-                style: TextStyle(color: AppColors.textMuted),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildPlaceholderImage(imageHeight);
     }
+  }
+
+  Widget _buildPlaceholderImage(double height, {bool isError = false}) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.secondaryDark.withOpacity(0.5),
+            AppColors.primaryDark.withOpacity(0.3),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isError ? Icons.broken_image_outlined : Icons.add_photo_alternate_outlined,
+              size: 36,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isError ? 'Erro ao carregar' : 'Adicionar imagem',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildEnhancedStatusDropdown() {
@@ -743,11 +803,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           'Status do Projeto',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -761,17 +821,18 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           ),
           child: DropdownButtonFormField<ProjectStatus>(
             initialValue: _selectedStatus,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
             dropdownColor: AppColors.secondaryDark,
             decoration: InputDecoration(
               prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 16, right: 12),
+                padding: const EdgeInsets.only(left: 14, right: 10),
                 child: Icon(
                   Icons.flag_outlined,
                   color: AppColors.accentGold.withOpacity(0.7),
                   size: 20,
                 ),
               ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 40),
               filled: true,
               fillColor: AppColors.secondaryDark.withOpacity(0.7),
               border: OutlineInputBorder(
@@ -786,8 +847,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(
-                vertical: 20,
-                horizontal: 20,
+                vertical: 14,
+                horizontal: 16,
               ),
             ),
             items:
@@ -797,8 +858,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     child: Row(
                       children: [
                         Container(
-                          width: 12,
-                          height: 12,
+                          width: 10,
+                          height: 10,
                           decoration: BoxDecoration(
                             color: status.color,
                             shape: BoxShape.circle,
@@ -811,7 +872,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Text(status.displayName),
                       ],
                     ),
@@ -842,7 +903,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             Icons.play_arrow_outlined,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: _buildEnhancedDateField(
             'Data Prevista',
@@ -869,7 +930,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             text: label,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
             children:
@@ -883,7 +944,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     : null,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -902,7 +963,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               onTap: _canInteract() ? () => _selectDate(isRequired) : null,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                 child: Row(
                   children: [
                     Icon(
@@ -910,18 +971,21 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       color: AppColors.accentGold.withOpacity(0.7),
                       size: 20,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      date != null
-                          ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}'
-                          : 'Selecionar data',
-                      style: TextStyle(
-                        color:
-                            date != null
-                                ? AppColors.textPrimary
-                                : AppColors.textMuted,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        date != null
+                            ? '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}'
+                            : 'Selecionar',
+                        style: TextStyle(
+                          color:
+                              date != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textMuted,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -946,7 +1010,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             keyboardType: TextInputType.number,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: _buildEnhancedTextField(
             controller: _currentCostController,
@@ -968,23 +1032,23 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           'Tags do Projeto',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         if (_tags.isNotEmpty) ...[
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.secondaryDark.withOpacity(0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.accentGold.withOpacity(0.2)),
             ),
             child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 6,
+              runSpacing: 6,
               children:
                   _tags.map((tag) {
                     return Container(
@@ -1002,8 +1066,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 10,
+                          vertical: 4,
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1017,7 +1081,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                               ),
                             ),
                             if (_canInteract()) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 4),
                               GestureDetector(
                                 onTap: () {
                                   setState(() {
@@ -1026,7 +1090,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                                 },
                                 child: Icon(
                                   Icons.close_rounded,
-                                  size: 16,
+                                  size: 14,
                                   color: AppColors.accentGold.withOpacity(0.8),
                                 ),
                               ),
@@ -1038,14 +1102,14 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   }).toList(),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
         ],
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: AppColors.accentGold.withOpacity(0.3),
-              width: 1.5,
+              width: 1,
             ),
           ),
           child: Material(
@@ -1055,7 +1119,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               borderRadius: BorderRadius.circular(10),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 12,
+                  vertical: 10,
                   horizontal: 16,
                 ),
                 child: Row(
@@ -1064,7 +1128,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     Icon(
                       Icons.add_rounded,
                       color: AppColors.accentGold.withOpacity(0.8),
-                      size: 20,
+                      size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -1072,6 +1136,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       style: TextStyle(
                         color: AppColors.accentGold.withOpacity(0.9),
                         fontWeight: FontWeight.w600,
+                        fontSize: 13,
                       ),
                     ),
                   ],
@@ -1086,12 +1151,12 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   Widget _buildProjectSummary() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             AppColors.primaryDark.withOpacity(0.3),
-            AppColors.accentGold.withOpacity(0.1),
+            AppColors.accentGold.withOpacity(0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
@@ -1105,20 +1170,20 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               Icon(
                 Icons.summarize_outlined,
                 color: AppColors.accentGold,
-                size: 20,
+                size: 18,
               ),
               const SizedBox(width: 8),
               const Text(
                 'Resumo do Projeto',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildSummaryItem(
             'Nome',
             _nameController.text.isNotEmpty
@@ -1142,17 +1207,17 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   Widget _buildSummaryItem(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
+            width: 75,
             child: Text(
               '$label:',
               style: TextStyle(
                 color: AppColors.textSecondary.withOpacity(0.8),
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1162,7 +1227,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               value,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: 12,
                 fontWeight: FontWeight.w400,
               ),
             ),
@@ -1172,9 +1237,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildEnhancedActions() {
+  Widget _buildEnhancedActions(double padding) {
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -1209,7 +1274,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                         curve: Curves.easeInOut,
                       );
                     },
-                    icon: const Icon(Icons.arrow_back_rounded),
+                    icon: const Icon(Icons.arrow_back_rounded, size: 18),
                     label: const Text('Anterior'),
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
@@ -1228,13 +1293,13 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       curve: Curves.easeInOut,
                     );
                   },
-                  icon: const Icon(Icons.arrow_forward_rounded),
+                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
                   label: const Text('Próximo'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.accentGold,
                     foregroundColor: AppColors.primaryDark,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
+                      horizontal: 20,
                       vertical: 12,
                     ),
                     shape: RoundedRectangleBorder(
@@ -1256,7 +1321,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       curve: Curves.easeInOut,
                     );
                   },
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: const Icon(Icons.arrow_back_rounded, size: 18),
                   label: const Text('Anterior'),
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.textSecondary,
@@ -1273,13 +1338,13 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                                 ? AppColors.textSecondary
                                 : AppColors.textMuted,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
+                          horizontal: 16,
                           vertical: 12,
                         ),
                       ),
                       child: const Text('Cancelar'),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: _canSave() ? _handleSaveWithDebounce : null,
                       icon: _buildSaveButtonContent(),
@@ -1294,7 +1359,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                         disabledBackgroundColor: AppColors.textMuted
                             .withOpacity(0.3),
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
+                          horizontal: 20,
                           vertical: 12,
                         ),
                         shape: RoundedRectangleBorder(
@@ -1315,8 +1380,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Widget _buildSaveButtonContent() {
     if (_isSaving) {
       return const SizedBox(
-        width: 16,
-        height: 16,
+        width: 14,
+        height: 14,
         child: CircularProgressIndicator(
           strokeWidth: 2,
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryDark),
@@ -1554,6 +1619,14 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       tags: List.from(_tags),
       teamSize: _parseInt(_teamSizeController.text),
       imageUrl: imageUrl,
+      clientAccountId: _selectedClientAccountId,
+      clientAccountName: _clientAccounts
+          .cast<ClientAccount?>()
+          .firstWhere(
+            (account) => account?.id == _selectedClientAccountId,
+            orElse: () => null,
+          )
+          ?.name,
     );
   }
 

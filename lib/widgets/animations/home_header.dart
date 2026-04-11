@@ -47,20 +47,17 @@ class HomeHeader extends StatelessWidget {
   Widget _buildAiButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         gradient: LinearGradient(
-          colors: [AppColors.accentGold, AppColors.accentGold.withOpacity(0.7)],
+          colors: [
+            AppColors.accentBlue,
+            AppColors.auraCyan.withValues(alpha: 0.9),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentGold.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
+        boxShadow: AppColors.auraShadows(AppColors.accentBlue),
       ),
       child: IconButton(
-        icon: const Icon(Icons.auto_awesome, color: AppColors.primaryDark),
+        icon: const Icon(Icons.auto_awesome, color: AppColors.textPrimary),
         onPressed: () {
           // Trigger IA Analysis
         },

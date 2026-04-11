@@ -1,113 +1,141 @@
-import 'dart:async';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, kDebugMode, TargetPlatform, debugPrint;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/user_model.dart';
+import 'package:project_granith/services/client_account_service.dart';
 
-/// TIPO: Service
-/// CAMADA: Infrastructure
-/// FUNÇÃO: Lógica de comunicação com a infraestrutura do Firebase.
-/// RESPEITA: SRP (Single Responsibility Principle).
 class AuthService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore;
-  late final GoogleSignIn? _googleSignIn;
+  SupabaseClient get _client => AppSupabase.client;
+  final ClientAccountService _clientAccountService = ClientAccountService();
 
-  AuthService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance {
-    _initializeGoogleSignIn();
-  }
+  User? get currentUser => _client.auth.currentUser;
+  Stream<User?> get authStateChanges =>
+      _client.auth.onAuthStateChange.map((state) => state.session?.user);
 
-  void _initializeGoogleSignIn() {
-    if (!kIsWeb) {
-      _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
-    } else {
-      _googleSignIn = null;
-    }
-  }
-
-  User? get currentUser => _auth.currentUser;
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  /// BUSCA DADOS DO UTILIZADOR (Resolve o erro 'undefined_method')
   Future<UserModel?> fetchUserData(String uid) async {
     try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists && doc.data() != null) {
-        return UserModel.fromMap(doc.data()!, doc.id);
+      final data = await _client.from('users').select().eq('id', uid).maybeSingle();
+
+      if (data == null) {
+        return null;
       }
-      return null;
-    } catch (e) {
-      debugPrint('Erro ao buscar dados do utilizador no Firestore: $e');
+
+      return UserModel.fromMap(Map<String, dynamic>.from(data), uid);
+    } catch (error) {
+      debugPrint('Erro ao buscar dados do utilizador no Supabase: $error');
       return null;
     }
   }
 
-  Future<UserCredential> signInWithGoogle() async {
+  Future<void> signInWithGoogle() async {
     try {
-      UserCredential userCredential;
-
-      if (kIsWeb) {
-        final provider = GoogleAuthProvider();
-        provider.setCustomParameters({'prompt': 'select_account'});
-        userCredential = await _auth.signInWithPopup(provider);
-      } else {
-        final googleUser = await _googleSignIn?.signIn();
-        if (googleUser == null) throw Exception('Login cancelado');
-
-        final googleAuth = await googleUser.authentication;
-        final credential = GoogleAuthProvider.credential(
-          accessToken: googleAuth.accessToken,
-          idToken: googleAuth.idToken,
-        );
-        userCredential = await _auth.signInWithCredential(credential);
-      }
-
-      if (userCredential.user != null) {
-        await _checkAndSetupUser(userCredential.user!);
-      }
-      return userCredential;
-    } catch (e) {
+      await _client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: kIsWeb ? Uri.base.origin : null,
+      );
+    } on AuthException {
       rethrow;
+    } catch (_) {
+      throw const AppAuthException(
+        code: 'google_sign_in_failed',
+        message: 'Nao foi possivel autenticar com Google.',
+      );
     }
+  }
+
+  Future<void> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      final user = response.user;
+      if (user != null) {
+        await _checkAndSetupUser(user);
+      }
+    } on AuthException {
+      rethrow;
+    } catch (_) {
+      throw const AppAuthException(
+        code: 'email_sign_in_failed',
+        message: 'Nao foi possivel entrar com e-mail e senha.',
+      );
+    }
+  }
+
+  Future<void> ensureCurrentUserProfile() async {
+    final user = currentUser;
+    if (user != null) {
+      await _checkAndSetupUser(user);
+    }
+  }
+
+  Future<List<ClientAccount>> getOwnedClientAccounts(String email) {
+    return _clientAccountService.getClientAccountsByOwnerEmail(email);
   }
 
   Future<void> _checkAndSetupUser(User user) async {
-    final userRef = _firestore.collection('users').doc(user.uid);
-    final doc = await userRef.get();
+    final now = DateTime.now().toUtc().toIso8601String();
+    final displayName =
+        user.userMetadata?['full_name']?.toString() ??
+        user.userMetadata?['name']?.toString() ??
+        user.email;
+    final photoUrl = user.userMetadata?['avatar_url']?.toString();
+    final existingProfile = await fetchUserData(user.id);
+    final linkedAccounts = await _clientAccountService.getClientAccountsByOwnerEmail(
+      user.email ?? '',
+    );
+    final primaryClientAccount =
+        linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
 
-    final Map<String, dynamic> userData = {
+    final resolvedRole = existingProfile?.role ??
+        (primaryClientAccount != null ? UserRole.client : UserRole.employee);
+
+    await _client.from('users').upsert({
+      'id': user.id,
       'email': user.email,
-      'displayName': user.displayName,
-      'lastLogin': FieldValue.serverTimestamp(),
-      'photoUrl': user.photoURL,
-    };
-
-    if (doc.exists) {
-      await userRef.update(userData);
-    } else {
-      await userRef.set({
-        ...userData,
-        'createdAt': FieldValue.serverTimestamp(),
-        'status': 'ativo',
-        'permissions': [],
-      });
-    }
+      'displayName': displayName,
+      'display_name': displayName,
+      'photoUrl': photoUrl,
+      'photo_url': photoUrl,
+      'lastLogin': now,
+      'last_login': now,
+      'created_at': now,
+      'updated_at': now,
+      'status': 'ativo',
+      'permissions': existingProfile?.permissions ?? const <String>[],
+      'role': resolvedRole.value,
+      'clientAccountId':
+          existingProfile?.clientAccountId ?? primaryClientAccount?.id,
+      'client_account_id':
+          existingProfile?.clientAccountId ?? primaryClientAccount?.id,
+      'clientAccountName':
+          existingProfile?.clientAccountName ?? primaryClientAccount?.name,
+      'client_account_name':
+          existingProfile?.clientAccountName ?? primaryClientAccount?.name,
+    });
   }
 
   Future<void> signOut() async {
-    await _auth.signOut();
-    if (!kIsWeb && _googleSignIn != null) {
-      await _googleSignIn.signOut();
-    }
+    await _client.auth.signOut();
   }
 }
 
-/// TIPO: Exception Custom
-class AuthException implements Exception {
+class AppAuthException implements Exception {
   final String code;
   final String message;
-  const AuthException({required this.code, required this.message});
+
+  const AppAuthException({
+    required this.code,
+    required this.message,
+  });
+
   @override
   String toString() => message;
 }

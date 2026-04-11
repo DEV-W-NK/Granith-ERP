@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
-/// Componente de Logo com animação de escala.
 class LoginLogo extends StatelessWidget {
   final AnimationController parentController;
 
@@ -21,28 +20,46 @@ class LoginLogo extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.accentGold, width: 2),
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accentBlue.withValues(alpha: 0.95),
+                  AppColors.auraCyan.withValues(alpha: 0.78),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.18),
+                width: 1.4,
+              ),
               boxShadow: [
-                BoxShadow(
-                  color: AppColors.accentGold.withOpacity(0.2),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                )
+                ...AppColors.glowShadows(AppColors.accentBlue),
+                ...AppColors.auraShadows(AppColors.accentBlue),
               ],
             ),
-            child: const Icon(Icons.home_work_outlined, size: 64, color: AppColors.accentGold),
+            child: const Icon(
+              Icons.home_work_outlined,
+              size: 64,
+              color: AppColors.textPrimary,
+            ),
           ),
           const SizedBox(height: 24),
           Text(
             'GRANITH',
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: AppColors.accentGold,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 8,
-            ),
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 8,
+                ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'ERP em modo crepusculo',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.6,
+                ),
           ),
         ],
       ),

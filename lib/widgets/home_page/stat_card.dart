@@ -26,26 +26,20 @@ class StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.borderColor.withOpacity(0.5),
+          color: AppColors.borderColor.withValues(alpha: 0.65),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: AppColors.glowShadows(color),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {},
-          borderRadius: BorderRadius.circular(16),
-          hoverColor: color.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(20),
+          hoverColor: color.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(
@@ -61,12 +55,16 @@ class StatCard extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
+                          colors: [
+                            color.withValues(alpha: 0.20),
+                            color.withValues(alpha: 0.05),
+                          ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: color.withOpacity(0.1)),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: color.withValues(alpha: 0.16)),
+                        boxShadow: AppColors.auraShadows(color),
                       ),
                       child: Icon(icon, color: color, size: 24),
                     ),
@@ -136,9 +134,9 @@ class StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: trendColor.withOpacity(0.1),
+        color: trendColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: trendColor.withOpacity(0.2)),
+        border: Border.all(color: trendColor.withValues(alpha: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 enum EmployeeRole   { funcionario, supervisor, coordenador }
 enum EmployeeStatus { ativo, ferias, afastado, desligado }
@@ -78,15 +78,15 @@ class EmployeeModel {
         'sector':         sector,
         'role':           role.name,
         'status':         status.name,
-        'admissionDate':  Timestamp.fromDate(admissionDate),
-        'dismissalDate':  dismissalDate != null ? Timestamp.fromDate(dismissalDate!) : null,
+        'admissionDate':  DbValue.toPrimitive(admissionDate),
+        'dismissalDate':  dismissalDate != null ? DbValue.toPrimitive(dismissalDate!) : null,
         'cpf':            cpf,
         'ctps':           ctps,
         'baseSalary':     baseSalary,
         'educationLevel': educationLevel,
         'courses':        courses,
-        'createdAt':      Timestamp.fromDate(createdAt),
-        'updatedAt':      Timestamp.fromDate(updatedAt),
+        'createdAt':      DbValue.toPrimitive(createdAt),
+        'updatedAt':      DbValue.toPrimitive(updatedAt),
       };
 
   factory EmployeeModel.fromMap(Map<String, dynamic> map, String docId) =>
@@ -107,16 +107,16 @@ class EmployeeModel {
           (e) => e.name == map['status'],
           orElse: () => EmployeeStatus.ativo,
         ),
-        admissionDate:  (map['admissionDate'] as Timestamp).toDate(),
-        dismissalDate:  (map['dismissalDate'] as Timestamp?)?.toDate(),
+        admissionDate:  DbValue.toDateTime(map['admissionDate']) ?? DateTime.now(),
+        dismissalDate:  DbValue.toDateTime(map['dismissalDate']),
         cpf:            map['cpf'] ?? '',
         ctps:           map['ctps'] ?? '',
         // retrocompatibilidade: aceita 'salary' antigo ou novo 'baseSalary'
         baseSalary:     (map['baseSalary'] ?? map['salary'] ?? 0.0).toDouble(),
         educationLevel: map['educationLevel'] ?? '',
         courses:        map['courses'] ?? '',
-        createdAt:      (map['createdAt'] as Timestamp).toDate(),
-        updatedAt:      (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        createdAt:      DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+        updatedAt:      DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
       );
 
   EmployeeModel copyWith({

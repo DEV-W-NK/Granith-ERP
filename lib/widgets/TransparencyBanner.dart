@@ -11,17 +11,25 @@ class TransparencyBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: AppColors.s1,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gold.withOpacity(0.25)),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accentBlue.withValues(alpha: 0.15),
+              AppColors.surfaceDark.withValues(alpha: 0.88),
+              AppColors.accentGold.withValues(alpha: 0.12),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.3)),
+          boxShadow: AppColors.glowShadows(AppColors.accentBlue),
         ),
         child: Row(children: [
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
               color: AppColors.goldDim,
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+              boxShadow: AppColors.auraShadows(AppColors.accentGold),
             ),
             child: const Icon(Icons.receipt_long_rounded,
                 color: AppColors.gold, size: 18),

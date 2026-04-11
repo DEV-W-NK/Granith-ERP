@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
 import 'package:project_granith/models/project_model.dart';
-import 'package:project_granith/screens/ProjectDetailsPage.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/projects/project_form_dialog.dart';
 import 'package:provider/provider.dart';
+import 'package:project_granith/screens/ProjectDetailsPage.dart';
+
 
 void showProjectDialog(BuildContext context, {Project? project}) {
   final controller = context.read<ProjectsController>();

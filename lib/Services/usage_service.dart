@@ -1,20 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/usage_stats_model.dart';
 
 class UsageService {
-  final FirebaseFirestore _firestore;
-  UsageService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
-
   Future<UsageStatsModel> getCurrentUsage(String tenantId) async {
     try {
       final docId = '${tenantId}_${DateTime.now().month}_${DateTime.now().year}';
-      // Tenta buscar documento real (se existir)
-      // final doc = await _firestore.collection('usage_stats').doc(docId).get();
-      // if (doc.exists && doc.data() != null) {
-      //   return UsageStatsModel.fromMap(doc.data()!);
-      // }
+      final row = await AppSupabase.client
+          .from('usage_stats')
+          .select()
+          .eq('id', docId)
+          .maybeSingle();
 
-      // RETORNA DADOS MOCKADOS (Para você testar a tela agora)
+      if (row != null) {
+        return UsageStatsModel.fromMap(Map<String, dynamic>.from(row));
+      }
+
       await Future.delayed(const Duration(milliseconds: 800));
       return UsageStatsModel(
         tenantId: tenantId,

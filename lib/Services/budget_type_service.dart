@@ -1,156 +1,152 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_type.dart';
 
 class BudgetTypeService {
-  final FirebaseFirestore _firestore;
   final String _collection = 'budget_types';
 
-  BudgetTypeService({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
-
-  // Obter referência da coleção
-  CollectionReference get _budgetTypesRef => _firestore.collection(_collection);
-
-  // Criar novo tipo de orçamento
   Future<String> createBudgetType(BudgetType budgetType) async {
     try {
-      final docRef = await _budgetTypesRef.add(budgetType.toMap());
-      return docRef.id;
+      final response = await AppSupabase.client
+          .from(_collection)
+          .insert(DbValue.normalizeMap(budgetType.toMap()))
+          .select('id')
+          .single();
+      return response['id'] as String;
     } catch (e) {
-      throw Exception('Erro ao criar tipo de orçamento: $e');
+      throw Exception('Erro ao criar tipo de orcamento: $e');
     }
   }
 
-  // Atualizar tipo de orçamento
   Future<void> updateBudgetType(BudgetType budgetType) async {
     try {
-      await _budgetTypesRef.doc(budgetType.id).update(
-        budgetType.copyWith(updatedAt: DateTime.now()).toMap(),
-      );
+      await AppSupabase.client
+          .from(_collection)
+          .update(
+            DbValue.normalizeMap(
+              budgetType.copyWith(updatedAt: DateTime.now()).toMap(),
+            ),
+          )
+          .eq('id', budgetType.id);
     } catch (e) {
-      throw Exception('Erro ao atualizar tipo de orçamento: $e');
+      throw Exception('Erro ao atualizar tipo de orcamento: $e');
     }
   }
 
-  // Deletar tipo de orçamento
   Future<void> deleteBudgetType(String id) async {
     try {
-      await _budgetTypesRef.doc(id).delete();
+      await AppSupabase.client.from(_collection).delete().eq('id', id);
     } catch (e) {
-      throw Exception('Erro ao deletar tipo de orçamento: $e');
+      throw Exception('Erro ao deletar tipo de orcamento: $e');
     }
   }
 
-  // Obter todos os tipos de orçamento
   Future<List<BudgetType>> getBudgetTypes() async {
     try {
-      final querySnapshot = await _budgetTypesRef
-          .orderBy('name')
-          .get();
+      final response =
+          await AppSupabase.client.from(_collection).select().order('name');
 
-      return querySnapshot.docs
-          .map((doc) => BudgetType.fromMap(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
+      return (response as List)
+          .map((row) => BudgetType.fromMap(
+                Map<String, dynamic>.from(row as Map),
+                row['id'] as String,
               ))
           .toList();
     } catch (e) {
-      throw Exception('Erro ao buscar tipos de orçamento: $e');
+      throw Exception('Erro ao buscar tipos de orcamento: $e');
     }
   }
 
-  // Obter tipos de orçamento ativos
   Future<List<BudgetType>> getActiveBudgetTypes() async {
     try {
-      final querySnapshot = await _budgetTypesRef
-          .where('isActive', isEqualTo: true)
-          .orderBy('name')
-          .get();
+      final response = await AppSupabase.client
+          .from(_collection)
+          .select()
+          .eq('isActive', true)
+          .order('name');
 
-      return querySnapshot.docs
-          .map((doc) => BudgetType.fromMap(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
+      return (response as List)
+          .map((row) => BudgetType.fromMap(
+                Map<String, dynamic>.from(row as Map),
+                row['id'] as String,
               ))
           .toList();
     } catch (e) {
-      throw Exception('Erro ao buscar tipos de orçamento ativos: $e');
+      throw Exception('Erro ao buscar tipos de orcamento ativos: $e');
     }
   }
 
-  // Obter tipos de orçamento por categoria
   Future<List<BudgetType>> getBudgetTypesByCategory(String category) async {
     try {
-      final querySnapshot = await _budgetTypesRef
-          .where('category', isEqualTo: category)
-          .where('isActive', isEqualTo: true)
-          .orderBy('name')
-          .get();
+      final response = await AppSupabase.client
+          .from(_collection)
+          .select()
+          .eq('category', category)
+          .eq('isActive', true)
+          .order('name');
 
-      return querySnapshot.docs
-          .map((doc) => BudgetType.fromMap(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
+      return (response as List)
+          .map((row) => BudgetType.fromMap(
+                Map<String, dynamic>.from(row as Map),
+                row['id'] as String,
               ))
           .toList();
     } catch (e) {
-      throw Exception('Erro ao buscar tipos de orçamento por categoria: $e');
+      throw Exception('Erro ao buscar tipos de orcamento por categoria: $e');
     }
   }
 
-  // Obter um tipo de orçamento por ID
   Future<BudgetType?> getBudgetTypeById(String id) async {
     try {
-      final docSnapshot = await _budgetTypesRef.doc(id).get();
-      
-      if (docSnapshot.exists) {
-        return BudgetType.fromMap(
-          docSnapshot.data() as Map<String, dynamic>,
-          docSnapshot.id,
-        );
+      final row = await AppSupabase.client
+          .from(_collection)
+          .select()
+          .eq('id', id)
+          .maybeSingle();
+
+      if (row == null) {
+        return null;
       }
-      return null;
+
+      return BudgetType.fromMap(Map<String, dynamic>.from(row), id);
     } catch (e) {
-      throw Exception('Erro ao buscar tipo de orçamento: $e');
+      throw Exception('Erro ao buscar tipo de orcamento: $e');
     }
   }
 
-  // Stream de tipos de orçamento (para atualizações em tempo real)
   Stream<List<BudgetType>> budgetTypesStream() {
-    return _budgetTypesRef
-        .orderBy('name')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => BudgetType.fromMap(
-                  doc.data() as Map<String, dynamic>,
-                  doc.id,
+    return AppSupabase.client
+        .from(_collection)
+        .stream(primaryKey: ['id'])
+        .order('name')
+        .map((rows) => rows
+            .map((row) => BudgetType.fromMap(
+                  Map<String, dynamic>.from(row),
+                  row['id'] as String,
                 ))
             .toList());
   }
 
-  // Verificar se nome já existe
   Future<bool> budgetTypeNameExists(String name, {String? excludeId}) async {
     try {
-      Query query = _budgetTypesRef.where('name', isEqualTo: name);
-      
-      final querySnapshot = await query.get();
-      
+      final response =
+          await AppSupabase.client.from(_collection).select('id').eq('name', name);
+      final rows = (response as List).cast<Map<String, dynamic>>();
       if (excludeId != null) {
-        return querySnapshot.docs.any((doc) => doc.id != excludeId);
+        return rows.any((row) => row['id'] != excludeId);
       }
-      
-      return querySnapshot.docs.isNotEmpty;
+      return rows.isNotEmpty;
     } catch (e) {
       throw Exception('Erro ao verificar nome: $e');
     }
   }
 
-  // Ativar/Desativar tipo de orçamento
   Future<void> toggleBudgetTypeStatus(String id, bool isActive) async {
     try {
-      await _budgetTypesRef.doc(id).update({
+      await AppSupabase.client.from(_collection).update({
         'isActive': isActive,
-        'updatedAt': Timestamp.fromDate(DateTime.now()),
-      });
+        'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      }).eq('id', id);
     } catch (e) {
       throw Exception('Erro ao alterar status: $e');
     }

@@ -74,4 +74,8 @@ class DailyLogModel {
           (e) => e.name == map['status'], orElse: () => LogStatus.draft),
     );
   }
+
+  factory DailyLogModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    return DailyLogModel.fromMap(doc.data() ?? <String, dynamic>{}, doc.id);
+  }
 }

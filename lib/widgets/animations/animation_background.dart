@@ -1,8 +1,8 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
-/// Widget especializado na renderização do fundo dinâmico.
 class AnimatedBackground extends StatelessWidget {
   final AnimationController controller;
 
@@ -16,16 +16,22 @@ class AnimatedBackground extends StatelessWidget {
         return Stack(
           children: [
             _buildAmbientLight(
-              top: -100 + (50 * controller.value),
-              left: -50,
-              color: AppColors.accentGold.withOpacity(0.05),
-              size: 300,
+              top: -120 + (48 * controller.value),
+              left: -60,
+              color: AppColors.accentBlue.withValues(alpha: 0.12),
+              size: 360,
             ),
             _buildAmbientLight(
-              bottom: -50,
-              right: -100 + (30 * controller.value),
-              color: AppColors.accentGold.withOpacity(0.03),
-              size: 400,
+              top: 120,
+              right: -110 + (24 * controller.value),
+              color: AppColors.auraCyan.withValues(alpha: 0.09),
+              size: 320,
+            ),
+            _buildAmbientLight(
+              bottom: -80,
+              right: -120 + (40 * controller.value),
+              color: AppColors.accentGold.withValues(alpha: 0.08),
+              size: 380,
             ),
           ],
         );
@@ -46,13 +52,14 @@ class AnimatedBackground extends StatelessWidget {
       left: left,
       right: right,
       bottom: bottom,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-          child: Container(color: Colors.transparent),
+      child: IgnorePointer(
+        child: ImageFiltered(
+          imageFilter: ImageFilter.blur(sigmaX: 96, sigmaY: 96),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          ),
         ),
       ),
     );

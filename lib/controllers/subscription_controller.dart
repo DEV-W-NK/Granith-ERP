@@ -21,7 +21,7 @@ class SubscriptionController extends ChangeNotifier {
       final user = _authService.currentUser;
       if (user != null) {
         // Usa o UID como tenantId por enquanto
-        _currentUsage = await _usageService.getCurrentUsage(user.uid);
+        _currentUsage = await _usageService.getCurrentUsage(user.id);
       }
     } catch (e) {
       debugPrint('Erro no controller de assinatura: $e');

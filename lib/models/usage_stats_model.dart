@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class UsageStatsModel {
   final String tenantId;
@@ -69,8 +69,8 @@ class UsageStatsModel {
       totalWrites: map['totalWrites']?.toInt() ?? 0,
       storageUsedMB: (map['storageUsedMB'] ?? 0).toDouble(),
       aiRequests: map['aiRequests']?.toInt() ?? 0,
-      periodStart: (map['periodStart'] as Timestamp).toDate(),
-      periodEnd: (map['periodEnd'] as Timestamp).toDate(),
+      periodStart: DbValue.toDateTime(map['periodStart']) ?? DateTime.now(),
+      periodEnd: DbValue.toDateTime(map['periodEnd']) ?? DateTime.now(),
       dailyOperations: dailyOps,
       peakDayOperations: peakOps,
     );

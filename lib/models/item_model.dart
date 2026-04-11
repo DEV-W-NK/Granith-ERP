@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class Item {
   final String id;
@@ -38,8 +38,8 @@ class Item {
       width: (map['width'] as num?)?.toDouble(),
       height: (map['height'] as num?)?.toDouble(),
       length: (map['length'] as num?)?.toDouble(),
-      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
     );
   }
 
@@ -52,8 +52,8 @@ class Item {
       'width': width,
       'height': height,
       'length': length,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
+      'createdAt': DbValue.toPrimitive(createdAt),
+      'updatedAt': DbValue.toPrimitive(updatedAt),
     };
   }
 
