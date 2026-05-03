@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/controllers/logincontroller.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/animations/animation_background.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/GranitCard.dart';
 import 'package:project_granith/widgets/components/login_logo.dart';
 import 'package:project_granith/widgets/login/login_form_card.dart';
@@ -79,83 +80,100 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       children: [
         Expanded(
           flex: 5,
-          child: GranitCard(
-            backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.45),
-            padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: AppColors.accentBlue.withValues(alpha: 0.12),
-                    border: Border.all(
-                      color: AppColors.accentBlue.withValues(alpha: 0.24),
+          child: GranithReveal(
+            delay: const Duration(milliseconds: 90),
+            beginOffset: const Offset(-0.05, 0.04),
+            child: GranitCard(
+              backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.45),
+              padding: const EdgeInsets.fromLTRB(40, 48, 40, 48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: AppColors.accentBlue.withValues(alpha: 0.12),
+                      border: Border.all(
+                        color: AppColors.accentBlue.withValues(alpha: 0.24),
+                      ),
+                    ),
+                    child: const Text(
+                      'Granith Command Surface',
+                      style: TextStyle(
+                        color: AppColors.accentBlue,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.7,
+                      ),
                     ),
                   ),
-                  child: const Text(
-                    'Granith Command Surface',
-                    style: TextStyle(
-                      color: AppColors.accentBlue,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.7,
+                  const SizedBox(height: 22),
+                  Text(
+                    'Controle a operacao em um clima de fim de tarde.',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                          height: 1.08,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Projetos, estoque, compras, financeiro e equipe respirando na mesma camada visual, com leitura rapida e profundidade de interface.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.textSecondary,
+                          height: 1.6,
+                        ),
+                  ),
+                  const SizedBox(height: 32),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 240),
+                    child: _buildFeatureItem(
+                      Icons.stacked_line_chart_rounded,
+                      'Panorama executivo',
+                      'KPIs e custos com hierarquia visual mais cinematografica.',
+                      AppColors.accentBlue,
                     ),
                   ),
-                ),
-                const SizedBox(height: 22),
-                Text(
-                  'Controle a operacao em um clima de fim de tarde.',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        height: 1.08,
-                      ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Projetos, estoque, compras, financeiro e equipe respirando na mesma camada visual, com leitura rapida e profundidade de interface.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.6,
-                      ),
-                ),
-                const SizedBox(height: 32),
-                _buildFeatureItem(
-                  Icons.stacked_line_chart_rounded,
-                  'Panorama executivo',
-                  'KPIs e custos com hierarquia visual mais cinematografica.',
-                  AppColors.accentBlue,
-                ),
-                const SizedBox(height: 16),
-                _buildFeatureItem(
-                  Icons.blur_on_rounded,
-                  'Superficies com aura',
-                  'Cards transluidos, glow suave e contraste focado em leitura.',
-                  AppColors.auraCyan,
-                ),
-                const SizedBox(height: 16),
-                _buildFeatureItem(
-                  Icons.security,
-                  'Acesso seguro',
-                  'Entrada com e-mail e Google preservando o fluxo do produto.',
-                  AppColors.accentGold,
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 320),
+                    child: _buildFeatureItem(
+                      Icons.blur_on_rounded,
+                      'Superficies com aura',
+                      'Cards transluidos, glow suave e contraste focado em leitura.',
+                      AppColors.auraCyan,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 400),
+                    child: _buildFeatureItem(
+                      Icons.security,
+                      'Acesso seguro',
+                      'Entrada com e-mail e Google preservando o fluxo do produto.',
+                      AppColors.accentGold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(width: 48),
         Expanded(
           flex: 4,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              LoginLogo(parentController: _mainController),
-              const SizedBox(height: 40),
-              LoginFormCard(parentController: _mainController),
-            ],
+          child: GranithReveal(
+            delay: const Duration(milliseconds: 160),
+            beginOffset: const Offset(0.05, 0.04),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                LoginLogo(parentController: _mainController),
+                const SizedBox(height: 40),
+                LoginFormCard(parentController: _mainController),
+              ],
+            ),
           ),
         ),
       ],
@@ -166,22 +184,49 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        LoginLogo(parentController: _mainController),
+        GranithReveal(
+          delay: const Duration(milliseconds: 60),
+          child: LoginLogo(parentController: _mainController),
+        ),
         const SizedBox(height: 32),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _buildFeatureBox(Icons.stacked_line_chart_rounded, 'KPIs', AppColors.accentBlue),
+              GranithReveal(
+                delay: const Duration(milliseconds: 160),
+                child: _buildFeatureBox(
+                  Icons.stacked_line_chart_rounded,
+                  'KPIs',
+                  AppColors.accentBlue,
+                ),
+              ),
               const SizedBox(width: 12),
-              _buildFeatureBox(Icons.blur_on_rounded, 'Aura UI', AppColors.auraCyan),
+              GranithReveal(
+                delay: const Duration(milliseconds: 220),
+                child: _buildFeatureBox(
+                  Icons.blur_on_rounded,
+                  'Aura UI',
+                  AppColors.auraCyan,
+                ),
+              ),
               const SizedBox(width: 12),
-              _buildFeatureBox(Icons.security, 'Seguro', AppColors.accentGold),
+              GranithReveal(
+                delay: const Duration(milliseconds: 280),
+                child: _buildFeatureBox(
+                  Icons.security,
+                  'Seguro',
+                  AppColors.accentGold,
+                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 32),
-        LoginFormCard(parentController: _mainController),
+        GranithReveal(
+          delay: const Duration(milliseconds: 340),
+          child: LoginFormCard(parentController: _mainController),
+        ),
       ],
     );
   }
@@ -224,28 +269,30 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   }
 
   Widget _buildFeatureBox(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-        boxShadow: AppColors.auraShadows(color),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+    return GranithPressable(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: AppColors.cardGradient,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+          boxShadow: AppColors.auraShadows(color),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

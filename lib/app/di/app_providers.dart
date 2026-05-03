@@ -7,6 +7,7 @@ import 'package:project_granith/controllers/job_role_controller.dart';
 import 'package:project_granith/controllers/material_requisition_controller.dart';
 import 'package:project_granith/controllers/reports_controller.dart';
 import 'package:project_granith/controllers/subscription_controller.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/controllers/team_controller.dart';
 import 'package:project_granith/features/auth/presentation/viewmodels/auth_view_model.dart';
 import 'package:project_granith/features/auth/presentation/viewmodels/login_view_model.dart';
@@ -25,6 +26,7 @@ class AppProviders extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthViewModel()),
         ChangeNotifierProvider(create: (_) => LoginViewModel()),
+        ChangeNotifierProvider(create: (_) => SystemSettingsViewModel()),
         ChangeNotifierProvider(create: (_) => SubscriptionController()),
         ChangeNotifierProvider(create: (_) => DailyLogController()),
         ChangeNotifierProvider(create: (_) => ProjectsController(ServiceProjetos())),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class MobileDrawer extends StatelessWidget {
   final int selectedIndex;
@@ -13,6 +15,8 @@ class MobileDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SystemSettingsViewModel>().settings;
+
     return Drawer(
       backgroundColor: AppColors.backgroundDark.withValues(alpha: 0.92),
       child: ListView(
@@ -25,14 +29,27 @@ class MobileDrawer extends StatelessWidget {
                 bottom: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.55)),
               ),
             ),
-            child: const Center(
-              child: Text(
-                'GRANITH',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    settings.workspaceName.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    settings.workspaceTagline,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

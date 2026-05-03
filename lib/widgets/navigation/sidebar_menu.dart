@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class SidebarMenu extends StatelessWidget {
   final int selectedIndex;
@@ -13,8 +15,11 @@ class SidebarMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SystemSettingsViewModel>().settings;
+    final isCompact = settings.compactNavigation;
+
     return Container(
-      width: 272,
+      width: isCompact ? 236 : 272,
       margin: const EdgeInsets.fromLTRB(18, 18, 0, 18),
       decoration: BoxDecoration(
         gradient: AppColors.pageSurfaceGradient,
@@ -24,7 +29,7 @@ class SidebarMenu extends StatelessWidget {
       ),
       child: Column(
         children: [
-          _buildLogo(),
+          _buildLogo(settings.workspaceName, settings.workspaceTagline, isCompact),
           Expanded(
             child: ListView(
               padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
@@ -59,10 +64,10 @@ class SidebarMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(String workspaceName, String tagline, bool isCompact) {
     return Container(
       height: 96,
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isCompact ? 18 : 24),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.55)),
@@ -86,22 +91,25 @@ class SidebarMenu extends StatelessWidget {
             child: const Icon(Icons.architecture, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
-          const Column(
+          Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'GRANITH',
+                workspaceName.toUpperCase(),
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 20,
+                  fontSize: isCompact ? 17 : 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 2),
+              const SizedBox(height: 2),
               Text(
-                'ERP Dusk Console',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                tagline,
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: isCompact ? 10 : 11,
+                ),
               ),
             ],
           ),

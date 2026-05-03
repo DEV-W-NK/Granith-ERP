@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
-import 'package:project_granith/controllers/subscription_controller.dart';
-import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/models/usage_stats_model.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/controllers/subscription_controller.dart';
+import 'package:project_granith/models/usage_stats_model.dart';
+import 'package:project_granith/themes/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class SubscriptionDashboard extends StatefulWidget {
   const SubscriptionDashboard({super.key});
@@ -25,196 +27,374 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<SubscriptionController>();
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    
-    // Detecta se é uma tela grande (Desktop/Tablet Horizontal)
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final auth = context.watch<AuthViewModel>();
+    final canSync = auth.isAdminUser ||
+        auth.hasPermission('billing.manage') ||
+        auth.hasPermission('infra.sync_usage') ||
+        auth.hasPermission('settings.manage');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
-        title: const Text('Monitoramento de Recursos'),
+        title: const Text('Uso da Plataforma'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      // LayoutBuilder garante que podemos usar constraints da tela inteira
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return controller.isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppColors.accentGold))
-              : controller.currentUsage == null
-                  ? const Center(child: Text('Nenhum dado disponível', style: TextStyle(color: Colors.white)))
-                  : SingleChildScrollView(
-                      // Garante que o scroll view ocupe pelo menos a altura da tela
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Cabeçalho da Fatura Atual
-                              _buildInvoiceHeader(controller.currentUsage!, currencyFormat),
-                              
-                              const SizedBox(height: 32),
-                              
-                              Text(
-                                'Consumo em Tempo Real',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              
-                              // Gráficos Responsivos (Linha no Desktop, Coluna no Mobile)
-                              _buildDetailedGraphs(controller.currentUsage!, isDesktop),
-
-                              const SizedBox(height: 32),
-
-                              // A Visão de "Valor Agregado"
-                              _buildValueBreakdown(controller.currentUsage!, currencyFormat),
-                            ],
-                          ),
-                        ),
+      body: controller.isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.accentBlue),
+            )
+          : controller.currentUsage == null
+              ? const Center(
+                  child: Text(
+                    'Nenhum dado de uso foi encontrado.',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(
+                        controller.currentUsage!,
+                        canSync: canSync,
+                        controller: controller,
                       ),
-                    );
-        },
+                      const SizedBox(height: 24),
+                      _buildSummaryGrid(controller.currentUsage!),
+                      const SizedBox(height: 24),
+                      _buildUsageTimeline(controller.currentUsage!),
+                      const SizedBox(height: 24),
+                      _buildInterpretationCard(controller.currentUsage!),
+                      if (!controller.currentUsage!.hasSnapshot) ...[
+                        const SizedBox(height: 24),
+                        _buildActivationCard(),
+                      ],
+                    ],
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildHeader(
+    UsageStatsModel usage, {
+    required bool canSync,
+    required SubscriptionController controller,
+  }) {
+    final periodFormat = DateFormat('dd/MM');
+    final periodLabel =
+        '${periodFormat.format(usage.periodStart)} - ${periodFormat.format(usage.periodEnd)}';
+    final status = _statusPresentation(usage);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.accentBlue.withValues(alpha: 0.18),
+            AppColors.surfaceDark.withValues(alpha: 0.86),
+            AppColors.auraCyan.withValues(alpha: 0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: AppColors.accentBlue.withValues(alpha: 0.22),
+        ),
+        boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StatusPill(
+            label: status.label,
+            color: status.color,
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Visao simples do uso do sistema',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Aqui voce acompanha o ritmo de uso, o volume de arquivos e o tamanho da base de dados de forma executiva, sem detalhes tecnicos desnecessarios.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.55,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _InfoPill(
+                icon: Icons.date_range_rounded,
+                label: 'Periodo analisado: $periodLabel',
+              ),
+              _InfoPill(
+                icon: Icons.sync_rounded,
+                label: usage.sourceLabel,
+              ),
+              if (usage.lastSyncedAt != null)
+                _InfoPill(
+                  icon: Icons.schedule_rounded,
+                  label:
+                      'Atualizado em ${DateFormat('dd/MM HH:mm').format(usage.lastSyncedAt!.toLocal())}',
+                ),
+            ],
+          ),
+          if (canSync) ...[
+            const SizedBox(height: 18),
+            ElevatedButton.icon(
+              onPressed: controller.isSyncing
+                  ? null
+                  : () async {
+                      final success = await controller.syncUsageData();
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            controller.feedbackMessage ??
+                                (success
+                                    ? 'Dados atualizados com sucesso.'
+                                    : 'Falha ao atualizar os dados.'),
+                          ),
+                          backgroundColor:
+                              success ? AppColors.accentBlue : AppColors.accentRed,
+                        ),
+                      );
+                    },
+              icon: controller.isSyncing
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.sync_rounded),
+              label: Text(
+                controller.isSyncing ? 'Atualizando...' : 'Atualizar dados',
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
-  // --- GRÁFICOS RESPONSIVOS ---
-
-  Widget _buildDetailedGraphs(UsageStatsModel usage, bool isDesktop) {
-    // Lista dos cards de gráfico
-    final graphs = [
-      _buildGraphCard(
-        title: "Banco de Dados",
-        value: "${(usage.totalReads + usage.totalWrites) ~/ 1000}k",
-        unit: "Operações (Leitura/Escrita)",
-        mockData: [15, 22, 18, 25, 30, 28, 35, 42, 38, 45, 40, 50, 48, 55, 60], 
-        color: Colors.blueAccent,
-        icon: Icons.data_usage,
-        type: _GraphType.line,
-      ),
-      _buildGraphCard(
-        title: "Storage",
-        value: usage.storageUsedMB.toStringAsFixed(0),
-        unit: "MB Utilizados",
-        mockData: [100, 102, 105, 108, 112, 115, 120, 125, 130, 135, 140, 145, 150, 152, 155],
-        color: Colors.orangeAccent,
-        icon: Icons.cloud_upload,
-        type: _GraphType.area,
-      ),
-      _buildGraphCard(
-        title: "Inteligência Artificial",
-        value: usage.aiRequests.toString(),
-        unit: "Análises Realizadas",
-        mockData: [2, 5, 3, 8, 4, 10, 2, 5, 7, 12, 6, 8, 4, 9, 5],
-        color: Colors.purpleAccent,
-        icon: Icons.psychology,
-        type: _GraphType.area,
-      ),
-    ];
-
-    if (isDesktop) {
-      // No Desktop: Exibe lado a lado (ocupa menos altura, preenche a tela)
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(child: graphs[0]),
-          const SizedBox(width: 16),
-          Expanded(child: graphs[1]),
-          const SizedBox(width: 16),
-          Expanded(child: graphs[2]),
-        ],
-      );
-    } else {
-      // No Mobile: Empilha um embaixo do outro (scrolla para baixo)
-      return Column(
-        children: [
-          graphs[0],
-          const SizedBox(height: 16),
-          graphs[1],
-          const SizedBox(height: 16),
-          graphs[2],
-        ],
-      );
-    }
+  Widget _buildSummaryGrid(UsageStatsModel usage) {
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      children: [
+        _MetricCard(
+          title: 'Atividade do sistema',
+          value: _formatCompactNumber(usage.observedOperations),
+          subtitle: 'interacoes registradas no periodo',
+          color: AppColors.accentBlue,
+        ),
+        _MetricCard(
+          title: 'Base de dados',
+          value: '${usage.databaseUsedGB.toStringAsFixed(2)} GB',
+          subtitle: usage.databaseUsedMB > 0
+              ? 'tamanho atual da base'
+              : 'medicao indisponivel no momento',
+          color: AppColors.accentGold,
+        ),
+        _MetricCard(
+          title: 'Arquivos armazenados',
+          value: '${usage.storageUsedGB.toStringAsFixed(2)} GB',
+          subtitle: usage.storageUsedMB > 0
+              ? 'documentos e arquivos do sistema'
+              : 'medicao indisponivel no momento',
+          color: AppColors.auraCyan,
+        ),
+        _MetricCard(
+          title: 'Pico diario',
+          value: _formatCompactNumber(usage.peakDayOperations),
+          subtitle: 'dia mais movimentado do periodo',
+          color: AppColors.accentGreen,
+        ),
+      ],
+    );
   }
 
-  Widget _buildGraphCard({
-    required String title,
-    required String value,
-    required String unit,
-    required List<double> mockData,
-    required Color color,
-    required IconData icon,
-    required _GraphType type,
-  }) {
+  Widget _buildUsageTimeline(UsageStatsModel usage) {
+    final entries = usage.dailyOperations.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
     return Container(
-      height: 180,
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.62),
+        ),
+        boxShadow: AppColors.glowShadows(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Movimento ao longo dos dias',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            usage.hasUsageData
+                ? 'Uma leitura simples da atividade do sistema no periodo analisado.'
+                : 'Ainda nao ha dados suficientes para montar a curva de uso.',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 18),
+          if (entries.isEmpty)
+            const _SectionEmptyCopy(
+              title: 'Sem historico disponivel',
+              message:
+                  'Depois da primeira sincronizacao, esta area passa a mostrar a variacao diaria de uso.',
+            )
+          else ...[
+            SizedBox(
+              height: 180,
+              width: double.infinity,
+              child: CustomPaint(
+                painter: _TimelineChartPainter(
+                  values: entries.map((entry) => entry.value.toDouble()).toList(),
+                  color: AppColors.accentBlue,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: entries.reversed.take(6).map((entry) {
+                return _InfoPill(
+                  icon: Icons.timeline_rounded,
+                  label:
+                      '${_formatDateLabel(entry.key)}: ${_formatCompactNumber(entry.value)}',
+                );
+              }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterpretationCard(UsageStatsModel usage) {
+    final partialMetrics = <String>[];
+    if (usage.databaseUsedMB <= 0) {
+      partialMetrics.add('base de dados');
+    }
+    if (usage.storageUsedMB <= 0) {
+      partialMetrics.add('arquivos');
+    }
+
+    final partialLabel = partialMetrics.isEmpty
+        ? 'Todos os indicadores principais foram carregados.'
+        : 'Os indicadores de ${partialMetrics.join(' e ')} ainda nao estao disponiveis neste ambiente.';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.62),
+        ),
+        boxShadow: AppColors.glowShadows(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Leitura rapida',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            partialLabel,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _ReadingPoint(
+            title: 'Atividade do sistema',
+            body:
+                'Mostra o volume de uso do periodo e ajuda a entender crescimento, picos e sazonalidade.',
+          ),
+          const SizedBox(height: 10),
+          const _ReadingPoint(
+            title: 'Base e arquivos',
+            body:
+                'Ajudam a acompanhar expansao de dados e armazenamento sem precisar abrir o painel tecnico do Supabase.',
+          ),
+          const SizedBox(height: 10),
+          const _ReadingPoint(
+            title: 'Uso pratico',
+            body:
+                'Use este painel como acompanhamento interno. Para faturamento oficial do Supabase, continue considerando o dashboard da propria plataforma.',
           ),
         ],
       ),
-      child: Column(
+    );
+  }
+
+  Widget _buildActivationCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.60),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.accentGold.withValues(alpha: 0.25),
+        ),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header do Card
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: color, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text(unit, style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                    ],
-                  ),
-                ],
-              ),
-              Text(
-                value,
-                style: TextStyle(color: color, fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-            ],
+          Text(
+            'Primeira sincronizacao pendente',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          
-          const Spacer(),
-          
-          // Área do Gráfico Visual
-          SizedBox(
-            height: 80,
-            width: double.infinity,
-            child: CustomPaint(
-              painter: _MockChartPainter(
-                data: mockData,
-                color: color,
-                type: type,
-              ),
+          SizedBox(height: 10),
+          Text(
+            'Assim que os dados forem sincronizados pela primeira vez, este painel passa a exibir atividade, armazenamento e historico de uso automaticamente.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.5,
             ),
           ),
         ],
@@ -222,198 +402,341 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
     );
   }
 
-  // --- WIDGETS ANTIGOS MANTIDOS (Header e Breakdown) ---
-
-  Widget _buildInvoiceHeader(UsageStatsModel usage, NumberFormat format) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.accentGold.withOpacity(0.2), AppColors.surfaceDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accentGold.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Fatura Estimada (Mês Atual)', 
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                  const SizedBox(height: 4),
-                  Text(
-                    format.format(usage.clientBillableAmount),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: const Text('ATIVO', style: TextStyle(color: Colors.green, fontSize: 12, fontWeight: FontWeight.bold)),
-              ),
-            ],
-          ),
-        ],
-      ),
+  _UsageStatusPresentation _statusPresentation(UsageStatsModel usage) {
+    final lower = usage.sourceLabel.toLowerCase();
+    if (!usage.hasSnapshot) {
+      return const _UsageStatusPresentation(
+        label: 'Aguardando sincronizacao',
+        color: AppColors.accentGold,
+      );
+    }
+    if (lower.contains('parciais')) {
+      return const _UsageStatusPresentation(
+        label: 'Dados parciais',
+        color: AppColors.accentGold,
+      );
+    }
+    return const _UsageStatusPresentation(
+      label: 'Dados atualizados',
+      color: AppColors.accentGreen,
     );
   }
 
-  Widget _buildValueBreakdown(UsageStatsModel usage, NumberFormat format) {
+  String _formatDateLabel(String isoDate) {
+    final parsed = DateTime.tryParse(isoDate);
+    if (parsed == null) {
+      return isoDate;
+    }
+    return DateFormat('dd/MM').format(parsed);
+  }
+
+  String _formatCompactNumber(int value) {
+    if (value >= 1000000) {
+      return '${(value / 1000000).toStringAsFixed(1)}M';
+    }
+    if (value >= 1000) {
+      return '${(value / 1000).toStringAsFixed(1)}k';
+    }
+    return value.toString();
+  }
+}
+
+class _UsageStatusPresentation {
+  final String label;
+  final Color color;
+
+  const _UsageStatusPresentation({
+    required this.label,
+    required this.color,
+  });
+}
+
+class _StatusPill extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusPill({
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.3),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: color.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final Color color;
+
+  const _MetricCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 250,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+        boxShadow: AppColors.glowShadows(color),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Composição do Valor', 
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 24),
-          
-          _buildBreakdownRow('Infraestrutura Cloud (Google)', usage.estimatedTechnicalCost, format, Colors.blueGrey),
-          _buildBreakdownRow('Licença de Software & Suporte', usage.grossProfit, format, AppColors.accentGold, isBold: true),
-          
-          const Divider(color: Colors.white24, height: 32),
-          
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Total Estimado', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              Text(
-                format.format(usage.clientBillableAmount),
-                style: const TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-            ],
+          Text(title, style: const TextStyle(color: AppColors.textSecondary)),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBreakdownRow(String label, double value, NumberFormat format, Color color, {bool isBold = false}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 12),
-              Text(label, style: TextStyle(color: Colors.white70, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
-            ],
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+            ),
           ),
-          Text(format.format(value), style: TextStyle(color: Colors.white, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
         ],
       ),
     );
   }
 }
 
-// --- PAINTERS E ENUMS ---
+class _InfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
-enum _GraphType { line, area, bar }
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+  });
 
-class _MockChartPainter extends CustomPainter {
-  final List<double> data;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.textSecondary),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadingPoint extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _ReadingPoint({
+    required this.title,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.only(top: 7),
+          decoration: const BoxDecoration(
+            color: AppColors.accentBlue,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+              children: [
+                TextSpan(
+                  text: '$title: ',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                TextSpan(text: body),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionEmptyCopy extends StatelessWidget {
+  final String title;
+  final String message;
+
+  const _SectionEmptyCopy({
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.58),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.45,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineChartPainter extends CustomPainter {
+  final List<double> values;
   final Color color;
-  final _GraphType type;
 
-  _MockChartPainter({required this.data, required this.color, required this.type});
+  _TimelineChartPainter({
+    required this.values,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    if (values.isEmpty) {
+      return;
+    }
+
+    final linePaint = Paint()
       ..color = color
-      ..strokeWidth = 3.0
+      ..strokeWidth = 3
       ..strokeCap = StrokeCap.round
-      ..style = type == _GraphType.bar ? PaintingStyle.fill : PaintingStyle.stroke;
+      ..style = PaintingStyle.stroke;
 
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
       ..shader = LinearGradient(
-        colors: [color.withOpacity(0.5), color.withOpacity(0.0)],
+        colors: [
+          color.withValues(alpha: 0.30),
+          color.withValues(alpha: 0.00),
+        ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
-    final double widthStep = size.width / (data.length - 1);
-    final double maxVal = data.reduce(math.max);
-    final double minVal = data.reduce(math.min);
-    // Evita divisão por zero se todos os dados forem iguais
-    final double range = (maxVal - minVal) == 0 ? 1 : (maxVal - minVal);
+    final maxValue = values.reduce(math.max);
+    final minValue = values.reduce(math.min);
+    final range = maxValue == minValue ? 1.0 : maxValue - minValue;
+    final step =
+        values.length == 1 ? size.width : size.width / (values.length - 1);
 
-    if (type == _GraphType.bar) {
-      // Desenha Barras
-      final double barWidth = widthStep * 0.6;
-      for (int i = 0; i < data.length; i++) {
-        final double normalized = (data[i] - 0) / (maxVal * 1.2); // * 1.2 para dar respiro no topo
-        final double barHeight = normalized * size.height;
-        final double x = i * widthStep;
-        final double y = size.height - barHeight;
+    final path = Path();
 
-        final r = RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, y, barWidth, barHeight),
-          const Radius.circular(4),
-        );
-        canvas.drawRRect(r, paint);
-      }
-    } else {
-      // Desenha Linha ou Área
-      final path = Path();
-      for (int i = 0; i < data.length; i++) {
-        final double normalized = (data[i] - minVal) / range;
-        final double x = i * widthStep;
-        // Invertemos Y porque 0 é no topo do canvas
-        final double y = size.height - (normalized * size.height * 0.8) - (size.height * 0.1); 
+    for (var i = 0; i < values.length; i++) {
+      final x = i * step;
+      final normalized = (values[i] - minValue) / range;
+      final y =
+          size.height - (normalized * size.height * 0.78) - (size.height * 0.11);
 
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          // Curva suave (Bézier)
-          final double prevX = (i - 1) * widthStep;
-          final double prevNormalized = (data[i - 1] - minVal) / range;
-          final double prevY = size.height - (prevNormalized * size.height * 0.8) - (size.height * 0.1);
-          
-          final double controlX = prevX + (x - prevX) / 2;
-          path.cubicTo(controlX, prevY, controlX, y, x, y);
-        }
-      }
-
-      if (type == _GraphType.area) {
-        // Fecha o caminho para preenchimento
-        final fillPath = Path.from(path);
-        fillPath.lineTo(size.width, size.height);
-        fillPath.lineTo(0, size.height);
-        fillPath.close();
-        canvas.drawPath(fillPath, fillPaint);
-        
-        // Desenha a linha por cima para acabamento
-        canvas.drawPath(path, paint..style = PaintingStyle.stroke);
+      if (i == 0) {
+        path.moveTo(x, y);
       } else {
-        canvas.drawPath(path, paint);
+        final previousX = (i - 1) * step;
+        final previousNormalized = (values[i - 1] - minValue) / range;
+        final previousY = size.height -
+            (previousNormalized * size.height * 0.78) -
+            (size.height * 0.11);
+        final controlX = previousX + (x - previousX) / 2;
+        path.cubicTo(controlX, previousY, controlX, y, x, y);
       }
     }
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(path, linePaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _TimelineChartPainter oldDelegate) {
+    return oldDelegate.values != values || oldDelegate.color != color;
+  }
 }

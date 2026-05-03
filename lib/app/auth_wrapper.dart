@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/screens/client_first_access_page.dart';
 import 'package:project_granith/screens/client_portal_page.dart';
 import 'package:project_granith/screens/login_page.dart';
 import 'package:project_granith/screens/main_layout.dart';
@@ -24,6 +25,10 @@ class AuthWrapper extends StatelessWidget {
 
         if (!auth.isAuthenticated) {
           return const LoginPage();
+        }
+
+        if (auth.requiresClientFirstAccess) {
+          return const ClientFirstAccessPage();
         }
 
         if (auth.isClientUser) {

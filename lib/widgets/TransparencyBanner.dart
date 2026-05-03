@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class TransparencyBanner extends StatelessWidget {
   const TransparencyBanner({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return GranithPressable(
       onTap: () => Navigator.of(context).pushNamed('/subscription'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

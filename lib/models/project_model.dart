@@ -210,28 +210,42 @@ class Project {
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+Map<String, dynamic> toMap() {
+    // 1. Cria o mapa SEM os UUIDs
+    final map = <String, dynamic>{
       'name': name.trim(),
       'client': client.trim(),
       'description': description.trim(),
       'status': status.name,
-      'startDate': startDate,
-      'endDate': endDate,
+      'startDate': startDate.toIso8601String(), 
+      'endDate': endDate?.toIso8601String(),
       'budget': budget,
       'currentCost': currentCost,
       'location': location.trim(),
       'tags': tags.map((tag) => tag.trim()).toList(),
       'teamSize': teamSize,
       'imageUrl': imageUrl,
-      'clientAccountId': clientAccountId,
-      'client_account_id': clientAccountId,
       'clientAccountName': clientAccountName,
       'client_account_name': clientAccountName,
       'projectKey': uniqueKey,
       'contentHash': contentHash,
     };
+
+    // 2. Só injeta o ID se for um UUID válido
+    if (id.trim().isNotEmpty && id.contains('-')) {
+      map['id'] = id;
+    }
+
+    // 3. Trata a conta do cliente (envia null se for vazio para o banco não dar erro)
+    if (clientAccountId != null && clientAccountId!.trim().isNotEmpty) {
+      map['clientAccountId'] = clientAccountId;
+      map['client_account_id'] = clientAccountId;
+    } else {
+      map['clientAccountId'] = null;
+      map['client_account_id'] = null;
+    }
+
+    return map;
   }
 
   @override

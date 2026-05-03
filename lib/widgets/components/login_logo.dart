@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class LoginLogo extends StatelessWidget {
   final AnimationController parentController;
@@ -8,6 +10,7 @@ class LoginLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SystemSettingsViewModel>().settings;
     final scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: parentController,
@@ -46,7 +49,7 @@ class LoginLogo extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'GRANITH',
+            settings.workspaceName.toUpperCase(),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w900,
@@ -55,7 +58,7 @@ class LoginLogo extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'ERP em modo crepusculo',
+            settings.workspaceTagline,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   letterSpacing: 0.6,

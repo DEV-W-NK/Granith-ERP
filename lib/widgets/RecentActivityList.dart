@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/AppCard.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class RecentActivityList extends StatelessWidget {
   final List<ActivityItem> activities;
@@ -41,36 +42,38 @@ class RecentActivityList extends StatelessWidget {
   }
 
   Widget _buildActivityRow(ActivityItem item) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(children: [
-        Container(
-          width: 32, height: 32,
-          decoration: BoxDecoration(
-            color: item.iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: item.iconColor.withValues(alpha: 0.18)),
-            boxShadow: AppColors.auraShadows(item.iconColor),
+    return GranithPressable(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: item.iconColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: item.iconColor.withValues(alpha: 0.18)),
+              boxShadow: AppColors.auraShadows(item.iconColor),
+            ),
+            child: Icon(item.icon, color: item.iconColor, size: 15),
           ),
-          child: Icon(item.icon, color: item.iconColor, size: 15),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(item.title,
-                style: const TextStyle(
-                    color: AppColors.tx, fontSize: 12,
-                    fontWeight: FontWeight.w500)),
-            Text(item.subtitle,
-                style: const TextStyle(color: AppColors.tx3, fontSize: 10)),
-          ]),
-        ),
-        Text(item.value,
-            style: TextStyle(
-                color: item.isPositive ? AppColors.green : AppColors.red,
-                fontSize: 12,
-                fontWeight: FontWeight.w600)),
-      ]),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(item.title,
+                  style: const TextStyle(
+                      color: AppColors.tx, fontSize: 12,
+                      fontWeight: FontWeight.w500)),
+              Text(item.subtitle,
+                  style: const TextStyle(color: AppColors.tx3, fontSize: 10)),
+            ]),
+          ),
+          Text(item.value,
+              style: TextStyle(
+                  color: item.isPositive ? AppColors.green : AppColors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600)),
+        ]),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/AppCard.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class QuickActionsGrid extends StatelessWidget {
   const QuickActionsGrid({super.key});
@@ -50,7 +51,7 @@ class QuickActionsGrid extends StatelessWidget {
     required Color color,
     required String route,
   }) {
-    return GestureDetector(
+    return GranithPressable(
       onTap: () => Navigator.of(context).pushNamed(route),
       child: Container(
         constraints: const BoxConstraints(minHeight: 88),

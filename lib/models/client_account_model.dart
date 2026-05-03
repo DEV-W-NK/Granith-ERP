@@ -1,3 +1,43 @@
+enum ClientPortalAccessStatus {
+  pending,
+  invited,
+  active;
+
+  String get value {
+    switch (this) {
+      case ClientPortalAccessStatus.pending:
+        return 'pending';
+      case ClientPortalAccessStatus.invited:
+        return 'invited';
+      case ClientPortalAccessStatus.active:
+        return 'active';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case ClientPortalAccessStatus.pending:
+        return 'Sem acesso criado';
+      case ClientPortalAccessStatus.invited:
+        return 'Convite enviado';
+      case ClientPortalAccessStatus.active:
+        return 'Acesso ativo';
+    }
+  }
+
+  static ClientPortalAccessStatus fromValue(String? value) {
+    switch (value) {
+      case 'invited':
+        return ClientPortalAccessStatus.invited;
+      case 'active':
+        return ClientPortalAccessStatus.active;
+      case 'pending':
+      default:
+        return ClientPortalAccessStatus.pending;
+    }
+  }
+}
+
 class ClientAccount {
   final String id;
   final String name;
@@ -6,6 +46,10 @@ class ClientAccount {
   final String contactPhone;
   final String status;
   final String notes;
+  final ClientPortalAccessStatus portalAccessStatus;
+  final String? portalAuthUserId;
+  final DateTime? portalInvitedAt;
+  final DateTime? portalLastAccessAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -17,9 +61,15 @@ class ClientAccount {
     required this.contactPhone,
     this.status = 'ativo',
     this.notes = '',
+    this.portalAccessStatus = ClientPortalAccessStatus.pending,
+    this.portalAuthUserId,
+    this.portalInvitedAt,
+    this.portalLastAccessAt,
     this.createdAt,
     this.updatedAt,
   });
+
+  bool get hasPortalAccess => portalAccessStatus != ClientPortalAccessStatus.pending;
 
   factory ClientAccount.empty() {
     return const ClientAccount(
@@ -48,6 +98,19 @@ class ClientAccount {
           (map['contactPhone'] ?? map['contact_phone'] ?? '').toString(),
       status: (map['status'] ?? 'ativo').toString(),
       notes: (map['notes'] ?? '').toString(),
+      portalAccessStatus: ClientPortalAccessStatus.fromValue(
+        map['portalAccessStatus']?.toString() ??
+            map['portal_access_status']?.toString(),
+      ),
+      portalAuthUserId:
+          map['portalAuthUserId']?.toString() ??
+          map['portal_auth_user_id']?.toString(),
+      portalInvitedAt: parseDate(
+        map['portalInvitedAt'] ?? map['portal_invited_at'],
+      ),
+      portalLastAccessAt: parseDate(
+        map['portalLastAccessAt'] ?? map['portal_last_access_at'],
+      ),
       createdAt: parseDate(map['created_at']),
       updatedAt: parseDate(map['updated_at']),
     );
@@ -61,6 +124,10 @@ class ClientAccount {
     String? contactPhone,
     String? status,
     String? notes,
+    ClientPortalAccessStatus? portalAccessStatus,
+    String? portalAuthUserId,
+    DateTime? portalInvitedAt,
+    DateTime? portalLastAccessAt,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -72,23 +139,43 @@ class ClientAccount {
       contactPhone: contactPhone ?? this.contactPhone,
       status: status ?? this.status,
       notes: notes ?? this.notes,
+      portalAccessStatus: portalAccessStatus ?? this.portalAccessStatus,
+      portalAuthUserId: portalAuthUserId ?? this.portalAuthUserId,
+      portalInvitedAt: portalInvitedAt ?? this.portalInvitedAt,
+      portalLastAccessAt: portalLastAccessAt ?? this.portalLastAccessAt,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final normalizedOwnerEmail = ownerEmail.trim().toLowerCase();
+    final normalizedContactEmail = contactEmail.trim().toLowerCase();
+
+    final map = <String, dynamic>{
       'name': name.trim(),
-      'ownerEmail': ownerEmail.trim().toLowerCase(),
-      'owner_email': ownerEmail.trim().toLowerCase(),
-      'contactEmail': contactEmail.trim().toLowerCase(),
-      'contact_email': contactEmail.trim().toLowerCase(),
+      'ownerEmail': normalizedOwnerEmail,
+      'owner_email': normalizedOwnerEmail,
+      'contactEmail': normalizedContactEmail,
+      'contact_email': normalizedContactEmail,
       'contactPhone': contactPhone.trim(),
       'contact_phone': contactPhone.trim(),
       'status': status,
       'notes': notes.trim(),
+      'portalAccessStatus': portalAccessStatus.value,
+      'portal_access_status': portalAccessStatus.value,
+      'portalAuthUserId': portalAuthUserId,
+      'portal_auth_user_id': portalAuthUserId,
+      'portalInvitedAt': portalInvitedAt,
+      'portal_invited_at': portalInvitedAt,
+      'portalLastAccessAt': portalLastAccessAt,
+      'portal_last_access_at': portalLastAccessAt,
     };
+
+    if (id.trim().isNotEmpty) {
+      map['id'] = id;
+    }
+
+    return map;
   }
 }

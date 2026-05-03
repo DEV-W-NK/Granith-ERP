@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:provider/provider.dart';
 
 class HomeHeader extends StatelessWidget {
   final AnimationController animationController;
@@ -8,6 +10,7 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<SystemSettingsViewModel>().settings;
     final fadeAnimation = CurvedAnimation(
       parent: animationController,
       curve: const Interval(0.0, 0.4, curve: Curves.easeIn),
@@ -18,27 +21,28 @@ class HomeHeader extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Olá, Gestor',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.bold,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  settings.dashboardGreetingTitle,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Aqui está o panorama atual das suas obras.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                const SizedBox(height: 4),
+                Text(
+                  settings.dashboardGreetingSubtitle,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          // Botão de IA (Preview do que está por vir)
-          _buildAiButton(context),
+          if (settings.aiAssistantPreviewEnabled) _buildAiButton(context),
         ],
       ),
     );

@@ -1,5 +1,38 @@
 import 'package:flutter/material.dart';
 
+class GranithPageTransitionsBuilder extends PageTransitionsBuilder {
+  const GranithPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+
+    return FadeTransition(
+      opacity: curved,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0.016, 0.028),
+          end: Offset.zero,
+        ).animate(curved),
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.992, end: 1).animate(curved),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
 class AppColors {
   static const Color primaryDark = Color(0xFF09111F);
   static const Color secondaryDark = Color(0xFF101B30);
@@ -119,11 +152,6 @@ class AppColors {
 
 class AppTheme {
   static ThemeData get darkTheme {
-    final base = ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-    );
-
     const colorScheme = ColorScheme.dark(
       primary: AppColors.accentBlue,
       secondary: AppColors.accentGold,
@@ -273,7 +301,15 @@ class AppTheme {
         ),
       ),
     ).copyWith(
-      pageTransitionsTheme: base.pageTransitionsTheme,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: GranithPageTransitionsBuilder(),
+          TargetPlatform.iOS: GranithPageTransitionsBuilder(),
+          TargetPlatform.macOS: GranithPageTransitionsBuilder(),
+          TargetPlatform.windows: GranithPageTransitionsBuilder(),
+          TargetPlatform.linux: GranithPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }

@@ -6,10 +6,7 @@ class ClientAccountService {
   static const String _table = 'client_accounts';
 
   Future<List<ClientAccount>> getClientAccounts() async {
-    final response = await AppSupabase.client
-        .from(_table)
-        .select()
-        .order('name');
+    final response = await AppSupabase.client.from(_table).select().order('name');
 
     return (response as List)
         .map((row) => ClientAccount.fromMap(Map<String, dynamic>.from(row)))
@@ -36,7 +33,7 @@ class ClientAccountService {
     return accounts.first;
   }
 
-  Future<void> saveClientAccount(ClientAccount account) async {
+  Future<ClientAccount> saveClientAccount(ClientAccount account) async {
     final now = DateTime.now().toUtc();
     final payload = DbValue.normalizeMap({
       ...account.toMap(),
@@ -44,11 +41,21 @@ class ClientAccountService {
       'updated_at': now,
     });
 
+    final dynamic response;
     if (account.id.isEmpty) {
-      await AppSupabase.client.from(_table).insert(payload);
-      return;
+      response = await AppSupabase.client
+          .from(_table)
+          .insert(payload)
+          .select()
+          .single();
+    } else {
+      response = await AppSupabase.client
+          .from(_table)
+          .upsert(payload)
+          .select()
+          .single();
     }
 
-    await AppSupabase.client.from(_table).upsert(payload);
+    return ClientAccount.fromMap(Map<String, dynamic>.from(response));
   }
 }

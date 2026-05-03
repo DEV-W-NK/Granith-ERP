@@ -100,6 +100,25 @@ class _CardContent extends StatelessWidget {
               ?.copyWith(color: AppColors.textSecondary, height: 1.45),
         ),
         const SizedBox(height: 24),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark.withValues(alpha: 0.42),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.borderColor.withValues(alpha: 0.45),
+            ),
+          ),
+          child: const Text(
+            'Colaboradores entram com e-mail e senha ou Google. Clientes recebem um link de acesso para entrar direto no portal. Se o link expirar, basta pedir outro abaixo.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
         TextField(
           onChanged: controller.setEmail,
           keyboardType: TextInputType.emailAddress,
@@ -166,9 +185,23 @@ class _CardContent extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _buildGoogleButton(context, controller),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: controller.isLoading
+              ? null
+              : () async {
+                  await controller.handleMagicLinkSignIn();
+                },
+          icon: const Icon(Icons.mark_email_unread_outlined),
+          label: const Text('Receber link de acesso'),
+        ),
         if (controller.errorMessage != null) ...[
           const SizedBox(height: 16),
           _buildErrorBox(context, controller),
+        ],
+        if (controller.infoMessage != null) ...[
+          const SizedBox(height: 16),
+          _buildInfoBox(context, controller),
         ],
         const SizedBox(height: 20),
         _buildFooter(context),
@@ -212,20 +245,27 @@ class _CardContent extends StatelessWidget {
                       valueColor: AlwaysStoppedAnimation(AppColors.primaryDark),
                     ),
                   )
-                : const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.g_mobiledata, size: 32, color: AppColors.primaryDark),
-                      SizedBox(width: 8),
-                      Text(
-                        'Conectar com Google',
-                        style: TextStyle(
+                : const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.g_mobiledata,
+                          size: 32,
                           color: AppColors.primaryDark,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 8),
+                        Text(
+                          'Conectar com Google',
+                          style: TextStyle(
+                            color: AppColors.primaryDark,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
           ),
         ),
@@ -253,6 +293,43 @@ class _CardContent extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.close, size: 16, color: AppColors.accentRed),
+            onPressed: controller.clearError,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBox(BuildContext context, LoginViewModel controller) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.accentBlue.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.mark_email_read_outlined,
+            color: AppColors.accentBlue,
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              controller.infoMessage!,
+              style: const TextStyle(color: AppColors.accentBlue, fontSize: 13),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.close,
+              size: 16,
+              color: AppColors.accentBlue,
+            ),
             onPressed: controller.clearError,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),

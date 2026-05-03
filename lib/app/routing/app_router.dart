@@ -6,7 +6,7 @@ import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/main_layout.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/subscription_page.dart';
-import 'package:project_granith/screens/team_page.dart';
+import 'package:project_granith/screens/system_settings_page.dart';
 
 class AppRouter {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
@@ -19,13 +19,17 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const ClientPortalPage());
       case '/access-management':
         return MaterialPageRoute(builder: (_) => const AccessManagementPage());
+      case '/settings':
+        return MaterialPageRoute(builder: (_) => const SystemSettingsPage());
       case '/reports':
         return MaterialPageRoute(builder: (_) => const ReportsPage());
       case '/nova-receita':
       case '/nova-despesa':
         return MaterialPageRoute(builder: (_) => const FinancialPage());
       case '/clientes':
-        return MaterialPageRoute(builder: (_) => const TeamPage());
+        return MaterialPageRoute(
+          builder: (_) => const AccessManagementPage(initialTabIndex: 1),
+        );
       default:
         return null;
     }

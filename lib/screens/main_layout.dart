@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/screens/access_management_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/HrPage.dart';
@@ -11,12 +12,14 @@ import 'package:project_granith/screens/material_requisition_page.dart';
 import 'package:project_granith/screens/projects_page.dart';
 import 'package:project_granith/screens/purchases_page.dart';
 import 'package:project_granith/screens/reports_page.dart';
+import 'package:project_granith/screens/system_settings_page.dart';
 import 'package:project_granith/screens/suppliers_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/seeder.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:project_granith/widgets/navigation/mobile_drawer.dart';
 import 'package:project_granith/widgets/navigation/sidebar_menu.dart';
+import 'package:provider/provider.dart';
 
 import 'home_page.dart';
 
@@ -45,7 +48,7 @@ class _MainLayoutState extends State<MainLayout> {
     const FinancialPage(),
     const ReportsPage(),
     const AccessManagementPage(),
-    _buildPlaceholderPage('Configuracoes', 'Em breve'),
+    const SystemSettingsPage(),
   ];
 
   final List<String> pageTitles = [
@@ -87,6 +90,8 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
+    final workspaceName =
+        context.watch<SystemSettingsViewModel>().settings.workspaceName;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -135,7 +140,7 @@ class _MainLayoutState extends State<MainLayout> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        pageTitles[selectedIndex],
+                        selectedIndex == 0 ? workspaceName : pageTitles[selectedIndex],
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
@@ -158,16 +163,6 @@ class _MainLayoutState extends State<MainLayout> {
               ),
               body: GranithPageBackground(child: pages[selectedIndex]),
             ),
-    );
-  }
-
-  static Widget _buildPlaceholderPage(String title, String description) {
-    return Center(
-      child: Text(
-        '$title\n$description',
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.white),
-      ),
     );
   }
 

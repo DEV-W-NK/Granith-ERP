@@ -32,6 +32,9 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+supabase_usage.env
+supabase/.env
+supabase/.env.*
 
 # Symbolication related
 app.*.symbols

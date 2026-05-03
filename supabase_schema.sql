@@ -51,7 +51,45 @@ create table if not exists public.client_accounts (
   updated_at timestamptz not null default now()
 );
 
+alter table public.client_accounts
+  add column if not exists "portalAccessStatus" text not null default 'pending';
+alter table public.client_accounts
+  add column if not exists portal_access_status text;
+alter table public.client_accounts
+  add column if not exists "portalAuthUserId" text;
+alter table public.client_accounts
+  add column if not exists portal_auth_user_id text;
+alter table public.client_accounts
+  add column if not exists "portalInvitedAt" timestamptz;
+alter table public.client_accounts
+  add column if not exists portal_invited_at timestamptz;
+alter table public.client_accounts
+  add column if not exists "portalLastAccessAt" timestamptz;
+alter table public.client_accounts
+  add column if not exists portal_last_access_at timestamptz;
+
 create index if not exists idx_client_accounts_owner_email on public.client_accounts ("ownerEmail");
+
+create table if not exists public.system_settings (
+  id text primary key default 'default',
+  workspace_name text not null default 'GRANITH',
+  workspace_tagline text not null default 'ERP Dusk Console',
+  dashboard_greeting_title text not null default 'Ola, Gestor',
+  dashboard_greeting_subtitle text not null default 'Aqui esta o panorama atual das suas obras.',
+  ai_assistant_preview_enabled boolean not null default true,
+  compact_navigation boolean not null default false,
+  support_email text not null default '',
+  support_phone text not null default '',
+  client_portal_welcome_message text not null default 'Acompanhe projetos, propostas e visao executiva relacionados a sua conta.',
+  client_portal_show_budgets boolean not null default true,
+  client_portal_show_budget_values boolean not null default true,
+  client_portal_show_current_costs boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+insert into public.system_settings (id)
+values ('default')
+on conflict (id) do nothing;
 
 create table if not exists public.budget_types (
   id text primary key default gen_random_uuid()::text,
@@ -424,15 +462,66 @@ create table if not exists public.usage_stats (
   "tenantId" text not null,
   "totalReads" integer not null default 0,
   "totalWrites" integer not null default 0,
+  "projectRef" text not null default '',
+  "totalApiRequests" integer not null default 0,
+  "totalRestRequests" integer not null default 0,
+  "totalAuthRequests" integer not null default 0,
+  "totalStorageRequests" integer not null default 0,
+  "totalRealtimeRequests" integer not null default 0,
+  "databaseUsedMB" numeric(14,3) not null default 0,
   "storageUsedMB" numeric(14,3) not null default 0,
   "aiRequests" integer not null default 0,
   "periodStart" timestamptz not null,
   "periodEnd" timestamptz not null,
   "dailyOperations" jsonb not null default '{}'::jsonb,
-  "peakDayOperations" integer not null default 0
+  "peakDayOperations" integer not null default 0,
+  "sourceLabel" text not null default 'Snapshot interno do ERP',
+  "lastSyncedAt" timestamptz
 );
 
 create index if not exists idx_usage_stats_tenant_id on public.usage_stats ("tenantId");
+create index if not exists idx_usage_stats_project_ref on public.usage_stats ("projectRef");
+
+alter table public.usage_stats add column if not exists "projectRef" text not null default '';
+alter table public.usage_stats add column if not exists "totalApiRequests" integer not null default 0;
+alter table public.usage_stats add column if not exists "totalRestRequests" integer not null default 0;
+alter table public.usage_stats add column if not exists "totalAuthRequests" integer not null default 0;
+alter table public.usage_stats add column if not exists "totalStorageRequests" integer not null default 0;
+alter table public.usage_stats add column if not exists "totalRealtimeRequests" integer not null default 0;
+alter table public.usage_stats add column if not exists "databaseUsedMB" numeric(14,3) not null default 0;
+alter table public.usage_stats add column if not exists "sourceLabel" text not null default 'Snapshot interno do ERP';
+alter table public.usage_stats add column if not exists "lastSyncedAt" timestamptz;
+
+create or replace function public.get_database_usage_mb()
+returns double precision
+language sql
+security definer
+set search_path = public
+as $$
+  select round(pg_database_size(current_database())::numeric / 1048576.0, 2)::double precision;
+$$;
+
+revoke all on function public.get_database_usage_mb() from public, anon, authenticated;
+grant execute on function public.get_database_usage_mb() to service_role;
+
+create or replace function public.get_storage_usage_mb()
+returns double precision
+language sql
+security definer
+set search_path = public, storage
+as $$
+  select coalesce(
+    round(
+      sum(coalesce((metadata ->> 'size')::numeric, 0)) / 1048576.0,
+      2
+    )::double precision,
+    0
+  )
+  from storage.objects;
+$$;
+
+revoke all on function public.get_storage_usage_mb() from public, anon, authenticated;
+grant execute on function public.get_storage_usage_mb() to service_role;
 
 create table if not exists public.talent_candidates (
   id text primary key default gen_random_uuid()::text,

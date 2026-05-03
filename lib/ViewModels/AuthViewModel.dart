@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/services/auth_service.dart';
+import 'package:project_granith/services/auth_service_contract.dart';
 
 class AuthViewModel extends ChangeNotifier {
-  final AuthService _service = AuthService();
+  final AuthServiceContract _service;
   StreamSubscription? _subscription;
 
   UserModel? _currentUserModel;
@@ -16,15 +17,40 @@ class AuthViewModel extends ChangeNotifier {
   UserModel? get user => _currentUserModel;
   bool get isInitialized => _isInitialized;
   List<ClientAccount> get ownedClientAccounts => _ownedClientAccounts;
+  ClientAccount? get primaryClientAccount {
+    final preferredId = _currentUserModel?.clientAccountId;
+    if (preferredId != null && preferredId.isNotEmpty) {
+      for (final account in _ownedClientAccounts) {
+        if (account.id == preferredId) {
+          return account;
+        }
+      }
+    }
 
-  AuthViewModel() {
-    _listenToAuthChanges();
+    if (_ownedClientAccounts.isEmpty) {
+      return null;
+    }
+
+    return _ownedClientAccounts.first;
+  }
+
+  AuthViewModel({
+    AuthServiceContract? service,
+    bool bootstrapOnInit = true,
+  }) : _service = service ?? AuthService() {
+    if (bootstrapOnInit) {
+      _listenToAuthChanges();
+      _bootstrapCurrentSession();
+    }
   }
 
   bool get isAuthenticated => _currentUserModel != null;
   bool get isClientUser => _currentUserModel?.isClient ?? false;
   bool get isEmployeeUser => _currentUserModel?.isEmployee ?? false;
   bool get isAdminUser => _currentUserModel?.isAdmin ?? false;
+  bool get requiresClientFirstAccess =>
+      isClientUser &&
+      primaryClientAccount?.portalAccessStatus == ClientPortalAccessStatus.invited;
 
   bool hasPermission(String permission) {
     return _currentUserModel?.permissions.contains(permission) ?? false;
@@ -33,22 +59,35 @@ class AuthViewModel extends ChangeNotifier {
   void _listenToAuthChanges() {
     _subscription?.cancel();
     _subscription = _service.authStateChanges.listen((authUser) async {
-      if (authUser != null) {
-        await _service.ensureCurrentUserProfile();
-        final profile = await _service.fetchUserData(authUser.id);
-        final linkedAccounts =
-            await _service.getOwnedClientAccounts(authUser.email ?? '');
-
-        _ownedClientAccounts = linkedAccounts;
-        _currentUserModel = _resolveUserProfile(profile, authUser.email, linkedAccounts);
-      } else {
-        _currentUserModel = null;
-        _ownedClientAccounts = [];
-      }
-
-      _isInitialized = true;
-      notifyListeners();
+      await _applyAuthUser(authUser);
     });
+  }
+
+  Future<void> _bootstrapCurrentSession() async {
+    final authUser = _service.currentUser;
+    await _applyAuthUser(authUser);
+  }
+
+  Future<void> _applyAuthUser(dynamic authUser) async {
+    if (authUser != null) {
+      await _service.ensureCurrentUserProfile();
+      final profile = await _service.fetchUserData(authUser.id);
+      final linkedAccounts =
+          await _service.getOwnedClientAccounts(authUser.email ?? '');
+
+      _ownedClientAccounts = linkedAccounts;
+      _currentUserModel = _resolveUserProfile(
+        profile,
+        authUser.email,
+        linkedAccounts,
+      );
+    } else {
+      _currentUserModel = null;
+      _ownedClientAccounts = [];
+    }
+
+    _isInitialized = true;
+    notifyListeners();
   }
 
   UserModel _resolveUserProfile(
