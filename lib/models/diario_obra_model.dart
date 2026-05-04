@@ -1,6 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 enum WeatherCondition { sol, nublado, chuvoso, tempestade }
+
 enum LogStatus { draft, finalized, synced }
 
 class DailyLogModel {
@@ -8,19 +9,19 @@ class DailyLogModel {
   final String projectId;
   final String projectName;
   final DateTime date;
-  
+
   // Condições Climáticas
   final WeatherCondition weatherMorning;
   final WeatherCondition weatherAfternoon;
-  
+
   // Mão de Obra e Atividades
   final Map<String, int> manpower;
   final String activitiesDescription;
   final String impediments;
-  
-  // Fotos (URLs do Firebase Storage)
+
+  // Fotos (URLs do Supabase Storage)
   final List<String> photoUrls;
-  
+
   final String createdByUserId;
   final LogStatus status;
 
@@ -43,7 +44,7 @@ class DailyLogModel {
     return {
       'projectId': projectId,
       'projectName': projectName,
-      'date': Timestamp.fromDate(date),
+      'date': DbValue.toPrimitive(date),
       'weatherMorning': weatherMorning.name,
       'weatherAfternoon': weatherAfternoon.name,
       'manpower': manpower,
@@ -60,22 +61,24 @@ class DailyLogModel {
       id: docId,
       projectId: map['projectId'] ?? '',
       projectName: map['projectName'] ?? 'Projeto Desconhecido',
-      date: (map['date'] as Timestamp).toDate(),
+      date: DbValue.toDateTime(map['date']) ?? DateTime.now(),
       weatherMorning: WeatherCondition.values.firstWhere(
-          (e) => e.name == map['weatherMorning'], orElse: () => WeatherCondition.sol),
+        (e) => e.name == map['weatherMorning'],
+        orElse: () => WeatherCondition.sol,
+      ),
       weatherAfternoon: WeatherCondition.values.firstWhere(
-          (e) => e.name == map['weatherAfternoon'], orElse: () => WeatherCondition.sol),
+        (e) => e.name == map['weatherAfternoon'],
+        orElse: () => WeatherCondition.sol,
+      ),
       manpower: Map<String, int>.from(map['manpower'] ?? {}),
       activitiesDescription: map['activitiesDescription'] ?? '',
       impediments: map['impediments'] ?? '',
       photoUrls: List<String>.from(map['photoUrls'] ?? []),
       createdByUserId: map['createdByUserId'] ?? '',
       status: LogStatus.values.firstWhere(
-          (e) => e.name == map['status'], orElse: () => LogStatus.draft),
+        (e) => e.name == map['status'],
+        orElse: () => LogStatus.draft,
+      ),
     );
-  }
-
-  factory DailyLogModel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-    return DailyLogModel.fromMap(doc.data() ?? <String, dynamic>{}, doc.id);
   }
 }

@@ -62,8 +62,14 @@ class _JobRoleHeader extends StatelessWidget {
     return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Cargos e Funções',
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(
+          'Cargos e Funções',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         SizedBox(height: 4),
         Text(
           'Defina a hierarquia e o valor-hora de cada função.',
@@ -84,13 +90,17 @@ class _JobRoleList extends StatelessWidget {
 
     if (controller.roles.isEmpty) {
       return const Center(
-        child: Text('Nenhum cargo cadastrado.', style: TextStyle(color: AppColors.textMuted)),
+        child: Text(
+          'Nenhum cargo cadastrado.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
       );
     }
 
     return ListView.builder(
       itemCount: controller.roles.length,
-      itemBuilder: (_, i) => _JobRoleCard(role: controller.roles[i], fmt: hourlyFormat),
+      itemBuilder:
+          (_, i) => _JobRoleCard(role: controller.roles[i], fmt: hourlyFormat),
     );
   }
 }
@@ -125,24 +135,41 @@ class _JobRoleCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(role.title,
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(
+                        role.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      Text('${role.sector} • ${fmt.format(role.hourlyRate)}/h',
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      Text(
+                        '${role.sector} • ${fmt.format(role.hourlyRate)}/h',
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
                       if (role.requirements.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             role.requirements.join(' · '),
-                            style: TextStyle(color: AppColors.textMuted.withOpacity(0.8), fontSize: 11),
+                            style: TextStyle(
+                              color: AppColors.textMuted.withOpacity(0.8),
+                              fontSize: 11,
+                            ),
                           ),
                         ),
                     ],
                   ),
                 ),
-                const Icon(Icons.edit_outlined, color: AppColors.textMuted, size: 20),
+                const Icon(
+                  Icons.edit_outlined,
+                  color: AppColors.textMuted,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -162,7 +189,11 @@ class _RoleIcon extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.accentGold.withOpacity(0.2)),
       ),
-      child: const Icon(Icons.work_outline, color: AppColors.accentGold, size: 22),
+      child: const Icon(
+        Icons.work_outline,
+        color: AppColors.accentGold,
+        size: 22,
+      ),
     );
   }
 }
@@ -181,7 +212,14 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
   final _descCtrl = TextEditingController();
   String _selectedSector = 'Obras';
 
-  final List<String> _sectors = ['Obras', 'Engenharia', 'Financeiro', 'Administrativo', 'RH', 'Vendas'];
+  final List<String> _sectors = [
+    'Obras',
+    'Engenharia',
+    'Financeiro',
+    'Administrativo',
+    'RH',
+    'Vendas',
+  ];
 
   @override
   void dispose() {
@@ -208,13 +246,16 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
     _titleCtrl.clear();
     _hourlyCtrl.clear();
     _descCtrl.clear();
-    
+
     if (MediaQuery.of(context).size.width <= 900) {
       Navigator.pop(context);
     }
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Cargo cadastrado com sucesso!'), backgroundColor: AppColors.accentGreen),
+      const SnackBar(
+        content: Text('Cargo cadastrado com sucesso!'),
+        backgroundColor: AppColors.accentGreen,
+      ),
     );
   }
 
@@ -233,17 +274,33 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Cadastrar Novo Cargo',
-                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text(
+              'Cadastrar Novo Cargo',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 24),
             _buildTextField(_titleCtrl, 'Título do Cargo', Icons.title),
             const SizedBox(height: 16),
             _buildSectorDropdown(),
             const SizedBox(height: 16),
-            _buildTextField(_hourlyCtrl, 'Valor Hora M.O. (R\$)', Icons.timer_outlined, 
-                isNumber: true, hint: 'Ex: 28.50'),
+            _buildTextField(
+              _hourlyCtrl,
+              'Valor Hora M.O. (R\$)',
+              Icons.timer_outlined,
+              isNumber: true,
+              hint: 'Ex: 28.50',
+            ),
             const SizedBox(height: 16),
-            _buildTextField(_descCtrl, 'Descrição / Responsabilidades', Icons.description, maxLines: 3),
+            _buildTextField(
+              _descCtrl,
+              'Descrição / Responsabilidades',
+              Icons.description,
+              maxLines: 3,
+            ),
             const SizedBox(height: 32),
             _SubmitButton(onPressed: _handleSave),
           ],
@@ -252,17 +309,33 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
     );
   }
 
-  Widget _buildTextField(TextEditingController ctrl, String label, IconData icon, 
-      {bool isNumber = false, int maxLines = 1, String? hint}) {
+  Widget _buildTextField(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    bool isNumber = false,
+    int maxLines = 1,
+    String? hint,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
         TextFormField(
           controller: ctrl,
           maxLines: maxLines,
-          keyboardType: isNumber ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
+          keyboardType:
+              isNumber
+                  ? const TextInputType.numberWithOptions(decimal: true)
+                  : TextInputType.text,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
             hintText: hint,
@@ -270,9 +343,20 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
             prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
             filled: true,
             fillColor: AppColors.backgroundDark,
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.5))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accentGold)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.5),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.accentGold),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
           validator: (v) => v == null || v.isEmpty ? 'Obrigatório' : null,
         ),
@@ -284,20 +368,42 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Setor', style: TextStyle(color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+        const Text(
+          'Setor',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: _selectedSector,
           dropdownColor: AppColors.surfaceDark,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
-            prefixIcon: const Icon(Icons.business, color: AppColors.textMuted, size: 20),
+            prefixIcon: const Icon(
+              Icons.business,
+              color: AppColors.textMuted,
+              size: 20,
+            ),
             filled: true,
             fillColor: AppColors.backgroundDark,
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.5))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.accentGold)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.5),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.accentGold),
+            ),
           ),
-          items: _sectors.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+          items:
+              _sectors
+                  .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                  .toList(),
           onChanged: (v) => setState(() => _selectedSector = v!),
         ),
       ],
@@ -319,10 +425,15 @@ class _SubmitButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentGold,
           foregroundColor: AppColors.primaryDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           elevation: 0,
         ),
-        child: const Text('SALVAR CARGO', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+        child: const Text(
+          'SALVAR CARGO',
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+        ),
       ),
     );
   }
@@ -340,22 +451,25 @@ class _MobileAddButton extends StatelessWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (context) => Container(
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-              left: 16, right: 16, top: 24,
-            ),
-            child: const SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.only(bottom: 24),
-                child: _JobRoleFormPanel(),
+          builder:
+              (context) => Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.surfaceDark,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                  left: 16,
+                  right: 16,
+                  top: 24,
+                ),
+                child: const SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 24),
+                    child: _JobRoleFormPanel(),
+                  ),
+                ),
               ),
-            ),
-          ),
         );
       },
       child: const Icon(Icons.add, color: AppColors.primaryDark),

@@ -63,7 +63,9 @@ class StatCard extends StatelessWidget {
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: color.withValues(alpha: 0.16)),
+                        border: Border.all(
+                          color: color.withValues(alpha: 0.16),
+                        ),
                         boxShadow: AppColors.auraShadows(color),
                       ),
                       child: Icon(icon, color: color, size: 24),
@@ -115,7 +117,7 @@ class StatCard extends StatelessWidget {
   Widget _buildTrendPill() {
     Color trendColor;
     IconData trendIcon;
-    
+
     switch (trend) {
       case TrendType.up:
         trendColor = AppColors.accentGreen;

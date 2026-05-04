@@ -7,8 +7,7 @@ import 'package:project_granith/services/team_service.dart';
 class TeamController extends ChangeNotifier {
   final TeamService _service;
 
-  TeamController({TeamService? service})
-      : _service = service ?? TeamService();
+  TeamController({TeamService? service}) : _service = service ?? TeamService();
 
   // ─── Estado ─────────────────────────────────────────────────────────────────
   List<EmployeeModel> _employees = [];

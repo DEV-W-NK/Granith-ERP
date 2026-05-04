@@ -9,10 +9,12 @@ class MaterialRequisitionPageView extends StatefulWidget {
   const MaterialRequisitionPageView({super.key});
 
   @override
-  State<MaterialRequisitionPageView> createState() => _MaterialRequisitionPageViewState();
+  State<MaterialRequisitionPageView> createState() =>
+      _MaterialRequisitionPageViewState();
 }
 
-class _MaterialRequisitionPageViewState extends State<MaterialRequisitionPageView>
+class _MaterialRequisitionPageViewState
+    extends State<MaterialRequisitionPageView>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -46,20 +48,31 @@ class _MaterialRequisitionPageViewState extends State<MaterialRequisitionPageVie
           children: [
             const _Header(),
             const SizedBox(height: 20),
-            _Tabs(tabController: _tabController, isDesktop: isDesktop, viewModel: viewModel),
+            _Tabs(
+              tabController: _tabController,
+              isDesktop: isDesktop,
+              viewModel: viewModel,
+            ),
             const SizedBox(height: 14),
             Expanded(
-              child: viewModel.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.accentGold))
-                  : TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _RequisitionList(requisitions: viewModel.allRequisitions),
-                        _RequisitionList(requisitions: viewModel.pending),
-                        _RequisitionList(requisitions: viewModel.approved),
-                        _RequisitionList(requisitions: viewModel.completed),
-                      ],
-                    ),
+              child:
+                  viewModel.isLoading
+                      ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accentGold,
+                        ),
+                      )
+                      : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _RequisitionList(
+                            requisitions: viewModel.allRequisitions,
+                          ),
+                          _RequisitionList(requisitions: viewModel.pending),
+                          _RequisitionList(requisitions: viewModel.approved),
+                          _RequisitionList(requisitions: viewModel.completed),
+                        ],
+                      ),
             ),
           ],
         ),
@@ -81,7 +94,11 @@ class _Header extends StatelessWidget {
       children: [
         Text(
           'Requisições de Materiais',
-          style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 26,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         SizedBox(height: 4),
         Text(
@@ -98,13 +115,18 @@ class _Tabs extends StatelessWidget {
   final bool isDesktop;
   final MaterialRequisitionViewModel viewModel;
 
-  const _Tabs({required this.tabController, required this.isDesktop, required this.viewModel});
+  const _Tabs({
+    required this.tabController,
+    required this.isDesktop,
+    required this.viewModel,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.white10))),
+        border: Border(bottom: BorderSide(color: Colors.white10)),
+      ),
       child: TabBar(
         controller: tabController,
         indicatorColor: AppColors.accentGold,
@@ -131,8 +153,10 @@ class _RequisitionList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (requisitions.isEmpty) {
       return const Center(
-        child: Text('Nenhuma requisição nesta categoria.', 
-          style: TextStyle(color: AppColors.textMuted)),
+        child: Text(
+          'Nenhuma requisição nesta categoria.',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
       );
     }
     return ListView.builder(
@@ -164,14 +188,24 @@ class _CardWrapper extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(requisition.projectName, 
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              Text(
+                requisition.projectName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               _StatusBadge(status: requisition.status),
             ],
           ),
           const SizedBox(height: 8),
-          Text(requisition.itemsSummary, // Assumindo que existe na model
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+          Text(
+            requisition.itemsSummary, // Assumindo que existe na model
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
@@ -197,8 +231,14 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Text(label.toUpperCase(), 
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }

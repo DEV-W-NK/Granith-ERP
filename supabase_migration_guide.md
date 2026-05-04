@@ -1,10 +1,11 @@
-# Migracao Firebase Data -> Supabase
+# Migracao Supabase - Granith ERP
 
-## Objetivo
+## Status atual
 
-- Manter autenticacao no Firebase Auth.
-- Migrar dados e storage para Supabase.
-- Fazer o app Flutter enviar o JWT do Firebase para o Supabase.
+- O app Flutter usa Supabase Auth, Postgres/PostgREST Realtime e Supabase Storage.
+- Firebase ficou apenas como alvo de Hosting (`firebase.json` + `.firebaserc`).
+- Firebase Functions, Firestore, Firebase Auth, Firebase Storage e configuracoes mobile do Firebase foram removidos do runtime do app.
+- O seeder grava somente no Supabase.
 
 ## Configuracao do app Flutter
 
@@ -16,57 +17,20 @@ flutter run ^
   --dart-define=SUPABASE_PUBLISHABLE_KEY=SUA_CHAVE_PUBLICA
 ```
 
-Opcional para debug do auth:
+Sem `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`, a inicializacao falha de forma explicita.
 
-```bash
---dart-define=USE_FIREBASE_AUTH_EMULATOR=true
-```
+## Supabase
 
-## Configuracao no Supabase
+1. Configure os provedores usados pelo app em Supabase Auth.
+2. Para e-mail/senha ou magic link, habilite o provedor de e-mail.
+3. Para Google, configure OAuth diretamente no Supabase Auth.
+4. Mantenha tabelas protegidas por RLS e policies; nao confie em validacao feita apenas no cliente.
+5. Mantenha o bucket `project-images` no Supabase Storage.
 
-1. No painel do Supabase, habilite Third-party Auth com Firebase Auth.
-2. Informe o `project_id` do Firebase.
-3. Garanta que os usuarios tenham o claim `role=authenticated`.
+## Seeder
 
-## Claims no Firebase
+O seeder atual faz `upsert` apenas no Supabase. Em ambiente protegido por RLS, rode seed com usuario admin autorizado ou com ambiente operacional usando service role fora do app cliente. Um usuario comum do app pode ser bloqueado pelas policies.
 
-Foram adicionados:
+## Ponto tecnico pendente
 
-- `functions/index.js`
-- `functions/scripts/backfill_supabase_role_claims.js`
-
-Fluxo recomendado:
-
-1. Deploy das functions.
-2. Rodar o backfill para usuarios antigos.
-3. Forcar novo `getIdToken(true)` apos login se necessario.
-
-## Tabelas que ja foram preparadas para Supabase no app
-
-- `users`
-- `budget_types`
-- `budgets`
-- `items`
-- `job_roles`
-- `employees`
-- `projects`
-- `teams`
-- `usage_stats`
-
-## Buckets ja esperados no app
-
-- `project-images`
-
-## Blocos ainda grandes para migrar totalmente
-
-- `financial_transactions`
-- `inventory`
-- `purchases`
-- `suppliers`
-- `material_requisitions`
-- `daily_logs`
-- `storage` de imagens e anexos fora de `project-images`
-
-## Observacao importante
-
-O app agora inicia com Supabase obrigatorio. Sem `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`, a inicializacao falha de forma explicita.
+Fluxos que alteram varias tabelas em sequencia, como entrega de compra -> financeiro -> estoque -> custo do projeto, ja usam Supabase, mas ainda rodam como chamadas client-side sequenciais. Para integridade forte em producao, mova esses fluxos para RPC/Edge Function com transacao SQL.

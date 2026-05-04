@@ -1,37 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 enum InventoryMovementType {
-  inbound,    // Entrada (compra recebida)
-  outbound,   // Saída / uso em obra
-  transfer,   // Transferência entre projetos
-  adjustment  // Ajuste manual de inventário
+  inbound, // Entrada (compra recebida)
+  outbound, // Saída / uso em obra
+  transfer, // Transferência entre projetos
+  adjustment, // Ajuste manual de inventário
 }
 
 extension InventoryMovementTypeExt on InventoryMovementType {
   String get label => switch (this) {
-        InventoryMovementType.inbound    => 'Entrada',
-        InventoryMovementType.outbound   => 'Saída',
-        InventoryMovementType.transfer   => 'Transferência',
-        InventoryMovementType.adjustment => 'Ajuste',
-      };
+    InventoryMovementType.inbound => 'Entrada',
+    InventoryMovementType.outbound => 'Saída',
+    InventoryMovementType.transfer => 'Transferência',
+    InventoryMovementType.adjustment => 'Ajuste',
+  };
 
   Color get color => switch (this) {
-        InventoryMovementType.inbound    => Colors.greenAccent,
-        InventoryMovementType.outbound   => Colors.redAccent,
-        InventoryMovementType.transfer   => Colors.blueAccent,
-        InventoryMovementType.adjustment => Colors.orangeAccent,
-      };
+    InventoryMovementType.inbound => Colors.greenAccent,
+    InventoryMovementType.outbound => Colors.redAccent,
+    InventoryMovementType.transfer => Colors.blueAccent,
+    InventoryMovementType.adjustment => Colors.orangeAccent,
+  };
 
   IconData get icon => switch (this) {
-        InventoryMovementType.inbound    => Icons.arrow_downward,
-        InventoryMovementType.outbound   => Icons.arrow_upward,
-        InventoryMovementType.transfer   => Icons.swap_horiz,
-        InventoryMovementType.adjustment => Icons.tune,
-      };
+    InventoryMovementType.inbound => Icons.arrow_downward,
+    InventoryMovementType.outbound => Icons.arrow_upward,
+    InventoryMovementType.transfer => Icons.swap_horiz,
+    InventoryMovementType.adjustment => Icons.tune,
+  };
 
   /// True = adiciona ao saldo. False = subtrai.
-  bool get isAdditive => this == InventoryMovementType.inbound ||
+  bool get isAdditive =>
+      this == InventoryMovementType.inbound ||
       this == InventoryMovementType.adjustment;
 
   /// Alias para addMovement() genérico no inventory_service.
@@ -75,38 +76,36 @@ class InventoryMovement {
 
   Map<String, dynamic> toMap() {
     return {
-      'itemId':      itemId,
-      'itemName':    itemName,
-      'quantity':    quantity,
-      'type':        type.name,
-      'projectId':   projectId,
+      'itemId': itemId,
+      'itemName': itemName,
+      'quantity': quantity,
+      'type': type.name,
+      'projectId': projectId,
       'projectName': projectName,
-      'purchaseId':  purchaseId,
+      'purchaseId': purchaseId,
       'referenceId': referenceId,
-      'date':        FieldValue.serverTimestamp(),
-      'notes':       notes,
-      'userId':      userId,
+      'date': DbValue.toPrimitive(date),
+      'notes': notes,
+      'userId': userId,
     };
   }
 
   factory InventoryMovement.fromMap(Map<String, dynamic> map, String docId) {
     return InventoryMovement(
-      id:       docId,
-      itemId:   map['itemId']   ?? '',
+      id: docId,
+      itemId: map['itemId'] ?? '',
       itemName: map['itemName'] ?? '',
       quantity: (map['quantity'] ?? 0.0).toDouble(),
       type: InventoryMovementType.values.firstWhere(
         (e) => e.name == map['type'],
         orElse: () => InventoryMovementType.inbound,
       ),
-      projectId:   map['projectId']   as String?,
+      projectId: map['projectId'] as String?,
       projectName: map['projectName'] as String?,
-      purchaseId:  map['purchaseId']  as String?,
+      purchaseId: map['purchaseId'] as String?,
       referenceId: map['referenceId'] as String?,
-      date: map['date'] != null
-          ? (map['date'] as Timestamp).toDate()
-          : DateTime.now(),
-      notes:  map['notes']  as String?,
+      date: DbValue.toDateTime(map['date']) ?? DateTime.now(),
+      notes: map['notes'] as String?,
       userId: map['userId'] as String?,
     );
   }

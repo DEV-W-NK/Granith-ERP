@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:postgrest/postgrest.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+typedef HomeListLoader =
+    Future<List<Map<String, dynamic>>> Function(String table, {String columns});
+typedef HomeProjectsLoader = Future<List<Map<String, dynamic>>> Function();
+typedef HomeRecentActivitiesLoader =
+    Future<List<Map<String, dynamic>>> Function();
 
 class StatItem {
   final String label;
@@ -99,6 +105,21 @@ class MonthlyMini {
 }
 
 class HomeViewModel extends ChangeNotifier {
+  HomeViewModel({
+    HomeListLoader? listLoader,
+    HomeProjectsLoader? projectsLoader,
+    HomeRecentActivitiesLoader? recentActivitiesLoader,
+    DateTime Function()? nowProvider,
+  }) : _listLoader = listLoader,
+       _projectsLoader = projectsLoader,
+       _recentActivitiesLoader = recentActivitiesLoader,
+       _nowProvider = nowProvider ?? DateTime.now;
+
+  final HomeListLoader? _listLoader;
+  final HomeProjectsLoader? _projectsLoader;
+  final HomeRecentActivitiesLoader? _recentActivitiesLoader;
+  final DateTime Function() _nowProvider;
+
   bool _isLoading = true;
   bool get isLoading => _isLoading;
 
@@ -114,6 +135,9 @@ class HomeViewModel extends ChangeNotifier {
   int _pendingDailyLogs = 0;
   int _talentsPending = 0;
   int _openRequisitions = 0;
+
+  int get activeEmployees => _activeEmployees;
+  int get fieldToday => _fieldToday;
 
   List<ProjectProgress> _projects = [];
   List<ProjectProgress> get projects => _projects;
@@ -180,6 +204,10 @@ class HomeViewModel extends ChangeNotifier {
     String table, {
     String columns = '*',
   }) async {
+    if (_listLoader != null) {
+      return _listLoader(table, columns: columns);
+    }
+
     final response = await AppSupabase.client.from(table).select(columns);
     return (response as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
@@ -199,9 +227,10 @@ class HomeViewModel extends ChangeNotifier {
 
   void _buildStats() {
     final monthExpense = _overdueAmount > 0 ? _overdueAmount : 61200.0;
-    final monthIncome = _monthlyMini.isNotEmpty
-        ? _monthlyMini.last.income
-        : (_overdueAmount > 0 ? _overdueAmount * 4 : 84500.0);
+    final monthIncome =
+        _monthlyMini.isNotEmpty
+            ? _monthlyMini.last.income
+            : (_overdueAmount > 0 ? _overdueAmount * 4 : 84500.0);
     final balance = monthIncome - monthExpense;
 
     _stats = [
@@ -255,49 +284,53 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadProjects() async {
-    final response = await AppSupabase.client
-        .from('projects')
-        .select()
-        .inFilter('status', ['inProgress', 'planning'])
-        .order('currentCost', ascending: false)
-        .limit(6);
-
-    final rows = (response as List)
-        .map((row) => Map<String, dynamic>.from(row as Map))
-        .toList();
+    final rows =
+        _projectsLoader != null
+            ? await _projectsLoader()
+            : ((await AppSupabase.client
+                        .from('projects')
+                        .select()
+                        .inFilter('status', ['inProgress', 'planning'])
+                        .order('currentCost', ascending: false)
+                        .limit(6))
+                    as List)
+                .map((row) => Map<String, dynamic>.from(row as Map))
+                .toList();
 
     _activeProjects = rows.length;
 
-    _projects = rows
-        .map(
-          (d) => ProjectProgress(
-            id: (d['id'] ?? '').toString(),
-            name: (d['name'] ?? 'Sem nome').toString(),
-            status: (d['status'] ?? '').toString(),
-            budget: (d['budget'] as num?)?.toDouble() ?? 0,
-            currentCost: (d['currentCost'] as num?)?.toDouble() ?? 0,
-            dueDate: DbValue.toDateTime(d['endDate']),
-          ),
-        )
-        .toList();
+    _projects =
+        rows
+            .map(
+              (d) => ProjectProgress(
+                id: (d['id'] ?? '').toString(),
+                name: (d['name'] ?? 'Sem nome').toString(),
+                status: (d['status'] ?? '').toString(),
+                budget: (d['budget'] as num?)?.toDouble() ?? 0,
+                currentCost: (d['currentCost'] as num?)?.toDouble() ?? 0,
+                dueDate: DbValue.toDateTime(d['endDate']),
+              ),
+            )
+            .toList();
   }
 
   Future<void> _loadFinancial() async {
-    final now = DateTime.now();
+    final now = _nowProvider();
     final today = DateTime(now.year, now.month, now.day);
 
     final overdueRows = await _selectList('financial_transactions');
 
-    final overdue = overdueRows.where((row) {
-      final type = row['type']?.toString();
-      final status = row['status']?.toString();
-      final dueDate = DbValue.toDateTime(row['dueDate']);
+    final overdue =
+        overdueRows.where((row) {
+          final type = row['type']?.toString();
+          final status = row['status']?.toString();
+          final dueDate = DbValue.toDateTime(row['dueDate']);
 
-      return type == 'expense' &&
-          status == 'pending' &&
-          dueDate != null &&
-          !dueDate.isAfter(today);
-    }).toList();
+          return type == 'expense' &&
+              status == 'pending' &&
+              dueDate != null &&
+              !dueDate.isAfter(today);
+        }).toList();
 
     _overdueCount = overdue.length;
     _overdueAmount = overdue.fold(
@@ -335,25 +368,25 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadHr() async {
-    final now = DateTime.now();
+    final now = _nowProvider();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(hours: 23, minutes: 59));
 
     final employeeRows = await _selectList('employees');
-    _activeEmployees = employeeRows
-        .where((row) {
+    _activeEmployees =
+        employeeRows.where((row) {
           final status = row['status']?.toString().toLowerCase();
           return status == 'active' || status == 'ativo';
-        })
-        .length;
+        }).length;
 
     final logRows = await _selectList('daily_logs');
-    final todayLogs = logRows.where((row) {
-      final date = DbValue.toDateTime(row['date']);
-      return date != null &&
-          !date.isBefore(todayStart) &&
-          !date.isAfter(todayEnd);
-    }).toList();
+    final todayLogs =
+        logRows.where((row) {
+          final date = DbValue.toDateTime(row['date']);
+          return date != null &&
+              !date.isBefore(todayStart) &&
+              !date.isAfter(todayEnd);
+        }).toList();
 
     _pendingDailyLogs = (_activeProjects - todayLogs.length).clamp(0, 99);
 
@@ -376,12 +409,13 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> _loadRequisitions() async {
     final rows = await _selectList('material_requisitions');
-    _openRequisitions = rows
-        .where(
-          (row) =>
-              row['status'] == 'pending' || row['status'] == 'approved',
-        )
-        .length;
+    _openRequisitions =
+        rows
+            .where(
+              (row) =>
+                  row['status'] == 'pending' || row['status'] == 'approved',
+            )
+            .length;
   }
 
   Future<void> _loadTalents() async {
@@ -399,7 +433,7 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadMonthlyMini() async {
-    final now = DateTime.now();
+    final now = _nowProvider();
     final from = DateTime(now.year, now.month - 5, 1);
     final to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
@@ -421,9 +455,15 @@ class HomeViewModel extends ChangeNotifier {
       final current = grouped[key] ?? (income: 0.0, expense: 0.0);
 
       if (row['type'] == 'income') {
-        grouped[key] = (income: current.income + amount, expense: current.expense);
+        grouped[key] = (
+          income: current.income + amount,
+          expense: current.expense,
+        );
       } else {
-        grouped[key] = (income: current.income, expense: current.expense + amount);
+        grouped[key] = (
+          income: current.income,
+          expense: current.expense + amount,
+        );
       }
     }
 
@@ -442,16 +482,23 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> _loadRecentActivities() async {
     try {
-      final rows = await AppSupabase.client
-          .from('financial_transactions')
-          .select()
-          .order('createdAt', ascending: false)
-          .limit(4);
+      final rows =
+          _recentActivitiesLoader != null
+              ? await _recentActivitiesLoader()
+              : ((await AppSupabase.client
+                          .from('financial_transactions')
+                          .select()
+                          .order('createdAt', ascending: false)
+                          .limit(4))
+                      as List)
+                  .map((row) => Map<String, dynamic>.from(row as Map))
+                  .toList();
 
-      _recentActivities = (rows as List)
-          .map((row) => Map<String, dynamic>.from(row as Map))
-          .map(_mapRecentActivity)
-          .toList();
+      _recentActivities =
+          rows
+              .map((row) => Map<String, dynamic>.from(row as Map))
+              .map(_mapRecentActivity)
+              .toList();
     } catch (e) {
       if (_isAuthOrMissingTableError(e)) {
         _recentActivities = [];
@@ -465,15 +512,17 @@ class HomeViewModel extends ChangeNotifier {
     final type = row['type']?.toString() ?? 'expense';
     final status = row['status']?.toString() ?? '';
     final amount = (row['amount'] as num?)?.toDouble() ?? 0;
-    final date = DbValue.toDateTime(row['paymentDate']) ??
+    final date =
+        DbValue.toDateTime(row['paymentDate']) ??
         DbValue.toDateTime(row['dueDate']) ??
         DbValue.toDateTime(row['createdAt']);
     final isPositive = type == 'income';
 
     return ActivityItem(
-      icon: isPositive
-          ? Icons.arrow_downward_rounded
-          : Icons.arrow_upward_rounded,
+      icon:
+          isPositive
+              ? Icons.arrow_downward_rounded
+              : Icons.arrow_upward_rounded,
       iconColor: isPositive ? AppColors.green : AppColors.red,
       title: (row['description'] ?? 'Movimentacao financeira').toString(),
       subtitle: '${isPositive ? '+' : '-'} ${_compact(amount)}',

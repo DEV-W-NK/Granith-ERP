@@ -25,66 +25,72 @@ void main() {
       await service.dispose();
     });
 
-    test('resolve cliente com conta vinculada e primeiro acesso pendente', () async {
-      final service = FakeAuthService(
-        currentUserValue: const FakeAuthUser('u1', 'cliente@granith.com'),
-        profile: const UserModel(
-          uid: 'u1',
-          email: 'cliente@granith.com',
-          role: UserRole.client,
-        ),
-        ownedAccounts: [
-          ClientAccount.empty().copyWith(
-            id: 'client-1',
-            name: 'Cliente Atlas',
-            ownerEmail: 'cliente@granith.com',
-            portalAccessStatus: ClientPortalAccessStatus.invited,
+    test(
+      'resolve cliente com conta vinculada e primeiro acesso pendente',
+      () async {
+        final service = FakeAuthService(
+          currentUserValue: const FakeAuthUser('u1', 'cliente@granith.com'),
+          profile: const UserModel(
+            uid: 'u1',
+            email: 'cliente@granith.com',
+            role: UserRole.client,
           ),
-        ],
-      );
+          ownedAccounts: [
+            ClientAccount.empty().copyWith(
+              id: 'client-1',
+              name: 'Cliente Atlas',
+              ownerEmail: 'cliente@granith.com',
+              portalAccessStatus: ClientPortalAccessStatus.invited,
+            ),
+          ],
+        );
 
-      final viewModel = AuthViewModel(service: service);
-      await _flushAuthQueue();
+        final viewModel = AuthViewModel(service: service);
+        await _flushAuthQueue();
 
-      expect(viewModel.isAuthenticated, isTrue);
-      expect(viewModel.isClientUser, isTrue);
-      expect(viewModel.primaryClientAccount?.id, 'client-1');
-      expect(viewModel.user?.clientAccountName, 'Cliente Atlas');
-      expect(viewModel.requiresClientFirstAccess, isTrue);
+        expect(viewModel.isAuthenticated, isTrue);
+        expect(viewModel.isClientUser, isTrue);
+        expect(viewModel.primaryClientAccount?.id, 'client-1');
+        expect(viewModel.user?.clientAccountName, 'Cliente Atlas');
+        expect(viewModel.requiresClientFirstAccess, isTrue);
 
-      await service.dispose();
-    });
+        await service.dispose();
+      },
+    );
 
-    test('preserva papel admin mesmo com contas de cliente vinculadas', () async {
-      final service = FakeAuthService(
-        currentUserValue: const FakeAuthUser('u2', 'admin@granith.com'),
-        profile: const UserModel(
-          uid: 'u2',
-          email: 'admin@granith.com',
-          role: UserRole.admin,
-          permissions: ['settings.manage'],
-        ),
-        ownedAccounts: [
-          ClientAccount.empty().copyWith(
-            id: 'client-2',
-            name: 'Conta Admin',
-            ownerEmail: 'admin@granith.com',
-            portalAccessStatus: ClientPortalAccessStatus.active,
+    test(
+      'preserva papel admin mesmo com contas de cliente vinculadas',
+      () async {
+        final service = FakeAuthService(
+          currentUserValue: const FakeAuthUser('u2', 'admin@granith.com'),
+          profile: const UserModel(
+            uid: 'u2',
+            email: 'admin@granith.com',
+            role: UserRole.admin,
+            permissions: ['settings.manage'],
           ),
-        ],
-      );
+          ownedAccounts: [
+            ClientAccount.empty().copyWith(
+              id: 'client-2',
+              name: 'Conta Admin',
+              ownerEmail: 'admin@granith.com',
+              portalAccessStatus: ClientPortalAccessStatus.active,
+            ),
+          ],
+        );
 
-      final viewModel = AuthViewModel(service: service);
-      await _flushAuthQueue();
+        final viewModel = AuthViewModel(service: service);
+        await _flushAuthQueue();
 
-      expect(viewModel.isAdminUser, isTrue);
-      expect(viewModel.isEmployeeUser, isTrue);
-      expect(viewModel.isClientUser, isFalse);
-      expect(viewModel.hasPermission('settings.manage'), isTrue);
-      expect(viewModel.requiresClientFirstAccess, isFalse);
+        expect(viewModel.isAdminUser, isTrue);
+        expect(viewModel.isEmployeeUser, isTrue);
+        expect(viewModel.isClientUser, isFalse);
+        expect(viewModel.hasPermission('settings.manage'), isTrue);
+        expect(viewModel.requiresClientFirstAccess, isFalse);
 
-      await service.dispose();
-    });
+        await service.dispose();
+      },
+    );
 
     test('logout limpa usuario e contas locais', () async {
       final service = FakeAuthService(

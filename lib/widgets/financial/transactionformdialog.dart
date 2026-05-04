@@ -12,11 +12,7 @@ class TransactionFormDialog extends StatefulWidget {
   final FinancialTransactionModel? initial;
   final TransactionType? forceType;
 
-  const TransactionFormDialog({
-    super.key,
-    this.initial,
-    this.forceType,
-  });
+  const TransactionFormDialog({super.key, this.initial, this.forceType});
 
   static Future<void> show(
     BuildContext context, {
@@ -26,10 +22,8 @@ class TransactionFormDialog extends StatefulWidget {
     return showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => TransactionFormDialog(
-        initial: initial,
-        forceType: forceType,
-      ),
+      builder:
+          (_) => TransactionFormDialog(initial: initial, forceType: forceType),
     );
   }
 
@@ -45,9 +39,9 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   late TransactionOrigin _origin;
   late TransactionCategory _category;
 
-  final _descCtrl   = TextEditingController();
+  final _descCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
-  final _notesCtrl  = TextEditingController();
+  final _notesCtrl = TextEditingController();
 
   late DateTime _dueDate;
   DateTime? _paymentDate;
@@ -62,17 +56,17 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
     super.initState();
     final t = widget.initial;
 
-    _type     = t?.type     ?? widget.forceType      ?? TransactionType.expense;
-    _status   = t?.status   ?? TransactionStatus.pending;
-    _origin   = t?.origin   ?? TransactionOrigin.manual;
+    _type = t?.type ?? widget.forceType ?? TransactionType.expense;
+    _status = t?.status ?? TransactionStatus.pending;
+    _origin = t?.origin ?? TransactionOrigin.manual;
     _category = t?.category ?? TransactionCategory.other;
 
-    _descCtrl.text   = t?.description ?? '';
+    _descCtrl.text = t?.description ?? '';
     _amountCtrl.text = t != null ? t.amount.toStringAsFixed(2) : '';
-    _notesCtrl.text  = t?.notes ?? '';
+    _notesCtrl.text = t?.notes ?? '';
 
-    _dueDate           = t?.dueDate ?? DateTime.now();
-    _paymentDate       = t?.paymentDate;
+    _dueDate = t?.dueDate ?? DateTime.now();
+    _paymentDate = t?.paymentDate;
     _selectedProjectId = t?.projectId;
   }
 
@@ -117,45 +111,53 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
                         ctrl: _descCtrl,
                         label: 'Descrição',
                         icon: Icons.description_outlined,
-                        validator: (v) =>
-                            v!.trim().isEmpty ? 'Campo obrigatório' : null,
+                        validator:
+                            (v) =>
+                                v!.trim().isEmpty ? 'Campo obrigatório' : null,
                       ),
                       const SizedBox(height: 16),
-                      Row(children: [
-                        Expanded(child: _buildAmountField()),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildStatusDropdown()),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(child: _buildAmountField()),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildStatusDropdown()),
+                        ],
+                      ),
                       const SizedBox(height: 16),
-                      Row(children: [
-                        Expanded(
-                          child: _buildDatePicker(
-                            label: 'Vencimento',
-                            icon: Icons.calendar_today_outlined,
-                            date: _dueDate,
-                            nullable: false,
-                            onChanged: (d) {
-                              if (d != null) setState(() => _dueDate = d);
-                            },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildDatePicker(
+                              label: 'Vencimento',
+                              icon: Icons.calendar_today_outlined,
+                              date: _dueDate,
+                              nullable: false,
+                              onChanged: (d) {
+                                if (d != null) setState(() => _dueDate = d);
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildDatePicker(
-                            label: 'Pagamento',
-                            icon: Icons.check_circle_outline,
-                            date: _paymentDate,
-                            nullable: true,
-                            onChanged: (d) => setState(() => _paymentDate = d),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildDatePicker(
+                              label: 'Pagamento',
+                              icon: Icons.check_circle_outline,
+                              date: _paymentDate,
+                              nullable: true,
+                              onChanged:
+                                  (d) => setState(() => _paymentDate = d),
+                            ),
                           ),
-                        ),
-                      ]),
+                        ],
+                      ),
                       const SizedBox(height: 16),
-                      Row(children: [
-                        Expanded(child: _buildCategoryDropdown()),
-                        const SizedBox(width: 12),
-                        Expanded(child: _buildOriginDropdown()),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(child: _buildCategoryDropdown()),
+                          const SizedBox(width: 12),
+                          Expanded(child: _buildOriginDropdown()),
+                        ],
+                      ),
                       const SizedBox(height: 16),
                       _buildProjectDropdown(),
                       const SizedBox(height: 16),
@@ -182,15 +184,18 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   Widget _buildHeader() {
     final isIncome = _type == TransactionType.income;
-    final color    = isIncome ? Colors.greenAccent : Colors.redAccent;
-    final label    = _isEditing
-        ? 'Editar transação'
-        : (isIncome ? 'Nova receita' : 'Nova despesa');
+    final color = isIncome ? Colors.greenAccent : Colors.redAccent;
+    final label =
+        _isEditing
+            ? 'Editar transação'
+            : (isIncome ? 'Nova receita' : 'Nova despesa');
 
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.07))),
+        border: Border(
+          bottom: BorderSide(color: Colors.white.withOpacity(0.07)),
+        ),
       ),
       child: Row(
         children: [
@@ -202,15 +207,19 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
             ),
             child: Icon(
               isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-              color: color, size: 20,
+              color: color,
+              size: 20,
             ),
           ),
           const SizedBox(width: 14),
-          Text(label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           const Spacer(),
           IconButton(
             icon: const Icon(Icons.close, color: AppColors.textMuted),
@@ -226,14 +235,33 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   Widget _buildTypeToggle() {
     return Row(
       children: [
-        Expanded(child: _typeButton(TransactionType.income,  'Receita', Icons.arrow_upward,   Colors.greenAccent)),
+        Expanded(
+          child: _typeButton(
+            TransactionType.income,
+            'Receita',
+            Icons.arrow_upward,
+            Colors.greenAccent,
+          ),
+        ),
         const SizedBox(width: 10),
-        Expanded(child: _typeButton(TransactionType.expense, 'Despesa', Icons.arrow_downward, Colors.redAccent)),
+        Expanded(
+          child: _typeButton(
+            TransactionType.expense,
+            'Despesa',
+            Icons.arrow_downward,
+            Colors.redAccent,
+          ),
+        ),
       ],
     );
   }
 
-  Widget _typeButton(TransactionType type, String label, IconData icon, Color color) {
+  Widget _typeButton(
+    TransactionType type,
+    String label,
+    IconData icon,
+    Color color,
+  ) {
     final selected = _type == type;
     return GestureDetector(
       onTap: () => setState(() => _type = type),
@@ -253,12 +281,14 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
           children: [
             Icon(icon, color: selected ? color : AppColors.textMuted, size: 16),
             const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                  color: selected ? color : AppColors.textMuted,
-                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 14,
-                )),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? color : AppColors.textMuted,
+                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),
@@ -302,12 +332,16 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   Widget _buildStatusDropdown() {
     return DropdownButtonFormField<TransactionStatus>(
       value: _status,
+      isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: _decoration('Status', Icons.flag_outlined),
-      items: TransactionStatus.values
-          .map((s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s))))
-          .toList(),
+      items:
+          TransactionStatus.values
+              .map(
+                (s) => DropdownMenuItem(value: s, child: Text(_statusLabel(s))),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _status = v!),
     );
   }
@@ -315,12 +349,17 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<TransactionCategory>(
       value: _category,
+      isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: _decoration('Categoria', Icons.category_outlined),
-      items: TransactionCategory.values
-          .map((c) => DropdownMenuItem(value: c, child: Text(_categoryLabel(c))))
-          .toList(),
+      items:
+          TransactionCategory.values
+              .map(
+                (c) =>
+                    DropdownMenuItem(value: c, child: Text(_categoryLabel(c))),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _category = v!),
     );
   }
@@ -328,12 +367,16 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   Widget _buildOriginDropdown() {
     return DropdownButtonFormField<TransactionOrigin>(
       value: _origin,
+      isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: _decoration('Origem', Icons.link_outlined),
-      items: TransactionOrigin.values
-          .map((o) => DropdownMenuItem(value: o, child: Text(_originLabel(o))))
-          .toList(),
+      items:
+          TransactionOrigin.values
+              .map(
+                (o) => DropdownMenuItem(value: o, child: Text(_originLabel(o))),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _origin = v!),
     );
   }
@@ -343,12 +386,18 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
     return DropdownButtonFormField<String?>(
       value: _selectedProjectId,
+      isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: _decoration('Projeto (opcional)', Icons.folder_outlined),
       items: [
-        const DropdownMenuItem(value: null, child: Text('Nenhum / Administrativo')),
-        ...projects.map((p) => DropdownMenuItem(value: p.id, child: Text(p.name))),
+        const DropdownMenuItem(
+          value: null,
+          child: Text('Nenhum / Administrativo'),
+        ),
+        ...projects.map(
+          (p) => DropdownMenuItem(value: p.id, child: Text(p.name)),
+        ),
       ],
       onChanged: (v) => setState(() => _selectedProjectId = v),
     );
@@ -370,21 +419,22 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
           initialDate: date ?? DateTime.now(),
           firstDate: DateTime(2020),
           lastDate: DateTime(2030),
-          builder: (ctx, child) => Theme(
-            data: Theme.of(ctx).copyWith(
-              colorScheme: const ColorScheme.dark(primary: AppColors.accentGold),
-            ),
-            child: child!,
-          ),
+          builder:
+              (ctx, child) => Theme(
+                data: Theme.of(ctx).copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: AppColors.accentGold,
+                  ),
+                ),
+                child: child!,
+              ),
         );
         if (picked != null) onChanged(picked);
       },
       child: InputDecorator(
         decoration: _decoration(label, icon),
         child: Text(
-          date != null
-              ? DateFormat('dd/MM/yyyy').format(date)
-              : 'Não definido',
+          date != null ? DateFormat('dd/MM/yyyy').format(date) : 'Não definido',
           style: TextStyle(
             color: date != null ? Colors.white : AppColors.textMuted,
             fontSize: 14,
@@ -408,18 +458,27 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
           foregroundColor: AppColors.primaryDark,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        child: _isSaving
-            ? const SizedBox(
-                width: 20, height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.primaryDark),
-              )
-            : Text(
-                _isEditing ? 'SALVAR ALTERAÇÕES' : 'REGISTRAR',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
+        child:
+            _isSaving
+                ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primaryDark,
+                  ),
+                )
+                : Text(
+                  _isEditing ? 'SALVAR ALTERAÇÕES' : 'REGISTRAR',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
       ),
     );
   }
@@ -433,29 +492,28 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
     try {
       // AuthController.user retorna UserModel? — usamos user.id
-      final authCtrl  = context.read<AuthController>();
-      final createdBy = widget.initial?.createdBy
-          ?? authCtrl.user?.uid
-          ?? 'unknown';
+      final authCtrl = context.read<AuthController>();
+      final createdBy =
+          widget.initial?.createdBy ?? authCtrl.user?.uid ?? 'unknown';
 
       final amount = double.parse(_amountCtrl.text.trim().replaceAll(',', '.'));
 
       final transaction = FinancialTransactionModel(
-        id:          widget.initial?.id ?? '',
+        id: widget.initial?.id ?? '',
         description: _descCtrl.text.trim(),
-        amount:      amount,
-        type:        _type,
-        status:      _status,
-        origin:      _origin,
-        category:    _category,
-        dueDate:     _dueDate,
+        amount: amount,
+        type: _type,
+        status: _status,
+        origin: _origin,
+        category: _category,
+        dueDate: _dueDate,
         paymentDate: _paymentDate,
-        projectId:   _selectedProjectId,
-        supplierId:  widget.initial?.supplierId,
+        projectId: _selectedProjectId,
+        supplierId: widget.initial?.supplierId,
         referenceId: widget.initial?.referenceId,
-        createdBy:   createdBy,
-        createdAt:   widget.initial?.createdAt ?? DateTime.now(),
-        updatedAt:   _isEditing ? DateTime.now() : null,
+        createdBy: createdBy,
+        createdAt: widget.initial?.createdAt ?? DateTime.now(),
+        updatedAt: _isEditing ? DateTime.now() : null,
         notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       );
 
@@ -468,13 +526,17 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
       if (mounted) {
         Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(_isEditing
-              ? 'Transação atualizada!'
-              : '${_type == TransactionType.income ? "Receita" : "Despesa"} registrada!'),
-          backgroundColor:
-              _type == TransactionType.income ? Colors.green : Colors.orange,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isEditing
+                  ? 'Transação atualizada!'
+                  : '${_type == TransactionType.income ? "Receita" : "Despesa"} registrada!',
+            ),
+            backgroundColor:
+                _type == TransactionType.income ? Colors.green : Colors.orange,
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -517,27 +579,27 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   }
 
   String _statusLabel(TransactionStatus s) => switch (s) {
-        TransactionStatus.pending   => 'Pendente',
-        TransactionStatus.paid      => 'Pago',
-        TransactionStatus.overdue   => 'Atrasado',
-        TransactionStatus.cancelled => 'Cancelado',
-      };
+    TransactionStatus.pending => 'Pendente',
+    TransactionStatus.paid => 'Pago',
+    TransactionStatus.overdue => 'Atrasado',
+    TransactionStatus.cancelled => 'Cancelado',
+  };
 
   String _categoryLabel(TransactionCategory c) => switch (c) {
-        TransactionCategory.material       => 'Material',
-        TransactionCategory.labor          => 'Mão de obra',
-        TransactionCategory.equipment      => 'Equipamento',
-        TransactionCategory.administrative => 'Administrativo',
-        TransactionCategory.measurement    => 'Medição',
-        TransactionCategory.tax            => 'Imposto / Taxa',
-        TransactionCategory.other          => 'Outro',
-      };
+    TransactionCategory.material => 'Material',
+    TransactionCategory.labor => 'Mão de obra',
+    TransactionCategory.equipment => 'Equipamento',
+    TransactionCategory.administrative => 'Administrativo',
+    TransactionCategory.measurement => 'Medição',
+    TransactionCategory.tax => 'Imposto / Taxa',
+    TransactionCategory.other => 'Outro',
+  };
 
   String _originLabel(TransactionOrigin o) => switch (o) {
-        TransactionOrigin.manual        => 'Manual',
-        TransactionOrigin.purchase      => 'Compra',
-        TransactionOrigin.laborCost     => 'Mão de obra',
-        TransactionOrigin.materialUsage => 'Consumo material',
-        TransactionOrigin.budget        => 'Orçamento / Medição',
-      };
+    TransactionOrigin.manual => 'Manual',
+    TransactionOrigin.purchase => 'Compra',
+    TransactionOrigin.laborCost => 'Mão de obra',
+    TransactionOrigin.materialUsage => 'Consumo material',
+    TransactionOrigin.budget => 'Orçamento / Medição',
+  };
 }

@@ -21,32 +21,32 @@ void main() {
       final result = await viewModel.handleEmailPasswordSignIn();
 
       expect(result, isFalse);
-      expect(
-        viewModel.errorMessage,
-        'Informe e-mail e senha para prosseguir.',
-      );
+      expect(viewModel.errorMessage, 'Informe e-mail e senha para prosseguir.');
       expect(authService.lastEmail, isNull);
       expect(viewModel.isLoading, isFalse);
     });
 
-    test('envia e-mail e senha ao service quando formulario esta valido', () async {
-      final authService = FakeAuthService();
-      final viewModel = LoginViewModel(
-        authService: authService,
-        showLoading: _noopShow,
-        dismissLoading: _noopDismiss,
-        isWeb: false,
-      );
-      viewModel.setEmail('cliente@granith.com');
-      viewModel.setPassword('12345678');
+    test(
+      'envia e-mail e senha ao service quando formulario esta valido',
+      () async {
+        final authService = FakeAuthService();
+        final viewModel = LoginViewModel(
+          authService: authService,
+          showLoading: _noopShow,
+          dismissLoading: _noopDismiss,
+          isWeb: false,
+        );
+        viewModel.setEmail('cliente@granith.com');
+        viewModel.setPassword('12345678');
 
-      final result = await viewModel.handleEmailPasswordSignIn();
+        final result = await viewModel.handleEmailPasswordSignIn();
 
-      expect(result, isTrue);
-      expect(authService.lastEmail, 'cliente@granith.com');
-      expect(authService.lastPassword, '12345678');
-      expect(viewModel.errorMessage, isNull);
-    });
+        expect(result, isTrue);
+        expect(authService.lastEmail, 'cliente@granith.com');
+        expect(authService.lastPassword, '12345678');
+        expect(viewModel.errorMessage, isNull);
+      },
+    );
 
     test('expoe erro de link expirado vindo do redirect web', () {
       final viewModel = LoginViewModel(
@@ -66,11 +66,12 @@ void main() {
     });
 
     test('propaga AppAuthException ao pedir magic link', () async {
-      final authService = FakeAuthService()
-        ..magicLinkError = const AppAuthException(
-          code: 'magic_link_failed',
-          message: 'Falha no envio do link.',
-        );
+      final authService =
+          FakeAuthService()
+            ..magicLinkError = const AppAuthException(
+              code: 'magic_link_failed',
+              message: 'Falha no envio do link.',
+            );
       final viewModel = LoginViewModel(
         authService: authService,
         showLoading: _noopShow,

@@ -58,12 +58,16 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               child: Center(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 28,
+                  ),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 1200),
-                    child: isDesktop
-                        ? _buildDesktopView(context)
-                        : _buildMobileView(context),
+                    child:
+                        isDesktop
+                            ? _buildDesktopView(context)
+                            : _buildMobileView(context),
                   ),
                 ),
               ),
@@ -90,7 +94,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(999),
                       color: AppColors.accentBlue.withValues(alpha: 0.12),
@@ -112,18 +119,18 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                   Text(
                     'Controle a operacao em um clima de fim de tarde.',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                          height: 1.08,
-                        ),
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      height: 1.08,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Projetos, estoque, compras, financeiro e equipe respirando na mesma camada visual, com leitura rapida e profundidade de interface.',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textSecondary,
-                          height: 1.6,
-                        ),
+                      color: AppColors.textSecondary,
+                      height: 1.6,
+                    ),
                   ),
                   const SizedBox(height: 32),
                   GranithReveal(
@@ -231,7 +238,12 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String title, String desc, Color color) {
+  Widget _buildFeatureItem(
+    IconData icon,
+    String title,
+    String desc,
+    Color color,
+  ) {
     return Row(
       children: [
         Container(
@@ -259,7 +271,10 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
               ),
               Text(
                 desc,
-                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
               ),
             ],
           ),

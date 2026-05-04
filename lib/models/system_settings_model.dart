@@ -52,19 +52,24 @@ class SystemSettings {
 
     return SystemSettings(
       id: (map['id'] ?? 'default').toString(),
-      workspaceName: (map['workspace_name'] ?? map['workspaceName'] ?? 'GRANITH')
-          .toString(),
-      workspaceTagline:
-          (map['workspace_tagline'] ?? map['workspaceTagline'] ?? 'ERP Dusk Console')
+      workspaceName:
+          (map['workspace_name'] ?? map['workspaceName'] ?? 'GRANITH')
               .toString(),
-      dashboardGreetingTitle: (map['dashboard_greeting_title'] ??
-              map['dashboardGreetingTitle'] ??
-              'Ola, Gestor')
-          .toString(),
-      dashboardGreetingSubtitle: (map['dashboard_greeting_subtitle'] ??
-              map['dashboardGreetingSubtitle'] ??
-              'Aqui esta o panorama atual das suas obras.')
-          .toString(),
+      workspaceTagline:
+          (map['workspace_tagline'] ??
+                  map['workspaceTagline'] ??
+                  'ERP Dusk Console')
+              .toString(),
+      dashboardGreetingTitle:
+          (map['dashboard_greeting_title'] ??
+                  map['dashboardGreetingTitle'] ??
+                  'Ola, Gestor')
+              .toString(),
+      dashboardGreetingSubtitle:
+          (map['dashboard_greeting_subtitle'] ??
+                  map['dashboardGreetingSubtitle'] ??
+                  'Aqui esta o panorama atual das suas obras.')
+              .toString(),
       aiAssistantPreviewEnabled: readBool(
         'ai_assistant_preview_enabled',
         fallback: true,
@@ -74,10 +79,11 @@ class SystemSettings {
           (map['support_email'] ?? map['supportEmail'] ?? '').toString(),
       supportPhone:
           (map['support_phone'] ?? map['supportPhone'] ?? '').toString(),
-      clientPortalWelcomeMessage: (map['client_portal_welcome_message'] ??
-              map['clientPortalWelcomeMessage'] ??
-              'Acompanhe projetos, propostas e visao executiva relacionados a sua conta.')
-          .toString(),
+      clientPortalWelcomeMessage:
+          (map['client_portal_welcome_message'] ??
+                  map['clientPortalWelcomeMessage'] ??
+                  'Acompanhe projetos, propostas e visao executiva relacionados a sua conta.')
+              .toString(),
       clientPortalShowBudgets: readBool(
         'client_portal_show_budgets',
         fallback: true,

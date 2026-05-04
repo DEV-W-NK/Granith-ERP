@@ -12,20 +12,21 @@ Future<void> showBudgetTypeDialog(
   BudgetType? budgetType,
 }) async {
   final controller = Provider.of<BudgetTypeController>(context, listen: false);
-  
+
   await showDialog(
     context: context,
     barrierDismissible: false,
-    builder: (context) => BudgetTypeFormDialog(
-      budgetType: budgetType,
-      onSave: (budgetType) async {
-        if (budgetType.id.isEmpty) {
-          await controller.createBudgetType(budgetType);
-        } else {
-          await controller.updateBudgetType(budgetType);
-        }
-      },
-    ),
+    builder:
+        (context) => BudgetTypeFormDialog(
+          budgetType: budgetType,
+          onSave: (budgetType) async {
+            if (budgetType.id.isEmpty) {
+              await controller.createBudgetType(budgetType);
+            } else {
+              await controller.updateBudgetType(budgetType);
+            }
+          },
+        ),
   );
 }
 
@@ -35,7 +36,7 @@ Future<void> showDeleteBudgetTypeDialog(
   BudgetType budgetType,
 ) async {
   final controller = Provider.of<BudgetTypeController>(context, listen: false);
-  
+
   final confirmed = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -47,7 +48,9 @@ Future<void> showDeleteBudgetTypeDialog(
     if (success && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Tipo de orçamento "${budgetType.name}" excluído com sucesso'),
+          content: Text(
+            'Tipo de orçamento "${budgetType.name}" excluído com sucesso',
+          ),
           backgroundColor: AppColors.accentGold,
           behavior: SnackBarBehavior.floating,
         ),
@@ -77,9 +80,7 @@ class _DeleteConfirmationDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.surfaceDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
         children: [
           Container(
@@ -113,10 +114,7 @@ class _DeleteConfirmationDialog extends StatelessWidget {
         children: [
           Text(
             'Tem certeza que deseja excluir o tipo de orçamento:',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 14,
-            ),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 12),
           Container(
@@ -124,17 +122,11 @@ class _DeleteConfirmationDialog extends StatelessWidget {
             decoration: BoxDecoration(
               color: AppColors.backgroundDark,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: AppColors.borderColor.withOpacity(0.3),
-              ),
+              border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.category,
-                  color: AppColors.accentGold,
-                  size: 20,
-                ),
+                Icon(Icons.category, color: AppColors.accentGold, size: 20),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -196,9 +188,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 500,
         constraints: BoxConstraints(
@@ -222,13 +212,18 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
   }
 
   Widget _buildDetailsHeader() {
-    final color = budgetType.color != null 
-        ? Color(int.parse(budgetType.color!))
-        : BudgetTypeConstants.categoryColors[budgetType.category] ?? AppColors.accentGold;
+    final color =
+        budgetType.color != null
+            ? Color(int.parse(budgetType.color!))
+            : BudgetTypeConstants.categoryColors[budgetType.category] ??
+                AppColors.accentGold;
 
-    final icon = budgetType.iconName != null
-        ? BudgetTypeConstants.availableIcons[budgetType.iconName!] ?? Icons.category
-        : BudgetTypeConstants.categoryIcons[budgetType.category] ?? Icons.category;
+    final icon =
+        budgetType.iconName != null
+            ? BudgetTypeConstants.availableIcons[budgetType.iconName!] ??
+                Icons.category
+            : BudgetTypeConstants.categoryIcons[budgetType.category] ??
+                Icons.category;
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -269,7 +264,10 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -305,7 +303,8 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
           'Status',
           budgetType.isActive ? 'Ativo' : 'Inativo',
           budgetType.isActive ? Icons.check_circle : Icons.cancel,
-          valueColor: budgetType.isActive ? AppColors.accentGold : AppColors.accentRed,
+          valueColor:
+              budgetType.isActive ? AppColors.accentGold : AppColors.accentRed,
         ),
         const SizedBox(height: 20),
         _buildDetailItem(
@@ -334,9 +333,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.backgroundDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderColor.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,11 +344,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
               color: AppColors.accentGold.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.accentGold,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.accentGold, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -388,9 +381,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: AppColors.borderColor.withOpacity(0.3),
-          ),
+          top: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
         ),
       ),
       child: Row(
@@ -400,9 +391,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textSecondary,
-                side: BorderSide(
-                  color: AppColors.borderColor.withOpacity(0.5),
-                ),
+                side: BorderSide(color: AppColors.borderColor.withOpacity(0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -410,10 +399,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
               ),
               child: const Text(
                 'Fechar',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
             ),
           ),

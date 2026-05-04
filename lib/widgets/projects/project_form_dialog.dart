@@ -14,8 +14,16 @@ import 'package:project_granith/widgets/projects/keep_alive.dart';
 class ProjectFormDialog extends StatefulWidget {
   final Project? project;
   final Function(Project) onSave;
+  final ServiceProjetos? projectService;
+  final ClientAccountService? clientAccountService;
 
-  const ProjectFormDialog({super.key, this.project, required this.onSave});
+  const ProjectFormDialog({
+    super.key,
+    this.project,
+    required this.onSave,
+    this.projectService,
+    this.clientAccountService,
+  });
 
   @override
   State<ProjectFormDialog> createState() => _ProjectFormDialogState();
@@ -38,8 +46,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Uint8List? _selectedImageWeb;
   Uint8List? _webImage;
 
-  final ServiceProjetos _service = ServiceProjetos();
-  final ClientAccountService _clientAccountService = ClientAccountService();
+  late final ServiceProjetos _service;
+  late final ClientAccountService _clientAccountService;
 
   ProjectStatus _selectedStatus = ProjectStatus.planning;
   DateTime _startDate = DateTime.now();
@@ -66,6 +74,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   @override
   void initState() {
     super.initState();
+    _service = widget.projectService ?? ServiceProjetos();
+    _clientAccountService =
+        widget.clientAccountService ?? ClientAccountService();
     _initializeControllers();
     _initializeProjectData();
     _initializeAnimations();
@@ -163,9 +174,15 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         backgroundColor: Colors.transparent,
         insetPadding: EdgeInsets.all(isDesktop ? 40 : 16),
         child: Container(
-          width: isDesktop ? 700 : double.infinity, // Reduzido de 800 para 700 para um layout mais focado
+          width:
+              isDesktop
+                  ? 700
+                  : double
+                      .infinity, // Reduzido de 800 para 700 para um layout mais focado
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.85, // 85% da tela no máximo
+            maxHeight:
+                MediaQuery.of(context).size.height *
+                0.85, // 85% da tela no máximo
             // Removido minHeight: 600 para não esticar em telas menores
           ),
           decoration: BoxDecoration(
@@ -375,7 +392,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Widget _buildPageView(double padding) {
     return PageView(
       controller: _pageController,
-      physics: const NeverScrollableScrollPhysics(), // Evita swipe indesejado se tiver forms longos
+      physics:
+          const NeverScrollableScrollPhysics(), // Evita swipe indesejado se tiver forms longos
       onPageChanged: (page) {
         setState(() {
           _currentPage = page;
@@ -431,9 +449,15 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.accentGold, width: 2),
+                    borderSide: const BorderSide(
+                      color: AppColors.accentGold,
+                      width: 2,
+                    ),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                 ),
                 items: [
                   const DropdownMenuItem<String>(
@@ -449,8 +473,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 ],
                 onChanged: (value) {
                   setState(() {
-                    _selectedClientAccountId = value == null || value.isEmpty ? null : value;
-                    final selectedAccount = _clientAccounts.cast<ClientAccount?>().firstWhere(
+                    _selectedClientAccountId =
+                        value == null || value.isEmpty ? null : value;
+                    final selectedAccount = _clientAccounts
+                        .cast<ClientAccount?>()
+                        .firstWhere(
                           (account) => account?.id == _selectedClientAccountId,
                           orElse: () => null,
                         );
@@ -638,7 +665,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   width: 2,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
             ),
             validator:
                 required
@@ -780,7 +810,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isError ? Icons.broken_image_outlined : Icons.add_photo_alternate_outlined,
+              isError
+                  ? Icons.broken_image_outlined
+                  : Icons.add_photo_alternate_outlined,
               size: 36,
               color: AppColors.textMuted,
             ),
@@ -963,7 +995,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               onTap: _canInteract() ? () => _selectDate(isRequired) : null,
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
                 child: Row(
                   children: [
                     Icon(
@@ -1620,13 +1655,18 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       teamSize: _parseInt(_teamSizeController.text),
       imageUrl: imageUrl,
       clientAccountId: _selectedClientAccountId,
-      clientAccountName: _clientAccounts
-          .cast<ClientAccount?>()
-          .firstWhere(
-            (account) => account?.id == _selectedClientAccountId,
-            orElse: () => null,
-          )
-          ?.name,
+      clientAccountName:
+          _clientAccounts
+              .cast<ClientAccount?>()
+              .firstWhere(
+                (account) => account?.id == _selectedClientAccountId,
+                orElse: () => null,
+              )
+              ?.name,
+      estimatedProgress: widget.project?.estimatedProgress ?? 0,
+      measuredAmount: widget.project?.measuredAmount ?? 0,
+      measurementCount: widget.project?.measurementCount ?? 0,
+      lastMeasurementAt: widget.project?.lastMeasurementAt,
     );
   }
 

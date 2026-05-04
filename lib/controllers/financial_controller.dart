@@ -7,7 +7,7 @@ class FinancialController extends ChangeNotifier {
   final FinancialService _service;
 
   FinancialController({FinancialService? service})
-      : _service = service ?? FinancialService();
+    : _service = service ?? FinancialService();
 
   // ─── Estado interno ──────────────────────────────────────────────────────────
 
@@ -56,48 +56,49 @@ class FinancialController extends ChangeNotifier {
 
   /// Receitas efetivamente recebidas.
   double get totalIncome => _sumWhere(
-        (t) =>
-            t.type == TransactionType.income &&
-            t.status == TransactionStatus.paid,
-      );
+    (t) =>
+        t.type == TransactionType.income && t.status == TransactionStatus.paid,
+  );
 
   /// Despesas efetivamente pagas.
   double get totalExpense => _sumWhere(
-        (t) =>
-            t.type == TransactionType.expense &&
-            t.status == TransactionStatus.paid,
-      );
+    (t) =>
+        t.type == TransactionType.expense && t.status == TransactionStatus.paid,
+  );
 
   /// Saldo atual (receitas pagas - despesas pagas).
   double get balance => totalIncome - totalExpense;
 
   /// Despesas pendentes ainda dentro do prazo.
   double get totalPendingExpense => _sumWhere(
-        (t) =>
-            t.type == TransactionType.expense &&
-            t.status == TransactionStatus.pending,
-      );
+    (t) =>
+        t.type == TransactionType.expense &&
+        t.status == TransactionStatus.pending,
+  );
 
   /// Despesas vencidas e não pagas.
   double get totalOverdueExpense => _sumWhere(
-        (t) =>
-            t.type == TransactionType.expense &&
-            (t.status == TransactionStatus.overdue || t.isOverdue),
-      );
+    (t) =>
+        t.type == TransactionType.expense &&
+        (t.status == TransactionStatus.overdue || t.isOverdue),
+  );
 
   /// Receitas previstas ainda não recebidas.
   double get totalPendingIncome => _sumWhere(
-        (t) =>
-            t.type == TransactionType.income &&
-            t.status == TransactionStatus.pending,
-      );
+    (t) =>
+        t.type == TransactionType.income &&
+        t.status == TransactionStatus.pending,
+  );
 
   /// Transações com status overdue (para badge de alerta na UI).
-  List<FinancialTransactionModel> get overdueTransactions => _filtered
-      .where((t) =>
-          t.status == TransactionStatus.overdue ||
-          (t.status == TransactionStatus.pending && t.isOverdue))
-      .toList();
+  List<FinancialTransactionModel> get overdueTransactions =>
+      _filtered
+          .where(
+            (t) =>
+                t.status == TransactionStatus.overdue ||
+                (t.status == TransactionStatus.pending && t.isOverdue),
+          )
+          .toList();
 
   /// Agrupa despesas pagas por categoria — alimenta gráficos e DRE.
   Map<TransactionCategory, double> get expensesByCategory {
@@ -136,7 +137,7 @@ class FinancialController extends ChangeNotifier {
 
   // ─── Inicialização ───────────────────────────────────────────────────────────
 
-  /// Inicia o stream do Firestore. Chamar no initState ou no Provider.
+  /// Inicia o stream de transacoes. Chamar no initState ou no Provider.
   void init() {
     _setLoading(true);
     _subscription?.cancel();
@@ -269,7 +270,7 @@ class FinancialController extends ChangeNotifier {
   // ─── Helpers ─────────────────────────────────────────────────────────────────
 
   /// Verifica e atualiza o status de overdue nas transações pendentes.
-  /// Firestore não atualiza status automaticamente — fazemos client-side.
+  /// O backend nao atualiza status automaticamente; fazemos client-side.
   void _syncOverdueStatus() {
     final now = DateTime.now();
     bool changed = false;
@@ -281,7 +282,7 @@ class FinancialController extends ChangeNotifier {
           t.type == TransactionType.expense) {
         _transactions[i] = t.copyWith(status: TransactionStatus.overdue);
         changed = true;
-        // Opcional: persistir no Firestore em background.
+        // Opcional: persistir o ajuste em background.
         _service.updateTransaction(_transactions[i]);
       }
     }
@@ -290,9 +291,7 @@ class FinancialController extends ChangeNotifier {
   }
 
   double _sumWhere(bool Function(FinancialTransactionModel) predicate) {
-    return _filtered
-        .where(predicate)
-        .fold(0.0, (sum, t) => sum + t.amount);
+    return _filtered.where(predicate).fold(0.0, (sum, t) => sum + t.amount);
   }
 
   void _setLoading(bool value) {

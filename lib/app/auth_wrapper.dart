@@ -8,7 +8,18 @@ import 'package:project_granith/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 
 class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  const AuthWrapper({
+    super.key,
+    this.loginPage,
+    this.clientFirstAccessPage,
+    this.clientPortalPage,
+    this.mainLayoutPage,
+  });
+
+  final Widget? loginPage;
+  final Widget? clientFirstAccessPage;
+  final Widget? clientPortalPage;
+  final Widget? mainLayoutPage;
 
   @override
   Widget build(BuildContext context) {
@@ -24,18 +35,18 @@ class AuthWrapper extends StatelessWidget {
         }
 
         if (!auth.isAuthenticated) {
-          return const LoginPage();
+          return loginPage ?? const LoginPage();
         }
 
         if (auth.requiresClientFirstAccess) {
-          return const ClientFirstAccessPage();
+          return clientFirstAccessPage ?? const ClientFirstAccessPage();
         }
 
         if (auth.isClientUser) {
-          return const ClientPortalPage();
+          return clientPortalPage ?? const ClientPortalPage();
         }
 
-        return const MainLayout();
+        return mainLayoutPage ?? const MainLayout();
       },
     );
   }

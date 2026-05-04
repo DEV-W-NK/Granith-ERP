@@ -5,8 +5,26 @@ import 'package:project_granith/core/config/supabase_config.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/services/client_account_service.dart';
 
+typedef ClientPortalInviteSender =
+    Future<void> Function({
+      required String email,
+      required bool shouldCreateUser,
+      required String? emailRedirectTo,
+      required Map<String, dynamic> data,
+    });
+
 class ClientPortalAccessService {
-  final ClientAccountService _clientAccountService = ClientAccountService();
+  ClientPortalAccessService({
+    ClientAccountService? clientAccountService,
+    ClientPortalInviteSender? inviteSender,
+    DateTime Function()? nowProvider,
+  }) : _clientAccountService = clientAccountService ?? ClientAccountService(),
+       _inviteSender = inviteSender,
+       _nowProvider = nowProvider ?? DateTime.now;
+
+  final ClientAccountService _clientAccountService;
+  final ClientPortalInviteSender? _inviteSender;
+  final DateTime Function() _nowProvider;
 
   SupabaseClient _buildProvisioningClient() {
     return SupabaseClient(
@@ -33,10 +51,9 @@ class ClientPortalAccessService {
 
     final inviteClient = _buildProvisioningClient();
     try {
-      await inviteClient.auth.signInWithOtp(
+      await _sendInvite(
+        inviteClient,
         email: normalizedEmail,
-        shouldCreateUser: true,
-        emailRedirectTo: kIsWeb ? Uri.base.origin : null,
         data: {
           'role': 'client',
           'client_account_name': account.name,
@@ -48,7 +65,7 @@ class ClientPortalAccessService {
         account.copyWith(
           ownerEmail: normalizedEmail,
           portalAccessStatus: ClientPortalAccessStatus.invited,
-          portalInvitedAt: DateTime.now().toUtc(),
+          portalInvitedAt: _nowProvider().toUtc(),
         ),
       );
 
@@ -97,6 +114,28 @@ class ClientPortalAccessService {
     }
 
     return 'Nao foi possivel criar o acesso do cliente agora. Detalhe: $message';
+  }
+
+  Future<void> _sendInvite(
+    SupabaseClient inviteClient, {
+    required String email,
+    required Map<String, dynamic> data,
+  }) {
+    if (_inviteSender != null) {
+      return _inviteSender(
+        email: email,
+        shouldCreateUser: true,
+        emailRedirectTo: kIsWeb ? Uri.base.origin : null,
+        data: data,
+      );
+    }
+
+    return inviteClient.auth.signInWithOtp(
+      email: email,
+      shouldCreateUser: true,
+      emailRedirectTo: kIsWeb ? Uri.base.origin : null,
+      data: data,
+    );
   }
 }
 

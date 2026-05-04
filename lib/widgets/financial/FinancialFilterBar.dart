@@ -14,7 +14,8 @@ class FinancialFilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<FinancialController>();
     final overdueCount = ctrl.overdueTransactions.length;
-    final hasFilters = ctrl.activeProjectId != null ||
+    final hasFilters =
+        ctrl.activeProjectId != null ||
         ctrl.periodFrom != null ||
         ctrl.periodTo != null;
 
@@ -42,11 +43,13 @@ class FinancialFilterBar extends StatelessWidget {
             activeColor: Colors.redAccent,
             onTap: () {
               // Scroll ou highlight — por ora só mostra snackbar
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('$overdueCount transação(ões) vencida(s)'),
-                backgroundColor: Colors.redAccent,
-                duration: const Duration(seconds: 2),
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$overdueCount transação(ões) vencida(s)'),
+                  backgroundColor: Colors.redAccent,
+                  duration: const Duration(seconds: 2),
+                ),
+              );
             },
           ),
           const SizedBox(width: 8),
@@ -66,7 +69,10 @@ class FinancialFilterBar extends StatelessWidget {
                 children: [
                   Icon(Icons.close, size: 13, color: AppColors.textMuted),
                   SizedBox(width: 4),
-                  Text('Limpar', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  Text(
+                    'Limpar',
+                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -78,7 +84,9 @@ class FinancialFilterBar extends StatelessWidget {
   // ─── Period picker ────────────────────────────────────────────────────────────
 
   Future<void> _showPeriodPicker(
-      BuildContext context, FinancialController ctrl) async {
+    BuildContext context,
+    FinancialController ctrl,
+  ) async {
     await showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceDark,
@@ -93,7 +101,8 @@ class FinancialFilterBar extends StatelessWidget {
     if (ctrl.periodFrom == null) return 'Período';
     final fmt = DateFormat('MMM/yy', 'pt_BR');
     if (ctrl.periodTo == null) return 'Desde ${fmt.format(ctrl.periodFrom!)}';
-    final sameMonth = ctrl.periodFrom!.month == ctrl.periodTo!.month &&
+    final sameMonth =
+        ctrl.periodFrom!.month == ctrl.periodTo!.month &&
         ctrl.periodFrom!.year == ctrl.periodTo!.year;
     if (sameMonth) return fmt.format(ctrl.periodFrom!);
     return '${fmt.format(ctrl.periodFrom!)} – ${fmt.format(ctrl.periodTo!)}';
@@ -162,13 +171,14 @@ class _ProjectFilterChip extends StatelessWidget {
     final projects = context.watch<ProjectsController>().projects;
     final active = ctrl.activeProjectId != null;
 
-    final label = active
-        ? (projects
-                .where((p) => p.id == ctrl.activeProjectId)
-                .firstOrNull
-                ?.name ??
-            'Projeto')
-        : 'Projeto';
+    final label =
+        active
+            ? (projects
+                    .where((p) => p.id == ctrl.activeProjectId)
+                    .firstOrNull
+                    ?.name ??
+                'Projeto')
+            : 'Projeto';
 
     return GestureDetector(
       onTap: () => _showProjectPicker(context, ctrl, projects),
@@ -176,22 +186,24 @@ class _ProjectFilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: active
-              ? AppColors.accentGold.withOpacity(0.12)
-              : Colors.transparent,
+          color:
+              active
+                  ? AppColors.accentGold.withOpacity(0.12)
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: active
-                ? AppColors.accentGold.withOpacity(0.4)
-                : Colors.white12,
+            color:
+                active ? AppColors.accentGold.withOpacity(0.4) : Colors.white12,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.folder_outlined,
-                size: 13,
-                color: active ? AppColors.accentGold : AppColors.textMuted),
+            Icon(
+              Icons.folder_outlined,
+              size: 13,
+              color: active ? AppColors.accentGold : AppColors.textMuted,
+            ),
             const SizedBox(width: 5),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 100),
@@ -212,48 +224,66 @@ class _ProjectFilterChip extends StatelessWidget {
     );
   }
 
-  void _showProjectPicker(BuildContext context, FinancialController ctrl,
-      List projects) {
+  void _showProjectPicker(
+    BuildContext context,
+    FinancialController ctrl,
+    List projects,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surfaceDark,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 16),
-          const Text('Filtrar por projeto',
-              style: TextStyle(
+      builder:
+          (_) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 16),
+              const Text(
+                'Filtrar por projeto',
+                style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 16)),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.all_inclusive, color: AppColors.textMuted),
-            title: const Text('Todos os projetos',
-                style: TextStyle(color: Colors.white)),
-            onTap: () {
-              ctrl.setProjectFilter(null);
-              Navigator.of(context).pop();
-            },
-          ),
-          ...projects.map((p) => ListTile(
-                leading: const Icon(Icons.folder_outlined,
-                    color: AppColors.accentGold),
-                title: Text(p.name,
-                    style: const TextStyle(color: Colors.white)),
-                selected: ctrl.activeProjectId == p.id,
-                selectedTileColor: AppColors.accentGold.withOpacity(0.08),
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(
+                  Icons.all_inclusive,
+                  color: AppColors.textMuted,
+                ),
+                title: const Text(
+                  'Todos os projetos',
+                  style: TextStyle(color: Colors.white),
+                ),
                 onTap: () {
-                  ctrl.setProjectFilter(p.id);
+                  ctrl.setProjectFilter(null);
                   Navigator.of(context).pop();
                 },
-              )),
-          const SizedBox(height: 16),
-        ],
-      ),
+              ),
+              ...projects.map(
+                (p) => ListTile(
+                  leading: const Icon(
+                    Icons.folder_outlined,
+                    color: AppColors.accentGold,
+                  ),
+                  title: Text(
+                    p.name,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  selected: ctrl.activeProjectId == p.id,
+                  selectedTileColor: AppColors.accentGold.withOpacity(0.08),
+                  onTap: () {
+                    ctrl.setProjectFilter(p.id);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
     );
   }
 }
@@ -273,11 +303,14 @@ class _PeriodPickerSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Filtrar por período',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16)),
+          const Text(
+            'Filtrar por período',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
           const SizedBox(height: 16),
           _periodOption(context, 'Mês atual', () {
             controller.setCurrentMonthFilter();
@@ -305,13 +338,15 @@ class _PeriodPickerSheet extends StatelessWidget {
               context: context,
               firstDate: DateTime(2020),
               lastDate: DateTime(2030),
-              builder: (ctx, child) => Theme(
-                data: Theme.of(ctx).copyWith(
-                  colorScheme:
-                      const ColorScheme.dark(primary: AppColors.accentGold),
-                ),
-                child: child!,
-              ),
+              builder:
+                  (ctx, child) => Theme(
+                    data: Theme.of(ctx).copyWith(
+                      colorScheme: const ColorScheme.dark(
+                        primary: AppColors.accentGold,
+                      ),
+                    ),
+                    child: child!,
+                  ),
             );
             if (range != null) {
               controller.setPeriodFilter(range.start, range.end);
@@ -329,12 +364,18 @@ class _PeriodPickerSheet extends StatelessWidget {
     );
   }
 
-  Widget _periodOption(BuildContext context, String label, VoidCallback onTap,
-      {Color? color}) {
+  Widget _periodOption(
+    BuildContext context,
+    String label,
+    VoidCallback onTap, {
+    Color? color,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(label,
-          style: TextStyle(color: color ?? Colors.white, fontSize: 14)),
+      title: Text(
+        label,
+        style: TextStyle(color: color ?? Colors.white, fontSize: 14),
+      ),
       onTap: onTap,
     );
   }

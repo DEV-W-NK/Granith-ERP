@@ -54,6 +54,10 @@ class Project {
   final String? imageUrl;
   final String? clientAccountId;
   final String? clientAccountName;
+  final double estimatedProgress;
+  final double measuredAmount;
+  final int measurementCount;
+  final DateTime? lastMeasurementAt;
 
   const Project({
     this.id = '',
@@ -71,17 +75,33 @@ class Project {
     this.imageUrl,
     this.clientAccountId,
     this.clientAccountName,
+    this.estimatedProgress = 0,
+    this.measuredAmount = 0,
+    this.measurementCount = 0,
+    this.lastMeasurementAt,
   });
 
-  double get progressPercentage {
+  double get financialProgressPercentage {
     if (budget == 0) return 0;
     return (currentCost / budget * 100).clamp(0, 100);
+  }
+
+  bool get hasMeasuredProgress => measurementCount > 0 || measuredAmount > 0;
+
+  double get progressPercentage {
+    if (hasMeasuredProgress) {
+      return estimatedProgress.clamp(0, 100);
+    }
+    return financialProgressPercentage;
   }
 
   String get formattedBudget => 'R\$ ${budget.toStringAsFixed(2)}';
   String get formattedCurrentCost => 'R\$ ${currentCost.toStringAsFixed(2)}';
   String get formattedProgress => '${progressPercentage.toStringAsFixed(1)}%';
-  double get remainingBudget => (budget - currentCost).clamp(0, double.infinity);
+  String get formattedMeasuredAmount =>
+      'R\$ ${measuredAmount.toStringAsFixed(2)}';
+  double get remainingBudget =>
+      (budget - currentCost).clamp(0, double.infinity);
   String get formattedRemainingBudget =>
       'R\$ ${remainingBudget.toStringAsFixed(2)}';
   bool get isOverBudget => currentCost > budget;
@@ -106,7 +126,8 @@ class Project {
     return end.difference(startDate).inDays.abs();
   }
 
-  String get uniqueKey => '${name.trim().toLowerCase()}_${client.trim().toLowerCase()}';
+  String get uniqueKey =>
+      '${name.trim().toLowerCase()}_${client.trim().toLowerCase()}';
 
   String get contentHash =>
       '$name$client$description${status.name}$budget$location${tags.join(',')}$teamSize$clientAccountId'
@@ -146,6 +167,10 @@ class Project {
     String? imageUrl,
     String? clientAccountId,
     String? clientAccountName,
+    double? estimatedProgress,
+    double? measuredAmount,
+    int? measurementCount,
+    DateTime? lastMeasurementAt,
   }) {
     return Project(
       id: id ?? this.id,
@@ -163,6 +188,10 @@ class Project {
       imageUrl: imageUrl ?? this.imageUrl,
       clientAccountId: clientAccountId ?? this.clientAccountId,
       clientAccountName: clientAccountName ?? this.clientAccountName,
+      estimatedProgress: estimatedProgress ?? this.estimatedProgress,
+      measuredAmount: measuredAmount ?? this.measuredAmount,
+      measurementCount: measurementCount ?? this.measurementCount,
+      lastMeasurementAt: lastMeasurementAt ?? this.lastMeasurementAt,
     );
   }
 
@@ -191,7 +220,8 @@ class Project {
         (e) => e.name == (data['status'] ?? 'planning'),
         orElse: () => ProjectStatus.planning,
       ),
-      startDate: DbValue.toDateTime(data['startDate']) ??
+      startDate:
+          DbValue.toDateTime(data['startDate']) ??
           DbValue.toDateTime(data['createdAt']) ??
           DateTime.now(),
       endDate: DbValue.toDateTime(data['endDate']),
@@ -200,24 +230,42 @@ class Project {
       location: (data['location'] ?? '').toString(),
       tags: data['tags'] != null ? List<String>.from(data['tags']) : <String>[],
       teamSize: (data['teamSize'] ?? 0) as int,
-      imageUrl: data['imageUrl']?.toString().isEmpty == true
-          ? null
-          : data['imageUrl']?.toString(),
+      imageUrl:
+          data['imageUrl']?.toString().isEmpty == true
+              ? null
+              : data['imageUrl']?.toString(),
       clientAccountId:
-          data['clientAccountId']?.toString() ?? data['client_account_id']?.toString(),
-      clientAccountName: data['clientAccountName']?.toString() ??
+          data['clientAccountId']?.toString() ??
+          data['client_account_id']?.toString(),
+      clientAccountName:
+          data['clientAccountName']?.toString() ??
           data['client_account_name']?.toString(),
+      estimatedProgress:
+          ((data['estimatedProgress'] ?? data['estimated_progress']) as num?)
+              ?.toDouble() ??
+          0,
+      measuredAmount:
+          ((data['measuredAmount'] ?? data['measured_amount']) as num?)
+              ?.toDouble() ??
+          0,
+      measurementCount:
+          ((data['measurementCount'] ?? data['measurement_count']) as num?)
+              ?.toInt() ??
+          0,
+      lastMeasurementAt: DbValue.toDateTime(
+        data['lastMeasurementAt'] ?? data['last_measurement_at'],
+      ),
     );
   }
 
-Map<String, dynamic> toMap() {
+  Map<String, dynamic> toMap() {
     // 1. Cria o mapa SEM os UUIDs
     final map = <String, dynamic>{
       'name': name.trim(),
       'client': client.trim(),
       'description': description.trim(),
       'status': status.name,
-      'startDate': startDate.toIso8601String(), 
+      'startDate': startDate.toIso8601String(),
       'endDate': endDate?.toIso8601String(),
       'budget': budget,
       'currentCost': currentCost,
@@ -229,6 +277,14 @@ Map<String, dynamic> toMap() {
       'client_account_name': clientAccountName,
       'projectKey': uniqueKey,
       'contentHash': contentHash,
+      'estimatedProgress': estimatedProgress,
+      'estimated_progress': estimatedProgress,
+      'measuredAmount': measuredAmount,
+      'measured_amount': measuredAmount,
+      'measurementCount': measurementCount,
+      'measurement_count': measurementCount,
+      'lastMeasurementAt': lastMeasurementAt?.toIso8601String(),
+      'last_measurement_at': lastMeasurementAt?.toIso8601String(),
     };
 
     // 2. Só injeta o ID se for um UUID válido
@@ -265,26 +321,34 @@ Map<String, dynamic> toMap() {
         other.teamSize == teamSize &&
         other.imageUrl == imageUrl &&
         other.clientAccountId == clientAccountId &&
-        other.clientAccountName == clientAccountName;
+        other.clientAccountName == clientAccountName &&
+        other.estimatedProgress == estimatedProgress &&
+        other.measuredAmount == measuredAmount &&
+        other.measurementCount == measurementCount &&
+        other.lastMeasurementAt == lastMeasurementAt;
   }
 
   @override
   int get hashCode => Object.hash(
-        id,
-        name,
-        client,
-        description,
-        status,
-        startDate,
-        endDate,
-        budget,
-        currentCost,
-        location,
-        teamSize,
-        imageUrl,
-        clientAccountId,
-        clientAccountName,
-      );
+    id,
+    name,
+    client,
+    description,
+    status,
+    startDate,
+    endDate,
+    budget,
+    currentCost,
+    location,
+    teamSize,
+    imageUrl,
+    clientAccountId,
+    clientAccountName,
+    estimatedProgress,
+    measuredAmount,
+    measurementCount,
+    lastMeasurementAt,
+  );
 
   @override
   String toString() =>
@@ -295,8 +359,10 @@ extension ProjectListExtension on List<Project> {
   List<Project> whereStatus(ProjectStatus status) =>
       where((project) => project.status == status).toList();
 
-  List<Project> whereClient(String client) => where(
-        (project) => project.client.toLowerCase().contains(client.toLowerCase()),
+  List<Project> whereClient(String client) =>
+      where(
+        (project) =>
+            project.client.toLowerCase().contains(client.toLowerCase()),
       ).toList();
 
   List<Project> get overdue => where((project) => project.isOverdue).toList();
@@ -309,7 +375,8 @@ extension ProjectListExtension on List<Project> {
 
     final totalBudget = fold(0.0, (sum, project) => sum + project.budget);
     final totalCost = fold(0.0, (sum, project) => sum + project.currentCost);
-    final avgTeamSize = fold(0, (sum, project) => sum + project.teamSize) / length;
+    final avgTeamSize =
+        fold(0, (sum, project) => sum + project.teamSize) / length;
 
     final statusCounts = <String, int>{};
     for (final project in this) {
@@ -331,35 +398,35 @@ extension ProjectListExtension on List<Project> {
 
 class ProjectModel {
   static List<Project> get sampleProjects => [
-        Project(
-          id: '1',
-          name: 'Sistema de Gestao Empresarial',
-          client: 'TechCorp Ltda',
-          description: 'Desenvolvimento de sistema completo de gestao empresarial.',
-          status: ProjectStatus.inProgress,
-          startDate: DateTime.now().subtract(const Duration(days: 15)),
-          endDate: DateTime.now().add(const Duration(days: 45)),
-          budget: 150000.0,
-          currentCost: 45000.0,
-          location: 'Sao Paulo - SP',
-          tags: const ['Urgente', 'Alto Valor', 'Estrategico'],
-          teamSize: 8,
-        ),
-        Project(
-          id: '2',
-          name: 'Aplicativo de Delivery',
-          client: 'FoodExpress SA',
-          description: 'Aplicativo mobile para delivery com pagamentos.',
-          status: ProjectStatus.planning,
-          startDate: DateTime.now().add(const Duration(days: 7)),
-          endDate: DateTime.now().add(const Duration(days: 90)),
-          budget: 80000.0,
-          currentCost: 12000.0,
-          location: 'Rio de Janeiro - RJ',
-          tags: const ['Mobile', 'Inovacao', 'B2C'],
-          teamSize: 5,
-        ),
-      ];
+    Project(
+      id: '1',
+      name: 'Sistema de Gestao Empresarial',
+      client: 'TechCorp Ltda',
+      description: 'Desenvolvimento de sistema completo de gestao empresarial.',
+      status: ProjectStatus.inProgress,
+      startDate: DateTime.now().subtract(const Duration(days: 15)),
+      endDate: DateTime.now().add(const Duration(days: 45)),
+      budget: 150000.0,
+      currentCost: 45000.0,
+      location: 'Sao Paulo - SP',
+      tags: const ['Urgente', 'Alto Valor', 'Estrategico'],
+      teamSize: 8,
+    ),
+    Project(
+      id: '2',
+      name: 'Aplicativo de Delivery',
+      client: 'FoodExpress SA',
+      description: 'Aplicativo mobile para delivery com pagamentos.',
+      status: ProjectStatus.planning,
+      startDate: DateTime.now().add(const Duration(days: 7)),
+      endDate: DateTime.now().add(const Duration(days: 90)),
+      budget: 80000.0,
+      currentCost: 12000.0,
+      location: 'Rio de Janeiro - RJ',
+      tags: const ['Mobile', 'Inovacao', 'B2C'],
+      teamSize: 5,
+    ),
+  ];
 
   static Project createTestProject({
     String suffix = '',

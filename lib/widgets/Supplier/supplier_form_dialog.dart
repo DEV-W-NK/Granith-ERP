@@ -8,11 +8,7 @@ class SupplierFormDialog extends StatefulWidget {
   final Supplier? supplier;
   final Future<void> Function(Supplier) onSave;
 
-  const SupplierFormDialog({
-    super.key,
-    this.supplier,
-    required this.onSave,
-  });
+  const SupplierFormDialog({super.key, this.supplier, required this.onSave});
 
   @override
   State<SupplierFormDialog> createState() => _SupplierFormDialogState();
@@ -24,7 +20,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
   final _cnpjController = TextEditingController();
   final _nameFocusNode = FocusNode();
   final _cnpjFocusNode = FocusNode();
-  
+
   bool _isLoading = false;
   bool _isEditing = false;
 
@@ -32,7 +28,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
   void initState() {
     super.initState();
     _isEditing = widget.supplier != null;
-    
+
     if (_isEditing) {
       _nameController.text = widget.supplier!.name;
       _cnpjController.text = widget.supplier!.formattedCnpj;
@@ -50,7 +46,8 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > SupplierConstants.desktopBreakpoint;
+    final isDesktop =
+        MediaQuery.of(context).size.width > SupplierConstants.desktopBreakpoint;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -94,9 +91,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           end: Alignment.bottomRight,
           colors: [AppColors.primaryDark, Color(0xFF1a1a2e)],
         ),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
           bottom: BorderSide(
             color: AppColors.borderColor.withOpacity(0.2),
@@ -136,9 +131,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isEditing
-                      ? 'Editar Fornecedor'
-                      : 'Novo Fornecedor',
+                  _isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 20,
@@ -160,10 +153,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textMuted,
-            ),
+            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
             tooltip: 'Fechar',
           ),
         ],
@@ -223,9 +213,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           focusNode: _nameFocusNode,
           decoration: InputDecoration(
             hintText: SupplierConstants.hintSupplierName,
-            hintStyle: TextStyle(
-              color: AppColors.textMuted.withOpacity(0.6),
-            ),
+            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
             filled: true,
             fillColor: AppColors.backgroundDark.withOpacity(0.5),
             border: OutlineInputBorder(
@@ -266,10 +254,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
               vertical: 16,
             ),
           ),
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-          ),
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
           textCapitalization: TextCapitalization.words,
           validator: _validateName,
           onFieldSubmitted: (_) => _cnpjFocusNode.requestFocus(),
@@ -314,9 +299,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           focusNode: _cnpjFocusNode,
           decoration: InputDecoration(
             hintText: SupplierConstants.hintSupplierCnpj,
-            hintStyle: TextStyle(
-              color: AppColors.textMuted.withOpacity(0.6),
-            ),
+            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
             filled: true,
             fillColor: AppColors.backgroundDark.withOpacity(0.5),
             border: OutlineInputBorder(
@@ -444,23 +427,24 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.primaryDark,
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryDark,
+                        ),
                       ),
+                    )
+                    : Text(
+                      _isEditing
+                          ? SupplierConstants.buttonUpdate
+                          : SupplierConstants.buttonCreate,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                  )
-                : Text(
-                    _isEditing
-                        ? SupplierConstants.buttonUpdate
-                        : SupplierConstants.buttonCreate,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
           ),
         ],
       ),
@@ -471,15 +455,15 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
     if (value == null || value.trim().isEmpty) {
       return SupplierConstants.errorNameRequired;
     }
-    
+
     if (value.trim().length < SupplierConstants.minNameLength) {
       return 'Nome deve ter pelo menos ${SupplierConstants.minNameLength} caracteres';
     }
-    
+
     if (value.trim().length > SupplierConstants.maxNameLength) {
       return 'Nome deve ter no máximo ${SupplierConstants.maxNameLength} caracteres';
     }
-    
+
     return null;
   }
 
@@ -487,63 +471,63 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
     if (value == null || value.trim().isEmpty) {
       return SupplierConstants.errorCnpjRequired;
     }
-    
+
     final cleanCnpj = value.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     if (cleanCnpj.length != SupplierConstants.cnpjLength) {
       return 'CNPJ deve ter 14 dígitos';
     }
-    
+
     if (!_isValidCnpj(cleanCnpj)) {
       return SupplierConstants.errorInvalidCnpj;
     }
-    
+
     return null;
   }
 
   bool _isValidCnpj(String cnpj) {
     if (cnpj.length != 14) return false;
-    
+
     // Check for known invalid patterns
     if (RegExp(r'^(\d)\1+').hasMatch(cnpj)) return false;
-    
+
     // Calculate first verification digit
     int sum = 0;
     List<int> weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    
+
     for (int i = 0; i < 12; i++) {
       sum += int.parse(cnpj[i]) * weights1[i];
     }
-    
+
     int remainder = sum % 11;
     int digit1 = remainder < 2 ? 0 : 11 - remainder;
-    
+
     if (digit1 != int.parse(cnpj[12])) return false;
-    
+
     // Calculate second verification digit
     sum = 0;
     List<int> weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    
+
     for (int i = 0; i < 13; i++) {
       sum += int.parse(cnpj[i]) * weights2[i];
     }
-    
+
     remainder = sum % 11;
     int digit2 = remainder < 2 ? 0 : 11 - remainder;
-    
+
     return digit2 == int.parse(cnpj[13]);
   }
 
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() {
       _isLoading = true;
     });
 
     try {
       final cleanCnpj = _cnpjController.text.replaceAll(RegExp(r'[^\d]'), '');
-      
+
       final supplier = Supplier(
         id: _isEditing ? widget.supplier!.id : '',
         name: _nameController.text.trim(),
@@ -554,7 +538,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
       );
 
       await widget.onSave(supplier);
-      
+
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -573,7 +557,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
         setState(() {
           _isLoading = false;
         });
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: ${e.toString()}'),
@@ -592,13 +576,13 @@ class _CnpjInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final text = newValue.text;
-    
+
     if (text.length > 14) {
       return oldValue;
     }
-    
+
     String formatted = '';
-    
+
     for (int i = 0; i < text.length; i++) {
       if (i == 2 || i == 5) {
         formatted += '.';
@@ -609,7 +593,7 @@ class _CnpjInputFormatter extends TextInputFormatter {
       }
       formatted += text[i];
     }
-    
+
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),

@@ -8,12 +8,14 @@ import 'package:project_granith/widgets/supplier/supplier_card.dart';
 import 'package:project_granith/widgets/supplier/suppliers_header.dart';
 
 class SuppliersPageView extends StatelessWidget {
-  const SuppliersPageView({super.key});
+  final SupplierController? controller;
+
+  const SuppliersPageView({super.key, this.controller});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => SupplierController(SupplierService())..loadSuppliers(),
+    return ChangeNotifierProvider<SupplierController>(
+      create: (_) => controller ?? SupplierController(SupplierService())..loadSuppliers(),
       child: Consumer<SupplierController>(
         builder: (context, controller, _) {
           final isDesktop = MediaQuery.of(context).size.width > 900;
@@ -25,30 +27,32 @@ class SuppliersPageView extends StatelessWidget {
               children: [
                 SuppliersHeader(isDesktop: isDesktop),
                 Expanded(
-                  child: controller.isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accentGold,
-                          ),
-                        )
-                      : suppliers.isEmpty
+                  child:
+                      controller.isLoading
                           ? const Center(
-                              child: Text(
-                                'Nenhum fornecedor encontrado.',
-                                style: TextStyle(color: AppColors.textMuted),
-                              ),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: suppliers.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                return SupplierCard(
-                                  supplier: suppliers[index],
-                                  isListView: true,
-                                );
-                              },
+                            child: CircularProgressIndicator(
+                              color: AppColors.accentGold,
                             ),
+                          )
+                          : suppliers.isEmpty
+                          ? const Center(
+                            child: Text(
+                              'Nenhum fornecedor encontrado.',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
+                          )
+                          : ListView.separated(
+                            padding: const EdgeInsets.all(16),
+                            itemCount: suppliers.length,
+                            separatorBuilder:
+                                (_, __) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              return SupplierCard(
+                                supplier: suppliers[index],
+                                isListView: true,
+                              );
+                            },
+                          ),
                 ),
               ],
             ),

@@ -11,7 +11,7 @@ import 'package:project_granith/services/HrService.dart';
 // Temas e Componentes Internos
 import 'package:project_granith/themes/app_theme.dart';
 
-// Note: Assumi que as abas internas (_EmployeesTab, etc) serão mantidas 
+// Note: Assumi que as abas internas (_EmployeesTab, etc) serão mantidas
 // como componentes privados neste arquivo ou movidas para arquivos próprios.
 
 class HrPageView extends StatefulWidget {
@@ -21,7 +21,8 @@ class HrPageView extends StatefulWidget {
   State<HrPageView> createState() => _HrPageViewState();
 }
 
-class _HrPageViewState extends State<HrPageView> with SingleTickerProviderStateMixin {
+class _HrPageViewState extends State<HrPageView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final HrService _hrService = HrService();
 
@@ -66,9 +67,24 @@ class _HrPageViewState extends State<HrPageView> with SingleTickerProviderStateM
                     // _EmployeesTab(hrService: _hrService),
                     // _BenefitsTab(hrService: _hrService),
                     // _JobRolesTab(),
-                    const Center(child: Text("Lista de Colaboradores", style: TextStyle(color: Colors.white))),
-                    const Center(child: Text("Gestão de Benefícios", style: TextStyle(color: Colors.white))),
-                    const Center(child: Text("Configuração de Cargos", style: TextStyle(color: Colors.white))),
+                    const Center(
+                      child: Text(
+                        "Lista de Colaboradores",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        "Gestão de Benefícios",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        "Configuração de Cargos",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -101,11 +117,23 @@ class _HrHeader extends StatelessWidget {
             _HeaderIcon(),
             const SizedBox(width: 14),
             const _HeaderTitle(),
-            _StatPill(label: 'Ativos', count: ativos, color: AppColors.accentGreen),
+            _StatPill(
+              label: 'Ativos',
+              count: ativos,
+              color: AppColors.accentGreen,
+            ),
             const SizedBox(width: 8),
-            _StatPill(label: 'Férias', count: ferias, color: AppColors.accentBlue),
+            _StatPill(
+              label: 'Férias',
+              count: ferias,
+              color: AppColors.accentBlue,
+            ),
             const SizedBox(width: 8),
-            _StatPill(label: 'Desligados', count: deslig, color: AppColors.accentRed),
+            _StatPill(
+              label: 'Desligados',
+              count: deslig,
+              color: AppColors.accentRed,
+            ),
           ],
         );
       },
@@ -117,13 +145,18 @@ class _HeaderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 42, height: 42,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         color: AppColors.accentGold.withOpacity(0.1),
         borderRadius: BorderRadius.circular(11),
         border: Border.all(color: AppColors.accentGold.withOpacity(0.3)),
       ),
-      child: const Icon(Icons.people_alt_rounded, color: AppColors.accentGold, size: 20),
+      child: const Icon(
+        Icons.people_alt_rounded,
+        color: AppColors.accentGold,
+        size: 20,
+      ),
     );
   }
 }
@@ -137,12 +170,20 @@ class _HeaderTitle extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Gestão de RH',
-              style: TextStyle(color: AppColors.textPrimary, fontSize: 17,
-                  fontWeight: FontWeight.w600, letterSpacing: -0.3)),
+          Text(
+            'Gestão de RH',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.3,
+            ),
+          ),
           SizedBox(height: 2),
-          Text('Colaboradores, benefícios e cargos',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
+          Text(
+            'Colaboradores, benefícios e cargos',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -175,8 +216,14 @@ class _HrTabBar extends StatelessWidget {
         unselectedLabelColor: AppColors.textMuted,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         tabs: const [
-          Tab(icon: Icon(Icons.people_rounded, size: 16), text: 'Colaboradores'),
-          Tab(icon: Icon(Icons.card_giftcard_rounded, size: 16), text: 'Benefícios'),
+          Tab(
+            icon: Icon(Icons.people_rounded, size: 16),
+            text: 'Colaboradores',
+          ),
+          Tab(
+            icon: Icon(Icons.card_giftcard_rounded, size: 16),
+            text: 'Benefícios',
+          ),
           Tab(icon: Icon(Icons.work_rounded, size: 16), text: 'Cargos'),
         ],
       ),
@@ -188,7 +235,11 @@ class _StatPill extends StatelessWidget {
   final String label;
   final int count;
   final Color color;
-  const _StatPill({required this.label, required this.count, required this.color});
+  const _StatPill({
+    required this.label,
+    required this.count,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) => Container(
@@ -198,10 +249,23 @@ class _StatPill extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       border: Border.all(color: color.withOpacity(0.2)),
     ),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Text('$count', style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.bold)),
-      const SizedBox(width: 5),
-      Text(label, style: TextStyle(color: color.withOpacity(0.8), fontSize: 12)),
-    ]),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$count',
+          style: TextStyle(
+            color: color,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(color: color.withOpacity(0.8), fontSize: 12),
+        ),
+      ],
+    ),
   );
 }

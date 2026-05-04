@@ -29,7 +29,9 @@ class AppProviders extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SystemSettingsViewModel()),
         ChangeNotifierProvider(create: (_) => SubscriptionController()),
         ChangeNotifierProvider(create: (_) => DailyLogController()),
-        ChangeNotifierProvider(create: (_) => ProjectsController(ServiceProjetos())),
+        ChangeNotifierProvider(
+          create: (_) => ProjectsController(ServiceProjetos()),
+        ),
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => TeamController()),
         ChangeNotifierProvider(create: (_) => JobRoleController()),

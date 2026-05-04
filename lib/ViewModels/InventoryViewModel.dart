@@ -4,7 +4,7 @@ import 'package:project_granith/services/inventory_service.dart';
 
 class InventoryViewModel extends ChangeNotifier {
   final InventoryService _service;
-  
+
   InventoryViewModel(this._service);
 
   String _searchQuery = '';

@@ -10,9 +10,7 @@ Future<void> _noopShow({String? status}) async {}
 Future<void> _noopDismiss() async {}
 
 class _LoginFormHarness extends StatefulWidget {
-  const _LoginFormHarness({
-    required this.viewModel,
-  });
+  const _LoginFormHarness({required this.viewModel});
 
   final LoginViewModel viewModel;
 
@@ -45,9 +43,7 @@ class _LoginFormHarnessState extends State<_LoginFormHarness>
     return ChangeNotifierProvider<LoginViewModel>.value(
       value: widget.viewModel,
       child: MaterialApp(
-        routes: {
-          '/home': (_) => const Scaffold(body: Text('home')),
-        },
+        routes: {'/home': (_) => const Scaffold(body: Text('home'))},
         home: Scaffold(
           body: SingleChildScrollView(
             child: Center(

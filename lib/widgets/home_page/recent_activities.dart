@@ -46,13 +46,22 @@ class RecentActivities extends StatelessWidget {
                 TextButton(
                   onPressed: () {},
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     backgroundColor: AppColors.backgroundDark,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text(
                     'Ver todas',
-                    style: TextStyle(color: AppColors.accentGold, fontSize: 12, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: AppColors.accentGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -62,7 +71,12 @@ class RecentActivities extends StatelessWidget {
           if (activities.isEmpty)
             const Padding(
               padding: EdgeInsets.all(24.0),
-              child: Center(child: Text("Nenhuma atividade recente.", style: TextStyle(color: AppColors.textSecondary))),
+              child: Center(
+                child: Text(
+                  "Nenhuma atividade recente.",
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
             )
           else
             // Lista de atividades
@@ -71,12 +85,13 @@ class RecentActivities extends StatelessWidget {
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
               padding: const EdgeInsets.only(bottom: 16),
-              separatorBuilder: (context, index) => Divider(
-                color: AppColors.dividerColor.withOpacity(0.5), 
-                height: 1, 
-                indent: 70, 
-                endIndent: 24
-              ),
+              separatorBuilder:
+                  (context, index) => Divider(
+                    color: AppColors.dividerColor.withOpacity(0.5),
+                    height: 1,
+                    indent: 70,
+                    endIndent: 24,
+                  ),
               itemBuilder: (context, index) {
                 final activity = activities[index];
                 return _buildActivityItem(activity);
@@ -125,7 +140,10 @@ class RecentActivities extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       activity.time,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                      ),
                     ),
                   ],
                 ),

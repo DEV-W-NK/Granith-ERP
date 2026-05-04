@@ -87,17 +87,17 @@ class _CardContent extends StatelessWidget {
         Text(
           'Painel de comando',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           'Entre para acompanhar projetos, custos, operacao e equipe em uma unica superficie.',
-          style: Theme.of(context)
-              .textTheme
-              .bodyMedium
-              ?.copyWith(color: AppColors.textSecondary, height: 1.45),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.textSecondary,
+            height: 1.45,
+          ),
         ),
         const SizedBox(height: 24),
         Container(
@@ -112,10 +112,7 @@ class _CardContent extends StatelessWidget {
           ),
           child: const Text(
             'Colaboradores entram com e-mail e senha ou Google. Clientes recebem um link de acesso para entrar direto no portal. Se o link expirar, basta pedir outro abaixo.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
         ),
         const SizedBox(height: 18),
@@ -143,55 +140,66 @@ class _CardContent extends StatelessWidget {
           width: double.infinity,
           height: 54,
           child: ElevatedButton(
-            onPressed: controller.isLoading
-                ? null
-                : () async {
-                    final success = await controller.handleEmailPasswordSignIn();
-                    if (success && context.mounted) {
-                      Navigator.pushReplacementNamed(context, '/home');
-                    }
-                  },
+            onPressed:
+                controller.isLoading
+                    ? null
+                    : () async {
+                      await controller.handleEmailPasswordSignIn();
+                    },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accentBlue,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(18),
               ),
             ),
-            child: controller.isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
+            child:
+                controller.isLoading
+                    ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                    : const Text(
+                      'Entrar com e-mail',
+                      style: TextStyle(fontWeight: FontWeight.w700),
                     ),
-                  )
-                : const Text(
-                    'Entrar com e-mail',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
           ),
         ),
         const SizedBox(height: 16),
         Row(
           children: [
-            Expanded(child: Divider(color: AppColors.borderColor.withValues(alpha: 0.9))),
+            Expanded(
+              child: Divider(
+                color: AppColors.borderColor.withValues(alpha: 0.9),
+              ),
+            ),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 12),
-              child: Text('ou', style: TextStyle(color: AppColors.textSecondary)),
+              child: Text(
+                'ou',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
-            Expanded(child: Divider(color: AppColors.borderColor.withValues(alpha: 0.9))),
+            Expanded(
+              child: Divider(
+                color: AppColors.borderColor.withValues(alpha: 0.9),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
         _buildGoogleButton(context, controller),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: controller.isLoading
-              ? null
-              : () async {
-                  await controller.handleMagicLinkSignIn();
-                },
+          onPressed:
+              controller.isLoading
+                  ? null
+                  : () async {
+                    await controller.handleMagicLinkSignIn();
+                  },
           icon: const Icon(Icons.mark_email_unread_outlined),
           label: const Text('Receber link de acesso'),
         ),
@@ -227,46 +235,47 @@ class _CardContent extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(18),
-          onTap: controller.isLoading
-              ? null
-              : () async {
-                  final success = await controller.handleGoogleSignIn();
-                  if (success && context.mounted) {
-                    Navigator.pushReplacementNamed(context, '/home');
-                  }
-                },
+          onTap:
+              controller.isLoading
+                  ? null
+                  : () async {
+                    await controller.handleGoogleSignIn();
+                  },
           child: Center(
-            child: controller.isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(AppColors.primaryDark),
-                    ),
-                  )
-                : const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.g_mobiledata,
-                          size: 32,
-                          color: AppColors.primaryDark,
+            child:
+                controller.isLoading
+                    ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          AppColors.primaryDark,
                         ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Conectar com Google',
-                          style: TextStyle(
+                      ),
+                    )
+                    : const FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.g_mobiledata,
+                            size: 32,
                             color: AppColors.primaryDark,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 8),
+                          Text(
+                            'Conectar com Google',
+                            style: TextStyle(
+                              color: AppColors.primaryDark,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
           ),
         ),
       ),

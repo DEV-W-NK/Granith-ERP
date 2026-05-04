@@ -16,7 +16,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
   final _cnpjController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _service = services.SupplierService();
-  
+
   bool _isLoading = false;
   services.CNPJData? _cnpjData;
   String? _errorMessage;
@@ -31,7 +31,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 768;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
@@ -42,9 +42,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
         decoration: BoxDecoration(
           color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.borderColor.withOpacity(0.3),
-          ),
+          border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.3),
@@ -82,13 +80,9 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
             AppColors.accentBlue.withOpacity(0.05),
           ],
         ),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderColor.withOpacity(0.2),
-          ),
+          bottom: BorderSide(color: AppColors.borderColor.withOpacity(0.2)),
         ),
       ),
       child: Row(
@@ -131,10 +125,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           ),
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textMuted,
-            ),
+            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.borderColor.withOpacity(0.1),
               shape: RoundedRectangleBorder(
@@ -185,9 +176,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           ],
           decoration: InputDecoration(
             hintText: '00.000.000/0000-00',
-            hintStyle: TextStyle(
-              color: AppColors.textMuted.withOpacity(0.6),
-            ),
+            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
             prefixIcon: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -238,16 +227,16 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
             if (value == null || value.isEmpty) {
               return 'CNPJ é obrigatório';
             }
-            
+
             final cleanCnpj = value.replaceAll(RegExp(r'[^\d]'), '');
             if (cleanCnpj.length != 14) {
               return 'CNPJ deve ter 14 dígitos';
             }
-            
+
             if (!services.SupplierService.validarCNPJ(cleanCnpj)) {
               return 'CNPJ inválido';
             }
-            
+
             return null;
           },
           onChanged: (_) {
@@ -270,9 +259,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
       decoration: BoxDecoration(
         color: AppColors.accentBlue.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.accentBlue.withOpacity(0.2),
-        ),
+        border: Border.all(color: AppColors.accentBlue.withOpacity(0.2)),
       ),
       child: Row(
         children: [
@@ -289,10 +276,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           const SizedBox(width: 16),
           const Text(
             'Consultando dados na Receita Federal...',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
           ),
         ],
       ),
@@ -305,9 +289,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
       decoration: BoxDecoration(
         color: AppColors.accentRed.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.accentRed.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.accentRed.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -340,9 +322,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
       decoration: BoxDecoration(
         color: AppColors.accentGreen.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.accentGreen.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.accentGreen.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -369,14 +349,16 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           _DataRow('Razão Social', _cnpjData!.razaoSocial),
           if (_cnpjData!.nomeFantasia.isNotEmpty)
             _DataRow('Nome Fantasia', _cnpjData!.nomeFantasia),
-          _DataRow('CNPJ', services.SupplierService.formatarCNPJ(_cnpjData!.cnpj)),
+          _DataRow(
+            'CNPJ',
+            services.SupplierService.formatarCNPJ(_cnpjData!.cnpj),
+          ),
           _DataRow('Situação', _cnpjData!.situacao),
           if (_cnpjData!.enderecoCompleto.isNotEmpty)
             _DataRow('Endereço', _cnpjData!.enderecoCompleto),
           if (_cnpjData!.telefone.isNotEmpty)
             _DataRow('Telefone', _cnpjData!.telefone),
-          if (_cnpjData!.email.isNotEmpty)
-            _DataRow('Email', _cnpjData!.email),
+          if (_cnpjData!.email.isNotEmpty) _DataRow('Email', _cnpjData!.email),
         ],
       ),
     );
@@ -384,7 +366,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
 
   Widget _DataRow(String label, String value) {
     if (value.isEmpty) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -420,9 +402,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: AppColors.borderColor.withOpacity(0.2),
-          ),
+          top: BorderSide(color: AppColors.borderColor.withOpacity(0.2)),
         ),
       ),
       child: Row(
@@ -432,9 +412,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
               onPressed: _isLoading ? null : () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textMuted,
-                side: BorderSide(
-                  color: AppColors.borderColor.withOpacity(0.5),
-                ),
+                side: BorderSide(color: AppColors.borderColor.withOpacity(0.5)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -448,25 +426,29 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
             child: ElevatedButton(
               onPressed: _getActionButtonCallback(),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _cnpjData != null 
-                    ? AppColors.accentGreen 
-                    : AppColors.accentBlue,
+                backgroundColor:
+                    _cnpjData != null
+                        ? AppColors.accentGreen
+                        : AppColors.accentBlue,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : Text(_cnpjData != null ? 'Cadastrar' : 'Consultar'),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
+                        ),
+                      )
+                      : Text(_cnpjData != null ? 'Cadastrar' : 'Consultar'),
             ),
           ),
         ],
@@ -476,7 +458,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
 
   VoidCallback? _getActionButtonCallback() {
     if (_isLoading) return null;
-    
+
     if (_cnpjData != null) {
       return _createSupplierFromCNPJ;
     } else {
@@ -495,12 +477,17 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
 
     try {
       final cnpjData = await _service.consultarCNPJ(_cnpjController.text);
-      
+
       if (cnpjData != null) {
         // Verifica se o CNPJ já existe no sistema
-        final controller = Provider.of<SupplierController>(context, listen: false);
+        final controller = Provider.of<SupplierController>(
+          context,
+          listen: false,
+        );
         final existingSupplier = controller.suppliers.firstWhere(
-          (s) => s.cnpj == services.SupplierService.limparCNPJ(_cnpjController.text),
+          (s) =>
+              s.cnpj ==
+              services.SupplierService.limparCNPJ(_cnpjController.text),
           orElse: () => null as dynamic,
         );
 
@@ -509,7 +496,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           _isLoading = false;
         });
         return;
-      
+
         setState(() {
           _cnpjData = cnpjData;
           _isLoading = false;
@@ -531,11 +518,14 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
     });
 
     try {
-      final controller = Provider.of<SupplierController>(context, listen: false);
+      final controller = Provider.of<SupplierController>(
+        context,
+        listen: false,
+      );
       final supplier = _cnpjData!.toSupplier();
-      
+
       await controller.createSupplier(supplier);
-      
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -577,7 +567,7 @@ class _CNPJFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final text = newValue.text;
-    
+
     if (text.length > 14) {
       return oldValue;
     }

@@ -18,33 +18,35 @@ class ProjectBudgetSummary extends StatelessWidget {
   final Project project;
   final bool showBreakdown;
   final bool compact;
+  final ProjectBudgetService? budgetService;
 
   const ProjectBudgetSummary({
     super.key,
     required this.project,
     this.showBreakdown = false,
     this.compact = false,
+    this.budgetService,
   });
 
   @override
   Widget build(BuildContext context) {
     if (project.id.isEmpty) return const SizedBox.shrink();
 
+    final service = budgetService ?? ProjectBudgetService();
+
     return StreamBuilder<ProjectBudgetSnapshot>(
-      stream: ProjectBudgetService().watchProjectBudget(
+      stream: service.watchProjectBudget(
         projectId: project.id,
         budgetPrevisto: project.budget,
       ),
       builder: (context, snap) {
-        final snapshot = snap.data ??
+        final snapshot =
+            snap.data ??
             ProjectBudgetSnapshot.empty(project.id, project.budget);
 
         if (compact) return _CompactView(snapshot: snapshot);
 
-        return _FullView(
-          snapshot: snapshot,
-          showBreakdown: showBreakdown,
-        );
+        return _FullView(snapshot: snapshot, showBreakdown: showBreakdown);
       },
     );
   }
@@ -61,9 +63,10 @@ class _CompactView extends StatelessWidget {
   Widget build(BuildContext context) {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
     final pct = snapshot.percentualConsumido.clamp(0.0, 100.0) / 100;
-    final barColor = snapshot.isOverBudget
-        ? Colors.redAccent
-        : snapshot.isNearLimit
+    final barColor =
+        snapshot.isOverBudget
+            ? Colors.redAccent
+            : snapshot.isNearLimit
             ? Colors.orangeAccent
             : Colors.greenAccent;
 
@@ -101,8 +104,11 @@ class _CompactView extends StatelessWidget {
           const SizedBox(height: 4),
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  size: 11, color: Colors.redAccent),
+              const Icon(
+                Icons.warning_amber_rounded,
+                size: 11,
+                color: Colors.redAccent,
+              ),
               const SizedBox(width: 3),
               Text(
                 'Orçamento estourado em ${currency.format(snapshot.custoRealizado - snapshot.budgetPrevisto)}',
@@ -122,18 +128,16 @@ class _FullView extends StatelessWidget {
   final ProjectBudgetSnapshot snapshot;
   final bool showBreakdown;
 
-  const _FullView({
-    required this.snapshot,
-    required this.showBreakdown,
-  });
+  const _FullView({required this.snapshot, required this.showBreakdown});
 
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
     final pct = snapshot.percentualConsumido.clamp(0.0, 100.0) / 100;
-    final barColor = snapshot.isOverBudget
-        ? Colors.redAccent
-        : snapshot.isNearLimit
+    final barColor =
+        snapshot.isOverBudget
+            ? Colors.redAccent
+            : snapshot.isNearLimit
             ? Colors.orangeAccent
             : Colors.greenAccent;
 
@@ -143,9 +147,10 @@ class _FullView extends StatelessWidget {
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: snapshot.isOverBudget
-              ? Colors.redAccent.withOpacity(0.3)
-              : Colors.white.withOpacity(0.06),
+          color:
+              snapshot.isOverBudget
+                  ? Colors.redAccent.withOpacity(0.3)
+                  : Colors.white.withOpacity(0.06),
         ),
       ),
       child: Column(
@@ -169,8 +174,9 @@ class _FullView extends StatelessWidget {
                 _Badge('Atenção', Colors.orangeAccent)
               else if (snapshot.percentualConsumido > 0)
                 _Badge(
-                    '${snapshot.percentualConsumido.toStringAsFixed(0)}%',
-                    Colors.greenAccent),
+                  '${snapshot.percentualConsumido.toStringAsFixed(0)}%',
+                  Colors.greenAccent,
+                ),
             ],
           ),
           const SizedBox(height: 14),
@@ -196,7 +202,8 @@ class _FullView extends StatelessWidget {
                     .clamp(0.0, 1.0),
                 backgroundColor: Colors.transparent,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                    Colors.orangeAccent.withOpacity(0.4)),
+                  Colors.orangeAccent.withOpacity(0.4),
+                ),
                 minHeight: 4,
               ),
             ),
@@ -233,16 +240,19 @@ class _FullView extends StatelessWidget {
               ),
               Expanded(
                 child: _Metric(
-                  label: snapshot.saldoDisponivel >= 0
-                      ? 'Disponível'
-                      : 'Excedente',
+                  label:
+                      snapshot.saldoDisponivel >= 0
+                          ? 'Disponível'
+                          : 'Excedente',
                   value: currency.format(snapshot.saldoDisponivel.abs()),
-                  color: snapshot.saldoDisponivel >= 0
-                      ? Colors.greenAccent
-                      : Colors.redAccent,
-                  icon: snapshot.saldoDisponivel >= 0
-                      ? Icons.savings_outlined
-                      : Icons.trending_up,
+                  color:
+                      snapshot.saldoDisponivel >= 0
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                  icon:
+                      snapshot.saldoDisponivel >= 0
+                          ? Icons.savings_outlined
+                          : Icons.trending_up,
                 ),
               ),
             ],
@@ -266,11 +276,11 @@ class _FullView extends StatelessWidget {
                 Expanded(
                   child: _Metric(
                     label: 'Margem',
-                    value:
-                        '${snapshot.percentualMargem.toStringAsFixed(1)}%',
-                    color: snapshot.margem >= 0
-                        ? Colors.greenAccent
-                        : Colors.redAccent,
+                    value: '${snapshot.percentualMargem.toStringAsFixed(1)}%',
+                    color:
+                        snapshot.margem >= 0
+                            ? Colors.greenAccent
+                            : Colors.redAccent,
                     icon: Icons.trending_up,
                   ),
                 ),
@@ -287,8 +297,7 @@ class _FullView extends StatelessWidget {
           ],
 
           // Breakdown por categoria
-          if (showBreakdown &&
-              snapshot.despesasPorCategoria.isNotEmpty) ...[
+          if (showBreakdown && snapshot.despesasPorCategoria.isNotEmpty) ...[
             const SizedBox(height: 14),
             const Divider(color: Colors.white10),
             const SizedBox(height: 10),
@@ -302,14 +311,19 @@ class _FullView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             ...(() {
-              final entries = snapshot.despesasPorCategoria.entries.toList()
-                ..sort((a, b) => b.value.compareTo(a.value));
-              return entries.take(5).map((entry) => _CategoryRow(
-                    category: entry.key,
-                    amount: entry.value,
-                    total: snapshot.custoRealizado,
-                    currency: currency,
-                  ));
+              final entries =
+                  snapshot.despesasPorCategoria.entries.toList()
+                    ..sort((a, b) => b.value.compareTo(a.value));
+              return entries
+                  .take(5)
+                  .map(
+                    (entry) => _CategoryRow(
+                      category: entry.key,
+                      amount: entry.value,
+                      total: snapshot.custoRealizado,
+                      currency: currency,
+                    ),
+                  );
             })(),
           ],
         ],
@@ -369,9 +383,10 @@ class _Metric extends StatelessWidget {
           children: [
             Icon(icon, size: 11, color: color.withOpacity(0.7)),
             const SizedBox(width: 4),
-            Text(label,
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 10)),
+            Text(
+              label,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+            ),
           ],
         ),
         const SizedBox(height: 2),
@@ -413,8 +428,7 @@ class _CategoryRow extends StatelessWidget {
             width: 80,
             child: Text(
               _label(category),
-              style:
-                  const TextStyle(color: AppColors.textMuted, fontSize: 11),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -427,7 +441,8 @@ class _CategoryRow extends StatelessWidget {
                 value: pct.toDouble(),
                 backgroundColor: Colors.white.withOpacity(0.06),
                 valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.accentGold),
+                  AppColors.accentGold,
+                ),
                 minHeight: 4,
               ),
             ),
@@ -447,12 +462,12 @@ class _CategoryRow extends StatelessWidget {
   }
 
   String _label(TransactionCategory c) => switch (c) {
-        TransactionCategory.material => 'Material',
-        TransactionCategory.labor => 'M. de obra',
-        TransactionCategory.equipment => 'Equipamento',
-        TransactionCategory.administrative => 'Adm.',
-        TransactionCategory.measurement => 'Medição',
-        TransactionCategory.tax => 'Imposto',
-        TransactionCategory.other => 'Outro',
-      };
+    TransactionCategory.material => 'Material',
+    TransactionCategory.labor => 'M. de obra',
+    TransactionCategory.equipment => 'Equipamento',
+    TransactionCategory.administrative => 'Adm.',
+    TransactionCategory.measurement => 'Medição',
+    TransactionCategory.tax => 'Imposto',
+    TransactionCategory.other => 'Outro',
+  };
 }

@@ -8,13 +8,13 @@ class ProjectDetailsViewModel extends ChangeNotifier {
 
   // Aqui poderias adicionar lógica para atualizar o status do projeto,
   // calcular métricas em tempo real ou disparar notificações.
-  
+
   bool get isOverBudget => project.isOverBudget;
   bool get isOverdue => project.isOverdue;
   bool get isCompleted => project.isCompleted;
 
   void refreshData() {
-    // Lógica para recarregar dados do Firestore se necessário
+    // Logica para recarregar dados se necessario.
     notifyListeners();
   }
 }

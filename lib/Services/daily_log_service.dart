@@ -1,51 +1,65 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/services/auth_service.dart';
 
 class DailyLogService {
-  final FirebaseFirestore _firestore;
+  static const _table = 'daily_logs';
+
   final AuthService _authService;
 
-  DailyLogService({FirebaseFirestore? firestore, AuthService? authService}) : _firestore = firestore ?? FirebaseFirestore.instance, _authService = authService ?? AuthService();
-
-  CollectionReference get _logsCollection => _firestore.collection('daily_logs');
+  DailyLogService({AuthService? authService})
+    : _authService = authService ?? AuthService();
 
   Future<void> saveLog(DailyLogModel log) async {
     try {
+      final now = DateTime.now().toUtc().toIso8601String();
       final user = _authService.currentUser;
-      // if (user == null) throw Exception('Usuário não autenticado'); // Descomentar em produção
-
-      final logData = {
+      final data = DbValue.normalizeMap({
         ...log.toMap(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+        if (log.createdByUserId.isEmpty && user != null)
+          'createdByUserId': user.id,
+        'updatedAt': now,
+      });
 
       if (log.id.isEmpty) {
-        await _logsCollection.add({
-          ...logData,
-          'createdAt': FieldValue.serverTimestamp(),
+        await AppSupabase.client.from(_table).insert({
+          ...data,
+          'createdAt': now,
         });
       } else {
-        await _logsCollection.doc(log.id).update(logData);
+        await AppSupabase.client.from(_table).update(data).eq('id', log.id);
       }
     } catch (e) {
-      throw Exception('Erro ao salvar diário: $e');
+      throw Exception('Erro ao salvar diario: $e');
     }
   }
 
   Future<List<DailyLogModel>> getRecentLogs({int limit = 20}) async {
     try {
-      final snapshot = await _logsCollection
-          .orderBy('date', descending: true)
-          .limit(limit)
-          .get();
+      final response = await AppSupabase.client
+          .from(_table)
+          .select()
+          .order('date', ascending: false)
+          .limit(limit);
 
-      return snapshot.docs.map((doc) {
-        return DailyLogModel.fromMap(doc.data() as Map<String, dynamic>, doc.id);
-      }).toList();
+      return (response as List).map((row) => _fromRow(row as Map)).toList();
     } catch (e) {
-      print('Erro ao buscar logs: $e');
       return [];
     }
+  }
+
+  Stream<List<DailyLogModel>> watchByProject(String projectId) {
+    return AppSupabase.client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .eq('projectId', projectId)
+        .order('date', ascending: false)
+        .map((rows) => rows.map((row) => _fromRow(row)).toList());
+  }
+
+  DailyLogModel _fromRow(Map<dynamic, dynamic> row) {
+    final data = Map<String, dynamic>.from(row);
+    return DailyLogModel.fromMap(data, data['id'] as String? ?? '');
   }
 }

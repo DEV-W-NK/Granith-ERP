@@ -99,29 +99,27 @@ class BudgetTypeCard extends StatelessWidget {
   }
 
   Widget _buildIcon() {
-    Color color = budgetType.color != null 
-        ? Color(int.parse(budgetType.color!))
-        : BudgetTypeConstants.categoryColors[budgetType.category] ?? AppColors.accentGold;
+    Color color =
+        budgetType.color != null
+            ? Color(int.parse(budgetType.color!))
+            : BudgetTypeConstants.categoryColors[budgetType.category] ??
+                AppColors.accentGold;
 
-    IconData icon = budgetType.iconName != null
-        ? BudgetTypeConstants.availableIcons[budgetType.iconName!] ?? Icons.category
-        : BudgetTypeConstants.categoryIcons[budgetType.category] ?? Icons.category;
+    IconData icon =
+        budgetType.iconName != null
+            ? BudgetTypeConstants.availableIcons[budgetType.iconName!] ??
+                Icons.category
+            : BudgetTypeConstants.categoryIcons[budgetType.category] ??
+                Icons.category;
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
-      child: Icon(
-        icon,
-        color: color,
-        size: isListView ? 24 : 28,
-      ),
+      child: Icon(icon, color: color, size: isListView ? 24 : 28),
     );
   }
 
@@ -152,28 +150,23 @@ class BudgetTypeCard extends StatelessWidget {
   Widget _buildDescription() {
     return Text(
       budgetType.description,
-      style: TextStyle(
-        color: AppColors.textMuted,
-        fontSize: 14,
-        height: 1.4,
-      ),
+      style: TextStyle(color: AppColors.textMuted, fontSize: 14, height: 1.4),
       maxLines: isListView ? 2 : 3,
       overflow: TextOverflow.ellipsis,
     );
   }
 
   Widget _buildCategory() {
-    final categoryColor = BudgetTypeConstants.categoryColors[budgetType.category] ?? AppColors.accentGold;
-    
+    final categoryColor =
+        BudgetTypeConstants.categoryColors[budgetType.category] ??
+        AppColors.accentGold;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: categoryColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: categoryColor.withOpacity(0.3),
-          width: 1,
-        ),
+        border: Border.all(color: categoryColor.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -199,10 +192,7 @@ class BudgetTypeCard extends StatelessWidget {
 
   Widget _buildFooter() {
     return Row(
-      children: [
-        Expanded(child: _buildStatusBadge()),
-        _buildDateInfo(),
-      ],
+      children: [Expanded(child: _buildStatusBadge()), _buildDateInfo()],
     );
   }
 
@@ -210,14 +200,16 @@ class BudgetTypeCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: budgetType.isActive 
-            ? AppColors.accentGold.withOpacity(0.15)
-            : AppColors.textMuted.withOpacity(0.15),
+        color:
+            budgetType.isActive
+                ? AppColors.accentGold.withOpacity(0.15)
+                : AppColors.textMuted.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: budgetType.isActive 
-              ? AppColors.accentGold.withOpacity(0.3)
-              : AppColors.textMuted.withOpacity(0.3),
+          color:
+              budgetType.isActive
+                  ? AppColors.accentGold.withOpacity(0.3)
+                  : AppColors.textMuted.withOpacity(0.3),
           width: 1,
         ),
       ),
@@ -228,7 +220,10 @@ class BudgetTypeCard extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: budgetType.isActive ? AppColors.accentGold : AppColors.textMuted,
+              color:
+                  budgetType.isActive
+                      ? AppColors.accentGold
+                      : AppColors.textMuted,
               borderRadius: BorderRadius.circular(3),
             ),
           ),
@@ -236,7 +231,10 @@ class BudgetTypeCard extends StatelessWidget {
           Text(
             budgetType.isActive ? 'Ativo' : 'Inativo',
             style: TextStyle(
-              color: budgetType.isActive ? AppColors.accentGold : AppColors.textMuted,
+              color:
+                  budgetType.isActive
+                      ? AppColors.accentGold
+                      : AppColors.textMuted,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -248,7 +246,7 @@ class BudgetTypeCard extends StatelessWidget {
 
   Widget _buildDateInfo() {
     if (isListView) return const SizedBox.shrink();
-    
+
     return Tooltip(
       message: 'Criado em ${_formatDate(budgetType.createdAt)}',
       child: Icon(
@@ -262,64 +260,69 @@ class BudgetTypeCard extends StatelessWidget {
   Widget _buildActions() {
     return PopupMenuButton<String>(
       onSelected: _handleMenuAction,
-      icon: Icon(
-        Icons.more_vert_rounded,
-        color: AppColors.textMuted,
-        size: 20,
-      ),
+      icon: Icon(Icons.more_vert_rounded, color: AppColors.textMuted, size: 20),
       color: AppColors.surfaceDark,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: AppColors.borderColor.withOpacity(0.3),
-        ),
+        side: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
       ),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              const Icon(Icons.edit_outlined, color: AppColors.accentGold, size: 18),
-              const SizedBox(width: 12),
-              const Text(
-                'Editar',
-                style: TextStyle(color: AppColors.textPrimary),
+      itemBuilder:
+          (context) => [
+            PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.edit_outlined,
+                    color: AppColors.accentGold,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Editar',
+                    style: TextStyle(color: AppColors.textPrimary),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'toggle_status',
-          child: Row(
-            children: [
-              Icon(
-                budgetType.isActive ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                color: AppColors.accentBlue,
-                size: 18,
+            ),
+            PopupMenuItem(
+              value: 'toggle_status',
+              child: Row(
+                children: [
+                  Icon(
+                    budgetType.isActive
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: AppColors.accentBlue,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    budgetType.isActive ? 'Desativar' : 'Ativar',
+                    style: const TextStyle(color: AppColors.textPrimary),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              Text(
-                budgetType.isActive ? 'Desativar' : 'Ativar',
-                style: const TextStyle(color: AppColors.textPrimary),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.delete_outline,
+                    color: AppColors.accentRed,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Excluir',
+                    style: TextStyle(color: AppColors.accentRed),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              const Icon(Icons.delete_outline, color: AppColors.accentRed, size: 18),
-              const SizedBox(width: 12),
-              const Text(
-                'Excluir',
-                style: TextStyle(color: AppColors.accentRed),
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
     );
   }
 

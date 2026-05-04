@@ -49,8 +49,16 @@ class BudgetTypeItem {
 class BudgetFormDialog extends StatefulWidget {
   final Budget? budget;
   final Function(Budget) onSave;
+  final BudgetTypeService? budgetTypeService;
+  final ClientAccountService? clientAccountService;
 
-  const BudgetFormDialog({super.key, this.budget, required this.onSave});
+  const BudgetFormDialog({
+    super.key,
+    this.budget,
+    required this.onSave,
+    this.budgetTypeService,
+    this.clientAccountService,
+  });
 
   @override
   State<BudgetFormDialog> createState() => _BudgetFormDialogState();
@@ -64,8 +72,8 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
   final TextEditingController _descriptionController = TextEditingController();
 
   // Novo serviço para tipos de orçamento
-  final BudgetTypeService _budgetTypeService = BudgetTypeService();
-  final ClientAccountService _clientAccountService = ClientAccountService();
+  late final BudgetTypeService _budgetTypeService;
+  late final ClientAccountService _clientAccountService;
 
   BudgetStatus _selectedStatus = BudgetStatus.pending;
   DateTime _creationDate = DateTime.now();
@@ -142,6 +150,9 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
   @override
   void initState() {
     super.initState();
+    _budgetTypeService = widget.budgetTypeService ?? BudgetTypeService();
+    _clientAccountService =
+        widget.clientAccountService ?? ClientAccountService();
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -408,7 +419,10 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
               primary: AppColors.accentGold,
               surface: AppColors.surfaceDark,
               onSurface: AppColors.textPrimary,
-            ), dialogTheme: DialogThemeData(backgroundColor: AppColors.surfaceDark),
+            ),
+            dialogTheme: DialogThemeData(
+              backgroundColor: AppColors.surfaceDark,
+            ),
           ),
           child: child!,
         );
@@ -1417,11 +1431,15 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                               onChanged: (value) {
                                 setState(() {
                                   _selectedClientAccountId =
-                                      value == null || value.isEmpty ? null : value;
+                                      value == null || value.isEmpty
+                                          ? null
+                                          : value;
                                   final selected = _clientAccounts
                                       .cast<ClientAccount?>()
                                       .firstWhere(
-                                        (account) => account?.id == _selectedClientAccountId,
+                                        (account) =>
+                                            account?.id ==
+                                            _selectedClientAccountId,
                                         orElse: () => null,
                                       );
                                   if (selected != null) {
@@ -1579,15 +1597,18 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                                     .first
                                                     .budgetType
                                                 : null,
-                                        clientAccountId: _selectedClientAccountId,
-                                        clientAccountName: _clientAccounts
-                                            .cast<ClientAccount?>()
-                                            .firstWhere(
-                                              (account) =>
-                                                  account?.id == _selectedClientAccountId,
-                                              orElse: () => null,
-                                            )
-                                            ?.name,
+                                        clientAccountId:
+                                            _selectedClientAccountId,
+                                        clientAccountName:
+                                            _clientAccounts
+                                                .cast<ClientAccount?>()
+                                                .firstWhere(
+                                                  (account) =>
+                                                      account?.id ==
+                                                      _selectedClientAccountId,
+                                                  orElse: () => null,
+                                                )
+                                                ?.name,
                                       );
 
                                       widget.onSave(budget);

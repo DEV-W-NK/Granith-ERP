@@ -48,11 +48,13 @@ class TransactionListItem extends StatelessWidget {
         if (direction == DismissDirection.startToEnd) {
           await context.read<FinancialController>().markAsPaid(t.id);
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('Marcado como pago'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Marcado como pago'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
           }
         } else {
           final confirm = await _confirmCancel(context);
@@ -83,9 +85,10 @@ class TransactionListItem extends StatelessWidget {
           color: AppColors.surfaceDark,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: t.isOverdue
-                ? Colors.redAccent.withOpacity(0.3)
-                : Colors.white.withOpacity(0.05),
+            color:
+                t.isOverdue
+                    ? Colors.redAccent.withOpacity(0.3)
+                    : Colors.white.withOpacity(0.05),
           ),
         ),
         child: Row(
@@ -127,13 +130,20 @@ class TransactionListItem extends StatelessWidget {
                       _chip(_categoryLabel(t.category)),
                       const SizedBox(width: 6),
                       if (t.projectId != null) ...[
-                        _chip('Projeto', color: Colors.blueAccent.withOpacity(0.15), textColor: Colors.blueAccent),
+                        _chip(
+                          'Projeto',
+                          color: Colors.blueAccent.withOpacity(0.15),
+                          textColor: Colors.blueAccent,
+                        ),
                         const SizedBox(width: 6),
                       ],
                       Text(
                         dateFormat.format(t.dueDate),
                         style: TextStyle(
-                          color: t.isOverdue ? Colors.redAccent : AppColors.textMuted,
+                          color:
+                              t.isOverdue
+                                  ? Colors.redAccent
+                                  : AppColors.textMuted,
                           fontSize: 11,
                         ),
                       ),
@@ -158,7 +168,10 @@ class TransactionListItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -192,10 +205,7 @@ class TransactionListItem extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: textColor ?? AppColors.textMuted,
-          fontSize: 10,
-        ),
+        style: TextStyle(color: textColor ?? AppColors.textMuted, fontSize: 10),
       ),
     );
   }
@@ -220,7 +230,14 @@ class TransactionListItem extends StatelessWidget {
         children: [
           Icon(icon, color: iconColor, size: 20),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(color: iconColor, fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            label,
+            style: TextStyle(
+              color: iconColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
@@ -229,48 +246,55 @@ class TransactionListItem extends StatelessWidget {
   Future<bool?> _confirmCancel(BuildContext context) {
     return showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceDark,
-        title: const Text('Cancelar transação?', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'A transação será marcada como cancelada. O histórico será mantido.',
-          style: TextStyle(color: AppColors.textMuted),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Voltar'),
+      builder:
+          (ctx) => AlertDialog(
+            backgroundColor: AppColors.surfaceDark,
+            title: const Text(
+              'Cancelar transação?',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: const Text(
+              'A transação será marcada como cancelada. O histórico será mantido.',
+              style: TextStyle(color: AppColors.textMuted),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text('Voltar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text(
+                  'Cancelar transação',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Cancelar transação', style: TextStyle(color: Colors.redAccent)),
-          ),
-        ],
-      ),
     );
   }
 
   Color _statusColor(TransactionStatus s) => switch (s) {
-        TransactionStatus.paid      => Colors.green,
-        TransactionStatus.overdue   => Colors.redAccent,
-        TransactionStatus.cancelled => Colors.grey,
-        TransactionStatus.pending   => Colors.orange,
-      };
+    TransactionStatus.paid => Colors.green,
+    TransactionStatus.overdue => Colors.redAccent,
+    TransactionStatus.cancelled => Colors.grey,
+    TransactionStatus.pending => Colors.orange,
+  };
 
   String _statusLabel(TransactionStatus s) => switch (s) {
-        TransactionStatus.paid      => 'PAGO',
-        TransactionStatus.overdue   => 'ATRASADO',
-        TransactionStatus.cancelled => 'CANCELADO',
-        TransactionStatus.pending   => 'PENDENTE',
-      };
+    TransactionStatus.paid => 'PAGO',
+    TransactionStatus.overdue => 'ATRASADO',
+    TransactionStatus.cancelled => 'CANCELADO',
+    TransactionStatus.pending => 'PENDENTE',
+  };
 
   String _categoryLabel(TransactionCategory c) => switch (c) {
-        TransactionCategory.material       => 'Material',
-        TransactionCategory.labor          => 'M. de obra',
-        TransactionCategory.equipment      => 'Equipamento',
-        TransactionCategory.administrative => 'Adm.',
-        TransactionCategory.measurement    => 'Medição',
-        TransactionCategory.tax            => 'Imposto',
-        TransactionCategory.other          => 'Outro',
-      };
+    TransactionCategory.material => 'Material',
+    TransactionCategory.labor => 'M. de obra',
+    TransactionCategory.equipment => 'Equipamento',
+    TransactionCategory.administrative => 'Adm.',
+    TransactionCategory.measurement => 'Medição',
+    TransactionCategory.tax => 'Imposto',
+    TransactionCategory.other => 'Outro',
+  };
 }

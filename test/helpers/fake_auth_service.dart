@@ -35,6 +35,7 @@ class FakeAuthService implements AuthServiceContract {
   AppAuthException? emailPasswordError;
   AppAuthException? googleError;
   AppAuthException? magicLinkError;
+  AppAuthException? firstAccessError;
 
   @override
   dynamic get currentUser => currentUserValue;
@@ -90,10 +91,11 @@ class FakeAuthService implements AuthServiceContract {
   }
 
   @override
-  Future<void> completeClientFirstAccess({
-    required String password,
-  }) async {
+  Future<void> completeClientFirstAccess({required String password}) async {
     lastPassword = password;
+    if (firstAccessError != null) {
+      throw firstAccessError!;
+    }
   }
 
   @override

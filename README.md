@@ -1,12 +1,12 @@
 # ARCHITECTURE.md — Granith ERP
 > Documento de contexto do projeto. Cole este arquivo no início de cada sessão para retomar sem reexplicar.
-> Última atualização: sessão de expansão do módulo RH (funcionários, benefícios, banco de talentos) + estratégia de IA com Gemini.
+> Última atualização: migração do runtime para Supabase e definição das pendências finais do MVP.
 
 ---
 
 ## Visão geral
 
-**Granith ERP** é um sistema de gestão voltado para empresas de construção/obras, desenvolvido em **Flutter** com backend **Firebase (Firestore + Auth)**. Objetivo: multiplataforma (web + mobile). Arquitetura atual em **MVC** com migração planejada para **MVVM** após estabilização das regras de negócio.
+**Granith ERP** é um sistema de gestão voltado para empresas de construção/obras, desenvolvido em **Flutter** com backend **Supabase (Auth + Postgres + Storage)**. Objetivo: multiplataforma (web + mobile). Firebase permanece apenas para Hosting.
 
 ---
 
@@ -15,13 +15,33 @@
 | Camada | Tecnologia |
 |--------|-----------|
 | Frontend | Flutter (web + mobile) |
-| Backend | Firebase Firestore |
-| Auth | Firebase Auth |
-| Storage | Firebase Storage (emulador local → produção) |
+| Backend | Supabase Postgres/PostgREST + Realtime |
+| Auth | Supabase Auth |
+| Storage | Supabase Storage |
 | State mgmt | ChangeNotifier + Provider (MVC atual) → MVVM futuro |
 | Assinatura | SubscriptionController (multi-plano, guards pendentes) |
 | Gráficos | fl_chart ^0.68.0 |
 | IA | Google Gemini API (modelo configurável no app: Flash / Pro) |
+
+---
+
+## Pendências para fechar o MVP
+
+Faltam três frentes principais para considerar o Granith ERP fechado como MVP. Ajustes finos e demandas do Granith Mobile ficam em backlog separado.
+
+1. **Integração com IA nos módulos Financeiro, Obras e RH**
+   - Financeiro: análise de DRE, alertas de custo, projeções, explicação de variações e apoio a decisões.
+   - Obras: leitura de diários de obra, resumo de ocorrências, riscos, pendências e produtividade.
+   - RH: apoio em triagem, histórico funcional, benefícios, alertas e leitura de documentos.
+
+2. **Controle de veículos da empresa**
+   - Cadastro de veículos, status, documentação, responsável, disponibilidade e vínculo com obras/equipes.
+   - Controle de manutenção, custos, abastecimento, histórico de uso e alertas operacionais.
+
+3. **Sincronização com Geofencing/sistema de ponto do Granith Mobile**
+   - Receber registros de ponto do mobile com localização e referência da obra.
+   - Validar entrada/saída por geofence.
+   - Consolidar horas no ERP para RH, obras e custo de mão de obra.
 
 ---
 
@@ -37,7 +57,7 @@ lib/
 │   └── (futuro)         # benefit_model.dart, talent_candidate_model.dart, salary_history_model.dart
 ├── screens/             # 17 telas
 │   └── (futuro)         # hr_page.dart, talent_bank_page.dart, ai_assistant_page.dart
-├── services/            # 15 services (acesso ao Firestore)
+├── services/            # services de acesso ao Supabase
 │   └── (futuro)         # benefit_service.dart, talent_service.dart, gemini_service.dart, storage_service.dart
 ├── themes/              # app_theme.dart
 ├── utils/               # seeder.dart
@@ -48,7 +68,6 @@ lib/
 │   ├── navigation/      # sidebar_menu, mobile_drawer
 │   ├── projects/
 │   └── purchases/
-├── firebase_options.dart
 └── main.dart
 ```
 
@@ -83,7 +102,7 @@ lib/
   - Campos: `dueDate`, `paymentDate`, `projectId`, `supplierId`, `referenceId`, `createdBy`
   - `isOverdue` getter computado, `copyWith()`, `markAsPaid()`
 - `financial_service.dart` — streams por projeto/período/tipo/status/origem, `addTransactionsBatch()`, `getSumByCategory()`
-- `financial_controller.dart` — stream real do Firestore, filtros client-side por projeto e período, `_syncOverdueStatus()`
+- `financial_controller.dart` — stream real via Supabase, filtros client-side por projeto e período, `_syncOverdueStatus()`
 - `financial_page.dart` — 6 cards de stat, filtros, lista com swipe (marcar pago / cancelar), tap abre edição
 - `transaction_form_dialog.dart` — dialog unificado
 
@@ -92,9 +111,11 @@ lib/
 ### Supply Chain — Compras ⭐ (ciclo fechado)
 - `purchase_model.dart` — campos: `itemId`, `supplierId`, `projectId`, `quantity`, `totalValue`, `requisitionId`, `financialTransactionId`, `receivedBy`
 - `purchase_service.dart` — `confirmDelivery()` fecha o ciclo completo:
-  1. **Batch atômico:** compra → `delivered` + transação financeira criada
-  2. **Pós-batch:** `InventoryService.processPurchaseDelivery()` → entrada no estoque
-  3. **Pós-batch:** `ProjectBudgetService.syncProjectCurrentCost()` → atualiza `currentCost`
+  1. Compra → `delivered` + transação financeira criada
+  2. `InventoryService.processPurchaseDelivery()` → entrada no estoque
+  3. `ProjectBudgetService.syncProjectCurrentCost()` → atualiza `currentCost`
+
+> Pendência técnica: esse fluxo já usa Supabase, mas ainda roda como chamadas sequenciais do cliente. Para integridade forte em produção, mover para RPC/Edge Function com transação SQL.
   
 
 ### Supply Chain — Estoque (implementado)
@@ -193,7 +214,7 @@ String phone
 String targetRole            // cargo pretendido
 String area                  // 'obras' | 'administrativo' | 'ti' | 'financeiro' | 'rh' | 'other'
 String status                // 'pending' | 'reviewing' | 'approved' | 'rejected'
-String resumeStoragePath     // path no Firebase Storage (ex: 'resumes/{id}.pdf')
+String resumeStoragePath     // path no Supabase Storage (ex: 'resumes/{id}.pdf')
 String resumeDownloadUrl     // URL pública ou signed URL
 String? notes                // anotações manuais do recrutador
 DateTime uploadedAt
@@ -202,17 +223,17 @@ Map<String, dynamic>? aiAnalysis   // resultado da triagem IA (preenchido depois
 ```
 
 #### `talent_service.dart`
-- `uploadResume(File pdfFile, String candidateId)` → Firebase Storage → retorna `downloadUrl`
-- `addCandidate(TalentCandidate candidate)` → Firestore
+- `uploadResume(File pdfFile, String candidateId)` → Supabase Storage → retorna `downloadUrl`
+- `addCandidate(TalentCandidate candidate)` → Supabase
 - `updateStatus(String id, String status)`
 - `getCandidatesStream({String? area, String? status})` — filtros combinados
-- `deleteCandidate(String id)` → remove Firestore + Storage
+- `deleteCandidate(String id)` → remove registro no Supabase + arquivo no Storage
 
 #### `storage_service.dart`
-- Abstração sobre Firebase Storage (facilita troca emulador → produção)
+- Abstração sobre Supabase Storage
 - `uploadPdf(String path, Uint8List bytes)` → `String downloadUrl`
 - `deleteFile(String path)`
-- Configuração: em modo emulador usa `FirebaseStorage.instance.useStorageEmulator('localhost', 9199)`
+- Configuração: bucket privado ou publico conforme a regra de acesso do modulo
 
 #### `talent_bank_page.dart`
 - Filtros por área e status
@@ -230,7 +251,7 @@ O Granith ERP usará o **Google Gemini** como motor de IA para assistência em m
 #### Modelo configurável
 - Padrão: `gemini-1.5-flash` (custo/velocidade)
 - Opcional: `gemini-1.5-pro` (tarefas complexas)
-- Configuração salva no Firestore por empresa (`company_settings/ai_config`)
+- Configuração salva no Supabase por empresa (`company_settings/ai_config`)
 
 ```dart
 // ai_config_model.dart
@@ -279,13 +300,13 @@ gemini_service.prompt(
       ↓
 Retorno: score, pontos fortes, pontos fracos, recomendação
       ↓
-Salvar em candidate.aiAnalysis (Firestore)
+Salvar em candidate.aiAnalysis (Supabase)
 ```
 
 #### Dependências a adicionar (`pubspec.yaml`)
 ```yaml
 google_generative_ai: ^0.4.0    # SDK oficial Gemini
-firebase_storage: ^12.0.0       # Storage para PDFs
+supabase_flutter: ^2.12.0       # Auth, banco e Storage
 file_picker: ^8.0.0             # seleção de PDF no device
 ```
 
@@ -332,7 +353,7 @@ Todos ───────────────▶ Relatórios
 | 1 | Financeiro | Toda transação tem `projectId` + `origin` + `referenceId` | ✅ |
 | 2 | Financeiro | `dueDate` separado de `paymentDate` | ✅ |
 | 3 | Financeiro | `_syncOverdueStatus()` marca vencidos no client | ✅ |
-| 4 | Compras | `confirmDelivery` gera despesa (batch atômico) | ✅ |
+| 4 | Compras | `confirmDelivery` gera despesa no Supabase | ✅ |
 | 5 | Compras | `confirmDelivery` dá entrada no estoque com `purchase.quantity` | ✅ |
 | 6 | Compras | `cancelPurchase` cancela transação financeira vinculada | ✅ |
 | 7 | Compras | Status `delivered`/`cancelled` só por ação dedicada | ✅ |
@@ -345,14 +366,14 @@ Todos ───────────────▶ Relatórios
 | 14 | RH | Cargo contém apenas `hourlyRate` para cálculo de M.O. em obras | ✅ (validar) |
 | 15 | RH | Histórico de reajustes salariais imutável (append-only) | ✅ |
 | 16 | RH | Benefícios têm histórico de valor por funcionário | ✅ |
-| 17 | Talentos | PDF do currículo salvo no Firebase Storage, path referenciado no Firestore | 🔲 |
+| 17 | Talentos | PDF do currículo salvo no Supabase Storage, path referenciado no Postgres | 🔲 |
 | 18 | Talentos | Análise IA salva em `candidate.aiAnalysis` (não reprocessa se já existir) | 🔲 |
 | 19 | IA | Cada área usa systemPrompt próprio com referências oficiais (CLT, ABNT, etc.) | 🔲 |
-| 20 | IA | Modelo Gemini configurável por empresa no Firestore | 🔲 | Será feito Depois
+| 20 | IA | Modelo Gemini configurável por empresa no Supabase | 🔲 | Será feito Depois
 | 21 | Orçamentos | Orçamento aprovado cria projeto automaticamente | ✅ |
 | 22 | Requisições | Fluxo de aprovação: gerência → CEO | ✅ |
 | 23 | Requisições | Se item em estoque → baixa; se não → gera compra | ✅ |
-| 24 | Relatórios | DRE real a partir das transações do Firestore | ✅ |
+| 24 | Relatórios | DRE real a partir das transações do Supabase | ✅ |
 | 25 | Diário de Obra | Horas × valor/hora = custo M.O. no financeiro | 🔲 futuro |
 | 26 | Custos | Calculo de Consumo real integrado com as leituras de Banco + Consumo de API´s. | ✅ |
 
@@ -412,7 +433,7 @@ MultiProvider(providers: [
 dependencies:
   fl_chart: ^0.68.0                # gráficos DRE
   google_generative_ai: ^0.4.0    # SDK Gemini
-  firebase_storage: ^12.0.0       # PDFs de currículos
+  supabase_flutter: ^2.12.0       # Auth, banco e Storage
   file_picker: ^8.0.0             # seleção de PDF no device
 ```
 
@@ -420,16 +441,16 @@ dependencies:
 
 ## Próximos passos (ordem recomendada)
 
-1. **RH — refatorar `employee_model`** adicionar `baseSalary`, `salaryHistory`, `cpf`, `ctps`, `admissionDate`
-2. **RH — `benefit_model` + `benefit_service`** CRUD de tipos e associações por funcionário
-3. **RH — `hr_page`** substituir `employee_registration_page` com abas Funcionários / Benefícios / Cargos
-4. **Talentos — `talent_candidate_model` + `storage_service`** upload de PDF + Firestore
-5. **Talentos — `talent_bank_page`** listagem com filtros, upload, status
-6. **IA — `gemini_service`** serviço base com modelo configurável e prompts por área
-7. **IA — triagem de currículos** integrar Gemini no `TalentBankPage`
-8. **Reports — DRE real** conectar gráficos com `financial_service.getSumByCategory()`
-9. **Requisições — fluxo de aprovação** gerência → CEO + link automático com compras
-10. **Migração MVVM** separar ViewModels, preparar para web + mobile
+1. **IA — base comum** criar serviço de IA com modelo configurável, prompts por área, logs de uso e controle de permissões.
+2. **IA — Financeiro** conectar análise de DRE, custos, projeções e alertas às transações reais.
+3. **IA — Obras** gerar resumos, riscos e pendências a partir de diários, medições, compras, estoque e equipe.
+4. **IA — RH** apoiar triagem, histórico funcional, benefícios, alertas e leitura de documentos.
+5. **Veículos — módulo operacional** criar cadastro, status, documentação, manutenção, custos e vínculo com obras/equipes.
+6. **Granith Mobile — ponto/geofencing** sincronizar batidas, validar geofence por obra e consolidar horas no ERP.
+7. **RH — refatorar `employee_model`** adicionar `baseSalary`, `salaryHistory`, `cpf`, `ctps`, `admissionDate`.
+8. **RH — `benefit_model` + `benefit_service`** CRUD de tipos e associações por funcionário.
+9. **Talentos — `talent_candidate_model` + `storage_service`** upload de PDF + Supabase.
+10. **Migração MVVM** separar ViewModels, preparar para web + mobile.
 
 ---
 
@@ -440,11 +461,11 @@ Objetivo: manter o código funcionando enquanto gradualmente refatora em camadas
 Passo 1 - Camadas e responsabilidades
 - `presentation`: telas (`screens/`), widgets (`widgets/`), view models (`viewmodels/` ou `controllers/` evoluído).
 - `domain`: entidades de negócio (`models/`), casos de uso (`usecases/`), interfaces de repositórios.
-- `data`: implementações de repositório (`services/`), fontes de dados Firestore, Local, API.
+- `data`: implementações de repositório (`services/`), fontes de dados Supabase, Local, API.
 
 Passo 2 - Regras de conversão de componentes
 - Transformar os `Controller` atuais em `ViewModel` que expõem `ValueNotifier`, `ChangeNotifier` ou `Stream`.
-- Não fazer acesso direto a Firestore no `screens`: mover para `services` + `usecases`.
+- Não fazer acesso direto a backend no `screens`: mover para `services` + `usecases`.
 - Cada página deve ter um único ponto de entrada MVVM (por exemplo `HomeViewModel`).
 
 Passo 3 - Estrutura de arquivos proposta
@@ -455,7 +476,7 @@ lib/
  │   │   ├── local/
  │   │   └── remote/
  │   ├── repositories/
- │   └── models/   (DTOs de Firestore)
+ │   └── models/   (DTOs de Supabase)
  ├── domain/
  │   ├── entities/
  │   ├── repositories/
@@ -465,7 +486,7 @@ lib/
  │   ├── widgets/
  │   ├── viewmodels/
  │   └── routes.dart
- ├── services/     (injeções, firebase_service.dart, auth_service.dart)
+ ├── services/     (injeções, supabase_service.dart, auth_service.dart)
  ├── themes/
  ├── utils/
  └── main.dart

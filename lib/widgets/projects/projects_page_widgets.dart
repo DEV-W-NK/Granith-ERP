@@ -3,13 +3,16 @@ import 'package:project_granith/constants/projects_constants.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/ProjectBudgetService.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/projects/project_card.dart';
 import 'package:project_granith/widgets/projects/project_filters.dart';
 import 'package:project_granith/helpers/projects_helpers.dart';
 
 class ProjectsPageView extends StatelessWidget {
-  const ProjectsPageView({super.key});
+  const ProjectsPageView({super.key, this.budgetService});
+
+  final ProjectBudgetService? budgetService;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +32,12 @@ class ProjectsPageView extends StatelessWidget {
               children: [
                 _ProjectsHeader(isDesktop: isDesktop),
                 if (!controller.isLoading) const _ProjectsFilters(),
-                Expanded(child: _ProjectsContent(isDesktop: isDesktop)),
+                Expanded(
+                  child: _ProjectsContent(
+                    isDesktop: isDesktop,
+                    budgetService: budgetService,
+                  ),
+                ),
               ],
             ),
           ),
@@ -155,10 +163,7 @@ class _HeaderActions extends StatelessWidget {
               if (!isDesktop) const SizedBox(width: 12),
               _ExportButton(hasProjects: controller.projects.isNotEmpty),
             ],
-            if (isDesktop) ...[
-              const SizedBox(width: 16),
-              _RefreshButton(),
-            ],
+            if (isDesktop) ...[const SizedBox(width: 16), _RefreshButton()],
           ],
         );
       },
@@ -228,9 +233,10 @@ class _ViewToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.accentGold.withOpacity(0.15)
-              : Colors.transparent,
+          color:
+              isSelected
+                  ? AppColors.accentGold.withOpacity(0.15)
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(
@@ -247,9 +253,10 @@ class _ViewToggleButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: isSelected
-          ? 'Modo de visualização ativo'
-          : 'Alternar modo de visualização',
+      label:
+          isSelected
+              ? 'Modo de visualização ativo'
+              : 'Alternar modo de visualização',
       child: button,
     );
   }
@@ -296,12 +303,15 @@ class _RefreshButton extends StatelessWidget {
           message: 'Atualizar',
           child: IconButton(
             onPressed:
-                controller.isLoading ? null : () => controller.loadProjects(forceRefresh: true),
+                controller.isLoading
+                    ? null
+                    : () => controller.loadProjects(forceRefresh: true),
             icon: Icon(
               Icons.refresh_rounded,
-              color: controller.isLoading
-                  ? AppColors.textMuted.withOpacity(0.5)
-                  : AppColors.textSecondary,
+              color:
+                  controller.isLoading
+                      ? AppColors.textMuted.withOpacity(0.5)
+                      : AppColors.textSecondary,
             ),
           ),
         );
@@ -321,7 +331,9 @@ class _ExportOptionsSheet extends StatelessWidget {
         children: [
           Text(
             'Exportar Projetos',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 16),
           _ExportOption(
@@ -439,24 +451,25 @@ class _SearchField extends StatelessWidget {
                     size: 20,
                   ),
                 ),
-                suffixIcon: controller.searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: AppColors.textMuted.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                suffixIcon:
+                    controller.searchQuery.isNotEmpty
+                        ? IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.textMuted.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: AppColors.textMuted,
+                              size: 16,
+                            ),
                           ),
-                          child: const Icon(
-                            Icons.close_rounded,
-                            color: AppColors.textMuted,
-                            size: 16,
-                          ),
-                        ),
-                        onPressed: () => controller.updateSearchQuery(''),
-                        tooltip: 'Limpar busca',
-                      )
-                    : null,
+                          onPressed: () => controller.updateSearchQuery(''),
+                          tooltip: 'Limpar busca',
+                        )
+                        : null,
                 filled: true,
                 fillColor: AppColors.surfaceDark,
                 border: OutlineInputBorder(
@@ -512,8 +525,9 @@ class _FiltersRow extends StatelessWidget {
 
 class _ProjectsContent extends StatelessWidget {
   final bool isDesktop;
+  final ProjectBudgetService? budgetService;
 
-  const _ProjectsContent({required this.isDesktop});
+  const _ProjectsContent({required this.isDesktop, this.budgetService});
 
   @override
   Widget build(BuildContext context) {
@@ -542,6 +556,7 @@ class _ProjectsContent extends StatelessWidget {
           projects: controller.filteredProjects,
           isGridView: controller.isGridView,
           isDesktop: isDesktop,
+          budgetService: budgetService,
         );
       },
     );
@@ -655,9 +670,10 @@ class _EmptyState extends StatelessWidget {
                           ? Icons.search_off_rounded
                           : Icons.construction_rounded,
                       size: 64,
-                      color: hasFilters
-                          ? AppColors.accentBlue.withOpacity(0.7)
-                          : AppColors.accentGold.withOpacity(0.7),
+                      color:
+                          hasFilters
+                              ? AppColors.accentBlue.withOpacity(0.7)
+                              : AppColors.accentGold.withOpacity(0.7),
                     ),
                   ),
                 );
@@ -781,14 +797,18 @@ class _ErrorState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Erro ao carregar projetos',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textMuted),
               textAlign: TextAlign.center,
             ),
           ),
@@ -812,19 +832,28 @@ class _ProjectsList extends StatelessWidget {
   final List<Project> projects;
   final bool isGridView;
   final bool isDesktop;
+  final ProjectBudgetService? budgetService;
 
   const _ProjectsList({
     required this.projects,
     required this.isGridView,
     required this.isDesktop,
+    this.budgetService,
   });
 
   @override
   Widget build(BuildContext context) {
     if (isGridView) {
-      return _ProjectsGrid(projects: projects, isDesktop: isDesktop);
+      return _ProjectsGrid(
+        projects: projects,
+        isDesktop: isDesktop,
+        budgetService: budgetService,
+      );
     } else {
-      return _ProjectsListView(projects: projects);
+      return _ProjectsListView(
+        projects: projects,
+        budgetService: budgetService,
+      );
     }
   }
 }
@@ -832,8 +861,13 @@ class _ProjectsList extends StatelessWidget {
 class _ProjectsGrid extends StatelessWidget {
   final List<Project> projects;
   final bool isDesktop;
+  final ProjectBudgetService? budgetService;
 
-  const _ProjectsGrid({required this.projects, required this.isDesktop});
+  const _ProjectsGrid({
+    required this.projects,
+    required this.isDesktop,
+    this.budgetService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -871,7 +905,10 @@ class _ProjectsGrid extends StatelessWidget {
           return AnimatedContainer(
             duration: Duration(milliseconds: 200 + (index % 3) * 100),
             curve: Curves.easeOutBack,
-            child: _ProjectCardWrapper(project: projects[index]),
+            child: _ProjectCardWrapper(
+              project: projects[index],
+              budgetService: budgetService,
+            ),
           );
         },
       ),
@@ -881,8 +918,9 @@ class _ProjectsGrid extends StatelessWidget {
 
 class _ProjectsListView extends StatelessWidget {
   final List<Project> projects;
+  final ProjectBudgetService? budgetService;
 
-  const _ProjectsListView({required this.projects});
+  const _ProjectsListView({required this.projects, this.budgetService});
 
   @override
   Widget build(BuildContext context) {
@@ -898,6 +936,7 @@ class _ProjectsListView extends StatelessWidget {
             child: _ProjectCardWrapper(
               project: projects[index],
               isListView: true,
+              budgetService: budgetService,
             ),
           ),
         );
@@ -909,8 +948,13 @@ class _ProjectsListView extends StatelessWidget {
 class _ProjectCardWrapper extends StatelessWidget {
   final Project project;
   final bool isListView;
+  final ProjectBudgetService? budgetService;
 
-  const _ProjectCardWrapper({required this.project, this.isListView = false});
+  const _ProjectCardWrapper({
+    required this.project,
+    this.isListView = false,
+    this.budgetService,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -919,6 +963,7 @@ class _ProjectCardWrapper extends StatelessWidget {
         return ProjectCard(
           project: project,
           isListView: isListView,
+          budgetService: budgetService,
           onEdit: () => showProjectDialog(context, project: project),
           onDelete: () => showDeleteDialog(context, project),
           onTap: () => showProjectDetails(context, project),

@@ -29,11 +29,17 @@ normalmente ja existem no ambiente da Edge Function do Supabase.
 ## Como aplicar
 
 1. Execute o SQL novo em `supabase_schema.sql`.
-2. Configure os segredos da Edge Function:
+2. Configure os segredos da Edge Function. Prefira usar um arquivo local ignorado pelo Git, por exemplo `supabase/.env.local`:
 
 ```bash
-supabase secrets set GRANITH_MANAGEMENT_API_TOKEN=seu_token_seguro
-supabase secrets set GRANITH_PROJECT_REF=SUPABASE_PROJECT_REF_REMOVED
+npx supabase secrets set --env-file ./supabase/.env.local
+```
+
+Exemplo de conteudo do arquivo local:
+
+```env
+GRANITH_MANAGEMENT_API_TOKEN=seu_token_seguro
+GRANITH_PROJECT_REF=seu_project_ref_opcional
 ```
 
 3. Faça o deploy da função:

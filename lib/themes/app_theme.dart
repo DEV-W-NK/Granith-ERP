@@ -109,45 +109,37 @@ class AppColors {
   static const LinearGradient pageSurfaceGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xCC20304C),
-      Color(0xB316243A),
-      Color(0xCC101B30),
-    ],
+    colors: [Color(0xCC20304C), Color(0xB316243A), Color(0xCC101B30)],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xE620304C),
-      Color(0xD9142238),
-      Color(0xE6111B30),
-    ],
+    colors: [Color(0xE620304C), Color(0xD9142238), Color(0xE6111B30)],
   );
 
   static List<BoxShadow> glowShadows([Color glowColor = accentBlue]) => [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.24),
-          blurRadius: 28,
-          offset: const Offset(0, 16),
-        ),
-        BoxShadow(
-          color: glowColor.withValues(alpha: 0.10),
-          blurRadius: 32,
-          spreadRadius: -8,
-          offset: const Offset(0, 10),
-        ),
-      ];
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.24),
+      blurRadius: 28,
+      offset: const Offset(0, 16),
+    ),
+    BoxShadow(
+      color: glowColor.withValues(alpha: 0.10),
+      blurRadius: 32,
+      spreadRadius: -8,
+      offset: const Offset(0, 10),
+    ),
+  ];
 
   static List<BoxShadow> auraShadows([Color glowColor = accentGold]) => [
-        BoxShadow(
-          color: glowColor.withValues(alpha: 0.14),
-          blurRadius: 38,
-          spreadRadius: -10,
-          offset: const Offset(0, 14),
-        ),
-      ];
+    BoxShadow(
+      color: glowColor.withValues(alpha: 0.14),
+      blurRadius: 38,
+      spreadRadius: -10,
+      offset: const Offset(0, 14),
+    ),
+  ];
 }
 
 class AppTheme {
@@ -214,19 +206,14 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(22),
-          side: const BorderSide(
-            color: AppColors.borderColor,
-            width: 1,
-          ),
+          side: const BorderSide(color: AppColors.borderColor, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
       drawerTheme: DrawerThemeData(
         backgroundColor: AppColors.primaryDark.withValues(alpha: 0.82),
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
@@ -234,9 +221,7 @@ class AppTheme {
         contentTextStyle: const TextStyle(color: AppColors.textPrimary),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.7),
-          ),
+          side: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.7)),
         ),
       ),
       dialogTheme: DialogThemeData(
@@ -244,20 +229,29 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.85)),
+          side: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.85),
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 16,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.8)),
+          borderSide: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.8),
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.8)),
+          borderSide: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.8),
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
@@ -287,18 +281,9 @@ class AppTheme {
           fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
-        bodyLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 14,
-        ),
-        bodySmall: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 12,
-        ),
+        bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+        bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+        bodySmall: TextStyle(color: AppColors.textMuted, fontSize: 12),
       ),
     ).copyWith(
       pageTransitionsTheme: const PageTransitionsTheme(

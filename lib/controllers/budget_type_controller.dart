@@ -25,7 +25,8 @@ class BudgetTypeController extends ChangeNotifier {
   String get searchQuery => _searchQuery;
   String get selectedFilter => _selectedFilter;
   bool get isGridView => _isGridView;
-  bool get hasActiveFilters => _searchQuery.isNotEmpty || _selectedFilter != 'Todos';
+  bool get hasActiveFilters =>
+      _searchQuery.isNotEmpty || _selectedFilter != 'Todos';
 
   // Opções de filtro disponíveis
   List<String> get filterOptions => [
@@ -60,7 +61,7 @@ class BudgetTypeController extends ChangeNotifier {
   Future<bool> createBudgetType(BudgetType budgetType) async {
     try {
       _clearError();
-      
+
       // Verificar se nome já existe
       final nameExists = await _service.budgetTypeNameExists(budgetType.name);
       if (nameExists) {
@@ -81,7 +82,7 @@ class BudgetTypeController extends ChangeNotifier {
   Future<bool> updateBudgetType(BudgetType budgetType) async {
     try {
       _clearError();
-      
+
       // Verificar se nome já existe (excluindo o atual)
       final nameExists = await _service.budgetTypeNameExists(
         budgetType.name,
@@ -165,11 +166,12 @@ class BudgetTypeController extends ChangeNotifier {
     // Filtro de busca
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      filtered = filtered.where((budgetType) {
-        return budgetType.name.toLowerCase().contains(query) ||
-               budgetType.description.toLowerCase().contains(query) ||
-               budgetType.category.toLowerCase().contains(query);
-      }).toList();
+      filtered =
+          filtered.where((budgetType) {
+            return budgetType.name.toLowerCase().contains(query) ||
+                budgetType.description.toLowerCase().contains(query) ||
+                budgetType.category.toLowerCase().contains(query);
+          }).toList();
     }
 
     // Filtro por categoria/status
@@ -184,7 +186,8 @@ class BudgetTypeController extends ChangeNotifier {
       case 'Mão de Obra':
       case 'Equipamento':
       case 'Serviço':
-        filtered = filtered.where((bt) => bt.category == _selectedFilter).toList();
+        filtered =
+            filtered.where((bt) => bt.category == _selectedFilter).toList();
         break;
     }
 
@@ -211,5 +214,4 @@ class BudgetTypeController extends ChangeNotifier {
       notifyListeners();
     }
   }
-
 }

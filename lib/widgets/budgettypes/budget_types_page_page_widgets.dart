@@ -4,7 +4,6 @@ import 'package:project_granith/widgets/budget_types/budget_types_page_widgets.d
 
 // 1. O nome da classe deve ser BudgetTypesPage (sem o View)
 class BudgetTypesPage extends StatelessWidget {
-  
   // 2. O construtor bate com o nome da classe
   const BudgetTypesPage({super.key});
 

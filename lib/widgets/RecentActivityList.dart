@@ -12,32 +12,50 @@ class RecentActivityList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (activities.isEmpty) {
-      return const AppCard(child: Center(child: Text("Nenhuma atividade.", style: TextStyle(color: AppColors.tx3))));
+      return const AppCard(
+        child: Center(
+          child: Text(
+            "Nenhuma atividade.",
+            style: TextStyle(color: AppColors.tx3),
+          ),
+        ),
+      );
     }
 
     return AppCard(
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          const Expanded(child: AppCardTitle('Atividade recente')),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-            decoration: BoxDecoration(
-              gradient: AppColors.cardGradient,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.55)),
-            ),
-            child: const Text('Ver tudo',
-                style: TextStyle(
-                    color: AppColors.tx3, fontSize: 10,
-                    fontWeight: FontWeight.w500)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(child: AppCardTitle('Atividade recente')),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  gradient: AppColors.cardGradient,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.borderColor.withValues(alpha: 0.55),
+                  ),
+                ),
+                child: const Text(
+                  'Ver tudo',
+                  style: TextStyle(
+                    color: AppColors.tx3,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ]),
-        ...activities
-            .map((a) => _buildActivityRow(a))
-            .expand((widget) => [widget, const AppDivider()])
-            .toList()
-          ..removeLast(),
-      ]),
+          ...activities
+              .map((a) => _buildActivityRow(a))
+              .expand((widget) => [widget, const AppDivider()])
+              .toList()
+            ..removeLast(),
+        ],
+      ),
     );
   }
 
@@ -45,34 +63,51 @@ class RecentActivityList extends StatelessWidget {
     return GranithPressable(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
-        child: Row(children: [
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(
-              color: item.iconColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: item.iconColor.withValues(alpha: 0.18)),
-              boxShadow: AppColors.auraShadows(item.iconColor),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: item.iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: item.iconColor.withValues(alpha: 0.18),
+                ),
+                boxShadow: AppColors.auraShadows(item.iconColor),
+              ),
+              child: Icon(item.icon, color: item.iconColor, size: 15),
             ),
-            child: Icon(item.icon, color: item.iconColor, size: 15),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(item.title,
-                  style: const TextStyle(
-                      color: AppColors.tx, fontSize: 12,
-                      fontWeight: FontWeight.w500)),
-              Text(item.subtitle,
-                  style: const TextStyle(color: AppColors.tx3, fontSize: 10)),
-            ]),
-          ),
-          Text(item.value,
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      color: AppColors.tx,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  Text(
+                    item.subtitle,
+                    style: const TextStyle(color: AppColors.tx3, fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              item.value,
               style: TextStyle(
-                  color: item.isPositive ? AppColors.green : AppColors.red,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-        ]),
+                color: item.isPositive ? AppColors.green : AppColors.red,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

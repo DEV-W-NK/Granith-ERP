@@ -20,18 +20,18 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   bool _saving = false;
 
   // Controllers
-  final _nameCtrl        = TextEditingController();
-  final _emailCtrl       = TextEditingController();
-  final _phoneCtrl       = TextEditingController();
-  final _jobTitleCtrl    = TextEditingController();
-  final _sectorCtrl      = TextEditingController();
-  final _salaryCtrl      = TextEditingController();
-  final _educationCtrl   = TextEditingController();
-  final _coursesCtrl     = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _jobTitleCtrl = TextEditingController();
+  final _sectorCtrl = TextEditingController();
+  final _salaryCtrl = TextEditingController();
+  final _educationCtrl = TextEditingController();
+  final _coursesCtrl = TextEditingController();
 
-  EmployeeRole   _role   = EmployeeRole.funcionario;
+  EmployeeRole _role = EmployeeRole.funcionario;
   EmployeeStatus _status = EmployeeStatus.ativo;
-  DateTime       _admissionDate = DateTime.now();
+  DateTime _admissionDate = DateTime.now();
 
   bool get _isEdit => widget.employee != null;
 
@@ -40,17 +40,17 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     super.initState();
     final e = widget.employee;
     if (e != null) {
-      _nameCtrl.text      = e.name;
-      _emailCtrl.text     = e.email;
-      _phoneCtrl.text     = e.phone;
-      _jobTitleCtrl.text  = e.jobTitle;
-      _sectorCtrl.text    = e.sector;
-      _salaryCtrl.text    = e.baseSalary.toStringAsFixed(2);
+      _nameCtrl.text = e.name;
+      _emailCtrl.text = e.email;
+      _phoneCtrl.text = e.phone;
+      _jobTitleCtrl.text = e.jobTitle;
+      _sectorCtrl.text = e.sector;
+      _salaryCtrl.text = e.baseSalary.toStringAsFixed(2);
       _educationCtrl.text = e.educationLevel;
-      _coursesCtrl.text   = e.courses;
-      _role           = e.role;
-      _status         = e.status;
-      _admissionDate  = e.admissionDate;
+      _coursesCtrl.text = e.courses;
+      _role = e.role;
+      _status = e.status;
+      _admissionDate = e.admissionDate;
     }
   }
 
@@ -75,20 +75,20 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
 
     final now = DateTime.now();
     final employee = EmployeeModel(
-      id:             _isEdit ? widget.employee!.id : '',
-      name:           _nameCtrl.text.trim(),
-      email:          _emailCtrl.text.trim(),
-      phone:          _phoneCtrl.text.trim(),
-      jobTitle:       _jobTitleCtrl.text.trim(),
-      sector:         _sectorCtrl.text.trim(),
-      baseSalary:         double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0,
-      role:           _role,
-      admissionDate:  _admissionDate,
-      status:         _status,
+      id: _isEdit ? widget.employee!.id : '',
+      name: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      jobTitle: _jobTitleCtrl.text.trim(),
+      sector: _sectorCtrl.text.trim(),
+      baseSalary: double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0,
+      role: _role,
+      admissionDate: _admissionDate,
+      status: _status,
       educationLevel: _educationCtrl.text.trim(),
-      courses:        _coursesCtrl.text.trim(),
-      createdAt:      _isEdit ? widget.employee!.createdAt : now,
-      updatedAt:      now,
+      courses: _coursesCtrl.text.trim(),
+      createdAt: _isEdit ? widget.employee!.createdAt : now,
+      updatedAt: now,
     );
 
     try {
@@ -97,7 +97,9 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEdit ? 'Funcionário atualizado!' : 'Funcionário cadastrado!'),
+            content: Text(
+              _isEdit ? 'Funcionário atualizado!' : 'Funcionário cadastrado!',
+            ),
             backgroundColor: Colors.green.shade700,
           ),
         );
@@ -105,7 +107,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao salvar: $e'), backgroundColor: Colors.red.shade700),
+          SnackBar(
+            content: Text('Erro ao salvar: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
         );
       }
     } finally {
@@ -121,12 +126,15 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
       initialDate: _admissionDate,
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
-      builder: (ctx, child) => Theme(
-        data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: AppColors.accentGold),
-        ),
-        child: child!,
-      ),
+      builder:
+          (ctx, child) => Theme(
+            data: ThemeData.dark().copyWith(
+              colorScheme: const ColorScheme.dark(
+                primary: AppColors.accentGold,
+              ),
+            ),
+            child: child!,
+          ),
     );
     if (picked != null) setState(() => _admissionDate = picked);
   }
@@ -151,23 +159,32 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Título
-              Row(children: [
-                Icon(
-                  _isEdit ? Icons.edit_rounded : Icons.person_add_rounded,
-                  color: AppColors.accentGold,
-                  size: 24,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  _isEdit ? 'Editar Funcionário' : 'Novo Funcionário',
-                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, color: Colors.white54),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ]),
+              Row(
+                children: [
+                  Icon(
+                    _isEdit ? Icons.edit_rounded : Icons.person_add_rounded,
+                    color: AppColors.accentGold,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    _isEdit ? 'Editar Funcionário' : 'Novo Funcionário',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white54,
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 4),
               const Divider(color: Colors.white12),
@@ -182,97 +199,149 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                       // ── Dados Pessoais ──────────────────────────────
                       _SectionLabel(label: 'Dados Pessoais'),
                       const SizedBox(height: 12),
-                      Row(children: [
-                        Expanded(child: _buildField(
-                          controller: _nameCtrl,
-                          label: 'Nome Completo',
-                          hint: 'Ex: Carlos Silva',
-                          validator: (v) => v!.trim().isEmpty ? 'Informe o nome' : null,
-                        )),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildField(
-                          controller: _emailCtrl,
-                          label: 'E-mail',
-                          hint: 'email@empresa.com',
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (v) => v!.trim().isEmpty ? 'Informe o e-mail' : null,
-                        )),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildField(
+                              controller: _nameCtrl,
+                              label: 'Nome Completo',
+                              hint: 'Ex: Carlos Silva',
+                              validator:
+                                  (v) =>
+                                      v!.trim().isEmpty
+                                          ? 'Informe o nome'
+                                          : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildField(
+                              controller: _emailCtrl,
+                              label: 'E-mail',
+                              hint: 'email@empresa.com',
+                              keyboardType: TextInputType.emailAddress,
+                              validator:
+                                  (v) =>
+                                      v!.trim().isEmpty
+                                          ? 'Informe o e-mail'
+                                          : null,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 16),
-                      Row(children: [
-                        Expanded(child: _buildField(
-                          controller: _phoneCtrl,
-                          label: 'Telefone',
-                          hint: '(11) 99999-0000',
-                          keyboardType: TextInputType.phone,
-                        )),
-                        const SizedBox(width: 16),
-                        // Data de admissão
-                        Expanded(child: _DatePickerField(
-                          label: 'Data de Admissão',
-                          date: _admissionDate,
-                          onTap: _pickAdmissionDate,
-                        )),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildField(
+                              controller: _phoneCtrl,
+                              label: 'Telefone',
+                              hint: '(11) 99999-0000',
+                              keyboardType: TextInputType.phone,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Data de admissão
+                          Expanded(
+                            child: _DatePickerField(
+                              label: 'Data de Admissão',
+                              date: _admissionDate,
+                              onTap: _pickAdmissionDate,
+                            ),
+                          ),
+                        ],
+                      ),
 
                       const SizedBox(height: 24),
 
                       // ── Dados Profissionais ─────────────────────────
                       _SectionLabel(label: 'Dados Profissionais'),
                       const SizedBox(height: 12),
-                      Row(children: [
-                        Expanded(child: _buildField(
-                          controller: _jobTitleCtrl,
-                          label: 'Cargo',
-                          hint: 'Ex: Engenheiro Civil',
-                          validator: (v) => v!.trim().isEmpty ? 'Informe o cargo' : null,
-                        )),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildField(
-                          controller: _sectorCtrl,
-                          label: 'Setor',
-                          hint: 'Ex: Operacional, Técnico',
-                          validator: (v) => v!.trim().isEmpty ? 'Informe o setor' : null,
-                        )),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildField(
+                              controller: _jobTitleCtrl,
+                              label: 'Cargo',
+                              hint: 'Ex: Engenheiro Civil',
+                              validator:
+                                  (v) =>
+                                      v!.trim().isEmpty
+                                          ? 'Informe o cargo'
+                                          : null,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildField(
+                              controller: _sectorCtrl,
+                              label: 'Setor',
+                              hint: 'Ex: Operacional, Técnico',
+                              validator:
+                                  (v) =>
+                                      v!.trim().isEmpty
+                                          ? 'Informe o setor'
+                                          : null,
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 16),
-                      Row(children: [
-                        Expanded(child: _buildField(
-                          controller: _salaryCtrl,
-                          label: 'Salário (R\$)',
-                          hint: '0.00',
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d,.]'))],
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) return 'Informe o salário';
-                            if (double.tryParse(v.replaceAll(',', '.')) == null) return 'Valor inválido';
-                            return null;
-                          },
-                        )),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildDropdown<EmployeeRole>(
-                          label: 'Nível Hierárquico',
-                          value: _role,
-                          items: EmployeeRole.values,
-                          itemLabel: (r) => switch (r) {
-                            EmployeeRole.funcionario  => 'Funcionário',
-                            EmployeeRole.supervisor   => 'Supervisor',
-                            EmployeeRole.coordenador  => 'Coordenador',
-                          },
-                          onChanged: (v) => setState(() => _role = v!),
-                        )),
-                      ]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildField(
+                              controller: _salaryCtrl,
+                              label: 'Salário (R\$)',
+                              hint: '0.00',
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[\d,.]'),
+                                ),
+                              ],
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty)
+                                  return 'Informe o salário';
+                                if (double.tryParse(v.replaceAll(',', '.')) ==
+                                    null)
+                                  return 'Valor inválido';
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildDropdown<EmployeeRole>(
+                              label: 'Nível Hierárquico',
+                              value: _role,
+                              items: EmployeeRole.values,
+                              itemLabel:
+                                  (r) => switch (r) {
+                                    EmployeeRole.funcionario => 'Funcionário',
+                                    EmployeeRole.supervisor => 'Supervisor',
+                                    EmployeeRole.coordenador => 'Coordenador',
+                                  },
+                              onChanged: (v) => setState(() => _role = v!),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 16),
                       _buildDropdown<EmployeeStatus>(
                         label: 'Status',
                         value: _status,
                         items: EmployeeStatus.values,
-                        itemLabel: (s) => switch (s) {
-                          EmployeeStatus.ativo      => 'Ativo',
-                          EmployeeStatus.ferias     => 'Em Férias',
-                          EmployeeStatus.desligado  => 'Desligado',
-                          EmployeeStatus.afastado   => 'Afastado',
-                        },
+                        itemLabel:
+                            (s) => switch (s) {
+                              EmployeeStatus.ativo => 'Ativo',
+                              EmployeeStatus.ferias => 'Em Férias',
+                              EmployeeStatus.desligado => 'Desligado',
+                              EmployeeStatus.afastado => 'Afastado',
+                            },
                         onChanged: (v) => setState(() => _status = v!),
                       ),
 
@@ -285,7 +354,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                         controller: _educationCtrl,
                         label: 'Escolaridade',
                         hint: 'Ex: Superior Completo, Técnico, Ensino Médio',
-                        validator: (v) => v!.trim().isEmpty ? 'Informe a escolaridade' : null,
+                        validator:
+                            (v) =>
+                                v!.trim().isEmpty
+                                    ? 'Informe a escolaridade'
+                                    : null,
                       ),
                       const SizedBox(height: 16),
                       _buildField(
@@ -309,7 +382,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                 children: [
                   TextButton(
                     onPressed: _saving ? null : () => Navigator.pop(context),
-                    child: const Text('Cancelar', style: TextStyle(color: Colors.white60)),
+                    child: const Text(
+                      'Cancelar',
+                      style: TextStyle(color: Colors.white60),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   ElevatedButton.icon(
@@ -317,14 +393,26 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.accentGold,
                       foregroundColor: AppColors.primaryDark,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
+                      ),
                     ),
-                    icon: _saving
-                        ? const SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryDark),
-                          )
-                        : Icon(_isEdit ? Icons.save_rounded : Icons.check_rounded),
+                    icon:
+                        _saving
+                            ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.primaryDark,
+                              ),
+                            )
+                            : Icon(
+                              _isEdit
+                                  ? Icons.save_rounded
+                                  : Icons.check_rounded,
+                            ),
                     label: Text(
                       _isEdit ? 'Salvar alterações' : 'Cadastrar',
                       style: const TextStyle(fontWeight: FontWeight.bold),
@@ -380,7 +468,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide(color: Colors.red.shade400),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
     );
   }
@@ -409,12 +500,20 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: AppColors.accentGold),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
       ),
-      items: items.map((item) => DropdownMenuItem<T>(
-        value: item,
-        child: Text(itemLabel(item)),
-      )).toList(),
+      items:
+          items
+              .map(
+                (item) => DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(itemLabel(item)),
+                ),
+              )
+              .toList(),
       onChanged: onChanged,
     );
   }
@@ -450,8 +549,15 @@ class _DatePickerField extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: Colors.white24),
           ),
-          suffixIcon: const Icon(Icons.calendar_today_rounded, color: Colors.white38, size: 18),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          suffixIcon: const Icon(
+            Icons.calendar_today_rounded,
+            color: Colors.white38,
+            size: 18,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
         ),
         child: Text(formatted, style: const TextStyle(color: Colors.white)),
       ),

@@ -16,9 +16,7 @@ abstract class AuthServiceContract {
     bool shouldCreateUser = false,
   });
   Future<void> ensureCurrentUserProfile();
-  Future<void> completeClientFirstAccess({
-    required String password,
-  });
+  Future<void> completeClientFirstAccess({required String password});
   Future<List<ClientAccount>> getOwnedClientAccounts(String email);
   Future<void> signOut();
 }

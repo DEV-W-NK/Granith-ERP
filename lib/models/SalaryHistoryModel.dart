@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class SalaryHistoryModel {
   final String id;
@@ -22,27 +22,30 @@ class SalaryHistoryModel {
   });
 
   double get percentualAumento =>
-      previousSalary > 0 ? ((newSalary - previousSalary) / previousSalary * 100) : 0;
+      previousSalary > 0
+          ? ((newSalary - previousSalary) / previousSalary * 100)
+          : 0;
 
   Map<String, dynamic> toMap() => {
-        'employeeId':      employeeId,
-        'previousSalary':  previousSalary,
-        'newSalary':       newSalary,
-        'effectiveDate':   Timestamp.fromDate(effectiveDate),
-        'reason':          reason,
-        'updatedBy':       updatedBy,
-        'createdAt':       Timestamp.fromDate(createdAt),
-      };
+    'employeeId': employeeId,
+    'previousSalary': previousSalary,
+    'newSalary': newSalary,
+    'effectiveDate': DbValue.toPrimitive(effectiveDate),
+    'reason': reason,
+    'updatedBy': updatedBy,
+    'createdAt': DbValue.toPrimitive(createdAt),
+  };
 
   factory SalaryHistoryModel.fromMap(Map<String, dynamic> map, String docId) =>
       SalaryHistoryModel(
-        id:              docId,
-        employeeId:      map['employeeId'] ?? '',
-        previousSalary:  (map['previousSalary'] ?? 0.0).toDouble(),
-        newSalary:       (map['newSalary'] ?? 0.0).toDouble(),
-        effectiveDate:   (map['effectiveDate'] as Timestamp).toDate(),
-        reason:          map['reason'] ?? '',
-        updatedBy:       map['updatedBy'] ?? '',
-        createdAt:       (map['createdAt'] as Timestamp).toDate(),
+        id: docId,
+        employeeId: map['employeeId'] ?? '',
+        previousSalary: (map['previousSalary'] ?? 0.0).toDouble(),
+        newSalary: (map['newSalary'] ?? 0.0).toDouble(),
+        effectiveDate:
+            DbValue.toDateTime(map['effectiveDate']) ?? DateTime.now(),
+        reason: map['reason'] ?? '',
+        updatedBy: map['updatedBy'] ?? '',
+        createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
       );
 }

@@ -14,12 +14,12 @@ class EmployeeFormContent extends StatefulWidget {
 
 class _EmployeeFormContentState extends State<EmployeeFormContent> {
   final _formKey = GlobalKey<FormState>();
-  
+
   final _nameController = TextEditingController();
   final _jobTitleController = TextEditingController();
   final _salaryController = TextEditingController();
   final _coursesController = TextEditingController();
-  
+
   EmployeeRole _role = EmployeeRole.funcionario;
   String _selectedSector = 'Obras';
 
@@ -30,7 +30,7 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
     'Administrativo',
     'RH',
     'Suprimentos',
-    'Vendas'
+    'Vendas',
   ];
 
   @override
@@ -41,9 +41,10 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
       _jobTitleController.text = widget.employee!.jobTitle;
       _salaryController.text = widget.employee!.baseSalary.toString();
       _role = widget.employee!.role;
-      _selectedSector = _sectors.contains(widget.employee!.sector) 
-          ? widget.employee!.sector 
-          : _sectors.first;
+      _selectedSector =
+          _sectors.contains(widget.employee!.sector)
+              ? widget.employee!.sector
+              : _sectors.first;
     }
   }
 
@@ -57,7 +58,7 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
           _buildSection('Dados Pessoais', Icons.person_outline),
           const SizedBox(height: 16),
           _buildTextField(_nameController, 'Nome Completo', Icons.badge),
-          
+
           const SizedBox(height: 32),
           _buildSection('Contratual & RH', Icons.work_outline),
           const SizedBox(height: 16),
@@ -70,14 +71,23 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
                   dropdownColor: AppColors.surfaceDark,
                   style: const TextStyle(color: Colors.white),
                   decoration: _inputDecoration('Setor', Icons.business_rounded),
-                  items: _sectors.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                  items:
+                      _sectors
+                          .map(
+                            (s) => DropdownMenuItem(value: s, child: Text(s)),
+                          )
+                          .toList(),
                   onChanged: (v) => setState(() => _selectedSector = v!),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 flex: 2,
-                child: _buildTextField(_jobTitleController, 'Cargo', Icons.engineering),
+                child: _buildTextField(
+                  _jobTitleController,
+                  'Cargo',
+                  Icons.engineering,
+                ),
               ),
             ],
           ),
@@ -85,7 +95,11 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
           Row(
             children: [
               Expanded(
-                child: _buildTextField(_salaryController, 'Salário (R\$)', Icons.attach_money),
+                child: _buildTextField(
+                  _salaryController,
+                  'Salário (R\$)',
+                  Icons.attach_money,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -93,22 +107,38 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
                   value: _role,
                   dropdownColor: AppColors.surfaceDark,
                   style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Nível Hierárquico', Icons.layers),
-                  items: EmployeeRole.values.map((r) => DropdownMenuItem(
-                    value: r, 
-                    child: Text(r.name.toUpperCase(), style: const TextStyle(fontSize: 12))
-                  )).toList(),
+                  decoration: _inputDecoration(
+                    'Nível Hierárquico',
+                    Icons.layers,
+                  ),
+                  items:
+                      EmployeeRole.values
+                          .map(
+                            (r) => DropdownMenuItem(
+                              value: r,
+                              child: Text(
+                                r.name.toUpperCase(),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (v) => setState(() => _role = v!),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 32),
           _buildSection('Qualificação', Icons.school_outlined),
           const SizedBox(height: 16),
-          _buildTextField(_coursesController, 'Cursos e Certificações', Icons.card_membership, maxLines: 3),
-          
+          _buildTextField(
+            _coursesController,
+            'Cursos e Certificações',
+            Icons.card_membership,
+            maxLines: 3,
+          ),
+
           const SizedBox(height: 40),
           SizedBox(
             width: double.infinity,
@@ -116,14 +146,27 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
             child: ElevatedButton(
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Simulação: Colaborador do setor $_selectedSector cadastrado!')),
+                  SnackBar(
+                    content: Text(
+                      'Simulação: Colaborador do setor $_selectedSector cadastrado!',
+                    ),
+                  ),
                 );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accentGold,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('FINALIZAR CADASTRO', style: TextStyle(color: AppColors.primaryDark, fontWeight: FontWeight.bold, letterSpacing: 1.1)),
+              child: const Text(
+                'FINALIZAR CADASTRO',
+                style: TextStyle(
+                  color: AppColors.primaryDark,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.1,
+                ),
+              ),
             ),
           ),
         ],
@@ -136,14 +179,27 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
       children: [
         Icon(icon, color: AppColors.accentGold, size: 20),
         const SizedBox(width: 12),
-        Text(title.toUpperCase(), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+        Text(
+          title.toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+          ),
+        ),
         const SizedBox(width: 16),
         const Expanded(child: Divider(color: Colors.white10)),
       ],
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {int maxLines = 1}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label,
+    IconData icon, {
+    int maxLines = 1,
+  }) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
@@ -157,8 +213,14 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
       labelText: label,
       labelStyle: const TextStyle(color: AppColors.textMuted),
       prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-      enabledBorder: OutlineInputBorder(borderSide: const BorderSide(color: Colors.white10), borderRadius: BorderRadius.circular(12)),
-      focusedBorder: OutlineInputBorder(borderSide: const BorderSide(color: AppColors.accentGold), borderRadius: BorderRadius.circular(12)),
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.white10),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: AppColors.accentGold),
+        borderRadius: BorderRadius.circular(12),
+      ),
       filled: true,
       fillColor: Colors.white.withOpacity(0.02),
     );

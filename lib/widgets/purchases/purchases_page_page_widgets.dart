@@ -24,21 +24,22 @@ class PurchasesPageView extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: AppColors.backgroundDark,
-          body: purchases.isEmpty
-              ? const Center(
-                  child: Text(
-                    'Nenhuma compra registrada.',
-                    style: TextStyle(color: AppColors.textMuted),
+          body:
+              purchases.isEmpty
+                  ? const Center(
+                    child: Text(
+                      'Nenhuma compra registrada.',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  )
+                  : ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: purchases.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      return PurchaseCard(purchase: purchases[index]);
+                    },
                   ),
-                )
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: purchases.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    return PurchaseCard(purchase: purchases[index]);
-                  },
-                ),
         );
       },
     );

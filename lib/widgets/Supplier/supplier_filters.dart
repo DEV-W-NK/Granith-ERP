@@ -14,7 +14,8 @@ class SupplierFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > SupplierConstants.desktopBreakpoint;
+    final isDesktop =
+        MediaQuery.of(context).size.width > SupplierConstants.desktopBreakpoint;
 
     return Wrap(
       spacing: 8,
@@ -83,14 +84,16 @@ class _FilterChip extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? color.withOpacity(0.15)
-                  : AppColors.surfaceDark.withOpacity(0.3),
+              color:
+                  isSelected
+                      ? color.withOpacity(0.15)
+                      : AppColors.surfaceDark.withOpacity(0.3),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isSelected
-                    ? color.withOpacity(0.4)
-                    : AppColors.borderColor.withOpacity(0.3),
+                color:
+                    isSelected
+                        ? color.withOpacity(0.4)
+                        : AppColors.borderColor.withOpacity(0.3),
                 width: 1.5,
               ),
             ),
@@ -100,17 +103,17 @@ class _FilterChip extends StatelessWidget {
                 Icon(
                   icon,
                   size: 16,
-                  color: isSelected
-                      ? color
-                      : AppColors.textMuted.withOpacity(0.8),
+                  color:
+                      isSelected ? color : AppColors.textMuted.withOpacity(0.8),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   label,
                   style: TextStyle(
-                    color: isSelected
-                        ? color
-                        : AppColors.textMuted.withOpacity(0.8),
+                    color:
+                        isSelected
+                            ? color
+                            : AppColors.textMuted.withOpacity(0.8),
                     fontSize: 13,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),

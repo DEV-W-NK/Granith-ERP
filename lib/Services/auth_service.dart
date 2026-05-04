@@ -20,7 +20,8 @@ class AuthService implements AuthServiceContract {
   @override
   Future<UserModel?> fetchUserData(String uid) async {
     try {
-      final data = await _client.from('users').select().eq('id', uid).maybeSingle();
+      final data =
+          await _client.from('users').select().eq('id', uid).maybeSingle();
 
       if (data == null) {
         return null;
@@ -131,9 +132,7 @@ class AuthService implements AuthServiceContract {
   }
 
   @override
-  Future<void> completeClientFirstAccess({
-    required String password,
-  }) async {
+  Future<void> completeClientFirstAccess({required String password}) async {
     final user = currentUser;
     if (user == null) {
       throw const AppAuthException(
@@ -150,13 +149,12 @@ class AuthService implements AuthServiceContract {
     }
 
     try {
-      await _client.auth.updateUser(
-        UserAttributes(password: password.trim()),
-      );
+      await _client.auth.updateUser(UserAttributes(password: password.trim()));
 
-      final linkedAccounts = await _clientAccountService.getClientAccountsByOwnerEmail(
-        (user.email ?? '').trim().toLowerCase(),
-      );
+      final linkedAccounts = await _clientAccountService
+          .getClientAccountsByOwnerEmail(
+            (user.email ?? '').trim().toLowerCase(),
+          );
       final primaryClientAccount =
           linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
 
@@ -176,7 +174,8 @@ class AuthService implements AuthServiceContract {
         code: error.code ?? 'complete_first_access_failed',
         message: _mapAuthError(
           error,
-          fallbackMessage: 'Nao foi possivel definir a senha do primeiro acesso.',
+          fallbackMessage:
+              'Nao foi possivel definir a senha do primeiro acesso.',
         ),
       );
     } catch (_) {
@@ -202,9 +201,8 @@ class AuthService implements AuthServiceContract {
     final photoUrl = user.userMetadata?['avatar_url']?.toString();
     final existingProfile = await fetchUserData(user.id);
     final hasEmployeeRecord = await _hasEmployeeRecord(normalizedEmail);
-    final linkedAccounts = await _clientAccountService.getClientAccountsByOwnerEmail(
-      normalizedEmail,
-    );
+    final linkedAccounts = await _clientAccountService
+        .getClientAccountsByOwnerEmail(normalizedEmail);
     final primaryClientAccount =
         linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
 
@@ -291,10 +289,7 @@ class AuthService implements AuthServiceContract {
     await _client.auth.signOut();
   }
 
-  String _mapAuthError(
-    AuthException error, {
-    required String fallbackMessage,
-  }) {
+  String _mapAuthError(AuthException error, {required String fallbackMessage}) {
     switch (error.code) {
       case 'invalid_credentials':
         return 'E-mail ou senha invalidos.';
@@ -319,10 +314,7 @@ class AppAuthException implements Exception {
   final String code;
   final String message;
 
-  const AppAuthException({
-    required this.code,
-    required this.message,
-  });
+  const AppAuthException({required this.code, required this.message});
 
   @override
   String toString() => message;

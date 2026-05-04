@@ -42,40 +42,47 @@ class GranitSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      // Ícone
-      Container(
-        width: 40, height: 40,
-        decoration: BoxDecoration(
-          color: iconBg ?? GranitTokens.goldDim,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: (iconColor ?? GranitTokens.gold).withOpacity(0.3),
+    return Row(
+      children: [
+        // Ícone
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: iconBg ?? GranitTokens.goldDim,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: (iconColor ?? GranitTokens.gold).withOpacity(0.3),
+            ),
+          ),
+          child: Icon(icon, color: iconColor ?? GranitTokens.gold, size: 20),
+        ),
+        const SizedBox(width: 12),
+
+        // Textos
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GranitTokens.headingStyle),
+              if (subtitle != null) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subtitle!,
+                  style: GranitTokens.bodySmall.copyWith(
+                    color: GranitTokens.textMuted,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
-        child: Icon(icon, color: iconColor ?? GranitTokens.gold, size: 20),
-      ),
-      const SizedBox(width: 12),
 
-      // Textos
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: GranitTokens.headingStyle),
-            if (subtitle != null) ...[
-              const SizedBox(height: 2),
-              Text(subtitle!, style: GranitTokens.bodySmall.copyWith(
-                color: GranitTokens.textMuted, fontSize: 12,
-              )),
-            ],
-          ],
-        ),
-      ),
-
-      // Slot de ação (opcional)
-      if (trailing != null) trailing!,
-    ]);
+        // Slot de ação (opcional)
+        if (trailing != null) trailing!,
+      ],
+    );
   }
 }
 
@@ -149,9 +156,10 @@ class GranitPeriodButton extends StatelessWidget {
           color: active ? GranitTokens.goldDim : GranitTokens.surface2,
           borderRadius: GranitTokens.btnRadius,
           border: Border.all(
-            color: active
-                ? GranitTokens.gold.withOpacity(0.4)
-                : GranitTokens.border2,
+            color:
+                active
+                    ? GranitTokens.gold.withOpacity(0.4)
+                    : GranitTokens.border2,
           ),
         ),
         child: Text(

@@ -51,18 +51,18 @@ class LoginLogo extends StatelessWidget {
           Text(
             settings.workspaceName.toUpperCase(),
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 8,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 8,
+            ),
           ),
           const SizedBox(height: 10),
           Text(
             settings.workspaceTagline,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 0.6,
-                ),
+              color: AppColors.textSecondary,
+              letterSpacing: 0.6,
+            ),
           ),
         ],
       ),

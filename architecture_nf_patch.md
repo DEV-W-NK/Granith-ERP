@@ -10,7 +10,7 @@
 Campos a adicionar em `purchase_model.dart`:
 ```dart
 String? nfNumber          // número da NF (ex: "000.123.456")
-String? nfStoragePath     // path no Firebase Storage (ex: 'invoices/{purchaseId}.pdf')
+String? nfStoragePath     // path no Supabase Storage (ex: 'invoices/{purchaseId}.pdf')
 String? nfDownloadUrl     // URL pública ou signed URL do PDF/imagem
 DateTime? nfIssuedAt      // data de emissão da NF
 ```
@@ -43,7 +43,7 @@ DateTime? nfIssuedAt      // data de emissão da NF
 # Confirme que estas dependências já estão listadas (necessárias para NF):
 
 ```yaml
-firebase_storage: ^12.0.0   # storage para PDFs de NF
+supabase_flutter: ^2.12.0   # storage para PDFs de NF
 file_picker: ^8.0.0         # seleção de PDF/imagem no device
 ```
 # Nota: estas já estavam previstas para o módulo de Banco de Talentos,

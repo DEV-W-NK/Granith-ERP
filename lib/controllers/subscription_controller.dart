@@ -3,7 +3,10 @@ import 'package:project_granith/models/usage_stats_model.dart';
 import 'package:project_granith/services/usage_service.dart';
 
 class SubscriptionController extends ChangeNotifier {
-  final UsageService _usageService = UsageService();
+  final UsageService _usageService;
+
+  SubscriptionController({UsageService? usageService})
+    : _usageService = usageService ?? UsageService();
 
   UsageStatsModel? _currentUsage;
   bool _isLoading = false;
@@ -31,9 +34,7 @@ class SubscriptionController extends ChangeNotifier {
     }
   }
 
-  Future<bool> syncUsageData({
-    String interval = '24h',
-  }) async {
+  Future<bool> syncUsageData({String interval = '24h'}) async {
     _isSyncing = true;
     _feedbackMessage = null;
     notifyListeners();

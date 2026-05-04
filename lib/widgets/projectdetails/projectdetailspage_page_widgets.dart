@@ -1,6 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 
@@ -89,12 +89,17 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [Colors.black38, AppColors.primaryDark.withOpacity(0.95)],
+                  colors: [
+                    Colors.black38,
+                    AppColors.primaryDark.withOpacity(0.95),
+                  ],
                 ),
               ),
             ),
             Positioned(
-              bottom: 16, left: 20, right: 20,
+              bottom: 16,
+              left: 20,
+              right: 20,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -103,18 +108,38 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                       _StatusPill(project: p),
                       if (p.isOverBudget) ...[
                         const SizedBox(width: 8),
-                        _AlertPill(label: 'Orçamento estourado', color: AppColors.accentRed),
+                        _AlertPill(
+                          label: 'Orçamento estourado',
+                          color: AppColors.accentRed,
+                        ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(p.name, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(
+                    p.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: AppColors.textMuted),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: AppColors.textMuted,
+                      ),
                       const SizedBox(width: 4),
-                      Text(p.location, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+                      Text(
+                        p.location,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 13,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -143,7 +168,10 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
         dividerColor: Colors.transparent,
         tabs: const [
           Tab(icon: Icon(Icons.dashboard_outlined, size: 18), text: 'Resumo'),
-          Tab(icon: Icon(Icons.account_balance_outlined, size: 18), text: 'Financeiro'),
+          Tab(
+            icon: Icon(Icons.account_balance_outlined, size: 18),
+            text: 'Financeiro',
+          ),
           Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'Diário'),
           Tab(icon: Icon(Icons.groups_outlined, size: 18), text: 'Equipe'),
         ],
@@ -165,16 +193,39 @@ class _ResumoTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        ProjectBudgetSummary(project: project, compact: false, showBreakdown: true),
+        ProjectBudgetSummary(
+          project: project,
+          compact: false,
+          showBreakdown: true,
+        ),
         const SizedBox(height: 16),
         _Section(
           title: 'Informações Gerais',
           child: Column(
             children: [
-              _InfoRow(icon: Icons.description_outlined, label: 'Descrição', value: project.description.isEmpty ? 'Sem descrição' : project.description),
-              _InfoRow(icon: Icons.person_outline, label: 'Cliente', value: project.client),
-              _InfoRow(icon: Icons.attach_money, label: 'Budget Previsto', value: currency.format(project.budget)),
-              _InfoRow(icon: Icons.calendar_today, label: 'Início', value: DateFormat('dd/MM/yyyy').format(project.startDate)),
+              _InfoRow(
+                icon: Icons.description_outlined,
+                label: 'Descrição',
+                value:
+                    project.description.isEmpty
+                        ? 'Sem descrição'
+                        : project.description,
+              ),
+              _InfoRow(
+                icon: Icons.person_outline,
+                label: 'Cliente',
+                value: project.client,
+              ),
+              _InfoRow(
+                icon: Icons.attach_money,
+                label: 'Budget Previsto',
+                value: currency.format(project.budget),
+              ),
+              _InfoRow(
+                icon: Icons.calendar_today,
+                label: 'Início',
+                value: DateFormat('dd/MM/yyyy').format(project.startDate),
+              ),
             ],
           ),
         ),
@@ -197,16 +248,32 @@ class _FinanceiroTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<FinancialTransactionModel>>(
-      stream: FirebaseFirestore.instance
-          .collection('financial_transactions')
-          .where('projectId', isEqualTo: project.id)
-          .orderBy('dueDate', descending: true)
-          .snapshots()
-          .map((s) => s.docs.map((d) => FinancialTransactionModel.fromMap(d.data(), d.id)).toList()),
+      stream: AppSupabase.client
+          .from('financial_transactions')
+          .stream(primaryKey: ['id'])
+          .eq('projectId', project.id)
+          .order('dueDate', ascending: false)
+          .map(
+            (rows) =>
+                rows.map((row) {
+                  final data = Map<String, dynamic>.from(row);
+                  return FinancialTransactionModel.fromMap(
+                    data,
+                    data['id'] as String? ?? '',
+                  );
+                }).toList(),
+          ),
       builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.accentGold));
+        if (!snap.hasData)
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accentGold),
+          );
         final transactions = snap.data!;
-        if (transactions.isEmpty) return const _EmptyState(icon: Icons.account_balance_wallet, label: 'Nenhuma transação registrada');
+        if (transactions.isEmpty)
+          return const _EmptyState(
+            icon: Icons.account_balance_wallet,
+            label: 'Nenhuma transação registrada',
+          );
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -224,19 +291,43 @@ class _FinanceiroTab extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(isIncome ? Icons.arrow_upward : Icons.arrow_downward, color: isIncome ? AppColors.accentGreen : AppColors.accentRed, size: 16),
+                  Icon(
+                    isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                    color:
+                        isIncome ? AppColors.accentGreen : AppColors.accentRed,
+                    size: 16,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(t.description, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                        Text(DateFormat('dd/MM/yy').format(t.dueDate), style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                        Text(
+                          t.description,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          DateFormat('dd/MM/yy').format(t.dueDate),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  Text('${isIncome ? "+" : "-"} R\$ ${t.amount.toStringAsFixed(2)}', 
-                    style: TextStyle(color: isIncome ? AppColors.accentGreen : Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(
+                    '${isIncome ? "+" : "-"} R\$ ${t.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: isIncome ? AppColors.accentGreen : Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -256,16 +347,32 @@ class _DiarioTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<DailyLogModel>>(
-      stream: FirebaseFirestore.instance
-          .collection('daily_logs')
-          .where('projectId', isEqualTo: project.id)
-          .orderBy('date', descending: true)
-          .snapshots()
-          .map((s) => s.docs.map((d) => DailyLogModel.fromFirestore(d)).toList()),
+      stream: AppSupabase.client
+          .from('daily_logs')
+          .stream(primaryKey: ['id'])
+          .eq('projectId', project.id)
+          .order('date', ascending: false)
+          .map(
+            (rows) =>
+                rows.map((row) {
+                  final data = Map<String, dynamic>.from(row);
+                  return DailyLogModel.fromMap(
+                    data,
+                    data['id'] as String? ?? '',
+                  );
+                }).toList(),
+          ),
       builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.accentGold));
+        if (!snap.hasData)
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accentGold),
+          );
         final logs = snap.data!;
-        if (logs.isEmpty) return const _EmptyState(icon: Icons.menu_book, label: 'Nenhum registro no diário');
+        if (logs.isEmpty)
+          return const _EmptyState(
+            icon: Icons.menu_book,
+            label: 'Nenhum registro no diário',
+          );
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -286,13 +393,34 @@ class _DiarioTab extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(DateFormat('dd/MM/yyyy — EEEE', 'pt_BR').format(log.date), 
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                      const Icon(Icons.wb_sunny_outlined, size: 14, color: Colors.amber),
+                      Text(
+                        DateFormat(
+                          'dd/MM/yyyy — EEEE',
+                          'pt_BR',
+                        ).format(log.date),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.wb_sunny_outlined,
+                        size: 14,
+                        color: Colors.amber,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Text(log.activitiesDescription, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(
+                    log.activitiesDescription,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             );
@@ -312,16 +440,35 @@ class _EquipeTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<TeamModel>>(
-      stream: FirebaseFirestore.instance
-          .collection('teams')
-          .where('projectId', isEqualTo: project.id)
-          .where('isActive', isEqualTo: true)
-          .snapshots()
-          .map((s) => s.docs.map((d) => TeamModel.fromMap(d.data(), d.id)).toList()),
+      stream: AppSupabase.client
+          .from('teams')
+          .stream(primaryKey: ['id'])
+          .map(
+            (rows) =>
+                rows.map((row) {
+                  final data = Map<String, dynamic>.from(row);
+                  return TeamModel.fromMap(data, data['id'] as String? ?? '');
+                }).toList(),
+          )
+          .map(
+            (teams) =>
+                teams
+                    .where(
+                      (team) => team.projectId == project.id && team.isActive,
+                    )
+                    .toList(),
+          ),
       builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.accentGold));
+        if (!snap.hasData)
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accentGold),
+          );
         final teams = snap.data!;
-        if (teams.isEmpty) return const _EmptyState(icon: Icons.groups, label: 'Nenhuma equipe vinculada');
+        if (teams.isEmpty)
+          return const _EmptyState(
+            icon: Icons.groups,
+            label: 'Nenhuma equipe vinculada',
+          );
 
         return ListView.builder(
           padding: const EdgeInsets.all(16),
@@ -339,9 +486,22 @@ class _EquipeTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(team.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  Text(
+                    team.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text('${team.memberIds.length} membros ativos', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  Text(
+                    '${team.memberIds.length} membros ativos',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             );
@@ -363,11 +523,21 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: AppColors.surfaceDark, borderRadius: BorderRadius.circular(12)),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+            ),
+          ),
           const SizedBox(height: 12),
           child,
         ],
@@ -380,7 +550,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -390,8 +564,20 @@ class _InfoRow extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: AppColors.textMuted),
           const SizedBox(width: 8),
-          Expanded(child: Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -411,7 +597,14 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: project.status.color.withOpacity(0.4)),
       ),
-      child: Text(project.status.displayName, style: TextStyle(color: project.status.color, fontSize: 11, fontWeight: FontWeight.bold)),
+      child: Text(
+        project.status.displayName,
+        style: TextStyle(
+          color: project.status.color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -430,7 +623,14 @@ class _AlertPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.4)),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 }
@@ -442,12 +642,44 @@ class _RecentPurchasesPreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Purchase>>(
-      stream: FirebaseFirestore.instance.collection('purchases').where('projectId', isEqualTo: projectId).limit(3).snapshots().map((s) => s.docs.map((d) => Purchase.fromMap(d.data(), d.id)).toList()),
+      stream: AppSupabase.client
+          .from('purchases')
+          .stream(primaryKey: ['id'])
+          .eq('projectId', projectId)
+          .limit(3)
+          .map(
+            (rows) =>
+                rows.map((row) {
+                  final data = Map<String, dynamic>.from(row);
+                  return Purchase.fromMap(data, data['id'] as String? ?? '');
+                }).toList(),
+          ),
       builder: (context, snap) {
         if (!snap.hasData) return const LinearProgressIndicator();
         final purchases = snap.data!;
-        if (purchases.isEmpty) return const Text('Nenhuma compra registrada', style: TextStyle(color: AppColors.textMuted, fontSize: 12));
-        return Column(children: purchases.map((p) => ListTile(dense: true, title: Text(p.itemName, style: const TextStyle(color: Colors.white)), trailing: Text('R\$ ${p.totalValue}', style: const TextStyle(color: AppColors.accentGold)))).toList());
+        if (purchases.isEmpty)
+          return const Text(
+            'Nenhuma compra registrada',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+          );
+        return Column(
+          children:
+              purchases
+                  .map(
+                    (p) => ListTile(
+                      dense: true,
+                      title: Text(
+                        p.itemName,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      trailing: Text(
+                        'R\$ ${p.totalValue}',
+                        style: const TextStyle(color: AppColors.accentGold),
+                      ),
+                    ),
+                  )
+                  .toList(),
+        );
       },
     );
   }
@@ -466,7 +698,10 @@ class _EmptyState extends StatelessWidget {
         children: [
           Icon(icon, size: 48, color: AppColors.textMuted.withOpacity(0.3)),
           const SizedBox(height: 12),
-          Text(label, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
+          Text(
+            label,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+          ),
         ],
       ),
     );

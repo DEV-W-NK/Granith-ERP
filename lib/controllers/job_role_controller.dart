@@ -11,13 +11,14 @@ class JobRoleController extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  // Lista local — carregada do Firestore ou mockada para visualização imediata
+  // Lista local usada como estado inicial para visualizacao imediata.
   final List<JobRoleModel> _roles = [
     JobRoleModel(
       id: '1',
       title: 'Engenheiro Civil Júnior',
       sector: 'Engenharia',
-      description: 'Responsável pelo acompanhamento técnico de obras residenciais.',
+      description:
+          'Responsável pelo acompanhamento técnico de obras residenciais.',
       hourlyRate: 28.50,
       requirements: ['CREA Ativo', 'Experiência em Obras'],
       createdAt: DateTime.now(),
@@ -56,7 +57,7 @@ class JobRoleController extends ChangeNotifier {
   Future<void> addRole(JobRoleModel role) async {
     _setLoading(true);
     try {
-      // Quando integrar com Firestore: final id = await _service.addRole(role);
+      // Quando persistir: final id = await _service.addRole(role);
       await Future.delayed(const Duration(milliseconds: 300));
       _roles.add(role);
       _error = null;
@@ -70,7 +71,7 @@ class JobRoleController extends ChangeNotifier {
   Future<void> updateRole(JobRoleModel updated) async {
     _setLoading(true);
     try {
-      // Quando integrar com Firestore: await _service.updateRole(updated);
+      // Quando persistir: await _service.updateRole(updated);
       await Future.delayed(const Duration(milliseconds: 300));
       final idx = _roles.indexWhere((r) => r.id == updated.id);
       if (idx != -1) _roles[idx] = updated;

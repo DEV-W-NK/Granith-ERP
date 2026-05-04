@@ -11,6 +11,7 @@ class ProjectCard extends StatelessWidget {
   final VoidCallback onDelete;
   final VoidCallback onTap;
   final bool isListView;
+  final ProjectBudgetService? budgetService;
 
   const ProjectCard({
     super.key,
@@ -19,6 +20,7 @@ class ProjectCard extends StatelessWidget {
     required this.onDelete,
     required this.onTap,
     this.isListView = false,
+    this.budgetService,
   });
 
   @override
@@ -32,9 +34,10 @@ class ProjectCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
             // Borda vermelha sutil se overBudget ou overdue
-            color: project.isOverBudget || project.isOverdue
-                ? Colors.redAccent.withOpacity(0.35)
-                : AppColors.borderColor,
+            color:
+                project.isOverBudget || project.isOverdue
+                    ? Colors.redAccent.withOpacity(0.35)
+                    : AppColors.borderColor,
             width: 1,
           ),
         ),
@@ -62,8 +65,9 @@ class ProjectCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
                 child: ProjectImageWidget(
                   imageUrl: project.imageUrl,
                   width: double.infinity,
@@ -74,7 +78,9 @@ class ProjectCard extends StatelessWidget {
 
               // Gradiente inferior
               Positioned(
-                bottom: 0, left: 0, right: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
                 height: 80,
                 child: Container(
                   decoration: BoxDecoration(
@@ -93,19 +99,22 @@ class ProjectCard extends StatelessWidget {
 
               // Status badge
               Positioned(
-                top: 12, left: 12,
+                top: 12,
+                left: 12,
                 child: _StatusBadge(project: project),
               ),
 
               // Badges de alerta (overdue / overBudget) — empilhados à direita
               Positioned(
-                top: 12, right: 44,
+                top: 12,
+                right: 44,
                 child: _AlertBadges(project: project),
               ),
 
               // Menu
               Positioned(
-                top: 8, right: 8,
+                top: 8,
+                right: 8,
                 child: Container(
                   decoration: const BoxDecoration(
                     color: Colors.black26,
@@ -155,8 +164,14 @@ class ProjectCard extends StatelessWidget {
                   ],
                 ),
 
-                // Barra de progresso financeiro real
-                _BudgetBar(project: project),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _MeasuredProgressBar(project: project),
+                    const SizedBox(height: 10),
+                    _BudgetBar(project: project, budgetService: budgetService),
+                  ],
+                ),
               ],
             ),
           ),
@@ -223,9 +238,11 @@ class ProjectCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.location_on_rounded,
-                        size: 13,
-                        color: AppColors.textMuted.withOpacity(0.7)),
+                    Icon(
+                      Icons.location_on_rounded,
+                      size: 13,
+                      color: AppColors.textMuted.withOpacity(0.7),
+                    ),
                     const SizedBox(width: 3),
                     Expanded(
                       child: Text(
@@ -253,9 +270,11 @@ class ProjectCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _BudgetValues(project: project),
+                _BudgetValues(project: project, budgetService: budgetService),
                 const SizedBox(height: 8),
-                _BudgetBar(project: project),
+                _MeasuredProgressBar(project: project),
+                const SizedBox(height: 8),
+                _BudgetBar(project: project, budgetService: budgetService),
               ],
             ),
           ),
@@ -271,33 +290,60 @@ class ProjectCard extends StatelessWidget {
 
   Widget _buildPopupMenu({Color? iconColor}) {
     return PopupMenuButton<String>(
-      icon: Icon(Icons.more_vert_rounded,
-          color: iconColor ?? AppColors.textMuted, size: 22),
+      icon: Icon(
+        Icons.more_vert_rounded,
+        color: iconColor ?? AppColors.textMuted,
+        size: 22,
+      ),
       color: AppColors.surfaceDark,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: const BorderSide(color: AppColors.borderColor),
       ),
       offset: const Offset(0, 40),
-      itemBuilder: (_) => [
-        _menuItem('view', Icons.visibility_rounded, 'Ver detalhes',
-            AppColors.accentBlue),
-        _menuItem('edit', Icons.edit_rounded, 'Editar', AppColors.accentGold),
-        _menuItem(
-            'delete', Icons.delete_rounded, 'Excluir', AppColors.accentRed),
-      ],
+      itemBuilder:
+          (_) => [
+            _menuItem(
+              'view',
+              Icons.visibility_rounded,
+              'Ver detalhes',
+              AppColors.accentBlue,
+            ),
+            _menuItem(
+              'edit',
+              Icons.edit_rounded,
+              'Editar',
+              AppColors.accentGold,
+            ),
+            _menuItem(
+              'delete',
+              Icons.delete_rounded,
+              'Excluir',
+              AppColors.accentRed,
+            ),
+          ],
       onSelected: (value) {
         switch (value) {
-          case 'view':   onTap();    break;
-          case 'edit':   onEdit();   break;
-          case 'delete': onDelete(); break;
+          case 'view':
+            onTap();
+            break;
+          case 'edit':
+            onEdit();
+            break;
+          case 'delete':
+            onDelete();
+            break;
         }
       },
     );
   }
 
   PopupMenuItem<String> _menuItem(
-      String value, IconData icon, String label, Color color) {
+    String value,
+    IconData icon,
+    String label,
+    Color color,
+  ) {
     return PopupMenuItem(
       value: value,
       child: Row(
@@ -311,10 +357,13 @@ class ProjectCard extends StatelessWidget {
             child: Icon(icon, color: color, size: 16),
           ),
           const SizedBox(width: 12),
-          Text(label,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -333,20 +382,28 @@ class _StatusBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-          horizontal: small ? 8 : 10, vertical: small ? 4 : 6),
+        horizontal: small ? 8 : 10,
+        vertical: small ? 4 : 6,
+      ),
       decoration: BoxDecoration(
-        color: small
-            ? project.status.color.withOpacity(0.15)
-            : AppColors.surfaceDark.withOpacity(0.9),
+        color:
+            small
+                ? project.status.color.withOpacity(0.15)
+                : AppColors.surfaceDark.withOpacity(0.9),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-            color: project.status.color.withOpacity(0.4), width: 1),
-        boxShadow: small
-            ? null
-            : [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.2), blurRadius: 4)
-              ],
+          color: project.status.color.withOpacity(0.4),
+          width: 1,
+        ),
+        boxShadow:
+            small
+                ? null
+                : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 4,
+                  ),
+                ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -380,19 +437,23 @@ class _AlertBadges extends StatelessWidget {
     final badges = <Widget>[];
 
     if (project.isOverBudget) {
-      badges.add(_AlertChip(
-        icon: Icons.trending_up,
-        label: 'Estourado',
-        color: Colors.redAccent,
-      ));
+      badges.add(
+        _AlertChip(
+          icon: Icons.trending_up,
+          label: 'Estourado',
+          color: Colors.redAccent,
+        ),
+      );
     }
 
     if (project.isOverdue) {
-      badges.add(_AlertChip(
-        icon: Icons.schedule,
-        label: 'Atrasado',
-        color: Colors.orangeAccent,
-      ));
+      badges.add(
+        _AlertChip(
+          icon: Icons.schedule,
+          label: 'Atrasado',
+          color: Colors.orangeAccent,
+        ),
+      );
     }
 
     if (badges.isEmpty) return const SizedBox.shrink();
@@ -400,19 +461,17 @@ class _AlertBadges extends StatelessWidget {
     if (inline) {
       return Row(
         mainAxisSize: MainAxisSize.min,
-        children: badges
-            .expand((b) => [b, const SizedBox(width: 4)])
-            .toList()
-          ..removeLast(),
+        children:
+            badges.expand((b) => [b, const SizedBox(width: 4)]).toList()
+              ..removeLast(),
       );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: badges
-          .expand((b) => [b, const SizedBox(height: 4)])
-          .toList()
-        ..removeLast(),
+      children:
+          badges.expand((b) => [b, const SizedBox(height: 4)]).toList()
+            ..removeLast(),
     );
   }
 }
@@ -442,11 +501,14 @@ class _AlertChip extends StatelessWidget {
         children: [
           Icon(icon, size: 10, color: color),
           const SizedBox(width: 3),
-          Text(label,
-              style: TextStyle(
-                  color: color,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -455,10 +517,102 @@ class _AlertChip extends StatelessWidget {
 
 // ─── Budget bar (reativa via stream) ─────────────────────────────────────────
 
-class _BudgetBar extends StatelessWidget {
+class _MeasuredProgressBar extends StatelessWidget {
   final Project project;
 
-  const _BudgetBar({required this.project});
+  const _MeasuredProgressBar({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasMeasurementProgress = project.hasMeasuredProgress;
+    final pct = (project.progressPercentage / 100).clamp(0.0, 1.0);
+    final barColor =
+        hasMeasurementProgress
+            ? AppColors.accentBlue
+            : AppColors.textMuted.withOpacity(0.55);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                hasMeasurementProgress
+                    ? 'Avanco medido'
+                    : 'Avanco estimado indisponivel',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color:
+                      hasMeasurementProgress
+                          ? AppColors.textSecondary
+                          : AppColors.textMuted,
+                  fontSize: 10,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              hasMeasurementProgress
+                  ? '${project.progressPercentage.toStringAsFixed(1)}%'
+                  : '--',
+              style: TextStyle(
+                color: barColor,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        LayoutBuilder(
+          builder: (_, constraints) {
+            final maxW = constraints.maxWidth;
+            return Stack(
+              children: [
+                Container(
+                  height: 6,
+                  width: maxW,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.07),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeOut,
+                  height: 6,
+                  width: maxW * pct,
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    borderRadius: BorderRadius.circular(4),
+                    boxShadow:
+                        hasMeasurementProgress
+                            ? [
+                              BoxShadow(
+                                color: barColor.withOpacity(0.35),
+                                blurRadius: 4,
+                              ),
+                            ]
+                            : null,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _BudgetBar extends StatelessWidget {
+  final Project project;
+  final ProjectBudgetService? budgetService;
+
+  const _BudgetBar({required this.project, this.budgetService});
 
   @override
   Widget build(BuildContext context) {
@@ -467,18 +621,20 @@ class _BudgetBar extends StatelessWidget {
     }
 
     return StreamBuilder<ProjectBudgetSnapshot>(
-      stream: ProjectBudgetService().watchProjectBudget(
+      stream: (budgetService ?? ProjectBudgetService()).watchProjectBudget(
         projectId: project.id,
         budgetPrevisto: project.budget,
       ),
       builder: (context, snap) {
-        final s = snap.data ??
+        final s =
+            snap.data ??
             ProjectBudgetSnapshot.empty(project.id, project.budget);
 
         final pct = (s.percentualConsumido / 100).clamp(0.0, 1.0);
-        final barColor = s.isOverBudget
-            ? Colors.redAccent
-            : s.isNearLimit
+        final barColor =
+            s.isOverBudget
+                ? Colors.redAccent
+                : s.isNearLimit
                 ? Colors.orangeAccent
                 : Colors.greenAccent;
 
@@ -488,15 +644,21 @@ class _BudgetBar extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  s.isOverBudget ? 'Orçamento estourado' : 'Budget consumido',
-                  style: TextStyle(
-                    color: s.isOverBudget
-                        ? Colors.redAccent
-                        : AppColors.textMuted,
-                    fontSize: 10,
+                Expanded(
+                  child: Text(
+                    s.isOverBudget ? 'Orçamento estourado' : 'Budget consumido',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:
+                          s.isOverBudget
+                              ? Colors.redAccent
+                              : AppColors.textMuted,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
+                const SizedBox(width: 8),
                 Text(
                   '${s.percentualConsumido.toStringAsFixed(1)}%',
                   style: TextStyle(
@@ -555,8 +717,9 @@ class _BudgetBar extends StatelessWidget {
 
 class _BudgetValues extends StatelessWidget {
   final Project project;
+  final ProjectBudgetService? budgetService;
 
-  const _BudgetValues({required this.project});
+  const _BudgetValues({required this.project, this.budgetService});
 
   @override
   Widget build(BuildContext context) {
@@ -565,17 +728,17 @@ class _BudgetValues extends StatelessWidget {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return StreamBuilder<ProjectBudgetSnapshot>(
-      stream: ProjectBudgetService().watchProjectBudget(
+      stream: (budgetService ?? ProjectBudgetService()).watchProjectBudget(
         projectId: project.id,
         budgetPrevisto: project.budget,
       ),
       builder: (context, snap) {
-        final s = snap.data ??
+        final s =
+            snap.data ??
             ProjectBudgetSnapshot.empty(project.id, project.budget);
 
-        final valueColor = s.isOverBudget
-            ? Colors.redAccent
-            : AppColors.accentGreen;
+        final valueColor =
+            s.isOverBudget ? Colors.redAccent : AppColors.accentGreen;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,

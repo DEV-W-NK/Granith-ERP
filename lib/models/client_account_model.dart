@@ -69,7 +69,8 @@ class ClientAccount {
     this.updatedAt,
   });
 
-  bool get hasPortalAccess => portalAccessStatus != ClientPortalAccessStatus.pending;
+  bool get hasPortalAccess =>
+      portalAccessStatus != ClientPortalAccessStatus.pending;
 
   factory ClientAccount.empty() {
     return const ClientAccount(

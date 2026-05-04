@@ -22,21 +22,21 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
-  final ItemService _itemService         = ItemService();
+  final ItemService _itemService = ItemService();
   final SupplierService _supplierService = SupplierService();
-  final ServiceProjetos _projectService  = ServiceProjetos();
+  final ServiceProjetos _projectService = ServiceProjetos();
 
   bool _isLoading = true;
-  List<Item>     _items     = [];
+  List<Item> _items = [];
   List<Supplier> _suppliers = [];
-  List<Project>  _projects  = [];
+  List<Project> _projects = [];
 
-  Item?     _selectedItem;
+  Item? _selectedItem;
   Supplier? _selectedSupplier;
-  Project?  _selectedProject;
+  Project? _selectedProject;
 
-  final _addressCtrl  = TextEditingController();
-  final _valueCtrl    = TextEditingController();
+  final _addressCtrl = TextEditingController();
+  final _valueCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController(text: '1');
 
   // Status disponíveis para seleção manual —
@@ -49,8 +49,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   PurchaseStatus _status = PurchaseStatus.pending;
 
   late AnimationController _animCtrl;
-  late Animation<double>   _fadeAnim;
-  late Animation<Offset>   _slideAnim;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
@@ -59,24 +59,30 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
     if (widget.purchase != null) {
       final p = widget.purchase!;
-      _addressCtrl.text  = p.deliveryAddress;
-      _valueCtrl.text    = p.totalValue.toStringAsFixed(2);
+      _addressCtrl.text = p.deliveryAddress;
+      _valueCtrl.text = p.totalValue.toStringAsFixed(2);
       _quantityCtrl.text = p.quantity.toStringAsFixed(
-          p.quantity % 1 == 0 ? 0 : 2);
+        p.quantity % 1 == 0 ? 0 : 2,
+      );
       // Se status não é editável (delivered/cancelled), mostra pending
-      _status = _editableStatuses.contains(p.status)
-          ? p.status
-          : PurchaseStatus.pending;
+      _status =
+          _editableStatuses.contains(p.status)
+              ? p.status
+              : PurchaseStatus.pending;
     }
 
     _animCtrl = AnimationController(
-        duration: const Duration(milliseconds: 350), vsync: this);
-    _fadeAnim  = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
+      duration: const Duration(milliseconds: 350),
+      vsync: this,
+    );
+    _fadeAnim = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
     _slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: _animCtrl, curve: Curves.easeOutCubic));
+      begin: const Offset(0, 0.08),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
     _animCtrl.forward();
   }
 
@@ -90,15 +96,25 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
       if (!mounted) return;
       setState(() {
-        _items     = results[0] as List<Item>;
+        _items = results[0] as List<Item>;
         _suppliers = results[1] as List<Supplier>;
-        _projects  = results[2] as List<Project>;
+        _projects = results[2] as List<Project>;
 
         if (widget.purchase != null) {
           final p = widget.purchase!;
-          try { _selectedItem     = _items.firstWhere((i) => i.id == p.itemId); }     catch (_) {}
-          try { _selectedSupplier = _suppliers.firstWhere((s) => s.id == p.supplierId); } catch (_) {}
-          try { _selectedProject  = _projects.firstWhere((pr) => pr.id == p.projectId); } catch (_) {}
+          try {
+            _selectedItem = _items.firstWhere((i) => i.id == p.itemId);
+          } catch (_) {}
+          try {
+            _selectedSupplier = _suppliers.firstWhere(
+              (s) => s.id == p.supplierId,
+            );
+          } catch (_) {}
+          try {
+            _selectedProject = _projects.firstWhere(
+              (pr) => pr.id == p.projectId,
+            );
+          } catch (_) {}
         }
 
         _isLoading = false;
@@ -128,99 +144,103 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
         child: FadeTransition(
           opacity: _fadeAnim,
           child: Container(
-            constraints:
-                const BoxConstraints(maxWidth: 600, maxHeight: 860),
+            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 860),
             decoration: BoxDecoration(
               color: AppColors.surfaceDark,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                  color: AppColors.borderColor.withOpacity(0.5)),
+              border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
               boxShadow: [
                 BoxShadow(
-                    color: AppColors.primaryDark.withOpacity(0.5),
-                    blurRadius: 24,
-                    offset: const Offset(0, 12)),
+                  color: AppColors.primaryDark.withOpacity(0.5),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
               ],
             ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 200,
-                    child: Center(
+            child:
+                _isLoading
+                    ? const SizedBox(
+                      height: 200,
+                      child: Center(
                         child: CircularProgressIndicator(
-                            color: AppColors.accentGold)))
-                : SingleChildScrollView(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildHeader(isEditing),
-                          Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                              children: [
-                                // Projeto
-                                _label('Para qual projeto?'),
-                                _projectDropdown(),
-                                const SizedBox(height: 20),
+                          color: AppColors.accentGold,
+                        ),
+                      ),
+                    )
+                    : SingleChildScrollView(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _buildHeader(isEditing),
+                            Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Projeto
+                                  _label('Para qual projeto?'),
+                                  _projectDropdown(),
+                                  const SizedBox(height: 20),
 
-                                // Item
-                                _label('O que será comprado?'),
-                                _itemDropdown(),
-                                const SizedBox(height: 20),
+                                  // Item
+                                  _label('O que será comprado?'),
+                                  _itemDropdown(),
+                                  const SizedBox(height: 20),
 
-                                // Fornecedor
-                                _label('Quem irá fornecer?'),
-                                _supplierDropdown(),
-                                const SizedBox(height: 20),
+                                  // Fornecedor
+                                  _label('Quem irá fornecer?'),
+                                  _supplierDropdown(),
+                                  const SizedBox(height: 20),
 
-                                // Quantidade + Valor
-                                Row(children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _label('Quantidade'),
-                                        _quantityField(),
-                                      ],
-                                    ),
+                                  // Quantidade + Valor
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _label('Quantidade'),
+                                            _quantityField(),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            _label('Valor total (R\$)'),
+                                            _valueField(),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    flex: 2,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _label('Valor total (R\$)'),
-                                        _valueField(),
-                                      ],
-                                    ),
-                                  ),
-                                ]),
-                                const SizedBox(height: 20),
+                                  const SizedBox(height: 20),
 
-                                // Endereço
-                                _label('Endereço de entrega'),
-                                _addressField(),
-                                const SizedBox(height: 20),
+                                  // Endereço
+                                  _label('Endereço de entrega'),
+                                  _addressField(),
+                                  const SizedBox(height: 20),
 
-                                // Status
-                                _label('Status inicial'),
-                                _statusDropdown(),
-                                const SizedBox(height: 32),
+                                  // Status
+                                  _label('Status inicial'),
+                                  _statusDropdown(),
+                                  const SizedBox(height: 32),
 
-                                _buildActions(),
-                              ],
+                                  _buildActions(),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
           ),
         ),
       ),
@@ -249,16 +269,20 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
               color: AppColors.primaryDark.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.shopping_cart_rounded,
-                color: AppColors.primaryDark, size: 24),
+            child: const Icon(
+              Icons.shopping_cart_rounded,
+              color: AppColors.primaryDark,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 16),
           Text(
             isEditing ? 'Editar compra' : 'Registrar compra',
             style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark),
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primaryDark,
+            ),
           ),
         ],
       ),
@@ -273,14 +297,19 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('Selecione o projeto', Icons.business_rounded),
       style: const TextStyle(color: AppColors.textPrimary),
-      items: _projects
-          .map((p) => DropdownMenuItem(
-                value: p,
-                child: Text(p.name,
+      items:
+          _projects
+              .map(
+                (p) => DropdownMenuItem(
+                  value: p,
+                  child: Text(
+                    p.name,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w500)),
-              ))
-          .toList(),
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _selectedProject = v),
       validator: (v) => v == null ? 'Selecione um projeto' : null,
     );
@@ -292,12 +321,15 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('Selecione o item', Icons.inventory_2_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
-      items: _items
-          .map((i) => DropdownMenuItem(
-                value: i,
-                child: Text(i.name, overflow: TextOverflow.ellipsis),
-              ))
-          .toList(),
+      items:
+          _items
+              .map(
+                (i) => DropdownMenuItem(
+                  value: i,
+                  child: Text(i.name, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _selectedItem = v),
       validator: (v) => v == null ? 'Selecione um item' : null,
     );
@@ -307,15 +339,17 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     return DropdownButtonFormField<Supplier>(
       value: _selectedSupplier,
       dropdownColor: AppColors.secondaryDark,
-      decoration:
-          _dec('Selecione o fornecedor', Icons.storefront_outlined),
+      decoration: _dec('Selecione o fornecedor', Icons.storefront_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
-      items: _suppliers
-          .map((s) => DropdownMenuItem(
-                value: s,
-                child: Text(s.name, overflow: TextOverflow.ellipsis),
-              ))
-          .toList(),
+      items:
+          _suppliers
+              .map(
+                (s) => DropdownMenuItem(
+                  value: s,
+                  child: Text(s.name, overflow: TextOverflow.ellipsis),
+                ),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _selectedSupplier = v),
       validator: (v) => v == null ? 'Selecione um fornecedor' : null,
     );
@@ -325,8 +359,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     return TextFormField(
       controller: _quantityCtrl,
       style: const TextStyle(color: AppColors.textPrimary),
-      keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
       ],
@@ -344,18 +377,15 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     return TextFormField(
       controller: _valueCtrl,
       style: const TextStyle(color: AppColors.textPrimary),
-      keyboardType:
-          const TextInputType.numberWithOptions(decimal: true),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
       ],
       decoration: _dec('0,00', Icons.attach_money).copyWith(
         prefixText: 'R\$ ',
-        prefixStyle:
-            const TextStyle(color: AppColors.accentGold),
+        prefixStyle: const TextStyle(color: AppColors.accentGold),
       ),
-      validator: (v) =>
-          v?.isEmpty == true ? 'Obrigatório' : null,
+      validator: (v) => v?.isEmpty == true ? 'Obrigatório' : null,
     );
   }
 
@@ -363,10 +393,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     return TextFormField(
       controller: _addressCtrl,
       style: const TextStyle(color: AppColors.textPrimary),
-      decoration:
-          _dec('Endereço de entrega', Icons.location_on_outlined),
-      validator: (v) =>
-          v?.isEmpty == true ? 'Informe o endereço' : null,
+      decoration: _dec('Endereço de entrega', Icons.location_on_outlined),
+      validator: (v) => v?.isEmpty == true ? 'Informe o endereço' : null,
     );
   }
 
@@ -377,16 +405,22 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
       decoration: _dec('', Icons.flag_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
       // Só mostra pending e ordered — delivered/cancelled são por ação
-      items: _editableStatuses
-          .map((s) => DropdownMenuItem(
-                value: s,
-                child: Text(s.label,
+      items:
+          _editableStatuses
+              .map(
+                (s) => DropdownMenuItem(
+                  value: s,
+                  child: Text(
+                    s.label,
                     style: TextStyle(
-                        color: s.color,
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold)),
-              ))
-          .toList(),
+                      color: s.color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
       onChanged: (v) => setState(() => _status = v!),
     );
   }
@@ -400,9 +434,12 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
           child: TextButton(
             onPressed: () => Navigator.pop(context),
             style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16)),
-            child: const Text('Cancelar',
-                style: TextStyle(color: AppColors.textSecondary)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
           ),
         ),
         const SizedBox(width: 16),
@@ -415,10 +452,13 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
               foregroundColor: AppColors.primaryDark,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: const Text('Salvar compra',
-                style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Salvar compra',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],
@@ -432,32 +472,32 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     if (_selectedItem == null ||
         _selectedSupplier == null ||
         _selectedProject == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Selecione projeto, item e fornecedor'),
-        backgroundColor: AppColors.accentRed,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Selecione projeto, item e fornecedor'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
       return;
     }
 
-    final qty   = double.tryParse(_quantityCtrl.text) ?? 1.0;
-    final value = double.tryParse(
-            _valueCtrl.text.replaceAll(',', '.')) ??
-        0.0;
+    final qty = double.tryParse(_quantityCtrl.text) ?? 1.0;
+    final value = double.tryParse(_valueCtrl.text.replaceAll(',', '.')) ?? 0.0;
 
     final purchase = Purchase(
-      id:              widget.purchase?.id ?? '',
-      itemId:          _selectedItem!.id,
-      itemName:        _selectedItem!.name,
-      supplierId:      _selectedSupplier!.id,
-      supplierName:    _selectedSupplier!.name,
-      projectId:       _selectedProject!.id,
-      projectName:     _selectedProject!.name,
+      id: widget.purchase?.id ?? '',
+      itemId: _selectedItem!.id,
+      itemName: _selectedItem!.name,
+      supplierId: _selectedSupplier!.id,
+      supplierName: _selectedSupplier!.name,
+      projectId: _selectedProject!.id,
+      projectName: _selectedProject!.name,
       deliveryAddress: _addressCtrl.text.trim(),
-      totalValue:      value,
-      quantity:        qty,
-      status:          _status,
-      purchaseDate:    widget.purchase?.purchaseDate ?? DateTime.now(),
-      requisitionId:   widget.purchase?.requisitionId,
+      totalValue: value,
+      quantity: qty,
+      status: _status,
+      purchaseDate: widget.purchase?.purchaseDate ?? DateTime.now(),
+      requisitionId: widget.purchase?.requisitionId,
     );
 
     Navigator.pop(context, purchase);
@@ -468,33 +508,37 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(text,
-          style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.bold)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
     );
   }
 
   InputDecoration _dec(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(
-          color: AppColors.textMuted.withOpacity(0.5)),
+      hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.5)),
       prefixIcon: Icon(icon, color: AppColors.accentGold, size: 20),
       filled: true,
       fillColor: AppColors.secondaryDark,
-      contentPadding:
-          const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderColor)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.borderColor),
+      ),
       enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.borderColor)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.borderColor),
+      ),
       focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accentGold)),
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentGold),
+      ),
     );
   }
 }

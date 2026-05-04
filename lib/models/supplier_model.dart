@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class Supplier {
   final String id;
@@ -18,16 +18,9 @@ class Supplier {
   });
 
   factory Supplier.fromJson(Map<String, dynamic> json) {
-    // Função auxiliar para tratar datas vindas de diferentes fontes (Firestore ou API)
+    // Trata datas vindas de diferentes fontes.
     DateTime parseDate(dynamic value) {
-      if (value is Timestamp) {
-        return value.toDate();
-      } else if (value is String) {
-        return DateTime.parse(value);
-      } else if (value is int) {
-        return DateTime.fromMillisecondsSinceEpoch(value);
-      }
-      return DateTime.now(); // Fallback seguro para evitar crash
+      return DbValue.toDateTime(value) ?? DateTime.now();
     }
 
     return Supplier(
@@ -87,7 +80,7 @@ class Supplier {
   // Helper methods
   String get formattedCnpj {
     if (cnpj.length != 14) return cnpj;
-    
+
     return '${cnpj.substring(0, 2)}.${cnpj.substring(2, 5)}.${cnpj.substring(5, 8)}/${cnpj.substring(8, 12)}-${cnpj.substring(12, 14)}';
   }
 

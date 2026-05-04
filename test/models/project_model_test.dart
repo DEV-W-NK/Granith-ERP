@@ -99,5 +99,28 @@ void main() {
       expect((stats['statusCounts'] as Map<String, int>)['inProgress'], 1);
       expect((stats['statusCounts'] as Map<String, int>)['planning'], 1);
     });
+
+    test('progressPercentage prioriza a medicao quando existir', () {
+      final project = Project(
+        name: 'Obra Torre Norte',
+        client: 'Cliente Atlas',
+        description: 'Execucao da estrutura',
+        status: ProjectStatus.inProgress,
+        startDate: DateTime(2026, 1, 1),
+        budget: 1000,
+        currentCost: 150,
+        location: 'Campinas',
+        tags: const [],
+        teamSize: 8,
+        estimatedProgress: 42.5,
+        measuredAmount: 425,
+        measurementCount: 2,
+      );
+
+      expect(project.financialProgressPercentage, 15);
+      expect(project.progressPercentage, 42.5);
+      expect(project.formattedProgress, '42.5%');
+      expect(project.hasMeasuredProgress, isTrue);
+    });
   });
 }

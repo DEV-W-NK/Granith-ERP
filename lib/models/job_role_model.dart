@@ -26,27 +26,29 @@ class JobRoleModel {
   });
 
   Map<String, dynamic> toMap() => {
-        'title':        title,
-        'sector':       sector,
-        'description':  description,
-        'hourlyRate':   hourlyRate,
-        'requirements': requirements,
-        'isActive':     isActive,
-        'createdAt':    DbValue.toPrimitive(createdAt),
-      };
+    'title': title,
+    'sector': sector,
+    'description': description,
+    'hourlyRate': hourlyRate,
+    'requirements': requirements,
+    'isActive': isActive,
+    'createdAt': DbValue.toPrimitive(createdAt),
+  };
 
-  factory JobRoleModel.fromMap(Map<String, dynamic> map, String docId) =>
-      JobRoleModel(
-        id:           docId,
-        title:        map['title'] ?? '',
-        sector:       map['sector'] ?? '',
-        description:  map['description'] ?? '',
-        // retrocompatibilidade: aceita 'baseSalary' antigo → ignora, usa hourlyRate
-        hourlyRate:   (map['hourlyRate'] ?? 0.0).toDouble(),
-        requirements: List<String>.from(map['requirements'] ?? []),
-        isActive:     map['isActive'] ?? true,
-        createdAt:    DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
-      );
+  factory JobRoleModel.fromMap(
+    Map<String, dynamic> map,
+    String docId,
+  ) => JobRoleModel(
+    id: docId,
+    title: map['title'] ?? '',
+    sector: map['sector'] ?? '',
+    description: map['description'] ?? '',
+    // retrocompatibilidade: aceita 'baseSalary' antigo → ignora, usa hourlyRate
+    hourlyRate: (map['hourlyRate'] ?? 0.0).toDouble(),
+    requirements: List<String>.from(map['requirements'] ?? []),
+    isActive: map['isActive'] ?? true,
+    createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+  );
 
   JobRoleModel copyWith({
     String? title,
@@ -55,15 +57,14 @@ class JobRoleModel {
     double? hourlyRate,
     List<String>? requirements,
     bool? isActive,
-  }) =>
-      JobRoleModel(
-        id:           id,
-        title:        title ?? this.title,
-        sector:       sector ?? this.sector,
-        description:  description ?? this.description,
-        hourlyRate:   hourlyRate ?? this.hourlyRate,
-        requirements: requirements ?? this.requirements,
-        isActive:     isActive ?? this.isActive,
-        createdAt:    createdAt,
-      );
+  }) => JobRoleModel(
+    id: id,
+    title: title ?? this.title,
+    sector: sector ?? this.sector,
+    description: description ?? this.description,
+    hourlyRate: hourlyRate ?? this.hourlyRate,
+    requirements: requirements ?? this.requirements,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt,
+  );
 }

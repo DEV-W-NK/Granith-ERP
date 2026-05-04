@@ -1,34 +1,79 @@
 import 'package:flutter/material.dart';
 
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/screens/access_management_page.dart';
 import 'package:project_granith/screens/client_portal_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
+import 'package:project_granith/screens/login_page.dart';
 import 'package:project_granith/screens/main_layout.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/subscription_page.dart';
 import 'package:project_granith/screens/system_settings_page.dart';
+import 'package:provider/provider.dart';
 
 class AppRouter {
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case '/home':
-        return MaterialPageRoute(builder: (_) => const MainLayout());
+        return _guardedRoute(
+          settings,
+          const MainLayout(),
+          allow: _canAccessInternalApp,
+        );
       case '/subscription':
-        return MaterialPageRoute(builder: (_) => const SubscriptionPage());
+        return _guardedRoute(
+          settings,
+          const SubscriptionPage(),
+          allow:
+              (auth) =>
+                  auth.isAdminUser ||
+                  auth.hasPermission('billing.manage') ||
+                  auth.hasPermission('settings.manage'),
+        );
       case '/client-portal':
-        return MaterialPageRoute(builder: (_) => const ClientPortalPage());
+        return _guardedRoute(
+          settings,
+          const ClientPortalPage(),
+          allow: (auth) => auth.isClientUser || auth.isAdminUser,
+        );
       case '/access-management':
-        return MaterialPageRoute(builder: (_) => const AccessManagementPage());
+        return _guardedRoute(
+          settings,
+          const AccessManagementPage(),
+          allow:
+              (auth) => auth.isAdminUser || auth.hasPermission('access.manage'),
+        );
       case '/settings':
-        return MaterialPageRoute(builder: (_) => const SystemSettingsPage());
+        return _guardedRoute(
+          settings,
+          const SystemSettingsPage(),
+          allow:
+              (auth) =>
+                  auth.isAdminUser || auth.hasPermission('settings.manage'),
+        );
       case '/reports':
-        return MaterialPageRoute(builder: (_) => const ReportsPage());
+        return _guardedRoute(
+          settings,
+          const ReportsPage(),
+          allow:
+              (auth) =>
+                  auth.isAdminUser || auth.hasPermission('financial.read'),
+        );
       case '/nova-receita':
       case '/nova-despesa':
-        return MaterialPageRoute(builder: (_) => const FinancialPage());
+        return _guardedRoute(
+          settings,
+          const FinancialPage(),
+          allow:
+              (auth) =>
+                  auth.isAdminUser || auth.hasPermission('financial.read'),
+        );
       case '/clientes':
-        return MaterialPageRoute(
-          builder: (_) => const AccessManagementPage(initialTabIndex: 1),
+        return _guardedRoute(
+          settings,
+          const AccessManagementPage(initialTabIndex: 1),
+          allow:
+              (auth) => auth.isAdminUser || auth.hasPermission('access.manage'),
         );
       default:
         return null;
@@ -36,6 +81,89 @@ class AppRouter {
   }
 
   static Route<dynamic> onUnknownRoute(RouteSettings settings) {
-    return MaterialPageRoute(builder: (_) => const MainLayout());
+    return _guardedRoute(
+      settings,
+      const MainLayout(),
+      allow: _canAccessInternalApp,
+    );
+  }
+
+  static Route<dynamic> _guardedRoute(
+    RouteSettings settings,
+    Widget page, {
+    required bool Function(AuthViewModel auth) allow,
+  }) {
+    return MaterialPageRoute(
+      settings: settings,
+      builder: (context) {
+        final auth = context.watch<AuthViewModel>();
+
+        if (!auth.isInitialized) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (!auth.isAuthenticated) {
+          return const LoginPage();
+        }
+
+        if (allow(auth)) {
+          return page;
+        }
+
+        if (auth.isClientUser) {
+          return const ClientPortalPage();
+        }
+
+        return const _AccessDeniedPage();
+      },
+    );
+  }
+
+  static bool _canAccessInternalApp(AuthViewModel auth) {
+    return auth.isEmployeeUser || auth.isAdminUser;
+  }
+}
+
+class _AccessDeniedPage extends StatelessWidget {
+  const _AccessDeniedPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.lock_outline_rounded, size: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'Acesso restrito',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sua conta nao possui permissao para abrir este modulo.',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed:
+                      () => Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/home', (route) => false),
+                  child: const Text('Voltar ao inicio'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

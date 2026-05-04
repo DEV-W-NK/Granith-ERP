@@ -8,7 +8,7 @@ class MaterialRequisitionController extends ChangeNotifier {
   final MaterialRequisitionService _service;
 
   MaterialRequisitionController({MaterialRequisitionService? service})
-      : _service = service ?? MaterialRequisitionService();
+    : _service = service ?? MaterialRequisitionService();
 
   List<MaterialRequisitionModel> _requisitions = [];
   bool _isLoading = false;
@@ -20,25 +20,45 @@ class MaterialRequisitionController extends ChangeNotifier {
   String? get error => _error;
 
   List<MaterialRequisitionModel> get pending =>
-      _requisitions.where((r) => r.status == RequisitionStatus.pending).toList();
+      _requisitions
+          .where((r) => r.status == RequisitionStatus.pending)
+          .toList();
   List<MaterialRequisitionModel> get approved =>
-      _requisitions.where((r) => r.status == RequisitionStatus.approved).toList();
+      _requisitions
+          .where((r) => r.status == RequisitionStatus.approved)
+          .toList();
   List<MaterialRequisitionModel> get highPriority =>
-      _requisitions.where((r) => r.priority == 'Alta' && r.status == RequisitionStatus.pending).toList();
+      _requisitions
+          .where(
+            (r) =>
+                r.priority == 'Alta' && r.status == RequisitionStatus.pending,
+          )
+          .toList();
   int get pendingCount => pending.length;
 
   void init() {
     _setLoading(true);
     _sub?.cancel();
     _sub = _service.getRequisitions().listen(
-      (list) { _requisitions = list; _setLoading(false); },
-      onError: (e) { _error = e.toString(); _setLoading(false); },
+      (list) {
+        _requisitions = list;
+        _setLoading(false);
+      },
+      onError: (e) {
+        _error = e.toString();
+        _setLoading(false);
+      },
     );
   }
 
   Future<void> addRequisition(MaterialRequisitionModel req) async {
-    try { await _service.addRequisition(req); }
-    catch (e) { _error = e.toString(); notifyListeners(); rethrow; }
+    try {
+      await _service.addRequisition(req);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> approve({
@@ -48,8 +68,15 @@ class MaterialRequisitionController extends ChangeNotifier {
   }) async {
     try {
       await _service.approve(
-        requisition: requisition, approvedBy: approvedBy, approvedByName: approvedByName);
-    } catch (e) { _error = e.toString(); notifyListeners(); rethrow; }
+        requisition: requisition,
+        approvedBy: approvedBy,
+        approvedByName: approvedByName,
+      );
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<void> reject({
@@ -60,9 +87,16 @@ class MaterialRequisitionController extends ChangeNotifier {
   }) async {
     try {
       await _service.reject(
-        requisition: requisition, rejectedBy: rejectedBy,
-        rejectedByName: rejectedByName, reason: reason);
-    } catch (e) { _error = e.toString(); notifyListeners(); rethrow; }
+        requisition: requisition,
+        rejectedBy: rejectedBy,
+        rejectedByName: rejectedByName,
+        reason: reason,
+      );
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
   Future<List<String>> convertToPurchase({
@@ -73,13 +107,26 @@ class MaterialRequisitionController extends ChangeNotifier {
   }) async {
     try {
       return await _service.convertToPurchase(
-        requisition: requisition, supplier: supplier,
-        createdBy: createdBy, itemPrices: itemPrices);
-    } catch (e) { _error = e.toString(); notifyListeners(); rethrow; }
+        requisition: requisition,
+        supplier: supplier,
+        createdBy: createdBy,
+        itemPrices: itemPrices,
+      );
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      rethrow;
+    }
   }
 
-  void _setLoading(bool v) { _isLoading = v; notifyListeners(); }
+  void _setLoading(bool v) {
+    _isLoading = v;
+    notifyListeners();
+  }
 
   @override
-  void dispose() { _sub?.cancel(); super.dispose(); }
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
 }

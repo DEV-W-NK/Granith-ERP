@@ -14,7 +14,7 @@ class ItemFormDialog extends StatefulWidget {
 
 class _ItemFormDialogState extends State<ItemFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   late TextEditingController _nameController;
   late TextEditingController _descController;
@@ -30,12 +30,20 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
     _nameController = TextEditingController(text: widget.item?.name);
     _descController = TextEditingController(text: widget.item?.description);
     _unitController = TextEditingController(text: widget.item?.unit ?? 'un');
-    
+
     // Formatação numérica simples
-    _weightController = TextEditingController(text: widget.item?.weight?.toString());
-    _widthController = TextEditingController(text: widget.item?.width?.toString());
-    _heightController = TextEditingController(text: widget.item?.height?.toString());
-    _lengthController = TextEditingController(text: widget.item?.length?.toString());
+    _weightController = TextEditingController(
+      text: widget.item?.weight?.toString(),
+    );
+    _widthController = TextEditingController(
+      text: widget.item?.width?.toString(),
+    );
+    _heightController = TextEditingController(
+      text: widget.item?.height?.toString(),
+    );
+    _lengthController = TextEditingController(
+      text: widget.item?.length?.toString(),
+    );
   }
 
   @override
@@ -70,9 +78,15 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // === Informações Básicas ===
-                const Text('Informações Básicas', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Informações Básicas',
+                  style: TextStyle(
+                    color: AppColors.accentGold,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -81,7 +95,9 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                         controller: _nameController,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: _inputDecoration('Nome do Item*'),
-                        validator: (value) => value?.isEmpty == true ? 'Obrigatório' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty == true ? 'Obrigatório' : null,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -91,7 +107,9 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                         controller: _unitController,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: _inputDecoration('Unidade (ex: kg)*'),
-                        validator: (value) => value?.isEmpty == true ? 'Obrigatório' : null,
+                        validator:
+                            (value) =>
+                                value?.isEmpty == true ? 'Obrigatório' : null,
                       ),
                     ),
                   ],
@@ -105,29 +123,47 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                 ),
 
                 const SizedBox(height: 24),
-                
+
                 // === Informações de Frete ===
-                const Text('Logística & Frete (Opcional)', style: TextStyle(color: AppColors.accentGold, fontWeight: FontWeight.bold)),
+                const Text(
+                  'Logística & Frete (Opcional)',
+                  style: TextStyle(
+                    color: AppColors.accentGold,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 16),
-                
+
                 TextFormField(
                   controller: _weightController,
                   style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: _inputDecoration('Peso (kg)').copyWith(suffixText: 'kg'),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))],
+                  decoration: _inputDecoration(
+                    'Peso (kg)',
+                  ).copyWith(suffixText: 'kg'),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
+                  ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 Row(
                   children: [
                     Expanded(
                       child: TextFormField(
                         controller: _widthController,
                         style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration('Largura').copyWith(suffixText: 'cm'),
+                        decoration: _inputDecoration(
+                          'Largura',
+                        ).copyWith(suffixText: 'cm'),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d*'),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -135,9 +171,15 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                       child: TextFormField(
                         controller: _heightController,
                         style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration('Altura').copyWith(suffixText: 'cm'),
+                        decoration: _inputDecoration(
+                          'Altura',
+                        ).copyWith(suffixText: 'cm'),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d*'),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -145,9 +187,15 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                       child: TextFormField(
                         controller: _lengthController,
                         style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration('Comp.').copyWith(suffixText: 'cm'),
+                        decoration: _inputDecoration(
+                          'Comp.',
+                        ).copyWith(suffixText: 'cm'),
                         keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'))],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d+\.?\d*'),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -160,7 +208,10 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar', style: TextStyle(color: AppColors.textMuted)),
+          child: const Text(
+            'Cancelar',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
         ),
         ElevatedButton(
           onPressed: _submit,

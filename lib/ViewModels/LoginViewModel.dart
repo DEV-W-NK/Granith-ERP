@@ -3,10 +3,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:project_granith/services/auth_service.dart';
 import 'package:project_granith/services/auth_service_contract.dart';
 
-typedef LoadingPresenter =
-    Future<void> Function({
-      String? status,
-    });
+typedef LoadingPresenter = Future<void> Function({String? status});
 typedef LoadingDismiss = Future<void> Function();
 
 class LoginViewModel extends ChangeNotifier {
@@ -39,11 +36,11 @@ class LoginViewModel extends ChangeNotifier {
     LoadingDismiss? dismissLoading,
     bool isWeb = kIsWeb,
     Uri? initialUri,
-  })  : _authService = authService ?? AuthService(),
-        _showLoading = showLoading ?? EasyLoading.show,
-        _dismissLoading = dismissLoading ?? EasyLoading.dismiss,
-        _isWeb = isWeb,
-        _initialUri = initialUri {
+  }) : _authService = authService ?? AuthService(),
+       _showLoading = showLoading ?? EasyLoading.show,
+       _dismissLoading = dismissLoading ?? EasyLoading.dismiss,
+       _isWeb = isWeb,
+       _initialUri = initialUri {
     _consumeInitialAuthRedirect();
   }
 
@@ -203,10 +200,7 @@ class LoginViewModel extends ChangeNotifier {
     return params;
   }
 
-  String _mapRedirectError({
-    String? errorCode,
-    String? errorDescription,
-  }) {
+  String _mapRedirectError({String? errorCode, String? errorDescription}) {
     switch (errorCode) {
       case 'otp_expired':
         return 'Esse link de acesso expirou ou ja foi usado. Clique em "Receber link de acesso" para solicitar um novo convite.';

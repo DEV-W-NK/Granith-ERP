@@ -10,12 +10,17 @@ class JobRoleService {
         .from(_collection)
         .stream(primaryKey: ['id'])
         .order('title')
-        .map((rows) => rows
-            .map((row) => JobRoleModel.fromMap(
-                  Map<String, dynamic>.from(row),
-                  row['id'] as String,
-                ))
-            .toList());
+        .map(
+          (rows) =>
+              rows
+                  .map(
+                    (row) => JobRoleModel.fromMap(
+                      Map<String, dynamic>.from(row),
+                      row['id'] as String,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<void> saveJobRole(JobRoleModel role) async {

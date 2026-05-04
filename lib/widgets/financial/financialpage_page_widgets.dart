@@ -42,49 +42,59 @@ class _FinancialPageViewState extends State<FinancialPageView>
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
-      body: ctrl.isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.accentGold))
-          : Padding(
-              padding: EdgeInsets.all(isDesktop ? 32 : 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(context, isDesktop),
-                  const SizedBox(height: 24),
-                  _buildStatCards(ctrl),
-                  const SizedBox(height: 20),
-                  const FinancialFilterBar(),
-                  const SizedBox(height: 16),
-                  _buildTabBar(isDesktop),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _TransactionList(transactions: ctrl.transactions),
-                        _TransactionList(
-                          transactions: ctrl.transactions
-                              .where((t) => t.type == TransactionType.income)
-                              .toList(),
-                        ),
-                        _TransactionList(
-                          transactions: ctrl.transactions
-                              .where((t) => t.type == TransactionType.expense)
-                              .toList(),
-                        ),
-                      ],
+      body:
+          ctrl.isLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: AppColors.accentGold),
+              )
+              : Padding(
+                padding: EdgeInsets.all(isDesktop ? 32 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(context, isDesktop),
+                    const SizedBox(height: 24),
+                    _buildStatCards(ctrl),
+                    const SizedBox(height: 20),
+                    const FinancialFilterBar(),
+                    const SizedBox(height: 16),
+                    _buildTabBar(isDesktop),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _TransactionList(transactions: ctrl.transactions),
+                          _TransactionList(
+                            transactions:
+                                ctrl.transactions
+                                    .where(
+                                      (t) => t.type == TransactionType.income,
+                                    )
+                                    .toList(),
+                          ),
+                          _TransactionList(
+                            transactions:
+                                ctrl.transactions
+                                    .where(
+                                      (t) => t.type == TransactionType.expense,
+                                    )
+                                    .toList(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-      floatingActionButton: !isDesktop
-          ? FloatingActionButton(
-              backgroundColor: AppColors.accentGold,
-              child: const Icon(Icons.add, color: AppColors.primaryDark),
-              onPressed: () => TransactionFormDialog.show(context),
-            )
-          : null,
+      floatingActionButton:
+          !isDesktop
+              ? FloatingActionButton(
+                backgroundColor: AppColors.accentGold,
+                child: const Icon(Icons.add, color: AppColors.primaryDark),
+                onPressed: () => TransactionFormDialog.show(context),
+              )
+              : null,
     );
   }
 
@@ -92,21 +102,26 @@ class _FinancialPageViewState extends State<FinancialPageView>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Gestão Financeira',
-              style: TextStyle(
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Gestão Financeira',
+                style: TextStyle(
                   color: Colors.white,
                   fontSize: 26,
-                  fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Fluxo de caixa, contas a pagar e receber',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
-          ],
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                'Fluxo de caixa, contas a pagar e receber',
+                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
         if (isDesktop)
           ElevatedButton.icon(
@@ -119,7 +134,9 @@ class _FinancialPageViewState extends State<FinancialPageView>
             label: const Text(
               'Nova Transação',
               style: TextStyle(
-                  color: AppColors.primaryDark, fontWeight: FontWeight.bold),
+                color: AppColors.primaryDark,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
       ],
@@ -136,7 +153,8 @@ class _FinancialPageViewState extends State<FinancialPageView>
             title: 'Saldo em caixa',
             value: ctrl.balance,
             icon: Icons.account_balance_wallet_outlined,
-            color: ctrl.balance >= 0 ? AppColors.accentBlue : AppColors.accentRed,
+            color:
+                ctrl.balance >= 0 ? AppColors.accentBlue : AppColors.accentRed,
           ),
           const SizedBox(width: 12),
           FinancialStatCard(

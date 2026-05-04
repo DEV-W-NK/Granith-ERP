@@ -40,17 +40,11 @@ class HomeChartsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Coluna Principal (Gráficos) - Ocupa mais espaço (5/8)
-        Expanded(
-          flex: 5,
-          child: _buildChartsList(),
-        ),
+        Expanded(flex: 5, child: _buildChartsList()),
         // Espaçamento generoso para não colar as informações
         const SizedBox(width: 32),
         // Coluna Lateral (Atividades) - Ocupa menos espaço (3/8), mas suficiente para leitura
-        const Expanded(
-          flex: 3,
-          child: RecentActivities(),
-        ),
+        const Expanded(flex: 3, child: RecentActivities()),
       ],
     );
   }

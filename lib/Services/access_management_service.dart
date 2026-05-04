@@ -11,12 +11,10 @@ class AccessManagementService {
         .select()
         .order('displayName', ascending: true);
 
-    return (response as List)
-        .map((row) {
-          final data = Map<String, dynamic>.from(row);
-          return UserModel.fromMap(data, (data['id'] ?? '').toString());
-        })
-        .toList();
+    return (response as List).map((row) {
+      final data = Map<String, dynamic>.from(row);
+      return UserModel.fromMap(data, (data['id'] ?? '').toString());
+    }).toList();
   }
 
   Future<void> updateUserAccess(UserModel user) async {

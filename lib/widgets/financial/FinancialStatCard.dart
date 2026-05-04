@@ -41,9 +41,10 @@ class FinancialStatCard extends StatelessWidget {
               color: AppColors.surfaceDark,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: onTap != null
-                    ? color.withOpacity(0.15)
-                    : Colors.white.withOpacity(0.05),
+                color:
+                    onTap != null
+                        ? color.withOpacity(0.15)
+                        : Colors.white.withOpacity(0.05),
               ),
             ),
             child: Column(
@@ -84,7 +85,10 @@ class FinancialStatCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.redAccent,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.backgroundDark, width: 1.5),
+                  border: Border.all(
+                    color: AppColors.backgroundDark,
+                    width: 1.5,
+                  ),
                 ),
                 child: Text(
                   '$badgeCount',
@@ -120,14 +124,15 @@ class _AnimatedValue extends StatelessWidget {
       tween: Tween(begin: 0, end: value),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOut,
-      builder: (_, v, __) => Text(
-        format.format(v),
-        style: TextStyle(
-          color: color,
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      builder:
+          (_, v, __) => Text(
+            format.format(v),
+            style: TextStyle(
+              color: color,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
     );
   }
 }

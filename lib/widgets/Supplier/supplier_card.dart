@@ -36,7 +36,9 @@ class SupplierCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(SupplierConstants.cardBorderRadius),
+            borderRadius: BorderRadius.circular(
+              SupplierConstants.cardBorderRadius,
+            ),
             border: Border.all(
               color: AppColors.borderColor.withOpacity(0.2),
               width: 1,
@@ -118,17 +120,19 @@ class SupplierCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: supplier.isActive
-              ? AppColors.accentGold.withOpacity(0.3)
-              : AppColors.textMuted.withOpacity(0.2),
+          color:
+              supplier.isActive
+                  ? AppColors.accentGold.withOpacity(0.3)
+                  : AppColors.textMuted.withOpacity(0.2),
           width: 1,
         ),
       ),
       child: Icon(
         Icons.business_rounded,
-        color: supplier.isActive
-            ? AppColors.accentGold
-            : AppColors.textMuted.withOpacity(0.6),
+        color:
+            supplier.isActive
+                ? AppColors.accentGold
+                : AppColors.textMuted.withOpacity(0.6),
         size: 24,
       ),
     );
@@ -151,9 +155,10 @@ class SupplierCard extends StatelessWidget {
     return Text(
       supplier.formattedCnpj,
       style: TextStyle(
-        color: supplier.isActive
-            ? AppColors.textSecondary
-            : AppColors.textMuted.withOpacity(0.7),
+        color:
+            supplier.isActive
+                ? AppColors.textSecondary
+                : AppColors.textMuted.withOpacity(0.7),
         fontSize: 14,
         fontWeight: FontWeight.w500,
         fontFamily: 'monospace',
@@ -165,14 +170,16 @@ class SupplierCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: supplier.isActive
-            ? AppColors.accentGreen.withOpacity(0.15)
-            : AppColors.textMuted.withOpacity(0.1),
+        color:
+            supplier.isActive
+                ? AppColors.accentGreen.withOpacity(0.15)
+                : AppColors.textMuted.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: supplier.isActive
-              ? AppColors.accentGreen.withOpacity(0.3)
-              : AppColors.textMuted.withOpacity(0.2),
+          color:
+              supplier.isActive
+                  ? AppColors.accentGreen.withOpacity(0.3)
+                  : AppColors.textMuted.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -181,9 +188,8 @@ class SupplierCard extends StatelessWidget {
             ? SupplierConstants.statusActive
             : SupplierConstants.statusInactive,
         style: TextStyle(
-          color: supplier.isActive
-              ? AppColors.accentGreen
-              : AppColors.textMuted,
+          color:
+              supplier.isActive ? AppColors.accentGreen : AppColors.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w600,
         ),
@@ -232,43 +238,44 @@ class SupplierCard extends StatelessWidget {
       ),
       elevation: 8,
       onSelected: (String action) => _handleAction(action),
-      itemBuilder: (BuildContext context) => [
-        PopupMenuItem<String>(
-          value: 'view',
-          child: _buildMenuItem(
-            Icons.visibility_rounded,
-            'Visualizar',
-            AppColors.accentBlue,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'edit',
-          child: _buildMenuItem(
-            Icons.edit_rounded,
-            SupplierConstants.buttonEdit,
-            AppColors.accentGold,
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'toggle_status',
-          child: _buildMenuItem(
-            supplier.isActive
-                ? Icons.visibility_off_rounded
-                : Icons.visibility_rounded,
-            supplier.isActive ? 'Desativar' : 'Ativar',
-            supplier.isActive ? AppColors.accentRed : AppColors.accentGreen,
-          ),
-        ),
-        const PopupMenuDivider(),
-        PopupMenuItem<String>(
-          value: 'delete',
-          child: _buildMenuItem(
-            Icons.delete_rounded,
-            SupplierConstants.buttonDelete,
-            AppColors.accentRed,
-          ),
-        ),
-      ],
+      itemBuilder:
+          (BuildContext context) => [
+            PopupMenuItem<String>(
+              value: 'view',
+              child: _buildMenuItem(
+                Icons.visibility_rounded,
+                'Visualizar',
+                AppColors.accentBlue,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'edit',
+              child: _buildMenuItem(
+                Icons.edit_rounded,
+                SupplierConstants.buttonEdit,
+                AppColors.accentGold,
+              ),
+            ),
+            PopupMenuItem<String>(
+              value: 'toggle_status',
+              child: _buildMenuItem(
+                supplier.isActive
+                    ? Icons.visibility_off_rounded
+                    : Icons.visibility_rounded,
+                supplier.isActive ? 'Desativar' : 'Ativar',
+                supplier.isActive ? AppColors.accentRed : AppColors.accentGreen,
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: _buildMenuItem(
+                Icons.delete_rounded,
+                SupplierConstants.buttonDelete,
+                AppColors.accentRed,
+              ),
+            ),
+          ],
     );
   }
 
@@ -309,10 +316,20 @@ class SupplierCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     final months = [
-      'jan', 'fev', 'mar', 'abr', 'mai', 'jun',
-      'jul', 'ago', 'set', 'out', 'nov', 'dez'
+      'jan',
+      'fev',
+      'mar',
+      'abr',
+      'mai',
+      'jun',
+      'jul',
+      'ago',
+      'set',
+      'out',
+      'nov',
+      'dez',
     ];
-    
+
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
 }

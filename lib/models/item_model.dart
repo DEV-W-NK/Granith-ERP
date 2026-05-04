@@ -5,13 +5,13 @@ class Item {
   final String name;
   final String description;
   final String unit; // ex: un, kg, m, m², l
-  
+
   // Dados para Frete (Opcionais)
   final double? weight; // em kg
-  final double? width;  // em cm
+  final double? width; // em cm
   final double? height; // em cm
   final double? length; // em cm
-  
+
   final DateTime createdAt;
   final DateTime updatedAt;
 

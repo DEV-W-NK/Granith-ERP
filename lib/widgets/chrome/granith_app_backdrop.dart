@@ -7,10 +7,7 @@ import 'package:project_granith/themes/app_theme.dart';
 class GranithAppBackdrop extends StatefulWidget {
   final Widget child;
 
-  const GranithAppBackdrop({
-    super.key,
-    required this.child,
-  });
+  const GranithAppBackdrop({super.key, required this.child});
 
   @override
   State<GranithAppBackdrop> createState() => _GranithAppBackdropState();
@@ -38,13 +35,13 @@ class _GranithAppBackdropState extends State<GranithAppBackdrop>
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.appBackgroundGradient),
+      decoration: const BoxDecoration(
+        gradient: AppColors.appBackgroundGradient,
+      ),
       child: Stack(
         children: [
           Positioned.fill(
-            child: RepaintBoundary(
-              child: _AuraLayer(animation: _controller),
-            ),
+            child: RepaintBoundary(child: _AuraLayer(animation: _controller)),
           ),
           widget.child,
         ],
@@ -67,10 +64,7 @@ class GranithPageBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = Padding(
-      padding: padding ?? EdgeInsets.zero,
-      child: child,
-    );
+    final content = Padding(padding: padding ?? EdgeInsets.zero, child: child);
 
     return Stack(
       children: [
@@ -177,17 +171,15 @@ class _AuraOrb extends StatelessWidget {
       builder: (context, child) {
         final wave = math.sin((animation.value * math.pi * 2) + phase);
         final driftX = dx + (wave * 18);
-        final driftY = dy + (math.cos((animation.value * math.pi * 2) + phase) * 14);
+        final driftY =
+            dy + (math.cos((animation.value * math.pi * 2) + phase) * 14);
         final scale = 0.96 + ((wave + 1) * 0.025);
 
         return Align(
           alignment: alignment,
           child: Transform.translate(
             offset: Offset(driftX, driftY),
-            child: Transform.scale(
-              scale: scale,
-              child: child,
-            ),
+            child: Transform.scale(scale: scale, child: child),
           ),
         );
       },
@@ -213,18 +205,17 @@ class _SoftGridOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _SoftGridPainter(),
-    );
+    return CustomPaint(painter: _SoftGridPainter());
   }
 }
 
 class _SoftGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.018)
-      ..strokeWidth = 1;
+    final paint =
+        Paint()
+          ..color = Colors.white.withValues(alpha: 0.018)
+          ..strokeWidth = 1;
 
     const gap = 48.0;
     for (double x = 0; x <= size.width; x += gap) {

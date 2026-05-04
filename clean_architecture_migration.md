@@ -33,5 +33,5 @@ lib/
 
 1. Mover implementações reais de `services`, `controllers` e `ViewModels` para dentro de `features/`.
 2. Criar `domain/entities`, `domain/repositories` e `domain/usecases` por módulo.
-3. Deixar Firebase somente em `data/`, sem acesso direto em `presentation`.
+3. Deixar acesso ao Supabase isolado em `data/`/`services`, sem acesso direto em `presentation`.
 4. Esvaziar as pastas legadas quando todos os imports estiverem apontando para `features/`.

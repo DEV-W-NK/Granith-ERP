@@ -1,14 +1,17 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart'; // Para kIsWeb
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/services/daily_log_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class DailyLogController extends ChangeNotifier {
-  final DailyLogService _service = DailyLogService();
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  static const _bucket = 'project-images';
+
+  final DailyLogService _service;
+
+  DailyLogController({DailyLogService? service, Object? storage})
+    : _service = service ?? DailyLogService();
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -29,37 +32,41 @@ class DailyLogController extends ChangeNotifier {
     }
   }
 
-  // Método que faltava no seu código anterior
-  Future<bool> saveLogWithPhotos(DailyLogModel log, List<XFile> newPhotos) async {
+  Future<bool> saveLogWithPhotos(
+    DailyLogModel log,
+    List<XFile> newPhotos,
+  ) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      List<String> uploadedUrls = [...log.photoUrls];
+      final uploadedUrls = [...log.photoUrls];
 
-      // 1. Upload das novas fotos
-      if (newPhotos.isNotEmpty) {
-        for (var photo in newPhotos) {
-          try {
-            String fileName = '${DateTime.now().millisecondsSinceEpoch}_${photo.name}';
-            Reference ref = _storage.ref().child('daily_logs/${log.projectId}/$fileName');
-            
-            if (kIsWeb) {
-               await ref.putData(await photo.readAsBytes());
-            } else {
-               await ref.putFile(File(photo.path));
-            }
-            
-            String downloadUrl = await ref.getDownloadURL();
-            uploadedUrls.add(downloadUrl);
-          } catch (e) {
-            debugPrint('Erro no upload da imagem ${photo.name}: $e');
-            // Continua para a próxima imagem mesmo se uma falhar
-          }
+      for (final photo in newPhotos) {
+        try {
+          final fileName =
+              '${DateTime.now().millisecondsSinceEpoch}_${_sanitizeFileName(photo.name)}';
+          final path = 'daily_logs/${log.projectId}/$fileName';
+
+          await AppSupabase.client.storage
+              .from(_bucket)
+              .uploadBinary(
+                path,
+                await photo.readAsBytes(),
+                fileOptions: FileOptions(
+                  contentType: _contentTypeFor(photo.name),
+                  upsert: true,
+                ),
+              );
+
+          uploadedUrls.add(
+            AppSupabase.client.storage.from(_bucket).getPublicUrl(path),
+          );
+        } catch (e) {
+          debugPrint('Erro no upload da imagem ${photo.name}: $e');
         }
       }
 
-      // 2. Atualiza modelo com URLs
       final updatedLog = DailyLogModel(
         id: log.id,
         projectId: log.projectId,
@@ -75,19 +82,28 @@ class DailyLogController extends ChangeNotifier {
         status: log.status,
       );
 
-      // 3. Salva no Firestore
       await _service.saveLog(updatedLog);
-      
-      // 4. Atualiza lista local
       await loadLogs();
-      
+
       return true;
     } catch (e) {
-      debugPrint('Erro geral ao salvar diário: $e');
+      debugPrint('Erro geral ao salvar diario: $e');
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  String _sanitizeFileName(String fileName) {
+    return fileName.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+  }
+
+  String _contentTypeFor(String fileName) {
+    final lower = fileName.toLowerCase();
+    if (lower.endsWith('.png')) return 'image/png';
+    if (lower.endsWith('.webp')) return 'image/webp';
+    if (lower.endsWith('.gif')) return 'image/gif';
+    return 'image/jpeg';
   }
 }

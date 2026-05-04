@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class DailyLogModel {
   final String id;
@@ -29,13 +29,12 @@ class DailyLogModel {
     this.status = 'pendente',
   });
 
-  factory DailyLogModel.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+  factory DailyLogModel.fromMap(Map<String, dynamic> data, String id) {
     return DailyLogModel(
-      id: doc.id,
+      id: id,
       projectId: data['projectId'] ?? '',
       projectName: data['projectName'] ?? '',
-      date: (data['date'] as Timestamp).toDate(),
+      date: DbValue.toDateTime(data['date']) ?? DateTime.now(),
       weatherMorning: data['weatherMorning'] ?? '',
       weatherAfternoon: data['weatherAfternoon'] ?? '',
       manpower: data['manpower'] ?? 0,
@@ -47,11 +46,11 @@ class DailyLogModel {
     );
   }
 
-  Map<String, dynamic> toFirestore() {
+  Map<String, dynamic> toMap() {
     return {
       'projectId': projectId,
       'projectName': projectName,
-      'date': Timestamp.fromDate(date),
+      'date': DbValue.toPrimitive(date),
       'weatherMorning': weatherMorning,
       'weatherAfternoon': weatherAfternoon,
       'manpower': manpower,
@@ -85,7 +84,8 @@ class DailyLogModel {
       weatherMorning: weatherMorning ?? this.weatherMorning,
       weatherAfternoon: weatherAfternoon ?? this.weatherAfternoon,
       manpower: manpower ?? this.manpower,
-      activitiesDescription: activitiesDescription ?? this.activitiesDescription,
+      activitiesDescription:
+          activitiesDescription ?? this.activitiesDescription,
       impediments: impediments ?? this.impediments,
       photoUrls: photoUrls ?? this.photoUrls,
       createdByUserId: createdByUserId ?? this.createdByUserId,

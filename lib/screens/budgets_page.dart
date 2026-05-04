@@ -7,6 +7,6 @@ class BudgetsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  BudgetsPageView();
+    return BudgetsPageView();
   }
 }

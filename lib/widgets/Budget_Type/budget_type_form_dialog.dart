@@ -21,7 +21,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  
+
   String _selectedCategory = BudgetTypeConstants.categories.first;
   String? _selectedIcon;
   Color? _selectedColor;
@@ -49,7 +49,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
       _selectedCategory = budgetType.category;
       _selectedIcon = budgetType.iconName;
       _isActive = budgetType.isActive;
-      
+
       if (budgetType.color != null) {
         _selectedColor = Color(int.parse(budgetType.color!));
       }
@@ -58,13 +58,13 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > BudgetTypeConstants.desktopBreakpoint;
-    
+    final isDesktop =
+        MediaQuery.of(context).size.width >
+        BudgetTypeConstants.desktopBreakpoint;
+
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: isDesktop ? 600 : null,
         constraints: BoxConstraints(
@@ -146,10 +146,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(
-              Icons.close_rounded,
-              color: AppColors.textMuted,
-            ),
+            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -199,15 +196,22 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             fillColor: AppColors.backgroundDark,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.3),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentGold, width: 2),
+              borderSide: const BorderSide(
+                color: AppColors.accentGold,
+                width: 2,
+              ),
             ),
           ),
           style: const TextStyle(color: AppColors.textPrimary),
@@ -250,15 +254,22 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             fillColor: AppColors.backgroundDark,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.3),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.borderColor.withOpacity(0.3)),
+              borderSide: BorderSide(
+                color: AppColors.borderColor.withOpacity(0.3),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentGold, width: 2),
+              borderSide: const BorderSide(
+                color: AppColors.accentGold,
+                width: 2,
+              ),
             ),
           ),
           style: const TextStyle(color: AppColors.textPrimary),
@@ -266,10 +277,12 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             if (value == null || value.trim().isEmpty) {
               return 'Descrição é obrigatória';
             }
-            if (value.trim().length < BudgetTypeConstants.minDescriptionLength) {
+            if (value.trim().length <
+                BudgetTypeConstants.minDescriptionLength) {
               return 'Descrição deve ter pelo menos ${BudgetTypeConstants.minDescriptionLength} caracteres';
             }
-            if (value.trim().length > BudgetTypeConstants.maxDescriptionLength) {
+            if (value.trim().length >
+                BudgetTypeConstants.maxDescriptionLength) {
               return 'Descrição deve ter no máximo ${BudgetTypeConstants.maxDescriptionLength} caracteres';
             }
             return null;
@@ -296,9 +309,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
           decoration: BoxDecoration(
             color: AppColors.backgroundDark,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.borderColor.withOpacity(0.3),
-            ),
+            border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
           ),
           child: DropdownButtonFormField<String>(
             initialValue: _selectedCategory,
@@ -313,33 +324,37 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             },
             decoration: const InputDecoration(
               border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             dropdownColor: AppColors.surfaceDark,
             style: const TextStyle(color: AppColors.textPrimary),
             icon: const Icon(Icons.arrow_drop_down, color: AppColors.textMuted),
-            items: BudgetTypeConstants.categories.map((category) {
-              final categoryColor = BudgetTypeConstants.categoryColors[category] ?? AppColors.accentGold;
-              final categoryIcon = BudgetTypeConstants.categoryIcons[category] ?? Icons.category;
-              
-              return DropdownMenuItem(
-                value: category,
-                child: Row(
-                  children: [
-                    Icon(
-                      categoryIcon,
-                      color: categoryColor,
-                      size: 20,
+            items:
+                BudgetTypeConstants.categories.map((category) {
+                  final categoryColor =
+                      BudgetTypeConstants.categoryColors[category] ??
+                      AppColors.accentGold;
+                  final categoryIcon =
+                      BudgetTypeConstants.categoryIcons[category] ??
+                      Icons.category;
+
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Row(
+                      children: [
+                        Icon(categoryIcon, color: categoryColor, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          category,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      category,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+                  );
+                }).toList(),
           ),
         ),
       ],
@@ -364,9 +379,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
           decoration: BoxDecoration(
             color: AppColors.backgroundDark,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.borderColor.withOpacity(0.3),
-            ),
+            border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
           ),
           child: GridView.builder(
             padding: const EdgeInsets.all(12),
@@ -378,12 +391,14 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             ),
             itemCount: BudgetTypeConstants.availableIcons.length,
             itemBuilder: (context, index) {
-              final iconEntry = BudgetTypeConstants.availableIcons.entries.elementAt(index);
+              final iconEntry = BudgetTypeConstants.availableIcons.entries
+                  .elementAt(index);
               final iconName = iconEntry.key;
               final iconData = iconEntry.value;
               final isSelected = _selectedIcon == iconName;
-              final displayColor = _selectedColor ?? 
-                  BudgetTypeConstants.categoryColors[_selectedCategory] ?? 
+              final displayColor =
+                  _selectedColor ??
+                  BudgetTypeConstants.categoryColors[_selectedCategory] ??
                   AppColors.accentGold;
 
               return GestureDetector(
@@ -394,22 +409,22 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isSelected 
-                        ? displayColor.withOpacity(0.2)
-                        : AppColors.surfaceDark,
+                    color:
+                        isSelected
+                            ? displayColor.withOpacity(0.2)
+                            : AppColors.surfaceDark,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: isSelected 
-                          ? displayColor
-                          : AppColors.borderColor.withOpacity(0.3),
+                      color:
+                          isSelected
+                              ? displayColor
+                              : AppColors.borderColor.withOpacity(0.3),
                       width: isSelected ? 2 : 1,
                     ),
                   ),
                   child: Icon(
                     iconData,
-                    color: isSelected 
-                        ? displayColor
-                        : AppColors.textMuted,
+                    color: isSelected ? displayColor : AppColors.textMuted,
                     size: 20,
                   ),
                 ),
@@ -454,9 +469,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
           decoration: BoxDecoration(
             color: AppColors.backgroundDark,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.borderColor.withOpacity(0.3),
-            ),
+            border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
           ),
           child: ListView.separated(
             padding: const EdgeInsets.all(12),
@@ -480,19 +493,21 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
                     color: color,
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: isSelected 
-                          ? AppColors.textPrimary
-                          : Colors.transparent,
+                      color:
+                          isSelected
+                              ? AppColors.textPrimary
+                              : Colors.transparent,
                       width: 3,
                     ),
                   ),
-                  child: isSelected
-                      ? const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 20,
-                        )
-                      : null,
+                  child:
+                      isSelected
+                          ? const Icon(
+                            Icons.check,
+                            color: Colors.white,
+                            size: 20,
+                          )
+                          : null,
                 ),
               );
             },
@@ -508,9 +523,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
       decoration: BoxDecoration(
         color: AppColors.backgroundDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderColor.withOpacity(0.3),
-        ),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -534,13 +547,10 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _isActive 
+                  _isActive
                       ? 'Este tipo estará disponível para uso'
                       : 'Este tipo ficará oculto e indisponível',
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 14),
                 ),
               ],
             ),
@@ -606,22 +616,25 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 elevation: 0,
               ),
-              child: _isLoading
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(AppColors.primaryDark),
+              child:
+                  _isLoading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(
+                            AppColors.primaryDark,
+                          ),
+                        ),
+                      )
+                      : Text(
+                        widget.budgetType == null ? 'Criar' : 'Salvar',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
-                    )
-                  : Text(
-                      widget.budgetType == null ? 'Criar' : 'Salvar',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
             ),
           ),
         ],

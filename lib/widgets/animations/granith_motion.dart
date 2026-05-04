@@ -32,20 +32,14 @@ class _GranithRevealState extends State<GranithReveal>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
     final curved = CurvedAnimation(parent: _controller, curve: widget.curve);
     _opacity = Tween<double>(begin: 0, end: 1).animate(curved);
     _slide = Tween<Offset>(
       begin: widget.beginOffset,
       end: Offset.zero,
     ).animate(curved);
-    _scale = Tween<double>(
-      begin: widget.beginScale,
-      end: 1,
-    ).animate(curved);
+    _scale = Tween<double>(begin: widget.beginScale, end: 1).animate(curved);
 
     Future.delayed(widget.delay, () {
       if (mounted) {
@@ -66,10 +60,7 @@ class _GranithRevealState extends State<GranithReveal>
       opacity: _opacity,
       child: SlideTransition(
         position: _slide,
-        child: ScaleTransition(
-          scale: _scale,
-          child: widget.child,
-        ),
+        child: ScaleTransition(scale: _scale, child: widget.child),
       ),
     );
   }
@@ -103,31 +94,34 @@ class _GranithPressableState extends State<GranithPressable> {
 
   @override
   Widget build(BuildContext context) {
-    final targetScale = _pressed
-        ? widget.pressedScale
-        : (_hovered ? widget.hoverScale : 1.0);
-    final targetOffset = _hovered && !_pressed ? widget.hoverOffset : Offset.zero;
+    final targetScale =
+        _pressed ? widget.pressedScale : (_hovered ? widget.hoverScale : 1.0);
+    final targetOffset =
+        _hovered && !_pressed ? widget.hoverOffset : Offset.zero;
 
     return MouseRegion(
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : MouseCursor.defer,
+      cursor:
+          widget.onTap != null ? SystemMouseCursors.click : MouseCursor.defer,
       onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() {
-        _hovered = false;
-        _pressed = false;
-      }),
+      onExit:
+          (_) => setState(() {
+            _hovered = false;
+            _pressed = false;
+          }),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapDown: widget.onTap != null
-            ? (_) => setState(() => _pressed = true)
-            : null,
-        onTapUp: widget.onTap != null
-            ? (_) => setState(() => _pressed = false)
-            : null,
-        onTapCancel: widget.onTap != null
-            ? () => setState(() => _pressed = false)
-            : null,
+        onTapDown:
+            widget.onTap != null
+                ? (_) => setState(() => _pressed = true)
+                : null,
+        onTapUp:
+            widget.onTap != null
+                ? (_) => setState(() => _pressed = false)
+                : null,
+        onTapCancel:
+            widget.onTap != null
+                ? () => setState(() => _pressed = false)
+                : null,
         onTap: widget.onTap,
         child: AnimatedSlide(
           duration: widget.duration,

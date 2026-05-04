@@ -15,15 +15,20 @@ class MaterialRequisitionViewModel extends ChangeNotifier {
 
   // Getters para facilitar o acesso aos dados filtrados
   bool get isLoading => _controller.isLoading;
-  List<MaterialRequisitionModel> get allRequisitions => _controller.requisitions;
+  List<MaterialRequisitionModel> get allRequisitions =>
+      _controller.requisitions;
   List<MaterialRequisitionModel> get pending => _controller.pending;
   List<MaterialRequisitionModel> get approved => _controller.approved;
-  
+
   List<MaterialRequisitionModel> get completed {
-    return _controller.requisitions.where((r) =>
-        r.status == RequisitionStatus.purchased ||
-        r.status == RequisitionStatus.rejected ||
-        r.status == RequisitionStatus.delivered).toList();
+    return _controller.requisitions
+        .where(
+          (r) =>
+              r.status == RequisitionStatus.purchased ||
+              r.status == RequisitionStatus.rejected ||
+              r.status == RequisitionStatus.delivered,
+        )
+        .toList();
   }
 
   int get pendingCount => _controller.pendingCount;

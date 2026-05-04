@@ -36,7 +36,12 @@ class StatisticsModel {
 
   // Dados para o Gráfico de Linha (Receita)
   static const List<double> monthlyRevenueData = [
-    120000.0, 135000.0, 128000.0, 150000.0, 142000.0, 180000.0
+    120000.0,
+    135000.0,
+    128000.0,
+    150000.0,
+    142000.0,
+    180000.0,
   ];
 
   // Adicionando a lista mainStats que estava faltando para o Controller

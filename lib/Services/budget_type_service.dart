@@ -7,11 +7,12 @@ class BudgetTypeService {
 
   Future<String> createBudgetType(BudgetType budgetType) async {
     try {
-      final response = await AppSupabase.client
-          .from(_collection)
-          .insert(DbValue.normalizeMap(budgetType.toMap()))
-          .select('id')
-          .single();
+      final response =
+          await AppSupabase.client
+              .from(_collection)
+              .insert(DbValue.normalizeMap(budgetType.toMap()))
+              .select('id')
+              .single();
       return response['id'] as String;
     } catch (e) {
       throw Exception('Erro ao criar tipo de orcamento: $e');
@@ -43,14 +44,18 @@ class BudgetTypeService {
 
   Future<List<BudgetType>> getBudgetTypes() async {
     try {
-      final response =
-          await AppSupabase.client.from(_collection).select().order('name');
+      final response = await AppSupabase.client
+          .from(_collection)
+          .select()
+          .order('name');
 
       return (response as List)
-          .map((row) => BudgetType.fromMap(
-                Map<String, dynamic>.from(row as Map),
-                row['id'] as String,
-              ))
+          .map(
+            (row) => BudgetType.fromMap(
+              Map<String, dynamic>.from(row as Map),
+              row['id'] as String,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('Erro ao buscar tipos de orcamento: $e');
@@ -66,10 +71,12 @@ class BudgetTypeService {
           .order('name');
 
       return (response as List)
-          .map((row) => BudgetType.fromMap(
-                Map<String, dynamic>.from(row as Map),
-                row['id'] as String,
-              ))
+          .map(
+            (row) => BudgetType.fromMap(
+              Map<String, dynamic>.from(row as Map),
+              row['id'] as String,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('Erro ao buscar tipos de orcamento ativos: $e');
@@ -86,10 +93,12 @@ class BudgetTypeService {
           .order('name');
 
       return (response as List)
-          .map((row) => BudgetType.fromMap(
-                Map<String, dynamic>.from(row as Map),
-                row['id'] as String,
-              ))
+          .map(
+            (row) => BudgetType.fromMap(
+              Map<String, dynamic>.from(row as Map),
+              row['id'] as String,
+            ),
+          )
           .toList();
     } catch (e) {
       throw Exception('Erro ao buscar tipos de orcamento por categoria: $e');
@@ -98,11 +107,12 @@ class BudgetTypeService {
 
   Future<BudgetType?> getBudgetTypeById(String id) async {
     try {
-      final row = await AppSupabase.client
-          .from(_collection)
-          .select()
-          .eq('id', id)
-          .maybeSingle();
+      final row =
+          await AppSupabase.client
+              .from(_collection)
+              .select()
+              .eq('id', id)
+              .maybeSingle();
 
       if (row == null) {
         return null;
@@ -119,18 +129,25 @@ class BudgetTypeService {
         .from(_collection)
         .stream(primaryKey: ['id'])
         .order('name')
-        .map((rows) => rows
-            .map((row) => BudgetType.fromMap(
-                  Map<String, dynamic>.from(row),
-                  row['id'] as String,
-                ))
-            .toList());
+        .map(
+          (rows) =>
+              rows
+                  .map(
+                    (row) => BudgetType.fromMap(
+                      Map<String, dynamic>.from(row),
+                      row['id'] as String,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<bool> budgetTypeNameExists(String name, {String? excludeId}) async {
     try {
-      final response =
-          await AppSupabase.client.from(_collection).select('id').eq('name', name);
+      final response = await AppSupabase.client
+          .from(_collection)
+          .select('id')
+          .eq('name', name);
       final rows = (response as List).cast<Map<String, dynamic>>();
       if (excludeId != null) {
         return rows.any((row) => row['id'] != excludeId);
@@ -143,10 +160,13 @@ class BudgetTypeService {
 
   Future<void> toggleBudgetTypeStatus(String id, bool isActive) async {
     try {
-      await AppSupabase.client.from(_collection).update({
-        'isActive': isActive,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', id);
+      await AppSupabase.client
+          .from(_collection)
+          .update({
+            'isActive': isActive,
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', id);
     } catch (e) {
       throw Exception('Erro ao alterar status: $e');
     }

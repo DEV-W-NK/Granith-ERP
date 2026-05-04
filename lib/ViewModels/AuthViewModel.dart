@@ -34,10 +34,8 @@ class AuthViewModel extends ChangeNotifier {
     return _ownedClientAccounts.first;
   }
 
-  AuthViewModel({
-    AuthServiceContract? service,
-    bool bootstrapOnInit = true,
-  }) : _service = service ?? AuthService() {
+  AuthViewModel({AuthServiceContract? service, bool bootstrapOnInit = true})
+    : _service = service ?? AuthService() {
     if (bootstrapOnInit) {
       _listenToAuthChanges();
       _bootstrapCurrentSession();
@@ -50,7 +48,8 @@ class AuthViewModel extends ChangeNotifier {
   bool get isAdminUser => _currentUserModel?.isAdmin ?? false;
   bool get requiresClientFirstAccess =>
       isClientUser &&
-      primaryClientAccount?.portalAccessStatus == ClientPortalAccessStatus.invited;
+      primaryClientAccount?.portalAccessStatus ==
+          ClientPortalAccessStatus.invited;
 
   bool hasPermission(String permission) {
     return _currentUserModel?.permissions.contains(permission) ?? false;
@@ -72,8 +71,9 @@ class AuthViewModel extends ChangeNotifier {
     if (authUser != null) {
       await _service.ensureCurrentUserProfile();
       final profile = await _service.fetchUserData(authUser.id);
-      final linkedAccounts =
-          await _service.getOwnedClientAccounts(authUser.email ?? '');
+      final linkedAccounts = await _service.getOwnedClientAccounts(
+        authUser.email ?? '',
+      );
 
       _ownedClientAccounts = linkedAccounts;
       _currentUserModel = _resolveUserProfile(
@@ -101,11 +101,11 @@ class AuthViewModel extends ChangeNotifier {
       }
 
       if (profile.role == UserRole.client) {
-        final primaryAccount = linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
+        final primaryAccount =
+            linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
         return profile.copyWith(
           clientAccountId: profile.clientAccountId ?? primaryAccount?.id,
-          clientAccountName:
-              profile.clientAccountName ?? primaryAccount?.name,
+          clientAccountName: profile.clientAccountName ?? primaryAccount?.name,
         );
       }
     }
@@ -126,11 +126,7 @@ class AuthViewModel extends ChangeNotifier {
     }
 
     return profile ??
-        UserModel(
-          uid: '',
-          email: email ?? '',
-          role: UserRole.employee,
-        );
+        UserModel(uid: '', email: email ?? '', role: UserRole.employee);
   }
 
   Future<void> logout() async {

@@ -22,6 +22,8 @@ const allowedPermissions = new Set([
   'settings.manage',
 ]);
 
+const allowedIntervals = new Set(['1h', '6h', '12h', '24h', '7d', '30d']);
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -80,7 +82,6 @@ Deno.serve(async (request) => {
         {
           error: 'invalid_session',
           message: 'Sessao invalida para sincronizar uso do Supabase.',
-          details: authError?.message,
         },
         401,
       );
@@ -97,7 +98,6 @@ Deno.serve(async (request) => {
         {
           error: 'profile_lookup_failed',
           message: 'Nao foi possivel validar o perfil do usuario.',
-          details: profileError.message,
         },
         500,
       );
@@ -125,10 +125,9 @@ Deno.serve(async (request) => {
 
     const body = await readBody(request);
     const projectRef =
-      body.projectRef?.toString().trim() ||
       Deno.env.get('GRANITH_PROJECT_REF')?.trim() ||
       inferProjectRef(supabaseUrl);
-    const interval = body.interval?.toString().trim() || '24h';
+    const interval = normalizeInterval(body.interval);
     const now = new Date();
     const fallbackPeriodStart = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
@@ -249,13 +248,18 @@ Deno.serve(async (request) => {
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const details = error instanceof Error ? error.message : String(error);
+    const body: Record<string, unknown> = {
+      error: 'sync_failed',
+      message: 'Nao foi possivel sincronizar o uso do Supabase.',
+    };
+
+    if (Deno.env.get('GRANITH_DEBUG_ERRORS') === 'true') {
+      body.details = details;
+    }
+
     return jsonResponse(
-      {
-        error: 'sync_failed',
-        message: 'Nao foi possivel sincronizar o uso do Supabase.',
-        details: message,
-      },
+      body,
       500,
     );
   }
@@ -286,6 +290,15 @@ async function readBody(request: Request): Promise<Record<string, unknown>> {
   }
 }
 
+function normalizeInterval(value: unknown): string {
+  if (typeof value !== 'string') {
+    return '24h';
+  }
+
+  const interval = value.trim();
+  return allowedIntervals.has(interval) ? interval : '24h';
+}
+
 async function fetchUsageCounts({
   managementToken,
   projectRef,
@@ -296,7 +309,7 @@ async function fetchUsageCounts({
   interval: string;
 }): Promise<UsageBucket[]> {
   const query = new URLSearchParams();
-  if (interval.trim().isNotEmpty) {
+  if (interval.trim().length > 0) {
     query.set('interval', interval.trim());
   }
 

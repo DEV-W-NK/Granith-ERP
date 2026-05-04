@@ -5,8 +5,21 @@ import 'package:project_granith/models/project_model.dart';
 
 class ProjectsController extends ChangeNotifier {
   final ServiceProjetos _serviceProjects;
+  final Duration _saveDebounceDelay;
+  final Duration _updateDebounceDelay;
+  final Duration _deleteDebounceDelay;
+  final Duration _searchDebounceDelay;
 
-  ProjectsController(this._serviceProjects);
+  ProjectsController(
+    this._serviceProjects, {
+    Duration saveDebounceDelay = const Duration(milliseconds: 500),
+    Duration updateDebounceDelay = const Duration(milliseconds: 300),
+    Duration deleteDebounceDelay = const Duration(milliseconds: 800),
+    Duration searchDebounceDelay = const Duration(milliseconds: 300),
+  }) : _saveDebounceDelay = saveDebounceDelay,
+       _updateDebounceDelay = updateDebounceDelay,
+       _deleteDebounceDelay = deleteDebounceDelay,
+       _searchDebounceDelay = searchDebounceDelay;
 
   // Estados da aplicação
   List<Project> _projects = [];
@@ -32,13 +45,6 @@ class ProjectsController extends ChangeNotifier {
   final Map<String, Completer<String>> _pendingCreateOperations = {};
   final Map<String, Completer<void>> _pendingUpdateOperations = {};
   final Map<String, Completer<void>> _pendingDeleteOperations = {};
-
-  // Configurações de debounce (em milliseconds)
-  static const int _saveDebounceDelay = 500;
-  static const int _updateDebounceDelay = 300;
-  static const int _deleteDebounceDelay =
-      800; // Maior para deletar (mais crítico)
-  static const int _searchDebounceDelay = 300;
 
   // Getters
   List<Project> get projects => _projects;
@@ -141,54 +147,51 @@ class ProjectsController extends ChangeNotifier {
     _pendingCreateOperations[operationKey] = completer;
 
     print(
-      '🔄 Agendando criação do projeto: ${project.name} (${_saveDebounceDelay}ms)',
+      '🔄 Agendando criação do projeto: ${project.name} (${_saveDebounceDelay.inMilliseconds}ms)',
     );
 
     // Criar timer com delay para debounce
-    _saveDebounceTimer = Timer(
-      Duration(milliseconds: _saveDebounceDelay),
-      () async {
-        try {
-          // Verificar se o completer ainda está válido
-          if (!_pendingCreateOperations.containsKey(operationKey)) {
-            print('⚠️ Operação cancelada antes da execução: ${project.name}');
-            return;
-          }
-
-          // Verificar se já existe outra operação de salvamento
-          if (_isSaving) {
-            final error = 'Já existe uma operação de salvamento em andamento';
-            print('❌ $error');
-            completer.completeError(Exception(error));
-            return;
-          }
-
-          setSaving(true);
-
-          // Validar projeto antes de salvar
-          _validateProject(project);
-
-          print('💾 Executando criação do projeto: ${project.name}');
-          final projectId = await _serviceProjects.addProject(project);
-
-          // Adicionar à lista local imediatamente para feedback visual
-          final newProject = project.copyWith(id: projectId);
-          _projects.add(newProject);
-          _applyFilters();
-
-          print(
-            '✅ Projeto adicionado com sucesso: ${project.name} (ID: $projectId)',
-          );
-          completer.complete(projectId);
-        } catch (e) {
-          print('❌ Erro ao adicionar projeto: $e');
-          completer.completeError(e);
-        } finally {
-          setSaving(false);
-          _pendingCreateOperations.remove(operationKey);
+    _saveDebounceTimer = Timer(_saveDebounceDelay, () async {
+      try {
+        // Verificar se o completer ainda está válido
+        if (!_pendingCreateOperations.containsKey(operationKey)) {
+          print('⚠️ Operação cancelada antes da execução: ${project.name}');
+          return;
         }
-      },
-    );
+
+        // Verificar se já existe outra operação de salvamento
+        if (_isSaving) {
+          final error = 'Já existe uma operação de salvamento em andamento';
+          print('❌ $error');
+          completer.completeError(Exception(error));
+          return;
+        }
+
+        setSaving(true);
+
+        // Validar projeto antes de salvar
+        _validateProject(project);
+
+        print('💾 Executando criação do projeto: ${project.name}');
+        final projectId = await _serviceProjects.addProject(project);
+
+        // Adicionar à lista local imediatamente para feedback visual
+        final newProject = project.copyWith(id: projectId);
+        _projects.add(newProject);
+        _applyFilters();
+
+        print(
+          '✅ Projeto adicionado com sucesso: ${project.name} (ID: $projectId)',
+        );
+        completer.complete(projectId);
+      } catch (e) {
+        print('❌ Erro ao adicionar projeto: $e');
+        completer.completeError(e);
+      } finally {
+        setSaving(false);
+        _pendingCreateOperations.remove(operationKey);
+      }
+    });
 
     return completer.future;
   }
@@ -214,53 +217,50 @@ class ProjectsController extends ChangeNotifier {
     _pendingUpdateOperations[operationKey] = completer;
 
     print(
-      '🔄 Agendando atualização do projeto: ${project.name} (${_updateDebounceDelay}ms)',
+      '🔄 Agendando atualização do projeto: ${project.name} (${_updateDebounceDelay.inMilliseconds}ms)',
     );
 
     // Criar timer com delay para debounce
-    _updateDebounceTimer = Timer(
-      Duration(milliseconds: _updateDebounceDelay),
-      () async {
-        try {
-          // Verificar se o completer ainda está válido
-          if (!_pendingUpdateOperations.containsKey(operationKey)) {
-            print('⚠️ Operação de atualização cancelada: ${project.name}');
-            return;
-          }
-
-          if (_isSaving) {
-            final error = 'Já existe uma operação de salvamento em andamento';
-            print('❌ $error');
-            completer.completeError(Exception(error));
-            return;
-          }
-
-          setSaving(true);
-
-          // Validar projeto antes de salvar
-          _validateProject(project);
-
-          print('💾 Executando atualização do projeto: ${project.name}');
-          await _serviceProjects.updateProject(project);
-
-          // Atualizar na lista local imediatamente
-          final index = _projects.indexWhere((p) => p.id == project.id);
-          if (index != -1) {
-            _projects[index] = project;
-            _applyFilters();
-          }
-
-          print('✅ Projeto atualizado com sucesso: ${project.name}');
-          completer.complete();
-        } catch (e) {
-          print('❌ Erro ao atualizar projeto: $e');
-          completer.completeError(e);
-        } finally {
-          setSaving(false);
-          _pendingUpdateOperations.remove(operationKey);
+    _updateDebounceTimer = Timer(_updateDebounceDelay, () async {
+      try {
+        // Verificar se o completer ainda está válido
+        if (!_pendingUpdateOperations.containsKey(operationKey)) {
+          print('⚠️ Operação de atualização cancelada: ${project.name}');
+          return;
         }
-      },
-    );
+
+        if (_isSaving) {
+          final error = 'Já existe uma operação de salvamento em andamento';
+          print('❌ $error');
+          completer.completeError(Exception(error));
+          return;
+        }
+
+        setSaving(true);
+
+        // Validar projeto antes de salvar
+        _validateProject(project);
+
+        print('💾 Executando atualização do projeto: ${project.name}');
+        await _serviceProjects.updateProject(project);
+
+        // Atualizar na lista local imediatamente
+        final index = _projects.indexWhere((p) => p.id == project.id);
+        if (index != -1) {
+          _projects[index] = project;
+          _applyFilters();
+        }
+
+        print('✅ Projeto atualizado com sucesso: ${project.name}');
+        completer.complete();
+      } catch (e) {
+        print('❌ Erro ao atualizar projeto: $e');
+        completer.completeError(e);
+      } finally {
+        setSaving(false);
+        _pendingUpdateOperations.remove(operationKey);
+      }
+    });
 
     return completer.future;
   }
@@ -302,47 +302,44 @@ class ProjectsController extends ChangeNotifier {
     );
 
     print(
-      '🔄 Agendando exclusão do projeto: ${project.name} (${_deleteDebounceDelay}ms)',
+      '🔄 Agendando exclusão do projeto: ${project.name} (${_deleteDebounceDelay.inMilliseconds}ms)',
     );
 
     // Criar timer com delay maior para deletar (operação mais crítica)
-    _deleteDebounceTimer = Timer(
-      Duration(milliseconds: _deleteDebounceDelay),
-      () async {
-        try {
-          // Verificar se o completer ainda está válido
-          if (!_pendingDeleteOperations.containsKey(projectId)) {
-            print('⚠️ Operação de exclusão cancelada: ${project.name}');
-            return;
-          }
-
-          if (_isDeleting) {
-            final error = 'Já existe uma operação de exclusão em andamento';
-            print('❌ $error');
-            completer.completeError(Exception(error));
-            return;
-          }
-
-          setDeleting(true);
-
-          print('🗑️ Executando exclusão do projeto: ${project.name}');
-          await _serviceProjects.deleteProject(projectId);
-
-          // Remover da lista local imediatamente
-          _projects.removeWhere((project) => project.id == projectId);
-          _applyFilters();
-
-          print('✅ Projeto deletado com sucesso: $projectId');
-          completer.complete();
-        } catch (e) {
-          print('❌ Erro ao deletar projeto: $e');
-          completer.completeError(e);
-        } finally {
-          setDeleting(false);
-          _pendingDeleteOperations.remove(projectId);
+    _deleteDebounceTimer = Timer(_deleteDebounceDelay, () async {
+      try {
+        // Verificar se o completer ainda está válido
+        if (!_pendingDeleteOperations.containsKey(projectId)) {
+          print('⚠️ Operação de exclusão cancelada: ${project.name}');
+          return;
         }
-      },
-    );
+
+        if (_isDeleting) {
+          final error = 'Já existe uma operação de exclusão em andamento';
+          print('❌ $error');
+          completer.completeError(Exception(error));
+          return;
+        }
+
+        setDeleting(true);
+
+        print('🗑️ Executando exclusão do projeto: ${project.name}');
+        await _serviceProjects.deleteProject(projectId);
+
+        // Remover da lista local imediatamente
+        _projects.removeWhere((project) => project.id == projectId);
+        _applyFilters();
+
+        print('✅ Projeto deletado com sucesso: $projectId');
+        completer.complete();
+      } catch (e) {
+        print('❌ Erro ao deletar projeto: $e');
+        completer.completeError(e);
+      } finally {
+        setDeleting(false);
+        _pendingDeleteOperations.remove(projectId);
+      }
+    });
 
     return completer.future;
   }
@@ -522,13 +519,10 @@ class ProjectsController extends ChangeNotifier {
     }
 
     // Criar timer para debounce da busca
-    _searchDebounceTimer = Timer(
-      Duration(milliseconds: _searchDebounceDelay),
-      () {
-        _applyFilters();
-        print('🔍 Busca aplicada: "$query"');
-      },
-    );
+    _searchDebounceTimer = Timer(_searchDebounceDelay, () {
+      _applyFilters();
+      print('🔍 Busca aplicada: "$query"');
+    });
 
     // Notificar imediatamente para atualizar UI (campo de busca)
     notifyListeners();
@@ -598,7 +592,7 @@ class ProjectsController extends ChangeNotifier {
     filtered.sort((a, b) {
       // Se ambos têm startDate, ordenar por ela
       return b.startDate.compareTo(a.startDate);
-          // Caso contrário, ordenar por nome
+      // Caso contrário, ordenar por nome
     });
 
     _filteredProjects = filtered;

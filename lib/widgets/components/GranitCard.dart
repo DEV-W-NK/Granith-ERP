@@ -41,7 +41,9 @@ class GranitCard extends StatelessWidget {
       gradient: AppColors.cardGradient,
       color: backgroundColor ?? AppColors.surfaceDark.withValues(alpha: 0.76),
       borderRadius: borderRadius ?? GranitTokens.cardRadius,
-      border: customBorder ?? Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
+      border:
+          customBorder ??
+          Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
       boxShadow: AppColors.glowShadows(),
     );
 
@@ -56,11 +58,7 @@ class GranitCard extends StatelessWidget {
       );
     }
 
-    return Container(
-      padding: padding,
-      decoration: decoration,
-      child: child,
-    );
+    return Container(padding: padding, decoration: decoration, child: child);
   }
 }
 
@@ -87,10 +85,7 @@ class GranitCardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      child: Text(
-        text.toUpperCase(),
-        style: GranitTokens.labelTiny,
-      ),
+      child: Text(text.toUpperCase(), style: GranitTokens.labelTiny),
     );
   }
 }

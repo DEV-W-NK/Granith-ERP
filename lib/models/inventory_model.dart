@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class InventoryItem {
   final String id;
@@ -25,8 +25,8 @@ class InventoryItem {
 
   // ─── Computed ─────────────────────────────────────────────────────────────
 
-  bool get isLowStock    => minQuantity > 0 && quantity <= minQuantity;
-  bool get isOutOfStock  => quantity <= 0;
+  bool get isLowStock => minQuantity > 0 && quantity <= minQuantity;
+  bool get isOutOfStock => quantity <= 0;
 
   double get stockHealthPercent {
     if (minQuantity == 0) return 100;
@@ -37,47 +37,48 @@ class InventoryItem {
 
   factory InventoryItem.fromMap(String id, Map<String, dynamic> data) {
     return InventoryItem(
-      id:          id,
-      name:        data['name']  ?? '',
-      unit:        data['unit']  ?? 'un',
-      quantity:    (data['quantity']    ?? 0).toDouble(),
+      id: id,
+      name: data['name'] ?? '',
+      unit: data['unit'] ?? 'un',
+      quantity: (data['quantity'] ?? 0).toDouble(),
       minQuantity: (data['minQuantity'] ?? 0).toDouble(),
-      updatedAt: data['updatedAt'] is Timestamp
-          ? (data['updatedAt'] as Timestamp).toDate()
-          : DateTime.now(),
-      lastEntryDate: data['lastEntryDate'] is Timestamp
-          ? (data['lastEntryDate'] as Timestamp).toDate()
-          : null,
+      updatedAt: DbValue.toDateTime(data['updatedAt']) ?? DateTime.now(),
+      lastEntryDate: DbValue.toDateTime(data['lastEntryDate']),
       lastPurchaseId: data['lastPurchaseId'] as String?,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'name':            name,
+      'name': name,
       'name_normalized': name.trim().toLowerCase(),
-      'unit':            unit,
-      'quantity':        quantity,
-      'minQuantity':     minQuantity,
-      'updatedAt':       FieldValue.serverTimestamp(),
-      'lastPurchaseId':  lastPurchaseId,
+      'unit': unit,
+      'quantity': quantity,
+      'minQuantity': minQuantity,
+      'updatedAt': DbValue.toPrimitive(updatedAt),
+      'lastEntryDate': DbValue.toPrimitive(lastEntryDate),
+      'lastPurchaseId': lastPurchaseId,
     };
   }
 
   InventoryItem copyWith({
-    String? id, String? name, String? unit,
-    double? quantity, double? minQuantity,
-    DateTime? updatedAt, DateTime? lastEntryDate,
+    String? id,
+    String? name,
+    String? unit,
+    double? quantity,
+    double? minQuantity,
+    DateTime? updatedAt,
+    DateTime? lastEntryDate,
     String? lastPurchaseId,
   }) {
     return InventoryItem(
-      id:             id             ?? this.id,
-      name:           name           ?? this.name,
-      unit:           unit           ?? this.unit,
-      quantity:       quantity       ?? this.quantity,
-      minQuantity:    minQuantity    ?? this.minQuantity,
-      updatedAt:      updatedAt      ?? this.updatedAt,
-      lastEntryDate:  lastEntryDate  ?? this.lastEntryDate,
+      id: id ?? this.id,
+      name: name ?? this.name,
+      unit: unit ?? this.unit,
+      quantity: quantity ?? this.quantity,
+      minQuantity: minQuantity ?? this.minQuantity,
+      updatedAt: updatedAt ?? this.updatedAt,
+      lastEntryDate: lastEntryDate ?? this.lastEntryDate,
       lastPurchaseId: lastPurchaseId ?? this.lastPurchaseId,
     );
   }

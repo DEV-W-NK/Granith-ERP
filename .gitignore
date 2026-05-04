@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+node_modules/
 
 # IntelliJ related
 *.iml
@@ -32,9 +33,16 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
+.env
+.env.*
+*.local
 supabase_usage.env
+supabase/.temp/
 supabase/.env
 supabase/.env.*
+!.env.example
+!*.env.example
+!supabase/.env.example
 
 # Symbolication related
 app.*.symbols

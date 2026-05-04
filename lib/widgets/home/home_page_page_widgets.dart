@@ -20,13 +20,14 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _HomePageState extends State<HomePage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Inicialização do controlador de animação para os headers e entradas
     _animationController = AnimationController(
       vsync: this,
@@ -50,13 +51,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark, 
+      backgroundColor: AppColors.backgroundDark,
       body: SafeArea(
         child: Consumer<HomeViewModel>(
           builder: (context, viewModel, child) {
             if (viewModel.isLoading) {
               return const Center(
-                  child: CircularProgressIndicator(color: AppColors.accentGold));
+                child: CircularProgressIndicator(color: AppColors.accentGold),
+              );
             }
 
             return RefreshIndicator(
@@ -71,22 +73,24 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   children: [
                     // Repassando o controlador para o Widget de Header animado
                     HomeHeader(animationController: _animationController),
-                    
+
                     const SizedBox(height: 18),
                     StatsGrid(isDesktop: isDesktop, stats: viewModel.stats),
-                    
+
                     const SizedBox(height: 14),
                     const TransparencyBanner(),
-                    
+
                     const SizedBox(height: 14),
                     if (isDesktop)
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                              flex: 2,
-                              child: RecentActivityList(
-                                  activities: viewModel.recentActivities)),
+                            flex: 2,
+                            child: RecentActivityList(
+                              activities: viewModel.recentActivities,
+                            ),
+                          ),
                           const SizedBox(width: 14),
                           const Expanded(flex: 1, child: QuickActionsGrid()),
                         ],
@@ -94,7 +98,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                     else
                       Column(
                         children: [
-                          RecentActivityList(activities: viewModel.recentActivities),
+                          RecentActivityList(
+                            activities: viewModel.recentActivities,
+                          ),
                           const SizedBox(height: 14),
                           const QuickActionsGrid(),
                         ],

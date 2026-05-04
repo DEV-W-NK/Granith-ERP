@@ -41,22 +41,26 @@ class ServiceOrcamentos {
   }
 
   Stream<List<Budget>> getBudgetsStream({String? clientAccountId}) {
-    final stream = clientAccountId != null && clientAccountId.trim().isNotEmpty
-        ? AppSupabase.client
-            .from(_collectionName)
-            .stream(primaryKey: ['id'])
-            .eq('clientAccountId', clientAccountId.trim())
-        : AppSupabase.client
-            .from(_collectionName)
-            .stream(primaryKey: ['id']);
+    final stream =
+        clientAccountId != null && clientAccountId.trim().isNotEmpty
+            ? AppSupabase.client
+                .from(_collectionName)
+                .stream(primaryKey: ['id'])
+                .eq('clientAccountId', clientAccountId.trim())
+            : AppSupabase.client
+                .from(_collectionName)
+                .stream(primaryKey: ['id']);
 
-    return stream.order('creationDate', ascending: false).asyncMap((rows) async {
-          final budgets = rows
+    return stream.order('creationDate', ascending: false).asyncMap((
+      rows,
+    ) async {
+      final budgets =
+          rows
               .map((row) => Budget.fromMap(Map<String, dynamic>.from(row)))
               .toList();
 
-          return _checkAndUpdateExpiredBudgetsSync(budgets);
-        });
+      return _checkAndUpdateExpiredBudgetsSync(budgets);
+    });
   }
 
   Future<List<Budget>> fetchBudgets({String? clientAccountId}) async {
@@ -67,9 +71,12 @@ class ServiceOrcamentos {
       }
 
       final response = await query.order('creationDate', ascending: false);
-      final budgets = (response as List)
-          .map((row) => Budget.fromMap(Map<String, dynamic>.from(row as Map)))
-          .toList();
+      final budgets =
+          (response as List)
+              .map(
+                (row) => Budget.fromMap(Map<String, dynamic>.from(row as Map)),
+              )
+              .toList();
       return _checkAndUpdateExpiredBudgetsSync(budgets);
     } catch (e) {
       throw Exception('Erro ao carregar orcamentos: $e');
@@ -78,11 +85,12 @@ class ServiceOrcamentos {
 
   Future<Budget> getBudget(String id) async {
     try {
-      final doc = await AppSupabase.client
-          .from(_collectionName)
-          .select()
-          .eq('id', id)
-          .single();
+      final doc =
+          await AppSupabase.client
+              .from(_collectionName)
+              .select()
+              .eq('id', id)
+              .single();
       final budget = Budget.fromMap(Map<String, dynamic>.from(doc));
 
       if (_shouldMarkAsExpired(budget)) {
@@ -104,9 +112,10 @@ class ServiceOrcamentos {
         .eq('status', status.index)
         .order('creationDate', ascending: false)
         .asyncMap((rows) async {
-          final budgets = rows
-              .map((row) => Budget.fromMap(Map<String, dynamic>.from(row)))
-              .toList();
+          final budgets =
+              rows
+                  .map((row) => Budget.fromMap(Map<String, dynamic>.from(row)))
+                  .toList();
 
           return _checkAndUpdateExpiredBudgetsSync(budgets);
         });
@@ -160,9 +169,12 @@ class ServiceOrcamentos {
           .select()
           .eq('status', BudgetStatus.pending.index);
 
-      final budgets = (querySnapshot as List)
-          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
-          .toList();
+      final budgets =
+          (querySnapshot as List)
+              .map(
+                (doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)),
+              )
+              .toList();
 
       await _checkAndUpdateExpiredBudgets(budgets);
     } catch (e) {
@@ -204,9 +216,12 @@ class ServiceOrcamentos {
           .select()
           .eq('status', BudgetStatus.pending.index);
 
-      final budgets = (querySnapshot as List)
-          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
-          .toList();
+      final budgets =
+          (querySnapshot as List)
+              .map(
+                (doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)),
+              )
+              .toList();
 
       for (final budget in budgets) {
         if (_shouldMarkAsExpired(budget)) {
@@ -222,9 +237,12 @@ class ServiceOrcamentos {
     try {
       final querySnapshot =
           await AppSupabase.client.from(_collectionName).select();
-      final budgets = (querySnapshot as List)
-          .map((doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)))
-          .toList();
+      final budgets =
+          (querySnapshot as List)
+              .map(
+                (doc) => Budget.fromMap(Map<String, dynamic>.from(doc as Map)),
+              )
+              .toList();
 
       await _checkAndUpdateExpiredBudgets(budgets);
 
@@ -303,33 +321,38 @@ class ServiceOrcamentos {
     });
 
     try {
-      final existingProject = await AppSupabase.client
-          .from(_projectsTable)
-          .select('id')
-          .eq('sourceBudgetId', budget.id)
-          .maybeSingle();
+      final existingProject =
+          await AppSupabase.client
+              .from(_projectsTable)
+              .select('id')
+              .eq('sourceBudgetId', budget.id)
+              .maybeSingle();
 
       final String projectId;
 
       if (existingProject != null) {
         projectId = existingProject['id'].toString();
       } else {
-        final projectRow = await AppSupabase.client
-            .from(_projectsTable)
-            .insert(projectPayload)
-            .select('id')
-            .single();
+        final projectRow =
+            await AppSupabase.client
+                .from(_projectsTable)
+                .insert(projectPayload)
+                .select('id')
+                .single();
         projectId = projectRow['id'].toString();
       }
 
-      await AppSupabase.client.from(_collectionName).update({
-        'status': BudgetStatus.approved.index,
-        'projectId': projectId,
-        'clientAccountId': budget.clientAccountId,
-        'client_account_id': budget.clientAccountId,
-        'clientAccountName': budget.clientAccountName,
-        'client_account_name': budget.clientAccountName,
-      }).eq('id', budget.id);
+      await AppSupabase.client
+          .from(_collectionName)
+          .update({
+            'status': BudgetStatus.approved.index,
+            'projectId': projectId,
+            'clientAccountId': budget.clientAccountId,
+            'client_account_id': budget.clientAccountId,
+            'clientAccountName': budget.clientAccountName,
+            'client_account_name': budget.clientAccountName,
+          })
+          .eq('id', budget.id);
 
       return projectId;
     } catch (e) {
@@ -338,8 +361,17 @@ class ServiceOrcamentos {
   }
 
   Future<void> rejectBudget(String budgetId) async {
-    await AppSupabase.client.from(_collectionName).update({
-      'status': BudgetStatus.rejected.index,
-    }).eq('id', budgetId);
+    await AppSupabase.client
+        .from(_collectionName)
+        .update({'status': BudgetStatus.rejected.index})
+        .eq('id', budgetId);
+  }
+
+  bool debugShouldMarkAsExpired(Budget budget) => _shouldMarkAsExpired(budget);
+
+  Future<List<Budget>> debugCheckAndUpdateExpiredBudgets(
+    List<Budget> budgets,
+  ) {
+    return _checkAndUpdateExpiredBudgetsSync(budgets);
   }
 }

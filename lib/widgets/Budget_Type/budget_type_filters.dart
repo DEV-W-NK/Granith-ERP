@@ -14,8 +14,10 @@ class BudgetTypeFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > BudgetTypeConstants.desktopBreakpoint;
-    
+    final isDesktop =
+        MediaQuery.of(context).size.width >
+        BudgetTypeConstants.desktopBreakpoint;
+
     return isDesktop ? _buildDesktopFilters() : _buildMobileFilters();
   }
 
@@ -23,13 +25,14 @@ class BudgetTypeFilters extends StatelessWidget {
     return Wrap(
       spacing: 12,
       runSpacing: 8,
-      children: _getFilterOptions().map((filter) {
-        return _FilterChip(
-          label: filter,
-          isSelected: selectedFilter == filter,
-          onSelected: () => onFilterChanged(filter),
-        );
-      }).toList(),
+      children:
+          _getFilterOptions().map((filter) {
+            return _FilterChip(
+              label: filter,
+              isSelected: selectedFilter == filter,
+              onSelected: () => onFilterChanged(filter),
+            );
+          }).toList(),
     );
   }
 
@@ -53,12 +56,7 @@ class BudgetTypeFilters extends StatelessWidget {
   }
 
   List<String> _getFilterOptions() {
-    return [
-      'Todos',
-      'Ativos',
-      'Inativos',
-      ...BudgetTypeConstants.categories,
-    ];
+    return ['Todos', 'Ativos', 'Inativos', ...BudgetTypeConstants.categories];
   }
 }
 
@@ -89,14 +87,13 @@ class _FilterChip extends StatelessWidget {
       backgroundColor: AppColors.backgroundDark,
       selectedColor: AppColors.accentGold,
       side: BorderSide(
-        color: isSelected 
-            ? AppColors.accentGold
-            : AppColors.borderColor.withOpacity(0.3),
+        color:
+            isSelected
+                ? AppColors.accentGold
+                : AppColors.borderColor.withOpacity(0.3),
         width: 1,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,

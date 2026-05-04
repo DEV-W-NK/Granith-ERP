@@ -8,8 +8,17 @@ import 'package:project_granith/themes/app_theme.dart';
 
 class AccessManagementPage extends StatefulWidget {
   final int initialTabIndex;
+  final AccessManagementService? accessService;
+  final ClientAccountService? clientAccountService;
+  final ClientPortalAccessService? clientPortalAccessService;
 
-  const AccessManagementPage({super.key, this.initialTabIndex = 0});
+  const AccessManagementPage({
+    super.key,
+    this.initialTabIndex = 0,
+    this.accessService,
+    this.clientAccountService,
+    this.clientPortalAccessService,
+  });
 
   @override
   State<AccessManagementPage> createState() => _AccessManagementPageState();
@@ -17,10 +26,9 @@ class AccessManagementPage extends StatefulWidget {
 
 class _AccessManagementPageState extends State<AccessManagementPage>
     with SingleTickerProviderStateMixin {
-  final AccessManagementService _accessService = AccessManagementService();
-  final ClientAccountService _clientAccountService = ClientAccountService();
-  final ClientPortalAccessService _clientPortalAccessService =
-      ClientPortalAccessService();
+  late final AccessManagementService _accessService;
+  late final ClientAccountService _clientAccountService;
+  late final ClientPortalAccessService _clientPortalAccessService;
 
   final List<String> _availablePermissions = const [
     'projects.read',
@@ -42,6 +50,11 @@ class _AccessManagementPageState extends State<AccessManagementPage>
   @override
   void initState() {
     super.initState();
+    _accessService = widget.accessService ?? AccessManagementService();
+    _clientAccountService =
+        widget.clientAccountService ?? ClientAccountService();
+    _clientPortalAccessService =
+        widget.clientPortalAccessService ?? ClientPortalAccessService();
     _tabController = TabController(
       length: 2,
       vsync: this,
@@ -250,6 +263,7 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                     width: 180,
                     child: DropdownButtonFormField<UserRole>(
                       initialValue: user.role,
+                      isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Papel'),
                       items:
                           UserRole.values

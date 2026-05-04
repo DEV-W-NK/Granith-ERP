@@ -4,7 +4,6 @@ import 'package:project_granith/widgets/dailylogdetails/daily_log_details_page_p
 
 // 1. O nome da classe deve ser exatamente o que as rotas/Navigator chamam: DailyLogsPage
 class DailyLogsPage extends StatelessWidget {
-  
   // 2. O construtor deve ter o mesmo nome da classe para ser válido no Dart
   const DailyLogsPage({super.key});
 

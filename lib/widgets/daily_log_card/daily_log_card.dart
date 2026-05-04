@@ -15,7 +15,9 @@ class DailyLogCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.5),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -55,23 +57,40 @@ class DailyLogCard extends StatelessWidget {
                   log.activitiesDescription, // Campo correto da model
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textMuted),
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       '${log.date.day}/${log.date.month}/${log.date.year}',
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    const Icon(Icons.wb_sunny_outlined, size: 14, color: AppColors.textMuted),
+                    const Icon(
+                      Icons.wb_sunny_outlined,
+                      size: 14,
+                      color: AppColors.textMuted,
+                    ),
                     const SizedBox(width: 4),
                     Text(
-                      log.weatherMorning as String,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      log.weatherMorning.name,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),

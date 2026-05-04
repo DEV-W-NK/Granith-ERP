@@ -116,12 +116,10 @@ class ServiceProjetos {
       }
       final response = await query.order('createdAt', ascending: false);
 
-      return (response as List)
-          .map((row) {
-            final data = Map<String, dynamic>.from(row as Map);
-            return Project.fromMap((data['id'] ?? '').toString(), data);
-          })
-          .toList();
+      return (response as List).map((row) {
+        final data = Map<String, dynamic>.from(row as Map);
+        return Project.fromMap((data['id'] ?? '').toString(), data);
+      }).toList();
     } catch (e) {
       throw Exception('Erro ao carregar projetos: $e');
     }
@@ -143,10 +141,11 @@ class ServiceProjetos {
     try {
       _markProjectProcessing(projectKey, 'create');
 
-      final recentCutoff = DateTime.now()
-          .subtract(_duplicateDetectionWindow)
-          .toUtc()
-          .toIso8601String();
+      final recentCutoff =
+          DateTime.now()
+              .subtract(_duplicateDetectionWindow)
+              .toUtc()
+              .toIso8601String();
 
       final existing = await _client
           .from(_table)
@@ -186,11 +185,8 @@ class ServiceProjetos {
           }),
         );
 
-      final created = await _client
-          .from(_table)
-          .insert(payload)
-          .select('id')
-          .single();
+      final created =
+          await _client.from(_table).insert(payload).select('id').single();
 
       return (created['id']).toString();
     } catch (e) {
@@ -223,12 +219,15 @@ class ServiceProjetos {
           .eq('name', project.name.trim())
           .eq('client', project.client.trim());
 
-      final duplicates = (existing as List)
-          .where((row) => (row['id']).toString() != project.id)
-          .toList();
+      final duplicates =
+          (existing as List)
+              .where((row) => (row['id']).toString() != project.id)
+              .toList();
 
       if (duplicates.isNotEmpty) {
-        throw Exception('Já existe outro projeto com este nome para este cliente');
+        throw Exception(
+          'Já existe outro projeto com este nome para este cliente',
+        );
       }
 
       await _client
@@ -276,11 +275,12 @@ class ServiceProjetos {
       throw Exception('ID do projeto é obrigatório para exclusão');
     }
 
-    final response = await _client
-        .from(_table)
-        .select('name, client')
-        .eq('id', projectId)
-        .maybeSingle();
+    final response =
+        await _client
+            .from(_table)
+            .select('name, client')
+            .eq('id', projectId)
+            .maybeSingle();
 
     if (response == null) {
       throw Exception('Projeto não encontrado');
@@ -292,7 +292,9 @@ class ServiceProjetos {
     );
 
     if (_isProjectBeingProcessed(projectKey)) {
-      throw Exception('Projeto está sendo processado. Não é possível deletar agora.');
+      throw Exception(
+        'Projeto está sendo processado. Não é possível deletar agora.',
+      );
     }
 
     try {
@@ -339,7 +341,8 @@ class ServiceProjetos {
       }
 
       final now = DateTime.now();
-      final fileName = 'project_${now.millisecondsSinceEpoch}_${now.microsecond}.jpg';
+      final fileName =
+          'project_${now.millisecondsSinceEpoch}_${now.microsecond}.jpg';
       final path = '$projectId/$fileName';
 
       if (kIsWeb && webData != null) {
@@ -347,29 +350,33 @@ class ServiceProjetos {
           throw Exception('Formato de imagem não suportado');
         }
 
-        await _client.storage.from(_bucket).uploadBinary(
-          path,
-          webData,
-          fileOptions: const FileOptions(
-            cacheControl: '3600',
-            upsert: true,
-            contentType: 'image/jpeg',
-          ),
-        );
+        await _client.storage
+            .from(_bucket)
+            .uploadBinary(
+              path,
+              webData,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
       } else if (!kIsWeb && file != null) {
         if (!await file.exists()) {
           throw Exception('Arquivo não encontrado');
         }
 
-        await _client.storage.from(_bucket).upload(
-          path,
-          file,
-          fileOptions: const FileOptions(
-            cacheControl: '3600',
-            upsert: true,
-            contentType: 'image/jpeg',
-          ),
-        );
+        await _client.storage
+            .from(_bucket)
+            .upload(
+              path,
+              file,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+                contentType: 'image/jpeg',
+              ),
+            );
       } else {
         return null;
       }
@@ -439,9 +446,34 @@ class ServiceProjetos {
     return false;
   }
 
+  void debugMarkProjectProcessing(
+    String projectName,
+    String projectClient,
+    String operationType,
+  ) {
+    _markProjectProcessing(
+      _generateProjectKey(projectName, projectClient),
+      operationType,
+    );
+  }
+
+  void debugMarkImageUploadInProgress(String projectId, {DateTime? at}) {
+    final key = 'upload_$projectId';
+    _imagesBeingUploaded.add(key);
+    _operationTimestamp[key] = at ?? DateTime.now();
+  }
+
+  void debugSetOperationTimestamp(String key, DateTime timestamp) {
+    _operationTimestamp[key] = timestamp;
+  }
+
+  bool debugIsValidImageData(Uint8List data) => _isValidImageData(data);
+
   Future<void> testStorageConnection() async {
     final files = await _client.storage.from(_bucket).list();
-    debugPrint('Supabase Storage conectado. Arquivos encontrados: ${files.length}');
+    debugPrint(
+      'Supabase Storage conectado. Arquivos encontrados: ${files.length}',
+    );
   }
 
   Future<List<String>> getProjectImages(String projectId) async {

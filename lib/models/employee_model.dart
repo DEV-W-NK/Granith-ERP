@@ -1,6 +1,7 @@
 import 'package:project_granith/core/data/db_value.dart';
 
-enum EmployeeRole   { funcionario, supervisor, coordenador }
+enum EmployeeRole { funcionario, supervisor, coordenador }
+
 enum EmployeeStatus { ativo, ferias, afastado, desligado }
 
 class EmployeeModel {
@@ -11,8 +12,9 @@ class EmployeeModel {
   final String photoUrl;
 
   // Dados contratuais
-  final String jobTitle;       // título do cargo (texto livre)
-  final String? jobRoleId;     // ref para job_roles (opcional, para vincular ao catálogo)
+  final String jobTitle; // título do cargo (texto livre)
+  final String?
+  jobRoleId; // ref para job_roles (opcional, para vincular ao catálogo)
   final String sector;
   final EmployeeRole role;
   final EmployeeStatus status;
@@ -21,7 +23,7 @@ class EmployeeModel {
 
   // Documentos
   final String cpf;
-  final String ctps;           // número da carteira de trabalho
+  final String ctps; // número da carteira de trabalho
 
   // Remuneração — salário pertence ao funcionário, não ao cargo
   final double baseSalary;
@@ -57,66 +59,70 @@ class EmployeeModel {
   });
 
   // ── Getters úteis ──────────────────────────────────────────────────────────
-  bool get isActive    => status == EmployeeStatus.ativo;
+  bool get isActive => status == EmployeeStatus.ativo;
   bool get isDismissed => status == EmployeeStatus.desligado;
-  bool get isOnLeave   => status == EmployeeStatus.ferias || status == EmployeeStatus.afastado;
+  bool get isOnLeave =>
+      status == EmployeeStatus.ferias || status == EmployeeStatus.afastado;
 
   String get initials {
     final parts = name.trim().split(' ');
-    if (parts.length >= 2) return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    if (parts.length >= 2)
+      return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
     return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
   // ── Serialização ──────────────────────────────────────────────────────────
   Map<String, dynamic> toMap() => {
-        'name':           name,
-        'email':          email,
-        'phone':          phone,
-        'photoUrl':       photoUrl,
-        'jobTitle':       jobTitle,
-        'jobRoleId':      jobRoleId,
-        'sector':         sector,
-        'role':           role.name,
-        'status':         status.name,
-        'admissionDate':  DbValue.toPrimitive(admissionDate),
-        'dismissalDate':  dismissalDate != null ? DbValue.toPrimitive(dismissalDate!) : null,
-        'cpf':            cpf,
-        'ctps':           ctps,
-        'baseSalary':     baseSalary,
-        'educationLevel': educationLevel,
-        'courses':        courses,
-        'createdAt':      DbValue.toPrimitive(createdAt),
-        'updatedAt':      DbValue.toPrimitive(updatedAt),
-      };
+    'name': name,
+    'email': email,
+    'phone': phone,
+    'photoUrl': photoUrl,
+    'jobTitle': jobTitle,
+    'jobRoleId': jobRoleId,
+    'sector': sector,
+    'role': role.name,
+    'status': status.name,
+    'admissionDate': DbValue.toPrimitive(admissionDate),
+    'dismissalDate':
+        dismissalDate != null ? DbValue.toPrimitive(dismissalDate!) : null,
+    'cpf': cpf,
+    'ctps': ctps,
+    'baseSalary': baseSalary,
+    'educationLevel': educationLevel,
+    'courses': courses,
+    'createdAt': DbValue.toPrimitive(createdAt),
+    'updatedAt': DbValue.toPrimitive(updatedAt),
+  };
 
   factory EmployeeModel.fromMap(Map<String, dynamic> map, String docId) =>
       EmployeeModel(
-        id:             docId,
-        name:           map['name'] ?? '',
-        email:          map['email'] ?? '',
-        phone:          map['phone'] ?? '',
-        photoUrl:       map['photoUrl'] ?? '',
-        jobTitle:       map['jobTitle'] ?? '',
-        jobRoleId:      map['jobRoleId'] as String?,
-        sector:         map['sector'] ?? 'Geral',
-        role:           EmployeeRole.values.firstWhere(
+        id: docId,
+        name: map['name'] ?? '',
+        email: map['email'] ?? '',
+        phone: map['phone'] ?? '',
+        photoUrl: map['photoUrl'] ?? '',
+        jobTitle: map['jobTitle'] ?? '',
+        jobRoleId: map['jobRoleId'] as String?,
+        sector: map['sector'] ?? 'Geral',
+        role: EmployeeRole.values.firstWhere(
           (e) => e.name == map['role'],
           orElse: () => EmployeeRole.funcionario,
         ),
-        status:         EmployeeStatus.values.firstWhere(
+        status: EmployeeStatus.values.firstWhere(
           (e) => e.name == map['status'],
           orElse: () => EmployeeStatus.ativo,
         ),
-        admissionDate:  DbValue.toDateTime(map['admissionDate']) ?? DateTime.now(),
-        dismissalDate:  DbValue.toDateTime(map['dismissalDate']),
-        cpf:            map['cpf'] ?? '',
-        ctps:           map['ctps'] ?? '',
+        admissionDate:
+            DbValue.toDateTime(map['admissionDate']) ?? DateTime.now(),
+        dismissalDate: DbValue.toDateTime(map['dismissalDate']),
+        cpf: map['cpf'] ?? '',
+        ctps: map['ctps'] ?? '',
         // retrocompatibilidade: aceita 'salary' antigo ou novo 'baseSalary'
-        baseSalary:     (map['baseSalary'] ?? map['salary'] ?? 0.0).toDouble(),
+        baseSalary: (map['baseSalary'] ?? map['salary'] ?? 0.0).toDouble(),
         educationLevel: map['educationLevel'] ?? '',
-        courses:        map['courses'] ?? '',
-        createdAt:      DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
-        updatedAt:      DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
+        courses: map['courses'] ?? '',
+        createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+        updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
       );
 
   EmployeeModel copyWith({
@@ -137,26 +143,25 @@ class EmployeeModel {
     String? educationLevel,
     String? courses,
     DateTime? updatedAt,
-  }) =>
-      EmployeeModel(
-        id:             id,
-        name:           name ?? this.name,
-        email:          email ?? this.email,
-        phone:          phone ?? this.phone,
-        photoUrl:       photoUrl ?? this.photoUrl,
-        jobTitle:       jobTitle ?? this.jobTitle,
-        jobRoleId:      jobRoleId ?? this.jobRoleId,
-        sector:         sector ?? this.sector,
-        role:           role ?? this.role,
-        status:         status ?? this.status,
-        admissionDate:  admissionDate ?? this.admissionDate,
-        dismissalDate:  dismissalDate ?? this.dismissalDate,
-        cpf:            cpf ?? this.cpf,
-        ctps:           ctps ?? this.ctps,
-        baseSalary:     baseSalary ?? this.baseSalary,
-        educationLevel: educationLevel ?? this.educationLevel,
-        courses:        courses ?? this.courses,
-        createdAt:      createdAt,
-        updatedAt:      updatedAt ?? DateTime.now(),
-      );
+  }) => EmployeeModel(
+    id: id,
+    name: name ?? this.name,
+    email: email ?? this.email,
+    phone: phone ?? this.phone,
+    photoUrl: photoUrl ?? this.photoUrl,
+    jobTitle: jobTitle ?? this.jobTitle,
+    jobRoleId: jobRoleId ?? this.jobRoleId,
+    sector: sector ?? this.sector,
+    role: role ?? this.role,
+    status: status ?? this.status,
+    admissionDate: admissionDate ?? this.admissionDate,
+    dismissalDate: dismissalDate ?? this.dismissalDate,
+    cpf: cpf ?? this.cpf,
+    ctps: ctps ?? this.ctps,
+    baseSalary: baseSalary ?? this.baseSalary,
+    educationLevel: educationLevel ?? this.educationLevel,
+    courses: courses ?? this.courses,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? DateTime.now(),
+  );
 }

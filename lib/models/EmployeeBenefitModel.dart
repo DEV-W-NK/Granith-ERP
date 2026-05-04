@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 class BenefitHistoryEntry {
   final double previousValue;
@@ -16,20 +16,20 @@ class BenefitHistoryEntry {
   });
 
   Map<String, dynamic> toMap() => {
-        'previousValue': previousValue,
-        'newValue':      newValue,
-        'changedAt':     Timestamp.fromDate(changedAt),
-        'changedBy':     changedBy,
-        'reason':        reason,
-      };
+    'previousValue': previousValue,
+    'newValue': newValue,
+    'changedAt': DbValue.toPrimitive(changedAt),
+    'changedBy': changedBy,
+    'reason': reason,
+  };
 
   factory BenefitHistoryEntry.fromMap(Map<String, dynamic> map) =>
       BenefitHistoryEntry(
         previousValue: (map['previousValue'] ?? 0.0).toDouble(),
-        newValue:      (map['newValue'] ?? 0.0).toDouble(),
-        changedAt:     (map['changedAt'] as Timestamp).toDate(),
-        changedBy:     map['changedBy'] ?? '',
-        reason:        map['reason'] ?? '',
+        newValue: (map['newValue'] ?? 0.0).toDouble(),
+        changedAt: DbValue.toDateTime(map['changedAt']) ?? DateTime.now(),
+        changedBy: map['changedBy'] ?? '',
+        reason: map['reason'] ?? '',
       );
 }
 
@@ -62,46 +62,48 @@ class EmployeeBenefitModel {
   }
 
   Map<String, dynamic> toMap() => {
-        'employeeId':   employeeId,
-        'benefitId':    benefitId,
-        'benefitName':  benefitName,
-        'monthlyValue': monthlyValue,
-        'startDate':    Timestamp.fromDate(startDate),
-        'endDate':      endDate != null ? Timestamp.fromDate(endDate!) : null,
-        'isActive':     isActive,
-        'history':      history.map((e) => e.toMap()).toList(),
-      };
+    'employeeId': employeeId,
+    'benefitId': benefitId,
+    'benefitName': benefitName,
+    'monthlyValue': monthlyValue,
+    'startDate': DbValue.toPrimitive(startDate),
+    'endDate': DbValue.toPrimitive(endDate),
+    'isActive': isActive,
+    'history': history.map((e) => e.toMap()).toList(),
+  };
 
-  factory EmployeeBenefitModel.fromMap(Map<String, dynamic> map, String docId) =>
-      EmployeeBenefitModel(
-        id:           docId,
-        employeeId:   map['employeeId'] ?? '',
-        benefitId:    map['benefitId'] ?? '',
-        benefitName:  map['benefitName'] ?? '',
-        monthlyValue: (map['monthlyValue'] ?? 0.0).toDouble(),
-        startDate:    (map['startDate'] as Timestamp).toDate(),
-        endDate:      (map['endDate'] as Timestamp?)?.toDate(),
-        isActive:     map['isActive'] ?? true,
-        history:      (map['history'] as List<dynamic>? ?? [])
+  factory EmployeeBenefitModel.fromMap(
+    Map<String, dynamic> map,
+    String docId,
+  ) => EmployeeBenefitModel(
+    id: docId,
+    employeeId: map['employeeId'] ?? '',
+    benefitId: map['benefitId'] ?? '',
+    benefitName: map['benefitName'] ?? '',
+    monthlyValue: (map['monthlyValue'] ?? 0.0).toDouble(),
+    startDate: DbValue.toDateTime(map['startDate']) ?? DateTime.now(),
+    endDate: DbValue.toDateTime(map['endDate']),
+    isActive: map['isActive'] ?? true,
+    history:
+        (map['history'] as List<dynamic>? ?? [])
             .map((e) => BenefitHistoryEntry.fromMap(e as Map<String, dynamic>))
             .toList(),
-      );
+  );
 
   EmployeeBenefitModel copyWith({
     double? monthlyValue,
     DateTime? endDate,
     bool? isActive,
     List<BenefitHistoryEntry>? history,
-  }) =>
-      EmployeeBenefitModel(
-        id:           id,
-        employeeId:   employeeId,
-        benefitId:    benefitId,
-        benefitName:  benefitName,
-        monthlyValue: monthlyValue ?? this.monthlyValue,
-        startDate:    startDate,
-        endDate:      endDate ?? this.endDate,
-        isActive:     isActive ?? this.isActive,
-        history:      history ?? this.history,
-      );
+  }) => EmployeeBenefitModel(
+    id: id,
+    employeeId: employeeId,
+    benefitId: benefitId,
+    benefitName: benefitName,
+    monthlyValue: monthlyValue ?? this.monthlyValue,
+    startDate: startDate,
+    endDate: endDate ?? this.endDate,
+    isActive: isActive ?? this.isActive,
+    history: history ?? this.history,
+  );
 }

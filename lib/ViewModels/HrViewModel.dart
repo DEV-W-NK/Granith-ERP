@@ -4,7 +4,7 @@ import 'package:project_granith/services/HrService.dart';
 
 class HrViewModel extends ChangeNotifier {
   final HrService _hrService;
-  
+
   HrViewModel(this._hrService);
 
   // Estados de busca e filtro
@@ -12,9 +12,9 @@ class HrViewModel extends ChangeNotifier {
   String get searchQuery => _searchQuery;
 
   // No seu código original, você usa EmployeeStatus? para o filtro
-  // Mas no StreamBuilder você usa employee.status. 
+  // Mas no StreamBuilder você usa employee.status.
   // Vou manter a lógica de filtros reativos aqui.
-  
+
   void updateSearch(String value) {
     _searchQuery = value;
     notifyListeners();

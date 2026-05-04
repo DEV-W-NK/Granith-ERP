@@ -1,84 +1,115 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
+import 'package:project_granith/services/financial_service.dart';
 import 'package:project_granith/services/inventory_service.dart';
 
+typedef PurchaseDeliveryPersister =
+    Future<void> Function({
+      required Purchase purchase,
+      required String transactionId,
+      required String receivedBy,
+      required DateTime deliveryDate,
+    });
+
 class PurchaseService {
-  final FirebaseFirestore _firestore;
-  static const String _col = 'purchases';
+  static const _table = 'purchases';
 
-  PurchaseService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  PurchaseService({
+    FinancialService? financialService,
+    InventoryService? inventoryService,
+    ProjectBudgetService? projectBudgetService,
+    PurchaseDeliveryPersister? deliveryPersister,
+    DateTime Function()? nowProvider,
+  }) : _financialService = financialService,
+       _inventoryService = inventoryService,
+       _projectBudgetService = projectBudgetService,
+       _deliveryPersister = deliveryPersister,
+       _nowProvider = nowProvider ?? DateTime.now;
 
-  CollectionReference get _ref => _firestore.collection(_col);
-
-  // ─── CRUD básico ──────────────────────────────────────────────────────────
+  final FinancialService? _financialService;
+  final InventoryService? _inventoryService;
+  final ProjectBudgetService? _projectBudgetService;
+  final PurchaseDeliveryPersister? _deliveryPersister;
+  final DateTime Function() _nowProvider;
 
   Future<String> addPurchase(Purchase purchase) async {
     try {
-      if (purchase.id.isEmpty) {
-        final docRef = await _ref.add(purchase.toMap());
-        await docRef.update({'id': docRef.id});
-        return docRef.id;
-      } else {
-        await _ref.doc(purchase.id).set(purchase.toMap());
+      final data = DbValue.normalizeMap(purchase.toMap());
+
+      if (purchase.id.isNotEmpty) {
+        data['id'] = purchase.id;
+        await AppSupabase.client.from(_table).upsert(data);
         return purchase.id;
       }
+
+      final row =
+          await AppSupabase.client
+              .from(_table)
+              .insert(data)
+              .select('id')
+              .single();
+
+      return row['id'] as String;
     } catch (e) {
       throw Exception('Erro ao registrar compra: $e');
     }
   }
 
   Future<void> updatePurchase(Purchase purchase) async {
-    await _ref.doc(purchase.id).update(purchase.toMap());
+    await AppSupabase.client
+        .from(_table)
+        .update(DbValue.normalizeMap(purchase.toMap()))
+        .eq('id', purchase.id);
   }
 
   Future<void> deletePurchase(String id) async {
-    await _ref.doc(id).delete();
+    await AppSupabase.client.from(_table).delete().eq('id', id);
   }
 
-  // ─── Streams ─────────────────────────────────────────────────────────────
-
-  /// Todas as compras exceto awaitingApproval — para o setor de compras.
   Stream<List<Purchase>> getPurchasesStream() {
-    return _ref
-        .orderBy('purchaseDate', descending: true)
-        .snapshots()
-        .map(_mapSnapshot);
+    return AppSupabase.client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .order('purchaseDate', ascending: false)
+        .map(_rowsToPurchases);
   }
 
-  /// Apenas compras aguardando aprovação do CEO.
   Stream<List<Purchase>> getAwaitingApprovalStream() {
-    return _ref
-        .where('status', isEqualTo: PurchaseStatus.awaitingApproval.index)
-        .orderBy('purchaseDate', descending: true)
-        .snapshots()
-        .map(_mapSnapshot);
+    return AppSupabase.client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .eq('status', PurchaseStatus.awaitingApproval.index)
+        .order('purchaseDate', ascending: false)
+        .map(_rowsToPurchases);
   }
 
   Stream<List<Purchase>> getPurchasesByProject(String projectId) {
-    return _ref
-        .where('projectId', isEqualTo: projectId)
-        .orderBy('purchaseDate', descending: true)
-        .snapshots()
-        .map(_mapSnapshot);
+    return AppSupabase.client
+        .from(_table)
+        .stream(primaryKey: ['id'])
+        .eq('projectId', projectId)
+        .order('purchaseDate', ascending: false)
+        .map(_rowsToPurchases);
   }
-
-  // ─── Aprovação CEO ────────────────────────────────────────────────────────
 
   Future<void> approvePurchase({
     required String purchaseId,
     required String approvedBy,
     required String approvedByName,
   }) async {
-    await _ref.doc(purchaseId).update({
-      'status':          PurchaseStatus.pending.index,
-      'approvedBy':      approvedBy,
-      'approvedByName':  approvedByName,
-      'approvedAt':      Timestamp.fromDate(DateTime.now()),
-      'rejectionReason': null,
-    });
+    await AppSupabase.client
+        .from(_table)
+        .update({
+          'status': PurchaseStatus.pending.index,
+          'approvedBy': approvedBy,
+          'approvedByName': approvedByName,
+          'approvedAt': DbValue.toPrimitive(DateTime.now()),
+          'rejectionReason': null,
+        })
+        .eq('id', purchaseId);
   }
 
   Future<void> rejectPurchase({
@@ -90,76 +121,86 @@ class PurchaseService {
     if (reason.trim().isEmpty) {
       throw Exception('Informe o motivo da recusa.');
     }
-    await _ref.doc(purchaseId).update({
-      'status':          PurchaseStatus.cancelled.index,
-      'approvedBy':      rejectedBy,
-      'approvedByName':  rejectedByName,
-      'approvedAt':      Timestamp.fromDate(DateTime.now()),
-      'rejectionReason': reason.trim(),
-    });
-  }
 
-  // ─── Confirmação de entrega ───────────────────────────────────────────────
-  //
-  // Batch atômico:
-  //   1. Compra → delivered + deliveryDate + receivedBy + financialTransactionId
-  //   2. FinancialTransaction → despesa lançada (origin: purchase)
-  // Pós-batch:
-  //   3. InventoryService → entrada no estoque com purchase.quantity
-  //   4. ProjectBudgetService → sync currentCost do projeto
+    await AppSupabase.client
+        .from(_table)
+        .update({
+          'status': PurchaseStatus.cancelled.index,
+          'approvedBy': rejectedBy,
+          'approvedByName': rejectedByName,
+          'approvedAt': DbValue.toPrimitive(DateTime.now()),
+          'rejectionReason': reason.trim(),
+        })
+        .eq('id', purchaseId);
+  }
 
   Future<void> confirmDelivery({
     required Purchase purchase,
     required String receivedBy,
   }) async {
     if (purchase.status == PurchaseStatus.delivered) {
-      throw Exception('Esta compra já foi confirmada como entregue.');
+      throw Exception('Esta compra ja foi confirmada como entregue.');
     }
 
-    final now            = DateTime.now();
-    final transactionRef = _firestore.collection('financial_transactions').doc();
-
+    final now = _nowProvider();
     final transaction = FinancialTransactionModel(
-      id:          transactionRef.id,
-      description: 'Compra: ${purchase.itemName} — ${purchase.supplierName}',
-      amount:      purchase.totalValue,
-      type:        TransactionType.expense,
-      status:      TransactionStatus.paid,
-      origin:      TransactionOrigin.purchase,
-      category:    TransactionCategory.material,
-      dueDate:     now,
+      id: '',
+      description: 'Compra: ${purchase.itemName} - ${purchase.supplierName}',
+      amount: purchase.totalValue,
+      type: TransactionType.expense,
+      status: TransactionStatus.paid,
+      origin: TransactionOrigin.purchase,
+      category: TransactionCategory.material,
+      dueDate: now,
       paymentDate: now,
-      projectId:   purchase.projectId.isNotEmpty  ? purchase.projectId  : null,
-      supplierId:  purchase.supplierId.isNotEmpty ? purchase.supplierId : null,
+      projectId: purchase.projectId.isNotEmpty ? purchase.projectId : null,
+      supplierId: purchase.supplierId.isNotEmpty ? purchase.supplierId : null,
       referenceId: purchase.id,
-      createdBy:   receivedBy,
-      createdAt:   now,
-      notes: 'Gerado automaticamente ao confirmar entrega da compra #${purchase.id}',
+      createdBy: receivedBy,
+      createdAt: now,
+      notes:
+          'Gerado automaticamente ao confirmar entrega da compra #${purchase.id}',
     );
 
-    final batch = _firestore.batch();
+    final financialService = _financialService ?? FinancialService();
+    final inventoryService = _inventoryService ?? InventoryService();
+    final projectBudgetService =
+        _projectBudgetService ?? ProjectBudgetService();
+    final deliveryPersister = _deliveryPersister;
+    final transactionId = await financialService.addTransaction(transaction);
 
-    batch.update(_ref.doc(purchase.id), {
-      'status':                 PurchaseStatus.delivered.index,
-      'deliveryDate':           Timestamp.fromDate(now),
-      'receivedBy':             receivedBy,
-      'financialTransactionId': transactionRef.id,
-    });
+    if (deliveryPersister != null) {
+      await deliveryPersister(
+        purchase: purchase,
+        transactionId: transactionId,
+        receivedBy: receivedBy,
+        deliveryDate: now,
+      );
+    } else {
+      await AppSupabase.client
+          .from(_table)
+          .update({
+            'status': PurchaseStatus.delivered.index,
+            'deliveryDate': DbValue.toPrimitive(now),
+            'receivedBy': receivedBy,
+            'financialTransactionId': transactionId,
+          })
+          .eq('id', purchase.id);
+    }
 
-    batch.set(transactionRef, transaction.toMap());
-
-    final inventoryService = InventoryService(firestore: _firestore);
     await inventoryService.processPurchaseDelivery(
-      purchase:   purchase,
+      purchase: purchase.copyWith(
+        status: PurchaseStatus.delivered,
+        deliveryDate: now,
+        receivedBy: receivedBy,
+        financialTransactionId: transactionId,
+      ),
       receivedBy: receivedBy,
     );
 
-    await batch.commit();
-
     if (purchase.projectId.isNotEmpty) {
       try {
-        await ProjectBudgetService(firestore: _firestore)
-            .syncProjectCurrentCost(purchase.projectId);
+        await projectBudgetService.syncProjectCurrentCost(purchase.projectId);
       } catch (e) {
         // ignore: avoid_print
         print('[PurchaseService] Aviso: sync de custo falhou: $e');
@@ -167,55 +208,47 @@ class PurchaseService {
     }
   }
 
-  // ─── Cancelamento ─────────────────────────────────────────────────────────
-
   Future<void> cancelPurchase({
     required Purchase purchase,
     required String cancelledBy,
   }) async {
     if (purchase.status == PurchaseStatus.delivered) {
       throw Exception(
-          'Não é possível cancelar uma compra entregue. Faça uma devolução manual.');
-    }
-
-    final batch = _firestore.batch();
-
-    batch.update(_ref.doc(purchase.id), {
-      'status': PurchaseStatus.cancelled.index,
-    });
-
-    if (purchase.financialTransactionId != null) {
-      batch.update(
-        _firestore
-            .collection('financial_transactions')
-            .doc(purchase.financialTransactionId),
-        {
-          'status':    TransactionStatus.cancelled.name,
-          'updatedAt': Timestamp.fromDate(DateTime.now()),
-        },
+        'Nao e possivel cancelar uma compra entregue. Faca uma devolucao manual.',
       );
     }
 
-    await batch.commit();
+    await AppSupabase.client
+        .from(_table)
+        .update({'status': PurchaseStatus.cancelled.index})
+        .eq('id', purchase.id);
+
+    final transactionId = purchase.financialTransactionId;
+    if (transactionId != null && transactionId.isNotEmpty) {
+      await FinancialService().cancelTransaction(transactionId);
+    }
   }
 
-  // Atualização simples de status intermediário (pending → ordered)
   Future<void> updateStatus(String id, PurchaseStatus status) async {
     if (status == PurchaseStatus.delivered ||
         status == PurchaseStatus.cancelled ||
         status == PurchaseStatus.awaitingApproval) {
-      throw Exception(
-          'Use os métodos dedicados para este status.');
+      throw Exception('Use os metodos dedicados para este status.');
     }
-    await _ref.doc(id).update({'status': status.index});
+
+    await AppSupabase.client
+        .from(_table)
+        .update({'status': status.index})
+        .eq('id', id);
   }
 
-  // ─── Helper ───────────────────────────────────────────────────────────────
-
-  List<Purchase> _mapSnapshot(QuerySnapshot snap) {
-    return snap.docs
-        .map((d) =>
-            Purchase.fromMap(d.data() as Map<String, dynamic>, d.id))
+  List<Purchase> _rowsToPurchases(List<dynamic> rows) {
+    return rows
+        .map((row) => _rowToPurchase(Map<String, dynamic>.from(row as Map)))
         .toList();
+  }
+
+  Purchase _rowToPurchase(Map<String, dynamic> row) {
+    return Purchase.fromMap(row, row['id'] as String? ?? '');
   }
 }

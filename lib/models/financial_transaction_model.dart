@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/data/db_value.dart';
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
@@ -11,23 +11,23 @@ enum TransactionStatus { pending, paid, overdue, cancelled }
 /// Qual módulo originou esta transação.
 /// Usado para rastreabilidade e para montar relatórios por tipo de custo.
 enum TransactionOrigin {
-  manual,        // lançado diretamente pelo usuário na tela financeira
-  purchase,      // gerado automaticamente pelo recebimento de uma compra
-  laborCost,     // gerado pelo diário de obra (horas × valor/hora) — futuro
+  manual, // lançado diretamente pelo usuário na tela financeira
+  purchase, // gerado automaticamente pelo recebimento de uma compra
+  laborCost, // gerado pelo diário de obra (horas × valor/hora) — futuro
   materialUsage, // gerado pelo consumo de material no diário de obra — futuro
-  budget,        // receita vinculada à medição / aprovação de orçamento
+  budget, // receita vinculada à medição / aprovação de orçamento
 }
 
 /// Categoria do custo/receita para agrupamento em relatórios.
 /// Substitui o campo String livre — garante consistência nas queries.
 enum TransactionCategory {
-  material,       // compra ou consumo de material
-  labor,          // mão de obra
-  equipment,      // aluguel ou compra de equipamento
+  material, // compra ou consumo de material
+  labor, // mão de obra
+  equipment, // aluguel ou compra de equipamento
   administrative, // despesas administrativas (escritório, contador, etc.)
-  measurement,    // medição / faturamento ao cliente
-  tax,            // impostos e taxas
-  other,          // demais casos
+  measurement, // medição / faturamento ao cliente
+  tax, // impostos e taxas
+  other, // demais casos
 }
 
 // ─── Model ────────────────────────────────────────────────────────────────────
@@ -96,8 +96,7 @@ class FinancialTransactionModel {
 
   /// Retorna true se a transação está atrasada e ainda não foi paga.
   bool get isOverdue =>
-      status == TransactionStatus.pending &&
-      dueDate.isBefore(DateTime.now());
+      status == TransactionStatus.pending && dueDate.isBefore(DateTime.now());
 
   /// Retorna true se pertence a um projeto específico.
   bool get hasProject => projectId != null && projectId!.isNotEmpty;
@@ -112,40 +111,54 @@ class FinancialTransactionModel {
       'status': status.name,
       'origin': origin.name,
       'category': category.name,
-      'dueDate': Timestamp.fromDate(dueDate),
-      'paymentDate': paymentDate != null ? Timestamp.fromDate(paymentDate!) : null,
+      'dueDate': DbValue.toPrimitive(dueDate),
+      'paymentDate': DbValue.toPrimitive(paymentDate),
       'projectId': projectId,
       'supplierId': supplierId,
       'referenceId': referenceId,
       'createdBy': createdBy,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : null,
+      'createdAt': DbValue.toPrimitive(createdAt),
+      'updatedAt': DbValue.toPrimitive(updatedAt),
       'notes': notes,
     };
   }
 
   factory FinancialTransactionModel.fromMap(
-      Map<String, dynamic> map, String docId) {
+    Map<String, dynamic> map,
+    String docId,
+  ) {
     return FinancialTransactionModel(
       id: docId,
       description: map['description'] ?? '',
       amount: (map['amount'] ?? 0.0).toDouble(),
-      type: _enumFromName(TransactionType.values, map['type'], TransactionType.expense),
-      status: _enumFromName(TransactionStatus.values, map['status'], TransactionStatus.pending),
-      origin: _enumFromName(TransactionOrigin.values, map['origin'], TransactionOrigin.manual),
-      category: _enumFromName(TransactionCategory.values, map['category'], TransactionCategory.other),
-      dueDate: (map['dueDate'] as Timestamp).toDate(),
-      paymentDate: map['paymentDate'] != null
-          ? (map['paymentDate'] as Timestamp).toDate()
-          : null,
+      type: _enumFromName(
+        TransactionType.values,
+        map['type'],
+        TransactionType.expense,
+      ),
+      status: _enumFromName(
+        TransactionStatus.values,
+        map['status'],
+        TransactionStatus.pending,
+      ),
+      origin: _enumFromName(
+        TransactionOrigin.values,
+        map['origin'],
+        TransactionOrigin.manual,
+      ),
+      category: _enumFromName(
+        TransactionCategory.values,
+        map['category'],
+        TransactionCategory.other,
+      ),
+      dueDate: DbValue.toDateTime(map['dueDate']) ?? DateTime.now(),
+      paymentDate: DbValue.toDateTime(map['paymentDate']),
       projectId: map['projectId'],
       supplierId: map['supplierId'],
       referenceId: map['referenceId'],
       createdBy: map['createdBy'] ?? '',
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null
-          ? (map['updatedAt'] as Timestamp).toDate()
-          : null,
+      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      updatedAt: DbValue.toDateTime(map['updatedAt']),
       notes: map['notes'],
     );
   }
@@ -209,7 +222,7 @@ class FinancialTransactionModel {
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
-/// Converte string do Firestore para enum com fallback seguro.
+/// Converte string persistida para enum com fallback seguro.
 T _enumFromName<T extends Enum>(List<T> values, dynamic name, T fallback) {
   if (name == null) return fallback;
   return values.firstWhere(

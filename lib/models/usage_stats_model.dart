@@ -81,9 +81,8 @@ class UsageStatsModel {
       }
     }
 
-    final peakOps = dailyOps.isEmpty
-        ? 0
-        : dailyOps.values.reduce((a, b) => a > b ? a : b);
+    final peakOps =
+        dailyOps.isEmpty ? 0 : dailyOps.values.reduce((a, b) => a > b ? a : b);
 
     return UsageStatsModel(
       tenantId: map['tenantId']?.toString() ?? '',
@@ -103,8 +102,7 @@ class UsageStatsModel {
       dailyOperations: dailyOps,
       peakDayOperations: peakOps,
       hasSnapshot: true,
-      sourceLabel:
-          map['sourceLabel']?.toString() ?? 'Snapshot interno do ERP',
+      sourceLabel: map['sourceLabel']?.toString() ?? 'Snapshot interno do ERP',
       lastSyncedAt: DbValue.toDateTime(map['lastSyncedAt']),
     );
   }

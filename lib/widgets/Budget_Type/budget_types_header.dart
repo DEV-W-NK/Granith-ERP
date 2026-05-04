@@ -116,9 +116,14 @@ class BudgetTypeHeaderActions extends StatelessWidget {
             if (isDesktop) const SizedBox(width: 16),
             if (controller.budgetTypes.isNotEmpty) ...[
               if (!isDesktop) const SizedBox(width: 12),
-              BudgetTypeExportButton(hasData: controller.budgetTypes.isNotEmpty),
+              BudgetTypeExportButton(
+                hasData: controller.budgetTypes.isNotEmpty,
+              ),
             ],
-            if (isDesktop) ...[const SizedBox(width: 16), BudgetTypeRefreshButton()],
+            if (isDesktop) ...[
+              const SizedBox(width: 16),
+              BudgetTypeRefreshButton(),
+            ],
           ],
         );
       },
@@ -188,16 +193,30 @@ class BudgetTypeViewToggleButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accentGold.withOpacity(0.15) : Colors.transparent,
+          color:
+              isSelected
+                  ? AppColors.accentGold.withOpacity(0.15)
+                  : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, size: 20, color: isSelected ? AppColors.accentGold : AppColors.textMuted),
+        child: Icon(
+          icon,
+          size: 20,
+          color: isSelected ? AppColors.accentGold : AppColors.textMuted,
+        ),
       ),
     );
 
     if (tooltip != null) return Tooltip(message: tooltip!, child: button);
 
-    return Semantics(button: true, label: isSelected ? 'Modo de visualização ativo' : 'Alternar modo de visualização', child: button);
+    return Semantics(
+      button: true,
+      label:
+          isSelected
+              ? 'Modo de visualização ativo'
+              : 'Alternar modo de visualização',
+      child: button,
+    );
   }
 }
 
@@ -213,28 +232,49 @@ class BudgetTypeExportButton extends StatelessWidget {
       child: IconButton(
         onPressed: hasData ? () => _showExportOptions(context) : null,
         icon: const Icon(Icons.download_rounded),
-        style: IconButton.styleFrom(foregroundColor: hasData ? AppColors.textSecondary : AppColors.textMuted),
+        style: IconButton.styleFrom(
+          foregroundColor:
+              hasData ? AppColors.textSecondary : AppColors.textMuted,
+        ),
       ),
     );
   }
 
   void _showExportOptions(BuildContext context) {
-    showModalBottomSheet(context: context, backgroundColor: AppColors.surfaceDark, shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))), builder: (context) => BudgetTypeExportOptionsSheet());
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surfaceDark,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => BudgetTypeExportOptionsSheet(),
+    );
   }
 }
 
 class BudgetTypeRefreshButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Consumer<BudgetTypeController>(builder: (context, controller, child) {
-      return Tooltip(
-        message: 'Atualizar',
-        child: IconButton(
-          onPressed: controller.isLoading ? null : () => controller.loadBudgetTypes(forceRefresh: true),
-          icon: Icon(Icons.refresh_rounded, color: controller.isLoading ? AppColors.textMuted.withOpacity(0.5) : AppColors.textSecondary),
-        ),
-      );
-    });
+    return Consumer<BudgetTypeController>(
+      builder: (context, controller, child) {
+        return Tooltip(
+          message: 'Atualizar',
+          child: IconButton(
+            onPressed:
+                controller.isLoading
+                    ? null
+                    : () => controller.loadBudgetTypes(forceRefresh: true),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color:
+                  controller.isLoading
+                      ? AppColors.textMuted.withOpacity(0.5)
+                      : AppColors.textSecondary,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 
@@ -247,10 +287,25 @@ class BudgetTypeExportOptionsSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Exportar Tipos de Orçamento', style: Theme.of(context).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary)),
+          Text(
+            'Exportar Tipos de Orçamento',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
+          ),
           const SizedBox(height: 16),
-          BudgetTypeExportOption(icon: Icons.table_chart, title: 'Exportar como CSV', subtitle: 'Planilha com todos os dados', onTap: () => _handleExport(context, 'CSV')),
-          BudgetTypeExportOption(icon: Icons.picture_as_pdf, title: 'Exportar como PDF', subtitle: 'Relatório formatado', onTap: () => _handleExport(context, 'PDF')),
+          BudgetTypeExportOption(
+            icon: Icons.table_chart,
+            title: 'Exportar como CSV',
+            subtitle: 'Planilha com todos os dados',
+            onTap: () => _handleExport(context, 'CSV'),
+          ),
+          BudgetTypeExportOption(
+            icon: Icons.picture_as_pdf,
+            title: 'Exportar como PDF',
+            subtitle: 'Relatório formatado',
+            onTap: () => _handleExport(context, 'PDF'),
+          ),
         ],
       ),
     );
@@ -258,7 +313,12 @@ class BudgetTypeExportOptionsSheet extends StatelessWidget {
 
   void _handleExport(BuildContext context, String type) {
     Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exportação $type em desenvolvimento'), backgroundColor: AppColors.accentBlue));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Exportação $type em desenvolvimento'),
+        backgroundColor: AppColors.accentBlue,
+      ),
+    );
   }
 }
 
@@ -268,10 +328,23 @@ class BudgetTypeExportOption extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
 
-  const BudgetTypeExportOption({required this.icon, required this.title, required this.subtitle, required this.onTap});
+  const BudgetTypeExportOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(leading: Icon(icon, color: AppColors.accentGold), title: Text(title, style: const TextStyle(color: AppColors.textPrimary)), subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textMuted)), onTap: onTap);
+    return ListTile(
+      leading: Icon(icon, color: AppColors.accentGold),
+      title: Text(title, style: const TextStyle(color: AppColors.textPrimary)),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textMuted),
+      ),
+      onTap: onTap,
+    );
   }
 }

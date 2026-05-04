@@ -69,14 +69,17 @@ class UserModel {
     return UserModel(
       uid: id,
       email: (map['email'] ?? '').toString(),
-      displayName: map['displayName']?.toString() ?? map['display_name']?.toString(),
+      displayName:
+          map['displayName']?.toString() ?? map['display_name']?.toString(),
       photoUrl: map['photoUrl']?.toString() ?? map['photo_url']?.toString(),
       status: (map['status'] ?? 'ativo').toString(),
       permissions: List<String>.from(map['permissions'] ?? const <String>[]),
       role: UserRole.fromValue(map['role']?.toString()),
       clientAccountId:
-          map['clientAccountId']?.toString() ?? map['client_account_id']?.toString(),
-      clientAccountName: map['clientAccountName']?.toString() ??
+          map['clientAccountId']?.toString() ??
+          map['client_account_id']?.toString(),
+      clientAccountName:
+          map['clientAccountName']?.toString() ??
           map['client_account_name']?.toString(),
     );
   }

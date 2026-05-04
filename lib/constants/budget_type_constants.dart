@@ -29,10 +29,10 @@ class BudgetTypeConstants {
 
   // Cores para categorias
   static const Map<String, Color> categoryColors = {
-    'Material': Color(0xFF4CAF50),     // Verde
+    'Material': Color(0xFF4CAF50), // Verde
     'Mão de Obra': Color(0xFF2196F3), // Azul
     'Equipamento': Color(0xFFFF9800), // Laranja
-    'Serviço': Color(0xFF9C27B0),     // Roxo
+    'Serviço': Color(0xFF9C27B0), // Roxo
   };
 
   // Opções de ícones disponíveis para tipos de orçamento

@@ -63,7 +63,8 @@ class Budget {
       if (value is int) {
         return DateTime.fromMillisecondsSinceEpoch(value);
       }
-      return DbValue.toDateTime(value) ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return DbValue.toDateTime(value) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
     }
 
     DateTime? parseNullableDate(dynamic value) {
@@ -89,8 +90,10 @@ class Budget {
       projectId: map['projectId']?.toString(),
       budgetTypeId: map['budgetTypeId']?.toString(),
       clientAccountId:
-          map['clientAccountId']?.toString() ?? map['client_account_id']?.toString(),
-      clientAccountName: map['clientAccountName']?.toString() ??
+          map['clientAccountId']?.toString() ??
+          map['client_account_id']?.toString(),
+      clientAccountName:
+          map['clientAccountName']?.toString() ??
           map['client_account_name']?.toString(),
     );
   }

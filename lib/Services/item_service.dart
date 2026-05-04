@@ -7,11 +7,12 @@ class ItemService {
 
   Future<String> addItem(Item item) async {
     try {
-      final response = await AppSupabase.client
-          .from(_collection)
-          .insert(DbValue.normalizeMap(item.toMap()))
-          .select('id')
-          .single();
+      final response =
+          await AppSupabase.client
+              .from(_collection)
+              .insert(DbValue.normalizeMap(item.toMap()))
+              .select('id')
+              .single();
       return response['id'] as String;
     } catch (e) {
       throw Exception('Erro ao adicionar item: $e');
@@ -23,7 +24,9 @@ class ItemService {
       await AppSupabase.client
           .from(_collection)
           .update(
-            DbValue.normalizeMap(item.copyWith(updatedAt: DateTime.now()).toMap()),
+            DbValue.normalizeMap(
+              item.copyWith(updatedAt: DateTime.now()).toMap(),
+            ),
           )
           .eq('id', item.id);
     } catch (e) {
@@ -44,12 +47,17 @@ class ItemService {
         .from(_collection)
         .stream(primaryKey: ['id'])
         .order('name')
-        .map((rows) => rows
-            .map((row) => Item.fromMap(
-                  Map<String, dynamic>.from(row),
-                  row['id'] as String,
-                ))
-            .toList());
+        .map(
+          (rows) =>
+              rows
+                  .map(
+                    (row) => Item.fromMap(
+                      Map<String, dynamic>.from(row),
+                      row['id'] as String,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<List<Item>> searchItems(String query) async {
@@ -59,10 +67,12 @@ class ItemService {
         .ilike('name', '$query%');
 
     return (response as List)
-        .map((row) => Item.fromMap(
-              Map<String, dynamic>.from(row as Map),
-              row['id'] as String,
-            ))
+        .map(
+          (row) => Item.fromMap(
+            Map<String, dynamic>.from(row as Map),
+            row['id'] as String,
+          ),
+        )
         .toList();
   }
 }

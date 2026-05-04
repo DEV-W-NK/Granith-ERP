@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:project_granith/app/auth_wrapper.dart';
-import 'package:project_granith/core/config/supabase_config.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
 class AppInitializationPage extends StatefulWidget {
@@ -23,12 +21,6 @@ class _AppInitializationPageState extends State<AppInitializationPage> {
   }
 
   Future<void> _setupEnvironment() async {
-    if (kDebugMode && SupabaseConfig.useFirebaseAuthEmulator) {
-      debugPrint(
-        '[GRANITH] USE_FIREBASE_AUTH_EMULATOR esta habilitado, mas o app agora usa Supabase Auth.',
-      );
-    }
-
     if (mounted) {
       setState(() => _isInitialized = true);
     }

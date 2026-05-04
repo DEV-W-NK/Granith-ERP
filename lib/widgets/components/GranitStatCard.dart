@@ -58,7 +58,8 @@ class GranitStatCard extends StatelessWidget {
           children: [
             // Accent bar
             Container(
-              width: 28, height: 2,
+              width: 28,
+              height: 2,
               decoration: BoxDecoration(
                 color: accent,
                 borderRadius: BorderRadius.circular(2),
@@ -71,32 +72,32 @@ class GranitStatCard extends StatelessWidget {
             const SizedBox(height: 5),
 
             // Value
-            Text(
-              value,
-              style: GranitTokens.valueStyle.copyWith(color: accent),
-            ),
+            Text(value, style: GranitTokens.valueStyle.copyWith(color: accent)),
             const SizedBox(height: 4),
 
             // Delta
-            Row(children: [
-              Icon(
-                deltaPositive
-                    ? Icons.arrow_upward_rounded
-                    : Icons.arrow_downward_rounded,
-                size: 10,
-                color: deltaPositive ? GranitTokens.green : GranitTokens.red,
-              ),
-              const SizedBox(width: 3),
-              Flexible(
-                child: Text(
-                  delta,
-                  style: TextStyle(
-                    color: deltaPositive ? GranitTokens.green : GranitTokens.red,
-                    fontSize: 10,
+            Row(
+              children: [
+                Icon(
+                  deltaPositive
+                      ? Icons.arrow_upward_rounded
+                      : Icons.arrow_downward_rounded,
+                  size: 10,
+                  color: deltaPositive ? GranitTokens.green : GranitTokens.red,
+                ),
+                const SizedBox(width: 3),
+                Flexible(
+                  child: Text(
+                    delta,
+                    style: TextStyle(
+                      color:
+                          deltaPositive ? GranitTokens.green : GranitTokens.red,
+                      fontSize: 10,
+                    ),
                   ),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ],
         ),
       ),
@@ -128,9 +129,10 @@ class _GranitStatCardSkeletonState extends State<GranitStatCardSkeleton>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _anim = Tween<double>(begin: 0.3, end: 0.7).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
+    _anim = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
   @override
@@ -140,15 +142,17 @@ class _GranitStatCardSkeletonState extends State<GranitStatCardSkeleton>
   }
 
   Widget _bone(double w, double h) => AnimatedBuilder(
-        animation: _anim,
-        builder: (_, __) => Container(
-          width: w, height: h,
+    animation: _anim,
+    builder:
+        (_, __) => Container(
+          width: w,
+          height: h,
           decoration: BoxDecoration(
             color: GranitTokens.surface3.withOpacity(_anim.value),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
-      );
+  );
 
   @override
   Widget build(BuildContext context) {

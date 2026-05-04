@@ -28,7 +28,8 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
   Widget build(BuildContext context) {
     final controller = context.watch<SubscriptionController>();
     final auth = context.watch<AuthViewModel>();
-    final canSync = auth.isAdminUser ||
+    final canSync =
+        auth.isAdminUser ||
         auth.hasPermission('billing.manage') ||
         auth.hasPermission('infra.sync_usage') ||
         auth.hasPermission('settings.manage');
@@ -40,40 +41,41 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: controller.isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.accentBlue),
-            )
-          : controller.currentUsage == null
+      body:
+          controller.isLoading
               ? const Center(
-                  child: Text(
-                    'Nenhum dado de uso foi encontrado.',
-                    style: TextStyle(color: AppColors.textPrimary),
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(
-                        controller.currentUsage!,
-                        canSync: canSync,
-                        controller: controller,
-                      ),
-                      const SizedBox(height: 24),
-                      _buildSummaryGrid(controller.currentUsage!),
-                      const SizedBox(height: 24),
-                      _buildUsageTimeline(controller.currentUsage!),
-                      const SizedBox(height: 24),
-                      _buildInterpretationCard(controller.currentUsage!),
-                      if (!controller.currentUsage!.hasSnapshot) ...[
-                        const SizedBox(height: 24),
-                        _buildActivationCard(),
-                      ],
-                    ],
-                  ),
+                child: CircularProgressIndicator(color: AppColors.accentBlue),
+              )
+              : controller.currentUsage == null
+              ? const Center(
+                child: Text(
+                  'Nenhum dado de uso foi encontrado.',
+                  style: TextStyle(color: AppColors.textPrimary),
                 ),
+              )
+              : SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(
+                      controller.currentUsage!,
+                      canSync: canSync,
+                      controller: controller,
+                    ),
+                    const SizedBox(height: 24),
+                    _buildSummaryGrid(controller.currentUsage!),
+                    const SizedBox(height: 24),
+                    _buildUsageTimeline(controller.currentUsage!),
+                    const SizedBox(height: 24),
+                    _buildInterpretationCard(controller.currentUsage!),
+                    if (!controller.currentUsage!.hasSnapshot) ...[
+                      const SizedBox(height: 24),
+                      _buildActivationCard(),
+                    ],
+                  ],
+                ),
+              ),
     );
   }
 
@@ -101,18 +103,13 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: AppColors.accentBlue.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.22)),
         boxShadow: AppColors.glowShadows(AppColors.accentBlue),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatusPill(
-            label: status.label,
-            color: status.color,
-          ),
+          _StatusPill(label: status.label, color: status.color),
           const SizedBox(height: 16),
           const Text(
             'Visao simples do uso do sistema',
@@ -125,10 +122,7 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
           const SizedBox(height: 10),
           const Text(
             'Aqui voce acompanha o ritmo de uso, o volume de arquivos e o tamanho da base de dados de forma executiva, sem detalhes tecnicos desnecessarios.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.55,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.55),
           ),
           const SizedBox(height: 18),
           Wrap(
@@ -139,10 +133,7 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
                 icon: Icons.date_range_rounded,
                 label: 'Periodo analisado: $periodLabel',
               ),
-              _InfoPill(
-                icon: Icons.sync_rounded,
-                label: usage.sourceLabel,
-              ),
+              _InfoPill(icon: Icons.sync_rounded, label: usage.sourceLabel),
               if (usage.lastSyncedAt != null)
                 _InfoPill(
                   icon: Icons.schedule_rounded,
@@ -154,34 +145,38 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
           if (canSync) ...[
             const SizedBox(height: 18),
             ElevatedButton.icon(
-              onPressed: controller.isSyncing
-                  ? null
-                  : () async {
-                      final success = await controller.syncUsageData();
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            controller.feedbackMessage ??
-                                (success
-                                    ? 'Dados atualizados com sucesso.'
-                                    : 'Falha ao atualizar os dados.'),
+              onPressed:
+                  controller.isSyncing
+                      ? null
+                      : () async {
+                        final success = await controller.syncUsageData();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              controller.feedbackMessage ??
+                                  (success
+                                      ? 'Dados atualizados com sucesso.'
+                                      : 'Falha ao atualizar os dados.'),
+                            ),
+                            backgroundColor:
+                                success
+                                    ? AppColors.accentBlue
+                                    : AppColors.accentRed,
                           ),
-                          backgroundColor:
-                              success ? AppColors.accentBlue : AppColors.accentRed,
+                        );
+                      },
+              icon:
+                  controller.isSyncing
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Colors.white),
                         ),
-                      );
-                    },
-              icon: controller.isSyncing
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.sync_rounded),
+                      )
+                      : const Icon(Icons.sync_rounded),
               label: Text(
                 controller.isSyncing ? 'Atualizando...' : 'Atualizar dados',
               ),
@@ -206,17 +201,19 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
         _MetricCard(
           title: 'Base de dados',
           value: '${usage.databaseUsedGB.toStringAsFixed(2)} GB',
-          subtitle: usage.databaseUsedMB > 0
-              ? 'tamanho atual da base'
-              : 'medicao indisponivel no momento',
+          subtitle:
+              usage.databaseUsedMB > 0
+                  ? 'tamanho atual da base'
+                  : 'medicao indisponivel no momento',
           color: AppColors.accentGold,
         ),
         _MetricCard(
           title: 'Arquivos armazenados',
           value: '${usage.storageUsedGB.toStringAsFixed(2)} GB',
-          subtitle: usage.storageUsedMB > 0
-              ? 'documentos e arquivos do sistema'
-              : 'medicao indisponivel no momento',
+          subtitle:
+              usage.storageUsedMB > 0
+                  ? 'documentos e arquivos do sistema'
+                  : 'medicao indisponivel no momento',
           color: AppColors.auraCyan,
         ),
         _MetricCard(
@@ -230,8 +227,9 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
   }
 
   Widget _buildUsageTimeline(UsageStatsModel usage) {
-    final entries = usage.dailyOperations.entries.toList()
-      ..sort((a, b) => a.key.compareTo(b.key));
+    final entries =
+        usage.dailyOperations.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
 
     return Container(
       width: double.infinity,
@@ -260,10 +258,7 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
             usage.hasUsageData
                 ? 'Uma leitura simples da atividade do sistema no periodo analisado.'
                 : 'Ainda nao ha dados suficientes para montar a curva de uso.',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
+            style: const TextStyle(color: AppColors.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 18),
           if (entries.isEmpty)
@@ -278,7 +273,8 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
               width: double.infinity,
               child: CustomPaint(
                 painter: _TimelineChartPainter(
-                  values: entries.map((entry) => entry.value.toDouble()).toList(),
+                  values:
+                      entries.map((entry) => entry.value.toDouble()).toList(),
                   color: AppColors.accentBlue,
                 ),
               ),
@@ -287,13 +283,14 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
             Wrap(
               spacing: 10,
               runSpacing: 10,
-              children: entries.reversed.take(6).map((entry) {
-                return _InfoPill(
-                  icon: Icons.timeline_rounded,
-                  label:
-                      '${_formatDateLabel(entry.key)}: ${_formatCompactNumber(entry.value)}',
-                );
-              }).toList(),
+              children:
+                  entries.reversed.take(6).map((entry) {
+                    return _InfoPill(
+                      icon: Icons.timeline_rounded,
+                      label:
+                          '${_formatDateLabel(entry.key)}: ${_formatCompactNumber(entry.value)}',
+                    );
+                  }).toList(),
             ),
           ],
         ],
@@ -310,9 +307,10 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
       partialMetrics.add('arquivos');
     }
 
-    final partialLabel = partialMetrics.isEmpty
-        ? 'Todos os indicadores principais foram carregados.'
-        : 'Os indicadores de ${partialMetrics.join(' e ')} ainda nao estao disponiveis neste ambiente.';
+    final partialLabel =
+        partialMetrics.isEmpty
+            ? 'Todos os indicadores principais foram carregados.'
+            : 'Os indicadores de ${partialMetrics.join(' e ')} ainda nao estao disponiveis neste ambiente.';
 
     return Container(
       width: double.infinity,
@@ -374,9 +372,7 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.60),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.accentGold.withValues(alpha: 0.25),
-        ),
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.25)),
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,10 +388,7 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
           SizedBox(height: 10),
           Text(
             'Assim que os dados forem sincronizados pela primeira vez, este painel passa a exibir atividade, armazenamento e historico de uso automaticamente.',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
+            style: TextStyle(color: AppColors.textSecondary, height: 1.5),
           ),
         ],
       ),
@@ -445,20 +438,14 @@ class _UsageStatusPresentation {
   final String label;
   final Color color;
 
-  const _UsageStatusPresentation({
-    required this.label,
-    required this.color,
-  });
+  const _UsageStatusPresentation({required this.label, required this.color});
 }
 
 class _StatusPill extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatusPill({
-    required this.label,
-    required this.color,
-  });
+  const _StatusPill({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -467,9 +454,7 @@ class _StatusPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: color.withValues(alpha: 0.24),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
       ),
       child: Text(
         label,
@@ -526,10 +511,7 @@ class _MetricCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-            ),
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
       ),
@@ -541,10 +523,7 @@ class _InfoPill extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _InfoPill({
-    required this.icon,
-    required this.label,
-  });
+  const _InfoPill({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -577,10 +556,7 @@ class _ReadingPoint extends StatelessWidget {
   final String title;
   final String body;
 
-  const _ReadingPoint({
-    required this.title,
-    required this.body,
-  });
+  const _ReadingPoint({required this.title, required this.body});
 
   @override
   Widget build(BuildContext context) {
@@ -626,10 +602,7 @@ class _SectionEmptyCopy extends StatelessWidget {
   final String title;
   final String message;
 
-  const _SectionEmptyCopy({
-    required this.title,
-    required this.message,
-  });
+  const _SectionEmptyCopy({required this.title, required this.message});
 
   @override
   Widget build(BuildContext context) {
@@ -671,10 +644,7 @@ class _TimelineChartPainter extends CustomPainter {
   final List<double> values;
   final Color color;
 
-  _TimelineChartPainter({
-    required this.values,
-    required this.color,
-  });
+  _TimelineChartPainter({required this.values, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -682,22 +652,24 @@ class _TimelineChartPainter extends CustomPainter {
       return;
     }
 
-    final linePaint = Paint()
-      ..color = color
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+    final linePaint =
+        Paint()
+          ..color = color
+          ..strokeWidth = 3
+          ..strokeCap = StrokeCap.round
+          ..style = PaintingStyle.stroke;
 
-    final fillPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = LinearGradient(
-        colors: [
-          color.withValues(alpha: 0.30),
-          color.withValues(alpha: 0.00),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    final fillPaint =
+        Paint()
+          ..style = PaintingStyle.fill
+          ..shader = LinearGradient(
+            colors: [
+              color.withValues(alpha: 0.30),
+              color.withValues(alpha: 0.00),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final maxValue = values.reduce(math.max);
     final minValue = values.reduce(math.min);
@@ -711,14 +683,17 @@ class _TimelineChartPainter extends CustomPainter {
       final x = i * step;
       final normalized = (values[i] - minValue) / range;
       final y =
-          size.height - (normalized * size.height * 0.78) - (size.height * 0.11);
+          size.height -
+          (normalized * size.height * 0.78) -
+          (size.height * 0.11);
 
       if (i == 0) {
         path.moveTo(x, y);
       } else {
         final previousX = (i - 1) * step;
         final previousNormalized = (values[i - 1] - minValue) / range;
-        final previousY = size.height -
+        final previousY =
+            size.height -
             (previousNormalized * size.height * 0.78) -
             (size.height * 0.11);
         final controlX = previousX + (x - previousX) / 2;
@@ -726,10 +701,11 @@ class _TimelineChartPainter extends CustomPainter {
       }
     }
 
-    final fillPath = Path.from(path)
-      ..lineTo(size.width, size.height)
-      ..lineTo(0, size.height)
-      ..close();
+    final fillPath =
+        Path.from(path)
+          ..lineTo(size.width, size.height)
+          ..lineTo(0, size.height)
+          ..close();
 
     canvas.drawPath(fillPath, fillPaint);
     canvas.drawPath(path, linePaint);

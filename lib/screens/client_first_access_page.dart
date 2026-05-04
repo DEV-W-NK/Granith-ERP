@@ -2,18 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/services/auth_service.dart';
+import 'package:project_granith/services/auth_service_contract.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:provider/provider.dart';
 
+typedef ClientAccessLoadingPresenter = Future<void> Function({String? status});
+typedef ClientAccessLoadingDismiss = Future<void> Function();
+
 class ClientFirstAccessPage extends StatefulWidget {
-  const ClientFirstAccessPage({super.key});
+  const ClientFirstAccessPage({
+    super.key,
+    this.authService,
+    this.showLoading,
+    this.dismissLoading,
+  });
+
+  final AuthServiceContract? authService;
+  final ClientAccessLoadingPresenter? showLoading;
+  final ClientAccessLoadingDismiss? dismissLoading;
 
   @override
   State<ClientFirstAccessPage> createState() => _ClientFirstAccessPageState();
 }
 
 class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
-  final AuthService _authService = AuthService();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
@@ -21,6 +33,12 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
 
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  AuthServiceContract get _authService => widget.authService ?? AuthService();
+  ClientAccessLoadingPresenter get _showLoading =>
+      widget.showLoading ?? EasyLoading.show;
+  ClientAccessLoadingDismiss get _dismissLoading =>
+      widget.dismissLoading ?? EasyLoading.dismiss;
 
   @override
   void dispose() {
@@ -39,14 +57,14 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
       _errorMessage = null;
     });
 
-    await EasyLoading.show(status: 'Definindo senha...');
+    await _showLoading(status: 'Definindo senha...');
 
     try {
       await _authService.completeClientFirstAccess(
         password: _passwordController.text,
       );
 
-      await EasyLoading.dismiss();
+      await _dismissLoading();
       if (!mounted) return;
 
       await showDialog<void>(
@@ -75,7 +93,7 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
     } catch (_) {
       _errorMessage = 'Nao foi possivel concluir o primeiro acesso.';
     } finally {
-      await EasyLoading.dismiss();
+      await _dismissLoading();
       if (mounted) {
         setState(() => _isSubmitting = false);
       }
@@ -133,18 +151,20 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
                       const SizedBox(height: 20),
                       Text(
                         account?.name ?? 'Portal do cliente',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Defina agora sua senha de acesso. Depois disso, suas proximas entradas acontecerao normalmente pela tela de login com e-mail e senha.',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
+                          color: AppColors.textSecondary,
+                          height: 1.5,
+                        ),
                       ),
                       const SizedBox(height: 22),
                       TextFormField(
@@ -194,15 +214,14 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
                             color: AppColors.accentRed.withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color:
-                                  AppColors.accentRed.withValues(alpha: 0.35),
+                              color: AppColors.accentRed.withValues(
+                                alpha: 0.35,
+                              ),
                             ),
                           ),
                           child: Text(
                             _errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.accentRed,
-                            ),
+                            style: const TextStyle(color: AppColors.accentRed),
                           ),
                         ),
                       ],
@@ -210,21 +229,21 @@ class _ClientFirstAccessPageState extends State<ClientFirstAccessPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : _handleCompleteFirstAccess,
-                          child: _isSubmitting
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Colors.white,
+                          onPressed:
+                              _isSubmitting ? null : _handleCompleteFirstAccess,
+                          child:
+                              _isSubmitting
+                                  ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Colors.white,
+                                      ),
                                     ),
-                                  ),
-                                )
-                              : const Text('Salvar senha e continuar'),
+                                  )
+                                  : const Text('Salvar senha e continuar'),
                         ),
                       ),
                     ],

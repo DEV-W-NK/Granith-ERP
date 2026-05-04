@@ -17,7 +17,8 @@ class HomePageView extends StatefulWidget {
   State<HomePageView> createState() => _HomePageViewState();
 }
 
-class _HomePageViewState extends State<HomePageView> with SingleTickerProviderStateMixin {
+class _HomePageViewState extends State<HomePageView>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
 
   @override
@@ -62,12 +63,17 @@ class _HomePageViewState extends State<HomePageView> with SingleTickerProviderSt
                 children: [
                   GranithReveal(
                     delay: const Duration(milliseconds: 40),
-                    child: HomeHeader(animationController: _animationController),
+                    child: HomeHeader(
+                      animationController: _animationController,
+                    ),
                   ),
                   const SizedBox(height: 18),
                   GranithReveal(
                     delay: const Duration(milliseconds: 120),
-                    child: StatsGrid(isDesktop: isDesktop, stats: viewModel.stats),
+                    child: StatsGrid(
+                      isDesktop: isDesktop,
+                      stats: viewModel.stats,
+                    ),
                   ),
                   const SizedBox(height: 14),
                   const GranithReveal(

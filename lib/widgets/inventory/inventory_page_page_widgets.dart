@@ -15,7 +15,8 @@ class InventoryPageView extends StatefulWidget {
   State<InventoryPageView> createState() => _InventoryPageViewState();
 }
 
-class _InventoryPageViewState extends State<InventoryPageView> with SingleTickerProviderStateMixin {
+class _InventoryPageViewState extends State<InventoryPageView>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final InventoryService _service = InventoryService();
 
@@ -38,7 +39,10 @@ class _InventoryPageViewState extends State<InventoryPageView> with SingleTicker
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
         appBar: AppBar(
-          title: const Text('Controle de Estoque', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          title: const Text(
+            'Controle de Estoque',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          ),
           backgroundColor: AppColors.surfaceDark,
           elevation: 0,
           bottom: TabBar(
@@ -48,8 +52,14 @@ class _InventoryPageViewState extends State<InventoryPageView> with SingleTicker
             unselectedLabelColor: AppColors.textMuted,
             dividerColor: Colors.transparent,
             tabs: const [
-              Tab(icon: Icon(Icons.inventory_2_outlined, size: 18), text: 'Estoque'),
-              Tab(icon: Icon(Icons.warning_amber_outlined, size: 18), text: 'Alertas'),
+              Tab(
+                icon: Icon(Icons.inventory_2_outlined, size: 18),
+                text: 'Estoque',
+              ),
+              Tab(
+                icon: Icon(Icons.warning_amber_outlined, size: 18),
+                text: 'Alertas',
+              ),
             ],
           ),
         ),
@@ -85,12 +95,25 @@ class _InventorySearchBar extends StatelessWidget {
         style: const TextStyle(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
           hintText: 'Buscar material...',
-          hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6), fontSize: 14),
-          prefixIcon: const Icon(Icons.search_rounded, color: AppColors.accentGold, size: 20),
+          hintStyle: TextStyle(
+            color: AppColors.textMuted.withOpacity(0.6),
+            fontSize: 14,
+          ),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            color: AppColors.accentGold,
+            size: 20,
+          ),
           filled: true,
           fillColor: AppColors.backgroundDark,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.accentGold)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: AppColors.accentGold),
+          ),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
         onChanged: viewModel.updateSearch,
@@ -107,12 +130,18 @@ class _InventoryList extends StatelessWidget {
   Widget build(BuildContext context) {
     final viewModel = context.watch<InventoryViewModel>();
     final service = InventoryService();
-    final stream = lowStockOnly ? service.getLowStockStream() : service.getInventoryStream();
+    final stream =
+        lowStockOnly
+            ? service.getLowStockStream()
+            : service.getInventoryStream();
 
     return StreamBuilder<List<InventoryItem>>(
       stream: stream,
       builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.accentGold));
+        if (!snap.hasData)
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.accentGold),
+          );
 
         final items = viewModel.filterItems(snap.data!);
 
@@ -121,7 +150,8 @@ class _InventoryList extends StatelessWidget {
         return ListView.builder(
           padding: const EdgeInsets.all(14),
           itemCount: items.length,
-          itemBuilder: (_, i) => _InventoryCard(item: items[i], viewModel: viewModel),
+          itemBuilder:
+              (_, i) => _InventoryCard(item: items[i], viewModel: viewModel),
         );
       },
     );
@@ -132,11 +162,18 @@ class _InventoryList extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(lowStockOnly ? Icons.check_circle_outline : Icons.inventory_2_outlined,
-              size: 52, color: AppColors.textMuted.withOpacity(0.2)),
+          Icon(
+            lowStockOnly
+                ? Icons.check_circle_outline
+                : Icons.inventory_2_outlined,
+            size: 52,
+            color: AppColors.textMuted.withOpacity(0.2),
+          ),
           const SizedBox(height: 14),
-          Text(lowStockOnly ? 'Nenhum item abaixo do mínimo' : 'Estoque vazio',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
+          Text(
+            lowStockOnly ? 'Nenhum item abaixo do mínimo' : 'Estoque vazio',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
+          ),
         ],
       ),
     );
@@ -151,7 +188,10 @@ class _InventoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final barColor = item.isOutOfStock ? AppColors.accentRed : (item.isLowStock ? Colors.orangeAccent : AppColors.accentGreen);
+    final barColor =
+        item.isOutOfStock
+            ? AppColors.accentRed
+            : (item.isLowStock ? Colors.orangeAccent : AppColors.accentGreen);
     final healthPct = (item.stockHealthPercent / 100).clamp(0.0, 1.0);
 
     return Container(
@@ -159,27 +199,61 @@ class _InventoryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: item.isLowStock ? Colors.orangeAccent.withOpacity(0.3) : Colors.white.withOpacity(0.05)),
+        border: Border.all(
+          color:
+              item.isLowStock
+                  ? Colors.orangeAccent.withOpacity(0.3)
+                  : Colors.white.withOpacity(0.05),
+        ),
       ),
       child: Column(
         children: [
           ListTile(
             contentPadding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
             leading: Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(color: barColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-              child: Icon(Icons.inventory_2_outlined, color: barColor, size: 20),
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: barColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                Icons.inventory_2_outlined,
+                color: barColor,
+                size: 20,
+              ),
             ),
-            title: Text(item.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text('Mínimo: ${item.minQuantity.toStringAsFixed(0)} ${item.unit}',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 11)),
+            title: Text(
+              item.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: Text(
+              'Mínimo: ${item.minQuantity.toStringAsFixed(0)} ${item.unit}',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+            ),
             trailing: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1),
-                    style: TextStyle(color: barColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                Text(item.unit, style: const TextStyle(color: AppColors.textMuted, fontSize: 10)),
+                Text(
+                  item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1),
+                  style: TextStyle(
+                    color: barColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  item.unit,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
               ],
             ),
           ),

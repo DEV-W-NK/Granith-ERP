@@ -16,15 +16,17 @@ class BudgetsViewModel extends ChangeNotifier {
   bool isFiltering = false;
   bool isUpdatingExpired = false;
   String searchQuery = '';
-  
+
   // IDs de orçamentos em aprovação para evitar double-tap
   final Set<String> approvingIds = {};
 
   StreamSubscription? _subscription;
 
   // Injeção de dependência via construtor
-  BudgetsViewModel(this._service) {
-    _init();
+  BudgetsViewModel(this._service, {bool bootstrapOnInit = true}) {
+    if (bootstrapOnInit) {
+      _init();
+    }
   }
 
   void _init() {
@@ -49,7 +51,7 @@ class BudgetsViewModel extends ChangeNotifier {
         errorMessage = error.toString();
         isLoading = false;
         notifyListeners();
-      }
+      },
     );
   }
 
@@ -62,9 +64,14 @@ class BudgetsViewModel extends ChangeNotifier {
 
     if (searchQuery.isNotEmpty) {
       final term = searchQuery.toLowerCase();
-      temp = temp.where((b) =>
-          b.clientName.toLowerCase().contains(term) ||
-          b.projectName.toLowerCase().contains(term)).toList();
+      temp =
+          temp
+              .where(
+                (b) =>
+                    b.clientName.toLowerCase().contains(term) ||
+                    b.projectName.toLowerCase().contains(term),
+              )
+              .toList();
     }
 
     filteredBudgets = temp;
@@ -91,8 +98,11 @@ class BudgetsViewModel extends ChangeNotifier {
   }
 
   // ─── LÓGICA DE NEGÓCIO ──────────────────────────────────────────────────
-  
-  Future<void> forceCheckExpiredBudgets({Function(String)? onSuccess, Function(String)? onError}) async {
+
+  Future<void> forceCheckExpiredBudgets({
+    Function(String)? onSuccess,
+    Function(String)? onError,
+  }) async {
     isUpdatingExpired = true;
     notifyListeners();
     try {
@@ -106,7 +116,11 @@ class BudgetsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> approveBudget(Budget budget, {Function(String)? onSuccess, Function(String)? onError}) async {
+  Future<void> approveBudget(
+    Budget budget, {
+    Function(String)? onSuccess,
+    Function(String)? onError,
+  }) async {
     approvingIds.add(budget.id);
     notifyListeners();
 
@@ -121,7 +135,11 @@ class BudgetsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> rejectBudget(Budget budget, {Function(String)? onSuccess, Function(String)? onError}) async {
+  Future<void> rejectBudget(
+    Budget budget, {
+    Function(String)? onSuccess,
+    Function(String)? onError,
+  }) async {
     try {
       await _service.rejectBudget(budget.id);
       onSuccess?.call('Orçamento rejeitado.');
@@ -130,10 +148,16 @@ class BudgetsViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteBudget(Budget budget, {Function(String)? onSuccess, Function(String)? onError}) async {
+  Future<void> deleteBudget(
+    Budget budget, {
+    Function(String)? onSuccess,
+    Function(String)? onError,
+  }) async {
     try {
       await _service.deleteBudget(budget.id);
-      onSuccess?.call('Orçamento de "${budget.clientName}" excluído com sucesso!');
+      onSuccess?.call(
+        'Orçamento de "${budget.clientName}" excluído com sucesso!',
+      );
     } catch (e) {
       onError?.call('Erro ao excluir orçamento: $e');
     }

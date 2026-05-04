@@ -6,14 +6,19 @@ class ClientAccountService {
   static const String _table = 'client_accounts';
 
   Future<List<ClientAccount>> getClientAccounts() async {
-    final response = await AppSupabase.client.from(_table).select().order('name');
+    final response = await AppSupabase.client
+        .from(_table)
+        .select()
+        .order('name');
 
     return (response as List)
         .map((row) => ClientAccount.fromMap(Map<String, dynamic>.from(row)))
         .toList();
   }
 
-  Future<List<ClientAccount>> getClientAccountsByOwnerEmail(String email) async {
+  Future<List<ClientAccount>> getClientAccountsByOwnerEmail(
+    String email,
+  ) async {
     if (email.trim().isEmpty) return [];
 
     final response = await AppSupabase.client
@@ -43,17 +48,19 @@ class ClientAccountService {
 
     final dynamic response;
     if (account.id.isEmpty) {
-      response = await AppSupabase.client
-          .from(_table)
-          .insert(payload)
-          .select()
-          .single();
+      response =
+          await AppSupabase.client
+              .from(_table)
+              .insert(payload)
+              .select()
+              .single();
     } else {
-      response = await AppSupabase.client
-          .from(_table)
-          .upsert(payload)
-          .select()
-          .single();
+      response =
+          await AppSupabase.client
+              .from(_table)
+              .upsert(payload)
+              .select()
+              .single();
     }
 
     return ClientAccount.fromMap(Map<String, dynamic>.from(response));

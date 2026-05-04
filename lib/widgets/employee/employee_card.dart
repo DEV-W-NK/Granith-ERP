@@ -12,12 +12,17 @@ class EmployeeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
-    
+
     Color roleColor;
     switch (employee.role) {
-      case EmployeeRole.coordenador: roleColor = Colors.purpleAccent; break;
-      case EmployeeRole.supervisor: roleColor = Colors.orangeAccent; break;
-      default: roleColor = AppColors.accentBlue;
+      case EmployeeRole.coordenador:
+        roleColor = Colors.purpleAccent;
+        break;
+      case EmployeeRole.supervisor:
+        roleColor = Colors.orangeAccent;
+        break;
+      default:
+        roleColor = AppColors.accentBlue;
     }
 
     return Container(
@@ -35,8 +40,13 @@ class EmployeeCard extends StatelessWidget {
               CircleAvatar(
                 backgroundColor: roleColor.withOpacity(0.2),
                 child: Text(
-                  employee.name.isNotEmpty ? employee.name[0].toUpperCase() : '?',
-                  style: TextStyle(color: roleColor, fontWeight: FontWeight.bold),
+                  employee.name.isNotEmpty
+                      ? employee.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    color: roleColor,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -46,12 +56,19 @@ class EmployeeCard extends StatelessWidget {
                   children: [
                     Text(
                       employee.name,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       employee.jobTitle,
-                      style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -65,7 +82,11 @@ class EmployeeCard extends StatelessWidget {
                 ),
                 child: Text(
                   employee.role.name.toUpperCase(),
-                  style: TextStyle(color: roleColor, fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: roleColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -73,10 +94,17 @@ class EmployeeCard extends StatelessWidget {
           const Divider(color: Colors.white10, height: 24),
           _buildInfoRow(Icons.school, employee.educationLevel),
           const SizedBox(height: 8),
-          _buildInfoRow(Icons.attach_money, 'Salário: ${currency.format(employee.baseSalary)}'),          const SizedBox(height: 8),
+          _buildInfoRow(
+            Icons.attach_money,
+            'Salário: ${currency.format(employee.baseSalary)}',
+          ),
+          const SizedBox(height: 8),
           if (employee.courses.isNotEmpty)
-            _buildInfoRow(Icons.card_membership, '${employee.courses.split(',').length} curso(s) registrado(s)'),
-            
+            _buildInfoRow(
+              Icons.card_membership,
+              '${employee.courses.split(',').length} curso(s) registrado(s)',
+            ),
+
           const Spacer(),
           SizedBox(
             width: double.infinity,
@@ -88,7 +116,7 @@ class EmployeeCard extends StatelessWidget {
               ),
               child: const Text('Ver Detalhes'),
             ),
-          )
+          ),
         ],
       ),
     );

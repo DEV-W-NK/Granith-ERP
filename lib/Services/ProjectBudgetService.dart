@@ -1,20 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 
-/// Dados financeiros calculados de um projeto específico.
-/// Resultado da agregação das financial_transactions pelo projectId.
 class ProjectBudgetSnapshot {
   final String projectId;
-  final double budgetPrevisto;     // project.budget (orçamento inicial)
-  final double totalDespesas;      // soma das despesas pagas
-  final double totalReceitas;      // soma das receitas recebidas
-  final double despesasPendentes;  // despesas ainda não pagas
-  final double receitasPendentes;  // receitas ainda não recebidas
-
-  // Breakdown por categoria de despesa
+  final double budgetPrevisto;
+  final double totalDespesas;
+  final double totalReceitas;
+  final double despesasPendentes;
+  final double receitasPendentes;
   final Map<TransactionCategory, double> despesasPorCategoria;
-
-  // Breakdown por origem de despesa
   final Map<TransactionOrigin, double> despesasPorOrigem;
 
   const ProjectBudgetSnapshot({
@@ -28,39 +22,23 @@ class ProjectBudgetSnapshot {
     required this.despesasPorOrigem,
   });
 
-  // ─── Computed ───────────────────────────────────────────────────────────────
-
-  /// Custo realizado = despesas efetivamente pagas.
   double get custoRealizado => totalDespesas;
-
-  /// Saldo disponível = orçamento - custo realizado.
   double get saldoDisponivel => budgetPrevisto - custoRealizado;
 
-  /// Percentual consumido do orçamento (0–100+).
   double get percentualConsumido {
     if (budgetPrevisto == 0) return 0;
     return (custoRealizado / budgetPrevisto * 100).clamp(0, 999);
   }
 
-  /// True se o custo realizado já ultrapassou o orçamento.
   bool get isOverBudget => custoRealizado > budgetPrevisto;
-
-  /// True se está acima de 80% do orçamento (alerta amarelo).
   bool get isNearLimit => percentualConsumido >= 80 && !isOverBudget;
-
-  /// Projeção de custo total considerando despesas pendentes.
   double get projecaoCustoTotal => custoRealizado + despesasPendentes;
-
-  /// True se a projeção já ultrapassa o orçamento.
   bool get projecaoOverBudget => projecaoCustoTotal > budgetPrevisto;
-
-  /// Margem = receitas - despesas (resultado financeiro do projeto).
   double get margem => totalReceitas - totalDespesas;
 
-  /// Percentual de margem sobre receita.
   double get percentualMargem {
     if (totalReceitas == 0) return 0;
-    return (margem / totalReceitas * 100);
+    return margem / totalReceitas * 100;
   }
 
   static ProjectBudgetSnapshot empty(String projectId, double budget) {
@@ -77,54 +55,40 @@ class ProjectBudgetSnapshot {
   }
 }
 
-/// Service responsável por agregar dados financeiros por projeto.
 class ProjectBudgetService {
-  final FirebaseFirestore _firestore;
+  static const _transactionsTable = 'financial_transactions';
+  static const _projectsTable = 'projects';
 
-  ProjectBudgetService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  ProjectBudgetService();
 
-  CollectionReference get _col =>
-      _firestore.collection('financial_transactions');
-
-  // ─── Stream reativo ──────────────────────────────────────────────────────────
-
-  /// Stream que recalcula o snapshot sempre que uma transação do projeto muda.
   Stream<ProjectBudgetSnapshot> watchProjectBudget({
     required String projectId,
     required double budgetPrevisto,
   }) {
-    return _col
-        .where('projectId', isEqualTo: projectId)
-        .snapshots()
-        .map((snap) {
-      final transactions = snap.docs
-          .map((d) => FinancialTransactionModel.fromMap(
-              d.data() as Map<String, dynamic>, d.id))
-          .toList();
-
-      return _aggregate(
-        projectId: projectId,
-        budgetPrevisto: budgetPrevisto,
-        transactions: transactions,
-      );
-    });
+    return AppSupabase.client
+        .from(_transactionsTable)
+        .stream(primaryKey: ['id'])
+        .eq('projectId', projectId)
+        .map((rows) {
+          final transactions = rows.map(_transactionFromRow).toList();
+          return _aggregate(
+            projectId: projectId,
+            budgetPrevisto: budgetPrevisto,
+            transactions: transactions,
+          );
+        });
   }
-
-  // ─── Consulta pontual ────────────────────────────────────────────────────────
 
   Future<ProjectBudgetSnapshot> getProjectBudget({
     required String projectId,
     required double budgetPrevisto,
   }) async {
-    final snap = await _col
-        .where('projectId', isEqualTo: projectId)
-        .get();
+    final response = await AppSupabase.client
+        .from(_transactionsTable)
+        .select()
+        .eq('projectId', projectId);
 
-    final transactions = snap.docs
-        .map((d) => FinancialTransactionModel.fromMap(
-            d.data() as Map<String, dynamic>, d.id))
-        .toList();
+    final transactions = (response as List).map(_transactionFromRow).toList();
 
     return _aggregate(
       projectId: projectId,
@@ -133,46 +97,41 @@ class ProjectBudgetService {
     );
   }
 
-  /// Atualiza o campo `currentCost` do projeto no Firestore
-  /// com o custo realizado calculado pelas transações.
-  /// Chamado após cada nova transação de despesa vinculada ao projeto.
   Future<void> syncProjectCurrentCost(String projectId) async {
-    final snap = await _col
-        .where('projectId', isEqualTo: projectId)
-        .where('type', isEqualTo: TransactionType.expense.name)
-        .where('status', isEqualTo: TransactionStatus.paid.name)
-        .get();
+    final response = await AppSupabase.client
+        .from(_transactionsTable)
+        .select('amount')
+        .eq('projectId', projectId)
+        .eq('type', TransactionType.expense.name)
+        .eq('status', TransactionStatus.paid.name);
 
-    final totalPago = snap.docs.fold<double>(
-        0, (sum, d) => sum + ((d.data() as Map)['amount'] ?? 0.0));
+    final totalPaid = (response as List).fold<double>(0, (sum, row) {
+      final data = Map<String, dynamic>.from(row as Map);
+      return sum + (data['amount'] as num? ?? 0).toDouble();
+    });
 
-    await _firestore
-        .collection('projects')
-        .doc(projectId)
-        .update({'currentCost': totalPago});
+    await AppSupabase.client
+        .from(_projectsTable)
+        .update({'currentCost': totalPaid})
+        .eq('id', projectId);
   }
 
-  // ─── Múltiplos projetos (para dashboard) ─────────────────────────────────────
-
-  /// Retorna snapshots de todos os projetos passados.
-  /// Útil para o dashboard e relatórios.
   Future<List<ProjectBudgetSnapshot>> getMultipleProjectBudgets(
     List<({String id, double budget})> projects,
   ) async {
     final results = <ProjectBudgetSnapshot>[];
 
     for (final project in projects) {
-      final snapshot = await getProjectBudget(
-        projectId: project.id,
-        budgetPrevisto: project.budget,
+      results.add(
+        await getProjectBudget(
+          projectId: project.id,
+          budgetPrevisto: project.budget,
+        ),
       );
-      results.add(snapshot);
     }
 
     return results;
   }
-
-  // ─── Agregação interna ───────────────────────────────────────────────────────
 
   ProjectBudgetSnapshot _aggregate({
     required String projectId,
@@ -219,5 +178,10 @@ class ProjectBudgetService {
       despesasPorCategoria: despesasPorCategoria,
       despesasPorOrigem: despesasPorOrigem,
     );
+  }
+
+  FinancialTransactionModel _transactionFromRow(dynamic row) {
+    final data = Map<String, dynamic>.from(row as Map);
+    return FinancialTransactionModel.fromMap(data, data['id'] as String? ?? '');
   }
 }

@@ -5,7 +5,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 
 class ItemsViewModel extends ChangeNotifier {
   final ItemService _itemService;
-  
+
   ItemsViewModel(this._itemService);
 
   String _searchQuery = '';
@@ -20,10 +20,13 @@ class ItemsViewModel extends ChangeNotifier {
   List<Item> filterItems(List<Item> items) {
     if (_searchQuery.isEmpty) return items;
     final q = _searchQuery.toLowerCase();
-    return items.where((item) => 
-      item.name.toLowerCase().contains(q) || 
-      item.description.toLowerCase().contains(q)
-    ).toList();
+    return items
+        .where(
+          (item) =>
+              item.name.toLowerCase().contains(q) ||
+              item.description.toLowerCase().contains(q),
+        )
+        .toList();
   }
 
   // Lógica de persistência

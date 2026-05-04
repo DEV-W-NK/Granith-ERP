@@ -2,11 +2,13 @@ import 'package:project_granith/core/data/db_value.dart';
 
 class TeamModel {
   final String id;
-  final String name;           // Ex: "Equipe Alfa"
-  final String description;    // Ex: "Equipe responsável pela obra do Residencial Alphaville"
+  final String name; // Ex: "Equipe Alfa"
+  final String
+  description; // Ex: "Equipe responsável pela obra do Residencial Alphaville"
   final List<String> memberIds; // IDs dos EmployeeModel
-  final String? leaderId;       // ID do líder (opcional)
-  final String? projectId;      // Equipe pode estar vinculada a um projeto (opcional)
+  final String? leaderId; // ID do líder (opcional)
+  final String?
+  projectId; // Equipe pode estar vinculada a um projeto (opcional)
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;

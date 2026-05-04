@@ -14,7 +14,8 @@ class SystemSettingsPage extends StatefulWidget {
 }
 
 class _SystemSettingsPageState extends State<SystemSettingsPage> {
-  final TextEditingController _workspaceNameController = TextEditingController();
+  final TextEditingController _workspaceNameController =
+      TextEditingController();
   final TextEditingController _workspaceTaglineController =
       TextEditingController();
   final TextEditingController _dashboardTitleController =
@@ -204,7 +205,9 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged: (value) {
-                              setState(() => _aiAssistantPreviewEnabled = value);
+                              setState(
+                                () => _aiAssistantPreviewEnabled = value,
+                              );
                             },
                           ),
                           const SizedBox(height: 6),
@@ -271,13 +274,16 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               'Permite um portal mais transparente para clientes de relacionamento premium ou contratos abertos.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
-                            onChanged: _clientPortalShowBudgets
-                                ? (value) {
-                                    setState(
-                                      () => _clientPortalShowBudgetValues = value,
-                                    );
-                                  }
-                                : null,
+                            onChanged:
+                                _clientPortalShowBudgets
+                                    ? (value) {
+                                      setState(
+                                        () =>
+                                            _clientPortalShowBudgetValues =
+                                                value,
+                                      );
+                                    }
+                                    : null,
                           ),
                           const SizedBox(height: 6),
                           SwitchListTile.adaptive(
@@ -349,7 +355,9 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                                 );
                               },
                               icon: const Icon(Icons.monitor_heart_outlined),
-                              label: const Text('Abrir centro de custos do Supabase'),
+                              label: const Text(
+                                'Abrir centro de custos do Supabase',
+                              ),
                             ),
                           ),
                         ],
@@ -386,19 +394,25 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
-                      onPressed: viewModel.isSaving ? null : () => _save(viewModel),
-                      icon: viewModel.isSaving
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.save_outlined),
+                      onPressed:
+                          viewModel.isSaving ? null : () => _save(viewModel),
+                      icon:
+                          viewModel.isSaving
+                              ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                              : const Icon(Icons.save_outlined),
                       label: Text(
-                        viewModel.isSaving ? 'Salvando...' : 'Salvar configuracoes',
+                        viewModel.isSaving
+                            ? 'Salvando...'
+                            : 'Salvar configuracoes',
                       ),
                     ),
                   ),
@@ -426,9 +440,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
           ],
         ),
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: AppColors.accentBlue.withValues(alpha: 0.22),
-        ),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.22)),
         boxShadow: AppColors.glowShadows(AppColors.accentBlue),
       ),
       child: Row(
@@ -439,7 +451,10 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.accentBlue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
@@ -461,17 +476,17 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                 Text(
                   'Ajuste o comportamento do Granith como produto, nao so como tela.',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   'Aqui entram as decisoes que mudam a percepcao do ERP: identidade do workspace, transparencia do portal do cliente, densidade da interface e linguagem do painel executivo.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
-                        height: 1.55,
-                      ),
+                    color: AppColors.textSecondary,
+                    height: 1.55,
+                  ),
                 ),
                 if (viewModel.errorMessage != null) ...[
                   const SizedBox(height: 14),
@@ -502,17 +517,19 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
         _SettingsPostureTile(
           title: 'Portal do cliente',
           value: settings.clientPortalShowBudgets ? 'Expandido' : 'Essencial',
-          subtitle: settings.clientPortalShowCurrentCosts
-              ? 'transparencia operacional aberta'
-              : 'custos preservados no ERP',
+          subtitle:
+              settings.clientPortalShowCurrentCosts
+                  ? 'transparencia operacional aberta'
+                  : 'custos preservados no ERP',
           accent: AppColors.accentGold,
         ),
         _SettingsPostureTile(
           title: 'Experiencia',
           value: settings.compactNavigation ? 'Compacta' : 'Panoramica',
-          subtitle: settings.aiAssistantPreviewEnabled
-              ? 'preview de IA habilitado'
-              : 'IA visual oculta',
+          subtitle:
+              settings.aiAssistantPreviewEnabled
+                  ? 'preview de IA habilitado'
+                  : 'IA visual oculta',
           accent: AppColors.auraCyan,
         ),
       ],
@@ -550,17 +567,17 @@ class _ConfigSectionCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
+              color: AppColors.textSecondary,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 18),
           child,
@@ -632,10 +649,7 @@ class _SettingsHintChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _SettingsHintChip({
-    required this.icon,
-    required this.label,
-  });
+  const _SettingsHintChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {

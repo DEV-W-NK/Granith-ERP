@@ -3,7 +3,7 @@ import 'package:project_granith/models/system_settings_model.dart';
 import 'package:project_granith/services/system_settings_service.dart';
 
 class SystemSettingsViewModel extends ChangeNotifier {
-  final SystemSettingsService _service = SystemSettingsService();
+  final SystemSettingsService _service;
 
   SystemSettings _settings = const SystemSettings();
   bool _isLoading = true;
@@ -15,8 +15,13 @@ class SystemSettingsViewModel extends ChangeNotifier {
   bool get isSaving => _isSaving;
   String? get errorMessage => _errorMessage;
 
-  SystemSettingsViewModel() {
-    loadSettings();
+  SystemSettingsViewModel({
+    SystemSettingsService? service,
+    bool bootstrapOnInit = true,
+  }) : _service = service ?? SystemSettingsService() {
+    if (bootstrapOnInit) {
+      loadSettings();
+    }
   }
 
   Future<void> loadSettings() async {

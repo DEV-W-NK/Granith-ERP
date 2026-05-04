@@ -12,25 +12,34 @@ class TeamService {
         .from(_employees)
         .stream(primaryKey: ['id'])
         .order('name')
-        .map((rows) => rows
-            .map((row) => EmployeeModel.fromMap(
-                  Map<String, dynamic>.from(row),
-                  row['id'] as String,
-                ))
-            .toList());
+        .map(
+          (rows) =>
+              rows
+                  .map(
+                    (row) => EmployeeModel.fromMap(
+                      Map<String, dynamic>.from(row),
+                      row['id'] as String,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<String> saveEmployee(EmployeeModel employee) async {
     final data = DbValue.normalizeMap(employee.toMap());
     if (employee.id.isEmpty) {
-      final response = await AppSupabase.client
-          .from(_employees)
-          .insert(data)
-          .select('id')
-          .single();
+      final response =
+          await AppSupabase.client
+              .from(_employees)
+              .insert(data)
+              .select('id')
+              .single();
       return response['id'] as String;
     } else {
-      await AppSupabase.client.from(_employees).update(data).eq('id', employee.id);
+      await AppSupabase.client
+          .from(_employees)
+          .update(data)
+          .eq('id', employee.id);
       return employee.id;
     }
   }
@@ -48,18 +57,24 @@ class TeamService {
       final members = List<String>.from(team['memberIds'] ?? []);
       members.remove(id);
 
-      await AppSupabase.client.from(_teams).update({
-        'memberIds': members,
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', team['id']);
+      await AppSupabase.client
+          .from(_teams)
+          .update({
+            'memberIds': members,
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', team['id']);
     }
   }
 
   Future<void> dismissEmployee(String id) async {
-    await AppSupabase.client.from(_employees).update({
-      'status': 'desligado',
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', id);
+    await AppSupabase.client
+        .from(_employees)
+        .update({
+          'status': 'desligado',
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', id);
 
     final teamsWithMember = await AppSupabase.client
         .from(_teams)
@@ -70,11 +85,14 @@ class TeamService {
       final team = Map<String, dynamic>.from(row as Map);
       final members = List<String>.from(team['memberIds'] ?? [])..remove(id);
 
-      await AppSupabase.client.from(_teams).update({
-        'memberIds': members,
-        'leaderId': team['leaderId'] == id ? null : team['leaderId'],
-        'updatedAt': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', team['id']);
+      await AppSupabase.client
+          .from(_teams)
+          .update({
+            'memberIds': members,
+            'leaderId': team['leaderId'] == id ? null : team['leaderId'],
+            'updatedAt': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', team['id']);
     }
   }
 
@@ -84,70 +102,92 @@ class TeamService {
         .stream(primaryKey: ['id'])
         .eq('isActive', true)
         .order('name')
-        .map((rows) => rows
-            .map((row) => TeamModel.fromMap(
-                  Map<String, dynamic>.from(row),
-                  row['id'] as String,
-                ))
-            .toList());
+        .map(
+          (rows) =>
+              rows
+                  .map(
+                    (row) => TeamModel.fromMap(
+                      Map<String, dynamic>.from(row),
+                      row['id'] as String,
+                    ),
+                  )
+                  .toList(),
+        );
   }
 
   Future<String> createTeam(TeamModel team) async {
-    final response = await AppSupabase.client
-        .from(_teams)
-        .insert(DbValue.normalizeMap(team.toMap()))
-        .select('id')
-        .single();
+    final response =
+        await AppSupabase.client
+            .from(_teams)
+            .insert(DbValue.normalizeMap(team.toMap()))
+            .select('id')
+            .single();
     return response['id'] as String;
   }
 
   Future<void> updateTeam(TeamModel team) async {
-    await AppSupabase.client.from(_teams).update({
-      ...DbValue.normalizeMap(team.toMap()),
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', team.id);
+    await AppSupabase.client
+        .from(_teams)
+        .update({
+          ...DbValue.normalizeMap(team.toMap()),
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', team.id);
   }
 
   Future<void> deleteTeam(String teamId) async {
-    await AppSupabase.client.from(_teams).update({
-      'isActive': false,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', teamId);
+    await AppSupabase.client
+        .from(_teams)
+        .update({
+          'isActive': false,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', teamId);
   }
 
   Future<void> addMemberToTeam(String teamId, String employeeId) async {
     final team = await getTeamById(teamId);
     if (team == null) return;
     final members = <String>{...team.memberIds, employeeId}.toList();
-    await AppSupabase.client.from(_teams).update({
-      'memberIds': members,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', teamId);
+    await AppSupabase.client
+        .from(_teams)
+        .update({
+          'memberIds': members,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', teamId);
   }
 
   Future<void> removeMemberFromTeam(String teamId, String employeeId) async {
     final team = await getTeamById(teamId);
     if (team == null) return;
     final members = <String>[...team.memberIds]..remove(employeeId);
-    await AppSupabase.client.from(_teams).update({
-      'memberIds': members,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', teamId);
+    await AppSupabase.client
+        .from(_teams)
+        .update({
+          'memberIds': members,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', teamId);
   }
 
   Future<void> setTeamLeader(String teamId, String? employeeId) async {
-    await AppSupabase.client.from(_teams).update({
-      'leaderId': employeeId,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
-    }).eq('id', teamId);
+    await AppSupabase.client
+        .from(_teams)
+        .update({
+          'leaderId': employeeId,
+          'updatedAt': DateTime.now().toUtc().toIso8601String(),
+        })
+        .eq('id', teamId);
   }
 
   Future<TeamModel?> getTeamById(String teamId) async {
-    final row = await AppSupabase.client
-        .from(_teams)
-        .select()
-        .eq('id', teamId)
-        .maybeSingle();
+    final row =
+        await AppSupabase.client
+            .from(_teams)
+            .select()
+            .eq('id', teamId)
+            .maybeSingle();
     if (row == null) return null;
     return TeamModel.fromMap(Map<String, dynamic>.from(row), teamId);
   }

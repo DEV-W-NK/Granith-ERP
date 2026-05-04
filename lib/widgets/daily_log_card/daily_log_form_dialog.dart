@@ -18,7 +18,8 @@ class PageKeepAlive extends StatefulWidget {
   State<PageKeepAlive> createState() => _PageKeepAliveState();
 }
 
-class _PageKeepAliveState extends State<PageKeepAlive> with AutomaticKeepAliveClientMixin {
+class _PageKeepAliveState extends State<PageKeepAlive>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
   @override
@@ -37,7 +38,8 @@ class DailyLogFormDialog extends StatefulWidget {
   State<DailyLogFormDialog> createState() => _DailyLogFormDialogState();
 }
 
-class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProviderStateMixin {
+class _DailyLogFormDialogState extends State<DailyLogFormDialog>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _pageController = PageController();
   final ImagePicker _picker = ImagePicker();
@@ -53,15 +55,16 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
   String _selectedProjectName = '';
   WeatherCondition _weatherMorning = WeatherCondition.sol;
   WeatherCondition _weatherAfternoon = WeatherCondition.sol;
-  
+
   // Fotos
   List<String> _existingPhotoUrls = [];
   List<XFile> _newPhotos = [];
 
   // Controle de Interface
   int _currentPage = 0;
-  bool _isSaving = false; // Controle local de loading para evitar conflito com provider
-  
+  bool _isSaving =
+      false; // Controle local de loading para evitar conflito com provider
+
   // Animação de Entrada
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
@@ -71,7 +74,7 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
     super.initState();
     _initializeData();
     _initializeAnimations();
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProjectsController>().loadProjects();
     });
@@ -86,7 +89,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
       _weatherAfternoon = widget.log!.weatherAfternoon;
       _activitiesController.text = widget.log!.activitiesDescription;
       _impedimentsController.text = widget.log!.impediments;
-      _manpowerController.text = widget.log!.manpower.values.fold(0, (sum, val) => sum + val).toString();
+      _manpowerController.text =
+          widget.log!.manpower.values
+              .fold(0, (sum, val) => sum + val)
+              .toString();
       _existingPhotoUrls = List.from(widget.log!.photoUrls);
     } else {
       _selectedDate = DateTime.now();
@@ -146,13 +152,16 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
 
   Future<void> _saveLog() async {
     if (!_formKey.currentState!.validate() || _selectedProjectId == null) {
-        // Se estiver na primeira página e falhar validação, avisa
-        if (_currentPage == 0 && _selectedProjectId == null) {
-             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Selecione um projeto para continuar.'), backgroundColor: AppColors.accentRed),
-             );
-        }
-        return;
+      // Se estiver na primeira página e falhar validação, avisa
+      if (_currentPage == 0 && _selectedProjectId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Selecione um projeto para continuar.'),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
+      return;
     }
 
     setState(() => _isSaving = true);
@@ -168,12 +177,15 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
         manpower: {'Geral': int.tryParse(_manpowerController.text) ?? 0},
         activitiesDescription: _activitiesController.text,
         impediments: _impedimentsController.text,
-        photoUrls: _existingPhotoUrls, // Envia as URLs que restaram (caso tenha deletado alguma)
+        photoUrls:
+            _existingPhotoUrls, // Envia as URLs que restaram (caso tenha deletado alguma)
         createdByUserId: '', // Será preenchido pelo controller/backend
         status: LogStatus.finalized,
       );
 
-      final success = await context.read<DailyLogController>().saveLogWithPhotos(newLog, _newPhotos);
+      final success = await context
+          .read<DailyLogController>()
+          .saveLogWithPhotos(newLog, _newPhotos);
 
       if (success && mounted) {
         Navigator.pop(context);
@@ -186,11 +198,14 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
         );
       }
     } catch (e) {
-       if(mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erro ao salvar: $e'), backgroundColor: AppColors.accentRed),
-          );
-       }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar: $e'),
+            backgroundColor: AppColors.accentRed,
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -239,7 +254,8 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
               _buildEnhancedHeader(),
               _buildProgressIndicator(),
               Expanded(
-                child: Form( // Form envolve o PageView para validar tudo
+                child: Form(
+                  // Form envolve o PageView para validar tudo
                   key: _formKey,
                   child: _buildPageView(),
                 ),
@@ -353,11 +369,20 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: isActive ? AppColors.accentGold : AppColors.textMuted.withOpacity(0.2),
+              color:
+                  isActive
+                      ? AppColors.accentGold
+                      : AppColors.textMuted.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
-              boxShadow: isCurrent
-                  ? [BoxShadow(color: AppColors.accentGold.withOpacity(0.3), blurRadius: 8)]
-                  : null,
+              boxShadow:
+                  isCurrent
+                      ? [
+                        BoxShadow(
+                          color: AppColors.accentGold.withOpacity(0.3),
+                          blurRadius: 8,
+                        ),
+                      ]
+                      : null,
             ),
             child: Icon(
               icon,
@@ -386,7 +411,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
         height: 2,
         margin: const EdgeInsets.only(bottom: 20),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.accentGold : AppColors.textMuted.withOpacity(0.2),
+          color:
+              isActive
+                  ? AppColors.accentGold
+                  : AppColors.textMuted.withOpacity(0.2),
           borderRadius: BorderRadius.circular(1),
         ),
       ),
@@ -396,7 +424,8 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
   Widget _buildPageView() {
     return PageView(
       controller: _pageController,
-      physics: const NeverScrollableScrollPhysics(), // Navegação apenas pelos botões
+      physics:
+          const NeverScrollableScrollPhysics(), // Navegação apenas pelos botões
       onPageChanged: (page) => setState(() => _currentPage = page),
       children: [
         PageKeepAlive(child: _buildGeneralPage()),
@@ -414,91 +443,117 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           _buildSectionTitle('Informações Principais', Icons.dashboard_outlined),
-           const SizedBox(height: 24),
-           
-           // Dropdown de Projetos
-           Consumer<ProjectsController>(
-             builder: (context, controller, _) {
-                if (controller.isLoading) {
-                   return const Center(child: CircularProgressIndicator(color: AppColors.accentGold));
-                }
-                return _buildEnhancedDropdown<String>(
-                  label: 'Projeto',
-                  value: _selectedProjectId,
-                  hint: 'Selecione o projeto',
-                  icon: Icons.business,
-                  items: controller.projects.map((p) => DropdownMenuItem(
-                    value: p.id,
-                    child: Text(p.name),
-                    onTap: () => _selectedProjectName = p.name,
-                  )).toList(),
-                  onChanged: widget.log == null 
-                    ? (val) => setState(() => _selectedProjectId = val)
-                    : null, // Desabilita edição de projeto se for edição de log
+          _buildSectionTitle(
+            'Informações Principais',
+            Icons.dashboard_outlined,
+          ),
+          const SizedBox(height: 24),
+
+          // Dropdown de Projetos
+          Consumer<ProjectsController>(
+            builder: (context, controller, _) {
+              if (controller.isLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.accentGold),
                 );
-             },
-           ),
-           const SizedBox(height: 20),
+              }
+              return _buildEnhancedDropdown<String>(
+                label: 'Projeto',
+                value: _selectedProjectId,
+                hint: 'Selecione o projeto',
+                icon: Icons.business,
+                items:
+                    controller.projects
+                        .map(
+                          (p) => DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.name),
+                            onTap: () => _selectedProjectName = p.name,
+                          ),
+                        )
+                        .toList(),
+                onChanged:
+                    widget.log == null
+                        ? (val) => setState(() => _selectedProjectId = val)
+                        : null, // Desabilita edição de projeto se for edição de log
+              );
+            },
+          ),
+          const SizedBox(height: 20),
 
-           // Data
-           _buildEnhancedDateField(
-             label: 'Data do Registro',
-             date: _selectedDate,
-             icon: Icons.calendar_today,
-             onTap: () async {
-               final date = await showDatePicker(
-                 context: context,
-                 initialDate: _selectedDate,
-                 firstDate: DateTime(2020),
-                 lastDate: DateTime(2030),
-                 builder: (context, child) => Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.dark(
-                        primary: AppColors.accentGold,
-                        surface: AppColors.surfaceDark,
+          // Data
+          _buildEnhancedDateField(
+            label: 'Data do Registro',
+            date: _selectedDate,
+            icon: Icons.calendar_today,
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: _selectedDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+                builder:
+                    (context, child) => Theme(
+                      data: Theme.of(context).copyWith(
+                        colorScheme: const ColorScheme.dark(
+                          primary: AppColors.accentGold,
+                          surface: AppColors.surfaceDark,
+                        ),
                       ),
+                      child: child!,
                     ),
-                    child: child!,
-                 ),
-               );
-               if (date != null) setState(() => _selectedDate = date);
-             },
-           ),
-           const SizedBox(height: 20),
+              );
+              if (date != null) setState(() => _selectedDate = date);
+            },
+          ),
+          const SizedBox(height: 20),
 
-           // Clima
-           _buildSectionTitle('Condições Climáticas', Icons.wb_sunny_outlined, fontSize: 16),
-           const SizedBox(height: 16),
-           Row(
-             children: [
-               Expanded(
-                 child: _buildEnhancedDropdown<WeatherCondition>(
-                   label: 'Manhã',
-                   value: _weatherMorning,
-                   icon: Icons.wb_twilight,
-                   items: WeatherCondition.values.map((w) => DropdownMenuItem(
-                     value: w,
-                     child: Text(w.name), // Idealmente use um helper para traduzir
-                   )).toList(),
-                   onChanged: (v) => setState(() => _weatherMorning = v!),
-                 ),
-               ),
-               const SizedBox(width: 16),
-               Expanded(
-                 child: _buildEnhancedDropdown<WeatherCondition>(
-                   label: 'Tarde',
-                   value: _weatherAfternoon,
-                   icon: Icons.wb_sunny,
-                   items: WeatherCondition.values.map((w) => DropdownMenuItem(
-                     value: w,
-                     child: Text(w.name),
-                   )).toList(),
-                   onChanged: (v) => setState(() => _weatherAfternoon = v!),
-                 ),
-               ),
-             ],
-           ),
+          // Clima
+          _buildSectionTitle(
+            'Condições Climáticas',
+            Icons.wb_sunny_outlined,
+            fontSize: 16,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildEnhancedDropdown<WeatherCondition>(
+                  label: 'Manhã',
+                  value: _weatherMorning,
+                  icon: Icons.wb_twilight,
+                  items:
+                      WeatherCondition.values
+                          .map(
+                            (w) => DropdownMenuItem(
+                              value: w,
+                              child: Text(
+                                w.name,
+                              ), // Idealmente use um helper para traduzir
+                            ),
+                          )
+                          .toList(),
+                  onChanged: (v) => setState(() => _weatherMorning = v!),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildEnhancedDropdown<WeatherCondition>(
+                  label: 'Tarde',
+                  value: _weatherAfternoon,
+                  icon: Icons.wb_sunny,
+                  items:
+                      WeatherCondition.values
+                          .map(
+                            (w) =>
+                                DropdownMenuItem(value: w, child: Text(w.name)),
+                          )
+                          .toList(),
+                  onChanged: (v) => setState(() => _weatherAfternoon = v!),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -560,7 +615,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildSectionTitle('Galeria de Fotos', Icons.photo_library_outlined),
+              _buildSectionTitle(
+                'Galeria de Fotos',
+                Icons.photo_library_outlined,
+              ),
               ElevatedButton.icon(
                 onPressed: _pickImages,
                 icon: const Icon(Icons.add_a_photo, size: 18),
@@ -569,56 +627,79 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
                   backgroundColor: AppColors.accentGold.withOpacity(0.1),
                   foregroundColor: AppColors.accentGold,
                   elevation: 0,
-                  side: BorderSide(color: AppColors.accentGold.withOpacity(0.5)),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  side: BorderSide(
+                    color: AppColors.accentGold.withOpacity(0.5),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
           ),
         ),
         Expanded(
-          child: (_existingPhotoUrls.isEmpty && _newPhotos.isEmpty)
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.image_not_supported_outlined, size: 64, color: AppColors.textMuted.withOpacity(0.5)),
-                      const SizedBox(height: 16),
-                      Text('Nenhuma foto adicionada', style: TextStyle(color: AppColors.textMuted.withOpacity(0.7))),
-                    ],
+          child:
+              (_existingPhotoUrls.isEmpty && _newPhotos.isEmpty)
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.image_not_supported_outlined,
+                          size: 64,
+                          color: AppColors.textMuted.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nenhuma foto adicionada',
+                          style: TextStyle(
+                            color: AppColors.textMuted.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                  : GridView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 10,
+                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 1,
+                        ),
+                    itemCount: _existingPhotoUrls.length + _newPhotos.length,
+                    itemBuilder: (context, index) {
+                      if (index < _existingPhotoUrls.length) {
+                        // Foto Existente
+                        return _buildPhotoTile(
+                          imageProvider: NetworkImage(
+                            _existingPhotoUrls[index],
+                          ),
+                          onDelete: () => _removeExistingPhoto(index),
+                          isNetwork: true,
+                        );
+                      } else {
+                        // Nova Foto
+                        final newIndex = index - _existingPhotoUrls.length;
+                        final file = _newPhotos[newIndex];
+                        return _buildPhotoTile(
+                          imageProvider:
+                              kIsWeb
+                                  ? NetworkImage(
+                                    file.path,
+                                  ) // Em web XFile path funciona como URL blob
+                                  : FileImage(File(file.path)) as ImageProvider,
+                          onDelete: () => _removeNewPhoto(newIndex),
+                          isNetwork: false,
+                        );
+                      }
+                    },
                   ),
-                )
-              : GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 10),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1,
-                  ),
-                  itemCount: _existingPhotoUrls.length + _newPhotos.length,
-                  itemBuilder: (context, index) {
-                    if (index < _existingPhotoUrls.length) {
-                      // Foto Existente
-                      return _buildPhotoTile(
-                        imageProvider: NetworkImage(_existingPhotoUrls[index]),
-                        onDelete: () => _removeExistingPhoto(index),
-                        isNetwork: true,
-                      );
-                    } else {
-                      // Nova Foto
-                      final newIndex = index - _existingPhotoUrls.length;
-                      final file = _newPhotos[newIndex];
-                      return _buildPhotoTile(
-                        imageProvider: kIsWeb 
-                             ? NetworkImage(file.path) // Em web XFile path funciona como URL blob
-                             : FileImage(File(file.path)) as ImageProvider,
-                        onDelete: () => _removeNewPhoto(newIndex),
-                        isNetwork: false,
-                      );
-                    }
-                  },
-                ),
         ),
       ],
     );
@@ -626,7 +707,11 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
 
   // --- Widgets Auxiliares "Enhanced" ---
 
-  Widget _buildSectionTitle(String title, IconData icon, {double fontSize = 18}) {
+  Widget _buildSectionTitle(
+    String title,
+    IconData icon, {
+    double fontSize = 18,
+  }) {
     return Row(
       children: [
         Icon(icon, color: AppColors.accentGold, size: fontSize + 2),
@@ -658,8 +743,20 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
         RichText(
           text: TextSpan(
             text: label,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600),
-            children: required ? [const TextSpan(text: ' *', style: TextStyle(color: AppColors.accentRed))] : null,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            children:
+                required
+                    ? [
+                      const TextSpan(
+                        text: ' *',
+                        style: TextStyle(color: AppColors.accentRed),
+                      ),
+                    ]
+                    : null,
           ),
         ),
         const SizedBox(height: 8),
@@ -668,26 +765,49 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
           maxLines: maxLines,
           keyboardType: keyboardType,
           style: const TextStyle(color: AppColors.textPrimary),
-          validator: required ? (v) => v == null || v.isEmpty ? 'Campo obrigatório' : null : null,
+          validator:
+              required
+                  ? (v) => v == null || v.isEmpty ? 'Campo obrigatório' : null
+                  : null,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.7)),
             prefixIcon: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 8, bottom: 2), // Ajuste para alinhar ícone no topo se multiline
-              child: Icon(icon, color: AppColors.accentGold.withOpacity(0.7), size: 20),
+              padding: const EdgeInsets.only(
+                left: 12,
+                right: 8,
+                bottom: 2,
+              ), // Ajuste para alinhar ícone no topo se multiline
+              child: Icon(
+                icon,
+                color: AppColors.accentGold.withOpacity(0.7),
+                size: 20,
+              ),
             ),
             // Alinhamento do ícone para campos multiline
-            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            prefixIconConstraints: const BoxConstraints(
+              minWidth: 40,
+              minHeight: 40,
+            ),
             filled: true,
             fillColor: AppColors.secondaryDark.withOpacity(0.5),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentGold, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.accentGold,
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentRed, width: 1),
+              borderSide: const BorderSide(
+                color: AppColors.accentRed,
+                width: 1,
+              ),
             ),
             contentPadding: const EdgeInsets.all(16),
           ),
@@ -707,7 +827,14 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
         DropdownButtonFormField<T>(
           value: value,
@@ -717,15 +844,28 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            prefixIcon: Icon(icon, color: AppColors.accentGold.withOpacity(0.7), size: 20),
+            prefixIcon: Icon(
+              icon,
+              color: AppColors.accentGold.withOpacity(0.7),
+              size: 20,
+            ),
             filled: true,
             fillColor: AppColors.secondaryDark.withOpacity(0.5),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentGold, width: 1.5),
+              borderSide: const BorderSide(
+                color: AppColors.accentGold,
+                width: 1.5,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
       ],
@@ -741,7 +881,14 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600)),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         const SizedBox(height: 8),
         Material(
           color: AppColors.secondaryDark.withOpacity(0.5),
@@ -757,11 +904,18 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
               ),
               child: Row(
                 children: [
-                  Icon(icon, color: AppColors.accentGold.withOpacity(0.7), size: 20),
+                  Icon(
+                    icon,
+                    color: AppColors.accentGold.withOpacity(0.7),
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     DateFormat('dd/MM/yyyy').format(date),
-                    style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                    ),
                   ),
                 ],
               ),
@@ -772,7 +926,11 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
     );
   }
 
-  Widget _buildPhotoTile({required ImageProvider imageProvider, required VoidCallback onDelete, required bool isNetwork}) {
+  Widget _buildPhotoTile({
+    required ImageProvider imageProvider,
+    required VoidCallback onDelete,
+    required bool isNetwork,
+  }) {
     return Stack(
       children: [
         Container(
@@ -807,7 +965,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: AppColors.primaryDark,
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+        ),
         boxShadow: [
           BoxShadow(
             color: AppColors.primaryDark.withOpacity(0.5),
@@ -821,51 +982,83 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog> with TickerProv
         children: [
           if (_currentPage > 0)
             TextButton.icon(
-              onPressed: () => _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut),
+              onPressed:
+                  () => _pageController.previousPage(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                  ),
               icon: const Icon(Icons.arrow_back_rounded),
               label: const Text('Anterior'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+              ),
             )
           else
             TextButton(
-               onPressed: () => Navigator.pop(context),
-               style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
-               child: const Text('Cancelar'),
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(foregroundColor: AppColors.textMuted),
+              child: const Text('Cancelar'),
             ),
 
           if (_currentPage < 2)
             ElevatedButton.icon(
               onPressed: () {
-                 if (_currentPage == 0) {
-                     // Validação básica da página 1 antes de avançar
-                     if(_selectedProjectId == null) {
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecione um projeto'), backgroundColor: AppColors.accentRed));
-                         return;
-                     }
-                 }
-                 _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+                if (_currentPage == 0) {
+                  // Validação básica da página 1 antes de avançar
+                  if (_selectedProjectId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Selecione um projeto'),
+                        backgroundColor: AppColors.accentRed,
+                      ),
+                    );
+                    return;
+                  }
+                }
+                _pageController.nextPage(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                );
               },
               icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Próximo'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accentGold,
                 foregroundColor: AppColors.primaryDark,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             )
           else
             ElevatedButton.icon(
               onPressed: _isSaving ? null : _saveLog,
-              icon: _isSaving 
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryDark))
-                  : const Icon(Icons.check_circle_outlined),
+              icon:
+                  _isSaving
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primaryDark,
+                        ),
+                      )
+                      : const Icon(Icons.check_circle_outlined),
               label: Text(_isSaving ? 'Salvando...' : 'Finalizar Diário'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accentGold,
                 foregroundColor: AppColors.primaryDark,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
         ],

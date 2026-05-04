@@ -13,7 +13,8 @@ class DailyLogsPageView extends StatelessWidget {
   Widget build(BuildContext context) {
     // Injetamos o ViewModel que servirá esta View
     return ChangeNotifierProvider(
-      create: (context) => DailyLogsViewModel(context.read<DailyLogController>()),
+      create:
+          (context) => DailyLogsViewModel(context.read<DailyLogController>()),
       child: const _DailyLogsPageContent(),
     );
   }
@@ -48,28 +49,34 @@ class _DailyLogsPageContent extends StatelessWidget {
             ],
             const SizedBox(height: 32),
             Expanded(
-              child: viewModel.isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.accentGold))
-                  : viewModel.logs.isEmpty
+              child:
+                  viewModel.isLoading
+                      ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accentGold,
+                        ),
+                      )
+                      : viewModel.logs.isEmpty
                       ? const _DailyLogsEmptyState()
                       : ListView.separated(
-                          itemCount: viewModel.logs.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 16),
-                          itemBuilder: (context, index) {
-                            return DailyLogCard(log: viewModel.logs[index]);
-                          },
-                        ),
+                        itemCount: viewModel.logs.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        itemBuilder: (context, index) {
+                          return DailyLogCard(log: viewModel.logs[index]);
+                        },
+                      ),
             ),
           ],
         ),
       ),
-      floatingActionButton: !isDesktop
-          ? FloatingActionButton(
-              onPressed: () => _openForm(context),
-              backgroundColor: AppColors.accentGold,
-              child: const Icon(Icons.add, color: AppColors.primaryDark),
-            )
-          : null,
+      floatingActionButton:
+          !isDesktop
+              ? FloatingActionButton(
+                onPressed: () => _openForm(context),
+                backgroundColor: AppColors.accentGold,
+                child: const Icon(Icons.add, color: AppColors.primaryDark),
+              )
+              : null,
     );
   }
 }
@@ -90,12 +97,19 @@ class _DailyLogsHeader extends StatelessWidget {
             children: [
               const Text(
                 'Diário de Obras',
-                style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Registro diário de atividades e progresso',
-                style: TextStyle(color: AppColors.textMuted, fontSize: isDesktop ? 16 : 14),
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: isDesktop ? 16 : 14,
+                ),
               ),
             ],
           ),
@@ -106,16 +120,28 @@ class _DailyLogsHeader extends StatelessWidget {
               const _AiInsightsButton(),
               const SizedBox(width: 16),
               ElevatedButton.icon(
-                onPressed: () => showDialog(context: context, builder: (_) => const DailyLogFormDialog()),
+                onPressed:
+                    () => showDialog(
+                      context: context,
+                      builder: (_) => const DailyLogFormDialog(),
+                    ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentGold,
                   foregroundColor: AppColors.primaryDark,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 20,
+                  ),
                   elevation: 4,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 icon: const Icon(Icons.add_rounded, size: 22),
-                label: const Text('Novo Registro', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                label: const Text(
+                  'Novo Registro',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
               ),
             ],
           ),
@@ -145,7 +171,8 @@ class _AiInsightsButton extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF673AB7).withOpacity(0.4),
-            blurRadius: 12, offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -153,9 +180,9 @@ class _AiInsightsButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(viewModel.getAiInsight())),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(viewModel.getAiInsight())));
           },
           borderRadius: BorderRadius.circular(12),
           child: const Padding(
@@ -168,7 +195,11 @@ class _AiInsightsButton extends StatelessWidget {
                 SizedBox(width: 8),
                 Text(
                   'Insights IA',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -188,11 +219,21 @@ class _DailyLogsEmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.menu_book_rounded, size: 64, color: AppColors.textMuted.withOpacity(0.5)),
+          Icon(
+            Icons.menu_book_rounded,
+            size: 64,
+            color: AppColors.textMuted.withOpacity(0.5),
+          ),
           const SizedBox(height: 16),
-          const Text('Nenhum diário registrado', style: TextStyle(color: AppColors.textMuted, fontSize: 18)),
+          const Text(
+            'Nenhum diário registrado',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 18),
+          ),
           const SizedBox(height: 8),
-          const Text('Registre o progresso das obras hoje para gerar histórico.', style: TextStyle(color: AppColors.textSecondary)),
+          const Text(
+            'Registre o progresso das obras hoje para gerar histórico.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ],
       ),
     );

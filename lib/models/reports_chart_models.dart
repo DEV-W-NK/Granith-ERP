@@ -1,5 +1,5 @@
 class MonthlyChartData {
-  final String label;   // "Jan", "Fev"...
+  final String label; // "Jan", "Fev"...
   final double income;
   final double expense;
   double get profit => income - expense;

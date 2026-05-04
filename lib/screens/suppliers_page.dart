@@ -6,6 +6,6 @@ class SuppliersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return  SuppliersPageView();
+    return SuppliersPageView();
   }
 }
