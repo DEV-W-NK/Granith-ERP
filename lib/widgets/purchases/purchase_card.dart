@@ -48,34 +48,48 @@ class PurchaseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    p.itemName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 420;
+                final title = Text(
+                  p.itemName,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
-                ),
-                _StatusBadge(status: p.status),
-              ],
+                  maxLines: compact ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                );
+                final status = _StatusBadge(status: p.status);
+
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [title, const SizedBox(height: 8), status],
+                  );
+                }
+
+                return Row(
+                  children: [
+                    Expanded(child: title),
+                    const SizedBox(width: 10),
+                    status,
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 10,
-              runSpacing: 4,
+              runSpacing: 6,
               children: [
                 _Meta(icon: Icons.store_outlined, label: p.supplierName),
                 _Meta(icon: Icons.folder_outlined, label: p.projectName),
                 _Meta(
                   icon: Icons.numbers_outlined,
                   label:
-                      'Qty: ${p.quantity.toStringAsFixed(p.quantity % 1 == 0 ? 0 : 1)}',
+                      'Qtd: ${p.quantity.toStringAsFixed(p.quantity % 1 == 0 ? 0 : 1)}',
                 ),
                 _Meta(
                   icon: Icons.calendar_today_outlined,
@@ -122,8 +136,11 @@ class PurchaseCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
                   currency.format(p.totalValue),
@@ -186,15 +203,15 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
       children: [
         _pill(
           'Recusar',
           Colors.redAccent,
           onTap: () => _showRejectDialog(context),
         ),
-        const SizedBox(width: 8),
         _pill(
           'Aprovar compra',
           Colors.purpleAccent,
@@ -700,7 +717,15 @@ class _Meta extends StatelessWidget {
       children: [
         Icon(icon, size: 12, color: c),
         const SizedBox(width: 4),
-        Text(label, style: TextStyle(color: c, fontSize: 12)),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: c, fontSize: 12),
+          ),
+        ),
       ],
     );
   }

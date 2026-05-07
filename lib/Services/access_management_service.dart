@@ -1,5 +1,6 @@
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/user_model.dart';
 
 class AccessManagementService {
@@ -8,7 +9,7 @@ class AccessManagementService {
   Future<List<UserModel>> getUsers() async {
     final response = await AppSupabase.client
         .from(_table)
-        .select()
+        .select(SupabaseSelects.userProfile)
         .order('displayName', ascending: true);
 
     return (response as List).map((row) {

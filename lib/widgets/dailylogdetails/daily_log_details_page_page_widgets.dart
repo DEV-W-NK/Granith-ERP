@@ -5,6 +5,7 @@ import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/widgets/daily_log_card/daily_log_card.dart';
 import 'package:project_granith/widgets/daily_log_card/daily_log_form_dialog.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class DailyLogsPageView extends StatelessWidget {
   const DailyLogsPageView({super.key});
@@ -32,13 +33,14 @@ class _DailyLogsPageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > 768;
     final viewModel = context.watch<DailyLogsViewModel>();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: Padding(
-        padding: EdgeInsets.all(isDesktop ? 32 : 16),
+        padding: ResponsiveLayout.pagePadding(width),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -47,7 +49,7 @@ class _DailyLogsPageContent extends StatelessWidget {
               const SizedBox(height: 16),
               const _AiInsightsButton(fullWidth: true),
             ],
-            const SizedBox(height: 32),
+            SizedBox(height: isDesktop ? 32 : 20),
             Expanded(
               child:
                   viewModel.isLoading

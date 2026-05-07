@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/models/system_settings_model.dart';
 import 'package:project_granith/screens/subscription_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/utils/seeder.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
@@ -32,6 +35,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
   bool _clientPortalShowBudgets = true;
   bool _clientPortalShowBudgetValues = true;
   bool _clientPortalShowCurrentCosts = true;
+  bool _isSeeding = false;
 
   String _boundSnapshot = '';
 
@@ -364,6 +368,13 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                       ),
                     ),
                   ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 18),
+                    GranithReveal(
+                      delay: const Duration(milliseconds: 390),
+                      child: _buildDeveloperToolsSection(),
+                    ),
+                  ],
                   const SizedBox(height: 18),
                   GranithReveal(
                     delay: const Duration(milliseconds: 420),
@@ -423,6 +434,121 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
         );
       },
     );
+  }
+
+  Widget _buildDeveloperToolsSection() {
+    return _ConfigSectionCard(
+      title: 'Ferramentas de desenvolvimento',
+      subtitle:
+          'Disponivel apenas em debug para preparar uma base demonstrativa local.',
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          FilledButton.icon(
+            onPressed: _isSeeding ? null : _runSeeder,
+            icon:
+                _isSeeding
+                    ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.cloud_sync_rounded),
+            label: Text(
+              _isSeeding ? 'Executando seeder...' : 'Executar seeder',
+            ),
+          ),
+          const _SettingsHintChip(
+            icon: Icons.bug_report_outlined,
+            label: 'Somente debug',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _runSeeder() async {
+    if (!kDebugMode || _isSeeding) {
+      return;
+    }
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.92),
+            title: const Text(
+              'Executar seeder?',
+              style: TextStyle(color: AppColors.accentBlue),
+            ),
+            content: const Text(
+              'Isso ira criar ou atualizar dados demonstrativos no banco.',
+              style: TextStyle(color: AppColors.textPrimary),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'Executar',
+                  style: TextStyle(
+                    color: AppColors.accentBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm != true || !mounted) {
+      return;
+    }
+
+    setState(() => _isSeeding = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Iniciando seeder... isso pode levar alguns segundos.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    try {
+      final success = await DatabaseSeeder().seed();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Banco populado com sucesso.'
+                : 'Erro ao popular banco. Verifique o console.',
+          ),
+          backgroundColor:
+              success ? AppColors.accentGreen : AppColors.accentRed,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro critico: $error'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSeeding = false);
+      }
+    }
   }
 
   Widget _buildHeader(SystemSettingsViewModel viewModel) {
@@ -602,8 +728,13 @@ class _SettingsPostureTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      constraints: const BoxConstraints(minWidth: 220),
+      constraints:
+          width < ResponsiveLayout.compact
+              ? const BoxConstraints()
+              : const BoxConstraints(minWidth: 220),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.58),
@@ -616,6 +747,8 @@ class _SettingsPostureTile extends StatelessWidget {
         children: [
           Text(
             title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textMuted,
               fontSize: 12,

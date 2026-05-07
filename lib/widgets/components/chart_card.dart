@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'dart:math' as math;
 
 enum ChartType { pie, line }
@@ -21,25 +22,25 @@ class ChartCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < ResponsiveLayout.compact;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(compact ? 16 : 24),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        gradient: AppColors.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.66),
+        ),
+        boxShadow: AppColors.glowShadows(),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -49,16 +50,24 @@ class ChartCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
           const SizedBox(height: 24),
-          SizedBox(
-            height: 200,
-            width: double.infinity,
-            child:
-                chartType == ChartType.pie
-                    ? _buildPieChart(chartData as Map<String, double>)
-                    : _buildLineChart(chartData as List<double>),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final stackedPie =
+                  chartType == ChartType.pie && constraints.maxWidth < 420;
+              return SizedBox(
+                height: stackedPie ? 260 : 200,
+                width: double.infinity,
+                child:
+                    chartType == ChartType.pie
+                        ? _buildPieChart(chartData as Map<String, double>)
+                        : _buildLineChart(chartData as List<double>),
+              );
+            },
           ),
         ],
       ),
@@ -67,60 +76,75 @@ class ChartCard extends StatelessWidget {
 
   Widget _buildPieChart(Map<String, double> data) {
     // CustomPainter para desenhar um Donut Chart
-    return Row(
-      children: [
-        Expanded(flex: 1, child: CustomPaint(painter: _PieChartPainter(data))),
-        const SizedBox(width: 24),
-        Expanded(
-          flex: 1,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children:
-                data.entries.map((entry) {
-                  final color =
-                      _PieChartPainter.colors[data.keys.toList().indexOf(
-                            entry.key,
-                          ) %
-                          _PieChartPainter.colors.length];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            entry.key,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Text(
-                          '${entry.value.toInt()}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 420) {
+          return Column(
+            children: [
+              Expanded(child: CustomPaint(painter: _PieChartPainter(data))),
+              const SizedBox(height: 14),
+              _buildPieLegend(data),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: CustomPaint(painter: _PieChartPainter(data))),
+            const SizedBox(width: 24),
+            Expanded(child: _buildPieLegend(data)),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPieLegend(Map<String, double> data) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children:
+          data.entries.map((entry) {
+            final color =
+                _PieChartPainter.colors[data.keys.toList().indexOf(entry.key) %
+                    _PieChartPainter.colors.length];
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
                     ),
-                  );
-                }).toList(),
-          ),
-        ),
-      ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      entry.key,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${entry.value.toInt()}%',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 
@@ -197,8 +221,8 @@ class _LineChartPainter extends CustomPainter {
         Paint()
           ..shader = LinearGradient(
             colors: [
-              AppColors.accentGold.withOpacity(0.3),
-              AppColors.accentGold.withOpacity(0.0),
+              AppColors.accentGold.withValues(alpha: 0.24),
+              AppColors.accentGold.withValues(alpha: 0.0),
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,

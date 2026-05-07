@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/services/purchase_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/purchases/purchase_card.dart';
 
 class PurchasesPageView extends StatelessWidget {
@@ -32,12 +33,20 @@ class PurchasesPageView extends StatelessWidget {
                       style: TextStyle(color: AppColors.textMuted),
                     ),
                   )
-                  : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: purchases.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      return PurchaseCard(purchase: purchases[index]);
+                  : LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final padding = ResponsiveLayout.pagePadding(width);
+                      final gap = ResponsiveLayout.gap(width);
+
+                      return ListView.separated(
+                        padding: padding,
+                        itemCount: purchases.length,
+                        separatorBuilder: (_, __) => SizedBox(height: gap),
+                        itemBuilder: (context, index) {
+                          return PurchaseCard(purchase: purchases[index]);
+                        },
+                      );
                     },
                   ),
         );

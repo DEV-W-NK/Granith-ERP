@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 // ViewModels e Themes
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 // Widgets específicos da Home
 // Note: Ajustamos os caminhos dos imports para refletir a estrutura do seu projeto
@@ -48,7 +49,8 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 800;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > ResponsiveLayout.compact;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -67,7 +69,7 @@ class _HomePageState extends State<HomePage>
               backgroundColor: AppColors.surfaceDark,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.all(isDesktop ? 28 : 16),
+                padding: ResponsiveLayout.pagePadding(width),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -6,6 +6,7 @@ import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/controllers/subscription_controller.dart';
 import 'package:project_granith/models/usage_stats_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
 
 class SubscriptionDashboard extends StatefulWidget {
@@ -484,8 +485,10 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      width: 250,
+      width: width < ResponsiveLayout.compact ? double.infinity : 250,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: AppColors.cardGradient,
@@ -539,11 +542,15 @@ class _InfoPill extends StatelessWidget {
         children: [
           Icon(icon, size: 15, color: AppColors.textSecondary),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/models/reports_chart_models.dart';
 import 'package:project_granith/services/financial_service.dart';
@@ -281,7 +282,7 @@ class ReportsController extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> _buildInventoryPosition() async {
     final response = await AppSupabase.client
         .from('inventory')
-        .select()
+        .select(SupabaseSelects.inventoryReport)
         .order('name');
 
     return (response as List).map((row) {
@@ -300,7 +301,9 @@ class ReportsController extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> _buildDailyLogSummary() async {
-    dynamic query = AppSupabase.client.from('daily_logs').select();
+    dynamic query = AppSupabase.client
+        .from('daily_logs')
+        .select(SupabaseSelects.dailyLogReport);
 
     if (periodFrom != null) {
       query = query.gte('date', DbValue.toPrimitive(periodFrom!));
@@ -344,7 +347,9 @@ class ReportsController extends ChangeNotifier {
   }) async {
     final f = from ?? periodFrom;
     final t = to ?? periodTo;
-    dynamic query = AppSupabase.client.from('financial_transactions').select();
+    dynamic query = AppSupabase.client
+        .from('financial_transactions')
+        .select(SupabaseSelects.financialTransaction);
 
     if (f != null) {
       query = query.gte('dueDate', DbValue.toPrimitive(f));
@@ -364,7 +369,9 @@ class ReportsController extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> _fetchProjects() async {
-    final response = await AppSupabase.client.from('projects').select();
+    final response = await AppSupabase.client
+        .from('projects')
+        .select(SupabaseSelects.projectReport);
     return (response as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();

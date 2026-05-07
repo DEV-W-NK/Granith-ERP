@@ -91,18 +91,23 @@ class EmployeeBenefitModel {
   );
 
   EmployeeBenefitModel copyWith({
+    String? employeeId,
+    String? benefitId,
+    String? benefitName,
     double? monthlyValue,
+    DateTime? startDate,
     DateTime? endDate,
+    bool clearEndDate = false,
     bool? isActive,
     List<BenefitHistoryEntry>? history,
   }) => EmployeeBenefitModel(
     id: id,
-    employeeId: employeeId,
-    benefitId: benefitId,
-    benefitName: benefitName,
+    employeeId: employeeId ?? this.employeeId,
+    benefitId: benefitId ?? this.benefitId,
+    benefitName: benefitName ?? this.benefitName,
     monthlyValue: monthlyValue ?? this.monthlyValue,
-    startDate: startDate,
-    endDate: endDate ?? this.endDate,
+    startDate: startDate ?? this.startDate,
+    endDate: clearEndDate ? null : endDate ?? this.endDate,
     isActive: isActive ?? this.isActive,
     history: history ?? this.history,
   );

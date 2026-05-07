@@ -41,6 +41,8 @@ void main() {
 
       expect(find.text('Central de Configuracoes'), findsOneWidget);
       expect(find.text('Granith Base'), findsWidgets);
+      expect(find.text('Executar seeder'), findsOneWidget);
+      expect(find.text('Somente debug'), findsOneWidget);
 
       await tester.enterText(
         find.widgetWithText(TextField, 'Nome do workspace'),

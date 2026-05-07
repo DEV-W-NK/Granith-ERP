@@ -1,5 +1,6 @@
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/system_settings_model.dart';
 
 class SystemSettingsService {
@@ -10,7 +11,7 @@ class SystemSettingsService {
     final response =
         await AppSupabase.client
             .from(_table)
-            .select()
+            .select(SupabaseSelects.systemSettings)
             .eq('id', _primaryId)
             .maybeSingle();
 
@@ -29,7 +30,11 @@ class SystemSettingsService {
     });
 
     final response =
-        await AppSupabase.client.from(_table).upsert(payload).select().single();
+        await AppSupabase.client
+            .from(_table)
+            .upsert(payload)
+            .select(SupabaseSelects.systemSettings)
+            .single();
 
     return SystemSettings.fromMap(Map<String, dynamic>.from(response));
   }

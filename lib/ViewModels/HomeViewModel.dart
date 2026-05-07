@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -289,7 +290,7 @@ class HomeViewModel extends ChangeNotifier {
             ? await _projectsLoader()
             : ((await AppSupabase.client
                         .from('projects')
-                        .select()
+                        .select(SupabaseSelects.projectDashboard)
                         .inFilter('status', ['inProgress', 'planning'])
                         .order('currentCost', ascending: false)
                         .limit(6))
@@ -318,7 +319,10 @@ class HomeViewModel extends ChangeNotifier {
     final now = _nowProvider();
     final today = DateTime(now.year, now.month, now.day);
 
-    final overdueRows = await _selectList('financial_transactions');
+    final overdueRows = await _selectList(
+      'financial_transactions',
+      columns: SupabaseSelects.financialDashboard,
+    );
 
     final overdue =
         overdueRows.where((row) {
@@ -372,14 +376,17 @@ class HomeViewModel extends ChangeNotifier {
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(hours: 23, minutes: 59));
 
-    final employeeRows = await _selectList('employees');
+    final employeeRows = await _selectList('employees', columns: 'id,status');
     _activeEmployees =
         employeeRows.where((row) {
           final status = row['status']?.toString().toLowerCase();
           return status == 'active' || status == 'ativo';
         }).length;
 
-    final logRows = await _selectList('daily_logs');
+    final logRows = await _selectList(
+      'daily_logs',
+      columns: 'id,date,manpower',
+    );
     final todayLogs =
         logRows.where((row) {
           final date = DbValue.toDateTime(row['date']);
@@ -408,7 +415,10 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> _loadRequisitions() async {
-    final rows = await _selectList('material_requisitions');
+    final rows = await _selectList(
+      'material_requisitions',
+      columns: 'id,status',
+    );
     _openRequisitions =
         rows
             .where(
@@ -420,7 +430,7 @@ class HomeViewModel extends ChangeNotifier {
 
   Future<void> _loadTalents() async {
     try {
-      final rows = await _selectList('talent_candidates');
+      final rows = await _selectList('talent_candidates', columns: 'id,status');
       _talentsPending =
           rows.where((row) => row['status']?.toString() == 'pending').length;
     } catch (e) {
@@ -437,7 +447,10 @@ class HomeViewModel extends ChangeNotifier {
     final from = DateTime(now.year, now.month - 5, 1);
     final to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
 
-    final rows = await _selectList('financial_transactions');
+    final rows = await _selectList(
+      'financial_transactions',
+      columns: SupabaseSelects.financialDashboard,
+    );
     final grouped = <String, ({double income, double expense})>{};
 
     for (final row in rows) {
@@ -487,7 +500,7 @@ class HomeViewModel extends ChangeNotifier {
               ? await _recentActivitiesLoader()
               : ((await AppSupabase.client
                           .from('financial_transactions')
-                          .select()
+                          .select(SupabaseSelects.financialDashboard)
                           .order('createdAt', ascending: false)
                           .limit(4))
                       as List)

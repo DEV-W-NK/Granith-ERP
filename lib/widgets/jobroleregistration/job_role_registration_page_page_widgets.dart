@@ -8,18 +8,25 @@ import 'package:project_granith/models/job_role_model.dart';
 
 // Temas e Componentes Comuns
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class JobRoleRegistrationView extends StatelessWidget {
   const JobRoleRegistrationView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > 900;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.read<JobRoleController>().init();
+      }
+    });
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: Padding(
-        padding: EdgeInsets.all(isDesktop ? 32 : 16),
+        padding: ResponsiveLayout.pagePadding(width),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -118,7 +125,7 @@ class _JobRoleCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
       ),
       child: Material(
         color: Colors.transparent,
@@ -137,6 +144,8 @@ class _JobRoleCard extends StatelessWidget {
                     children: [
                       Text(
                         role.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -157,7 +166,7 @@ class _JobRoleCard extends StatelessWidget {
                           child: Text(
                             role.requirements.join(' · '),
                             style: TextStyle(
-                              color: AppColors.textMuted.withOpacity(0.8),
+                              color: AppColors.textMuted.withValues(alpha: 0.8),
                               fontSize: 11,
                             ),
                           ),
@@ -185,9 +194,9 @@ class _RoleIcon extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.accentGold.withOpacity(0.1),
+        color: AppColors.accentGold.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentGold.withOpacity(0.2)),
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.2)),
       ),
       child: const Icon(
         Icons.work_outline,
@@ -234,7 +243,7 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
 
     final controller = context.read<JobRoleController>();
     final role = JobRoleModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: '',
       title: _titleCtrl.text.trim(),
       sector: _selectedSector,
       description: _descCtrl.text.trim(),
@@ -261,12 +270,14 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: ResponsiveLayout.pagePadding(width),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accentGold.withOpacity(0.2)),
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.2)),
       ),
       child: Form(
         key: _formKey,
@@ -346,7 +357,7 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.5),
+                color: AppColors.borderColor.withValues(alpha: 0.5),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -378,7 +389,7 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedSector,
+          initialValue: _selectedSector,
           dropdownColor: AppColors.surfaceDark,
           style: const TextStyle(color: Colors.white, fontSize: 14),
           decoration: InputDecoration(
@@ -392,7 +403,7 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.5),
+                color: AppColors.borderColor.withValues(alpha: 0.5),
               ),
             ),
             focusedBorder: OutlineInputBorder(

@@ -123,5 +123,40 @@ void main() {
       expect(controller.searchQuery, isEmpty);
       expect(find.text('Torre Norte'), findsOneWidget);
     });
+
+    testWidgets('renderiza em celular sem overflow nos controles', (
+      tester,
+    ) async {
+      final controller = ProjectsController(
+        FakeServiceProjetos(
+          projects: [
+            project(
+              id: 'p-1',
+              name: 'Torre Norte',
+              client: 'Acme',
+              status: ProjectStatus.inProgress,
+            ),
+            project(
+              id: 'p-2',
+              name: 'Retrofit Sul',
+              client: 'Beta',
+              status: ProjectStatus.planning,
+            ),
+          ],
+        ),
+        searchDebounceDelay: Duration.zero,
+      );
+      await controller.loadProjects();
+
+      await pumpPage(
+        tester,
+        controller: controller,
+        size: const Size(320, 720),
+      );
+
+      expect(find.text('Projetos'), findsOneWidget);
+      expect(find.text('Torre Norte'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

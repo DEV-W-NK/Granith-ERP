@@ -581,8 +581,11 @@ class ProjectsController extends ChangeNotifier {
 
     // Aplicar filtro de status
     if (_selectedFilter != 'Todos') {
+      final selected = _selectedFilter.toLowerCase();
       final status = ProjectStatus.values.firstWhere(
-        (s) => s.name.toLowerCase() == _selectedFilter.toLowerCase(),
+        (s) =>
+            s.name.toLowerCase() == selected ||
+            s.displayName.toLowerCase() == selected,
         orElse: () => ProjectStatus.planning,
       );
       filtered = filtered.where((project) => project.status == status).toList();

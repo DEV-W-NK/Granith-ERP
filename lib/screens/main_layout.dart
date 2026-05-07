@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/screens/access_management_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/HrPage.dart';
+import 'package:project_granith/screens/benefits_page.dart';
 import 'package:project_granith/screens/budget_types_page.dart';
 import 'package:project_granith/screens/budgets_page.dart';
 import 'package:project_granith/screens/dailyLogsPage.dart';
@@ -17,8 +17,8 @@ import 'package:project_granith/screens/purchases_page.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/system_settings_page.dart';
 import 'package:project_granith/screens/suppliers_page.dart';
+import 'package:project_granith/screens/team_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/utils/seeder.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:project_granith/widgets/navigation/mobile_drawer.dart';
 import 'package:project_granith/widgets/navigation/sidebar_menu.dart';
@@ -45,14 +45,10 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> {
-  static const bool _enableDatabaseSeeder = bool.fromEnvironment(
-    'ENABLE_DATABASE_SEEDER',
-  );
+  static const double _desktopBreakpoint = 1100;
 
   int selectedIndex = 0;
   bool _isSidebarExpanded = true;
-
-  bool get _canRunSeeder => kDebugMode && _enableDatabaseSeeder;
 
   late final List<Widget> pages =
       widget.pagesOverride ??
@@ -63,6 +59,8 @@ class _MainLayoutState extends State<MainLayout> {
         const DailyLogsPage(),
         const MaterialRequisitionPage(),
         const HrPage(),
+        const BenefitsPage(),
+        const TeamPage(),
         const BudgetsPage(),
         const BudgetTypesPage(),
         const SuppliersPage(),
@@ -84,6 +82,8 @@ class _MainLayoutState extends State<MainLayout> {
         'Diario de Obras',
         'Requisicoes',
         'Recursos Humanos',
+        'Beneficios',
+        'Equipes',
         'Orcamentos',
         'Tipos de Orcamento',
         'Fornecedores',
@@ -105,6 +105,8 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.menu_book_rounded,
         Icons.assignment_rounded,
         Icons.badge_rounded,
+        Icons.card_giftcard_rounded,
+        Icons.groups_2_rounded,
         Icons.receipt_long_rounded,
         Icons.category_rounded,
         Icons.store_rounded,
@@ -165,95 +167,100 @@ class _MainLayoutState extends State<MainLayout> {
         NavigationModule(
           index: 6,
           title: pageTitles[6],
-          section: 'Comercial',
+          section: 'Recursos Humanos',
           icon: pageIcons[6],
-          aliases: 'orcamentos propostas comercial',
+          aliases: 'beneficios categorias vale reembolso colaboradores',
         ),
         NavigationModule(
           index: 7,
           title: pageTitles[7],
-          section: 'Comercial',
+          section: 'Recursos Humanos',
           icon: pageIcons[7],
-          aliases: 'categorias tipos orcamento',
+          aliases: 'equipes time montagem colaboradores rh coordenadores',
         ),
         NavigationModule(
           index: 8,
           title: pageTitles[8],
-          section: 'Suprimentos',
+          section: 'Comercial',
           icon: pageIcons[8],
-          aliases: 'fornecedor suprimentos parceiros',
+          aliases: 'orcamentos propostas comercial',
         ),
         NavigationModule(
           index: 9,
           title: pageTitles[9],
-          section: 'Suprimentos',
+          section: 'Comercial',
           icon: pageIcons[9],
-          aliases: 'itens materiais catalogo insumos',
+          aliases: 'categorias tipos orcamento',
         ),
         NavigationModule(
           index: 10,
           title: pageTitles[10],
           section: 'Suprimentos',
           icon: pageIcons[10],
-          aliases: 'compras pedidos cotacoes',
+          aliases: 'fornecedor suprimentos parceiros',
         ),
         NavigationModule(
           index: 11,
           title: pageTitles[11],
           section: 'Suprimentos',
           icon: pageIcons[11],
-          aliases: 'estoque almoxarifado inventario',
+          aliases: 'itens materiais catalogo insumos',
         ),
         NavigationModule(
           index: 12,
           title: pageTitles[12],
-          section: 'Financeiro',
+          section: 'Suprimentos',
           icon: pageIcons[12],
-          aliases: 'entradas saidas receitas despesas caixa',
+          aliases: 'compras pedidos cotacoes',
         ),
         NavigationModule(
           index: 13,
           title: pageTitles[13],
-          section: 'Financeiro',
+          section: 'Suprimentos',
           icon: pageIcons[13],
-          aliases: 'dre relatorio gerencial resultados',
+          aliases: 'estoque almoxarifado inventario',
         ),
         NavigationModule(
           index: 14,
           title: pageTitles[14],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[14],
-          aliases: 'permissoes clientes acesso usuarios portal',
+          aliases: 'entradas saidas receitas despesas caixa',
         ),
         NavigationModule(
           index: 15,
           title: pageTitles[15],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[15],
+          aliases: 'dre relatorio gerencial resultados',
+        ),
+        NavigationModule(
+          index: 16,
+          title: pageTitles[16],
+          section: 'Administrativo',
+          icon: pageIcons[16],
+          aliases: 'permissoes clientes acesso usuarios portal',
+        ),
+        NavigationModule(
+          index: 17,
+          title: pageTitles[17],
+          section: 'Administrativo',
+          icon: pageIcons[17],
           aliases: 'configuracoes ajustes sistema preferencias',
         ),
       ];
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isDesktop = screenWidth >= _desktopBreakpoint;
+    final desktopPadding = screenWidth >= 1280 ? 18.0 : 12.0;
+    final contentRadius = screenWidth >= 1280 ? 28.0 : 22.0;
     final workspaceName =
         context.watch<SystemSettingsViewModel>().settings.workspaceName;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton:
-          _canRunSeeder
-              ? FloatingActionButton(
-                onPressed: _runSeeder,
-                backgroundColor: AppColors.accentBlue,
-                tooltip: 'Popular banco de dados',
-                child: const Icon(
-                  Icons.cloud_sync_rounded,
-                  color: AppColors.textPrimary,
-                ),
-              )
-              : null,
       body:
           isDesktop
               ? Row(
@@ -271,17 +278,22 @@ class _MainLayoutState extends State<MainLayout> {
                   ),
                   Expanded(
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                      padding: EdgeInsets.all(desktopPadding),
                       child: Column(
                         children: [
                           _buildDesktopTopBar(workspaceName),
                           const SizedBox(height: 14),
                           Expanded(
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(28),
+                              borderRadius: BorderRadius.circular(
+                                contentRadius,
+                              ),
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
                                   gradient: AppColors.pageSurfaceGradient,
+                                  borderRadius: BorderRadius.circular(
+                                    contentRadius,
+                                  ),
                                   border: Border.all(
                                     color: AppColors.borderColor.withValues(
                                       alpha: 0.72,
@@ -304,39 +316,31 @@ class _MainLayoutState extends State<MainLayout> {
               : Scaffold(
                 backgroundColor: Colors.transparent,
                 appBar: AppBar(
-                  titleSpacing: 18,
+                  titleSpacing: 10,
                   title: Row(
                     children: [
                       Icon(
                         pageIcons[selectedIndex],
                         color: AppColors.accentBlue,
-                        size: 24,
+                        size: screenWidth < 380 ? 20 : 24,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: screenWidth < 380 ? 8 : 12),
                       Expanded(
                         child: Text(
                           selectedIndex == 0
                               ? workspaceName
                               : pageTitles[selectedIndex],
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.w700,
-                            fontSize: 18,
+                            fontSize: screenWidth < 380 ? 15 : 18,
                           ),
                         ),
                       ),
                     ],
                   ),
                   actions: [
-                    IconButton(
-                      tooltip: 'Pesquisar modulo',
-                      onPressed: _openModuleSearchDialog,
-                      icon: const Icon(
-                        Icons.search_rounded,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
                     IconButton(
                       tooltip: 'Sair',
                       onPressed: _confirmAndLogout,
@@ -345,7 +349,6 @@ class _MainLayoutState extends State<MainLayout> {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    const SizedBox(width: 8),
                   ],
                   backgroundColor: AppColors.primaryDark.withValues(
                     alpha: 0.52,
@@ -354,13 +357,17 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
                 drawer: MobileDrawer(
                   selectedIndex: selectedIndex,
+                  modules: _navigationModules,
                   onItemSelected: (index) {
                     _selectModule(index);
                     Navigator.pop(context);
                   },
                   onLogout: _confirmAndLogout,
                 ),
-                body: GranithPageBackground(child: pages[selectedIndex]),
+                body: SafeArea(
+                  top: false,
+                  child: GranithPageBackground(child: pages[selectedIndex]),
+                ),
               ),
     );
   }
@@ -371,15 +378,20 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildDesktopTopBar(String workspaceName) {
+    final currentModule = _navigationModules.firstWhere(
+      (module) => module.index == selectedIndex,
+      orElse: () => _navigationModules.first,
+    );
     final currentTitle =
         selectedIndex == 0 ? workspaceName : pageTitles[selectedIndex];
+    final currentSection = currentModule.section;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
       decoration: BoxDecoration(
         gradient: AppColors.pageSurfaceGradient,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: AppColors.borderColor.withValues(alpha: 0.72),
         ),
@@ -391,13 +403,20 @@ class _MainLayoutState extends State<MainLayout> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: AppColors.accentBlue.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.accentBlue.withValues(alpha: 0.22),
+                      AppColors.auraCyan.withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: AppColors.accentBlue.withValues(alpha: 0.22),
+                    color: AppColors.accentBlue.withValues(alpha: 0.32),
                   ),
                 ),
                 child: Icon(
@@ -407,17 +426,33 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
               ),
               const SizedBox(width: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 260),
-                child: Text(
-                  currentTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      currentTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      currentSection,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -432,199 +467,29 @@ class _MainLayoutState extends State<MainLayout> {
             ),
           );
 
-          if (constraints.maxWidth < 920) {
-            return Column(
-              children: [
-                Row(children: [Expanded(child: leading), logoutButton]),
-                const SizedBox(height: 12),
-                _buildModuleSearch(),
-              ],
-            );
-          }
-
           return Row(
             children: [
-              leading,
-              const SizedBox(width: 18),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: _buildModuleSearch(),
-                ),
-              ),
+              Expanded(child: leading),
               const SizedBox(width: 10),
+              if (constraints.maxWidth >= 720) ...[
+                _TopBarPill(
+                  icon: Icons.layers_rounded,
+                  label: currentSection,
+                  color: AppColors.accentGold,
+                ),
+                const SizedBox(width: 8),
+                _TopBarPill(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'ERP ativo',
+                  color: AppColors.auraCyan,
+                ),
+                const SizedBox(width: 8),
+              ],
               logoutButton,
             ],
           );
         },
       ),
-    );
-  }
-
-  Widget _buildModuleSearch({
-    ValueChanged<int>? onModuleSelected,
-    bool autofocus = false,
-  }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final optionsWidth =
-            constraints.maxWidth.isFinite && constraints.maxWidth < 520
-                ? constraints.maxWidth
-                : 520.0;
-
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Autocomplete<NavigationModule>(
-            displayStringForOption: (module) => module.title,
-            optionsBuilder: (textEditingValue) {
-              final query = textEditingValue.text.trim().toLowerCase();
-              if (query.isEmpty) {
-                return const Iterable<NavigationModule>.empty();
-              }
-
-              return _navigationModules
-                  .where((module) => module.matches(query))
-                  .take(8);
-            },
-            onSelected: (module) {
-              final handler = onModuleSelected;
-              if (handler != null) {
-                handler(module.index);
-                return;
-              }
-
-              _selectModule(module.index);
-            },
-            fieldViewBuilder: (
-              context,
-              textEditingController,
-              focusNode,
-              onFieldSubmitted,
-            ) {
-              return TextField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                autofocus: autofocus,
-                textInputAction: TextInputAction.search,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  hintText: 'Pesquisar modulo',
-                  prefixIcon: Icon(
-                    Icons.search_rounded,
-                    color: AppColors.textMuted,
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                ),
-                onSubmitted: (_) => onFieldSubmitted(),
-              );
-            },
-            optionsViewBuilder: (context, onSelected, options) {
-              final entries = options.toList();
-
-              return Align(
-                alignment: Alignment.topLeft,
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    width: optionsWidth,
-                    constraints: const BoxConstraints(maxHeight: 360),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      gradient: AppColors.pageSurfaceGradient,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: AppColors.borderColor.withValues(alpha: 0.85),
-                      ),
-                      boxShadow: AppColors.glowShadows(AppColors.accentBlue),
-                    ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      itemCount: entries.length,
-                      separatorBuilder:
-                          (_, __) => Divider(
-                            height: 1,
-                            color: AppColors.borderColor.withValues(
-                              alpha: 0.35,
-                            ),
-                          ),
-                      itemBuilder: (context, index) {
-                        final module = entries[index];
-                        final isSelected = module.index == selectedIndex;
-
-                        return ListTile(
-                          dense: true,
-                          leading: Icon(
-                            module.icon,
-                            color:
-                                isSelected
-                                    ? AppColors.accentBlue
-                                    : AppColors.textSecondary,
-                          ),
-                          title: Text(
-                            module.title,
-                            style: TextStyle(
-                              color:
-                                  isSelected
-                                      ? AppColors.textPrimary
-                                      : AppColors.textSecondary,
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.w700
-                                      : FontWeight.w500,
-                            ),
-                          ),
-                          subtitle: Text(
-                            module.section,
-                            style: const TextStyle(color: AppColors.textMuted),
-                          ),
-                          trailing:
-                              isSelected
-                                  ? const Icon(
-                                    Icons.check_rounded,
-                                    color: AppColors.accentBlue,
-                                  )
-                                  : const Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    color: AppColors.textMuted,
-                                    size: 14,
-                                  ),
-                          onTap: () => onSelected(module),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _openModuleSearchDialog() {
-    return showDialog<void>(
-      context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: const Text('Pesquisar modulo'),
-          content: SizedBox(
-            width: 520,
-            child: _buildModuleSearch(
-              autofocus: true,
-              onModuleSelected: (index) {
-                Navigator.pop(dialogContext);
-                _selectModule(index);
-              },
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -670,81 +535,48 @@ class _MainLayoutState extends State<MainLayout> {
 
     await context.read<AuthViewModel>().logout();
   }
+}
 
-  Future<void> _runSeeder() async {
-    if (!_canRunSeeder) {
-      return;
-    }
+class _TopBarPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
 
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.92),
-            title: const Text(
-              'Executar Seeder?',
-              style: TextStyle(color: AppColors.accentBlue),
-            ),
-            content: const Text(
-              'Isso ira criar dados ficticios no banco de dados. Deseja continuar?',
-              style: TextStyle(color: AppColors.textPrimary),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text(
-                  'Cancelar',
-                  style: TextStyle(color: Colors.white70),
-                ),
+  const _TopBarPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 170),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 15),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: color,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'Sim, popular',
-                  style: TextStyle(
-                    color: AppColors.accentBlue,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
+        ],
+      ),
     );
-
-    if (confirm == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Iniciando Seeder... isso pode levar alguns segundos.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-
-      try {
-        final seeder = DatabaseSeeder();
-        final success = await seeder.seed();
-
-        if (!mounted) return;
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              success
-                  ? 'Banco de dados populado com sucesso.'
-                  : 'Erro ao popular banco. Verifique o console.',
-            ),
-            backgroundColor:
-                success ? AppColors.accentGreen : AppColors.accentRed,
-          ),
-        );
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro critico: $e'),
-            backgroundColor: AppColors.accentRed,
-          ),
-        );
-      }
-    }
   }
 }

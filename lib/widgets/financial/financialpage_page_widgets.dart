@@ -11,6 +11,7 @@ import 'package:project_granith/widgets/financial/transactionformdialog.dart';
 import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class FinancialPageView extends StatefulWidget {
   const FinancialPageView({super.key});
@@ -38,7 +39,9 @@ class _FinancialPageViewState extends State<FinancialPageView>
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<FinancialController>();
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > 900;
+    final padding = ResponsiveLayout.pagePadding(width);
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -48,14 +51,14 @@ class _FinancialPageViewState extends State<FinancialPageView>
                 child: CircularProgressIndicator(color: AppColors.accentGold),
               )
               : Padding(
-                padding: EdgeInsets.all(isDesktop ? 32 : 16),
+                padding: padding,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildHeader(context, isDesktop),
-                    const SizedBox(height: 24),
+                    SizedBox(height: isDesktop ? 24 : 16),
                     _buildStatCards(ctrl),
-                    const SizedBox(height: 20),
+                    SizedBox(height: isDesktop ? 20 : 14),
                     const FinancialFilterBar(),
                     const SizedBox(height: 16),
                     _buildTabBar(isDesktop),

@@ -48,5 +48,27 @@ void main() {
       expect(stats['ferias'], 1);
       expect(stats['desligados'], 1);
     });
+
+    test('filterEmployees aplica busca, status e ordenacao', () {
+      final viewModel = HrViewModel(FakeHrService());
+      final employees = [
+        employee(id: '3', name: 'Carlos', status: EmployeeStatus.desligado),
+        employee(id: '1', name: 'Ana', status: EmployeeStatus.ativo),
+        employee(id: '2', name: 'Bruno', status: EmployeeStatus.ferias),
+      ];
+
+      expect(viewModel.filterEmployees(employees).map((entry) => entry.name), [
+        'Ana',
+        'Bruno',
+        'Carlos',
+      ]);
+
+      viewModel.updateStatusFilter(EmployeeStatus.ativo);
+      expect(viewModel.filterEmployees(employees).single.name, 'Ana');
+
+      viewModel.updateStatusFilter(null);
+      viewModel.updateSearch('bru');
+      expect(viewModel.filterEmployees(employees).single.name, 'Bruno');
+    });
   });
 }

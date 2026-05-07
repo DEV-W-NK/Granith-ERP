@@ -50,6 +50,8 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 720;
+
     return Form(
       key: _formKey,
       child: Column(
@@ -62,71 +64,48 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
           const SizedBox(height: 32),
           _buildSection('Contratual & RH', Icons.work_outline),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: DropdownButtonFormField<String>(
-                  value: _selectedSector,
-                  dropdownColor: AppColors.surfaceDark,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration('Setor', Icons.business_rounded),
-                  items:
-                      _sectors
-                          .map(
-                            (s) => DropdownMenuItem(value: s, child: Text(s)),
-                          )
-                          .toList(),
-                  onChanged: (v) => setState(() => _selectedSector = v!),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: _buildTextField(
-                  _jobTitleController,
-                  'Cargo',
-                  Icons.engineering,
-                ),
-              ),
-            ],
+          _responsivePair(
+            DropdownButtonFormField<String>(
+              initialValue: _selectedSector,
+              dropdownColor: AppColors.surfaceDark,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDecoration('Setor', Icons.business_rounded),
+              items:
+                  _sectors
+                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                      .toList(),
+              onChanged: (v) => setState(() => _selectedSector = v!),
+            ),
+            _buildTextField(_jobTitleController, 'Cargo', Icons.engineering),
+            compact,
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTextField(
-                  _salaryController,
-                  'Salário (R\$)',
-                  Icons.attach_money,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: DropdownButtonFormField<EmployeeRole>(
-                  value: _role,
-                  dropdownColor: AppColors.surfaceDark,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: _inputDecoration(
-                    'Nível Hierárquico',
-                    Icons.layers,
-                  ),
-                  items:
-                      EmployeeRole.values
-                          .map(
-                            (r) => DropdownMenuItem(
-                              value: r,
-                              child: Text(
-                                r.name.toUpperCase(),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                  onChanged: (v) => setState(() => _role = v!),
-                ),
-              ),
-            ],
+          _responsivePair(
+            _buildTextField(
+              _salaryController,
+              'Salário (R\$)',
+              Icons.attach_money,
+            ),
+            DropdownButtonFormField<EmployeeRole>(
+              initialValue: _role,
+              dropdownColor: AppColors.surfaceDark,
+              style: const TextStyle(color: Colors.white),
+              decoration: _inputDecoration('Nível Hierárquico', Icons.layers),
+              items:
+                  EmployeeRole.values
+                      .map(
+                        (r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(
+                            r.label.toUpperCase(),
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (v) => setState(() => _role = v!),
+            ),
+            compact,
           ),
 
           const SizedBox(height: 32),
@@ -174,6 +153,20 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
     );
   }
 
+  Widget _responsivePair(Widget first, Widget second, bool compact) {
+    if (compact) {
+      return Column(children: [first, const SizedBox(height: 14), second]);
+    }
+
+    return Row(
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 16),
+        Expanded(child: second),
+      ],
+    );
+  }
+
   Widget _buildSection(String title, IconData icon) {
     return Row(
       children: [
@@ -211,18 +204,20 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
   InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textMuted),
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
       prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
       enabledBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.white10),
-        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: AppColors.borderColor.withValues(alpha: 0.72),
+        ),
+        borderRadius: BorderRadius.circular(14),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentGold),
-        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
+        borderRadius: BorderRadius.circular(14),
       ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.02),
+      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
     );
   }
 }

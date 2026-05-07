@@ -5,6 +5,7 @@ import 'package:project_granith/services/access_management_service.dart';
 import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/client_portal_access_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class AccessManagementPage extends StatefulWidget {
   final int initialTabIndex;
@@ -39,13 +40,20 @@ class _AccessManagementPageState extends State<AccessManagementPage>
     'inventory.read',
     'people.manage',
     'access.manage',
+    'mobile.hierarchy.manage',
+    'mobile.materials.request',
+    'mobile.daily_logs.write',
+    'mobile.team.manage',
+    'mobile.payroll.self.read',
   ];
 
   late final TabController _tabController;
   bool _isLoading = true;
   bool _isSendingInvite = false;
+  bool _isSavingAccess = false;
   List<UserModel> _users = [];
   List<ClientAccount> _clients = [];
+  final Map<String, UserModel> _draftUsers = {};
 
   @override
   void initState() {
@@ -78,6 +86,7 @@ class _AccessManagementPageState extends State<AccessManagementPage>
       setState(() {
         _users = users;
         _clients = clients;
+        _draftUsers.clear();
       });
     } finally {
       if (mounted) {
@@ -86,9 +95,81 @@ class _AccessManagementPageState extends State<AccessManagementPage>
     }
   }
 
-  Future<void> _saveUser(UserModel user) async {
-    await _accessService.updateUserAccess(user);
-    await _loadData();
+  Future<void> _savePendingAccessChanges() async {
+    if (_isSavingAccess) return;
+
+    final changedUsers = _changedAccessUsers;
+    if (changedUsers.isEmpty) return;
+
+    setState(() => _isSavingAccess = true);
+    try {
+      for (final user in changedUsers) {
+        await _accessService.updateUserAccess(user);
+      }
+      await _loadData();
+      if (!mounted) return;
+      _showFeedback(
+        changedUsers.length == 1
+            ? 'Permissoes e papel atualizados.'
+            : 'Permissoes e papeis atualizados.',
+      );
+    } catch (error) {
+      if (!mounted) return;
+      _showFeedback(
+        'Nao foi possivel salvar permissoes: $error',
+        isError: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingAccess = false);
+      }
+    }
+  }
+
+  List<UserModel> get _changedAccessUsers =>
+      _users.map((user) => _draftUsers[user.uid]).whereType<UserModel>().where((
+        draft,
+      ) {
+        final original = _users.firstWhere(
+          (user) => user.uid == draft.uid,
+          orElse: () => draft,
+        );
+        return _hasAccessChanged(original, draft);
+      }).toList();
+
+  bool get _hasPendingAccessChanges => _changedAccessUsers.isNotEmpty;
+
+  UserModel _draftFor(UserModel user) => _draftUsers[user.uid] ?? user;
+
+  void _stageUserAccess(UserModel original, UserModel draft) {
+    setState(() {
+      if (_hasAccessChanged(original, draft)) {
+        _draftUsers[original.uid] = draft;
+      } else {
+        _draftUsers.remove(original.uid);
+      }
+    });
+  }
+
+  bool _hasAccessChanged(UserModel original, UserModel draft) {
+    return original.role != draft.role ||
+        !_samePermissions(original.permissions, draft.permissions);
+  }
+
+  bool _samePermissions(List<String> left, List<String> right) {
+    if (left.length != right.length) return false;
+    final leftSet = left.toSet();
+    final rightSet = right.toSet();
+    if (leftSet.length != rightSet.length) return false;
+    return leftSet.every(rightSet.contains);
+  }
+
+  List<String> _normalizePermissions(Iterable<String> permissions) {
+    final set = permissions.toSet();
+    return [
+      ..._availablePermissions.where(set.contains),
+      ...set.where((permission) => !_availablePermissions.contains(permission)),
+    ];
   }
 
   Future<void> _openClientDialog([ClientAccount? client]) async {
@@ -154,11 +235,13 @@ class _AccessManagementPageState extends State<AccessManagementPage>
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: ResponsiveLayout.pagePadding(width),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -184,6 +267,11 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                 ),
                 child: TabBar(
                   controller: _tabController,
+                  isScrollable: width < ResponsiveLayout.compact,
+                  tabAlignment:
+                      width < ResponsiveLayout.compact
+                          ? TabAlignment.start
+                          : null,
                   indicatorColor: AppColors.accentBlue,
                   labelColor: AppColors.textPrimary,
                   unselectedLabelColor: AppColors.textMuted,
@@ -215,121 +303,160 @@ class _AccessManagementPageState extends State<AccessManagementPage>
   }
 
   Widget _buildUsersTab() {
-    return ListView.separated(
-      itemCount: _users.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 14),
-      itemBuilder: (context, index) {
-        final user = _users[index];
-        return Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            gradient: AppColors.cardGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.borderColor.withValues(alpha: 0.65),
-            ),
-            boxShadow: AppColors.glowShadows(),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    final changedCount = _changedAccessUsers.length;
+
+    return Stack(
+      children: [
+        ListView.separated(
+          padding: EdgeInsets.only(bottom: _hasPendingAccessChanges ? 96 : 12),
+          itemCount: _users.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 14),
+          itemBuilder: (context, index) {
+            final user = _users[index];
+            final draft = _draftFor(user);
+            final hasChanges = _hasAccessChanged(user, draft);
+
+            return Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                gradient: AppColors.cardGradient,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color:
+                      hasChanges
+                          ? AppColors.accentGold.withValues(alpha: 0.78)
+                          : AppColors.borderColor.withValues(alpha: 0.65),
+                ),
+                boxShadow: AppColors.glowShadows(),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.displayName?.isNotEmpty == true
-                              ? user.displayName!
-                              : user.email,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              user.displayName?.isNotEmpty == true
+                                  ? user.displayName!
+                                  : user.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              user.email,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user.email,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
+                      ),
+                      SizedBox(
+                        width:
+                            MediaQuery.sizeOf(context).width <
+                                    ResponsiveLayout.compact
+                                ? 150
+                                : 180,
+                        child: DropdownButtonFormField<UserRole>(
+                          key: ValueKey('${user.uid}-${draft.role.name}'),
+                          initialValue: draft.role,
+                          isExpanded: true,
+                          decoration: const InputDecoration(labelText: 'Papel'),
+                          items:
+                              UserRole.values
+                                  .map(
+                                    (role) => DropdownMenuItem(
+                                      value: role,
+                                      child: Text(role.displayName),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (role) {
+                            if (role == null) return;
+                            _stageUserAccess(user, draft.copyWith(role: role));
+                          },
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  SizedBox(
-                    width: 180,
-                    child: DropdownButtonFormField<UserRole>(
-                      initialValue: user.role,
-                      isExpanded: true,
-                      decoration: const InputDecoration(labelText: 'Papel'),
-                      items:
-                          UserRole.values
-                              .map(
-                                (role) => DropdownMenuItem(
-                                  value: role,
-                                  child: Text(role.displayName),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children:
+                        _availablePermissions.map((permission) {
+                          final selected = draft.permissions.contains(
+                            permission,
+                          );
+                          return FilterChip(
+                            label: Text(permission),
+                            selected: selected,
+                            onSelected: (value) {
+                              final permissions = draft.permissions.toSet();
+                              if (value) {
+                                permissions.add(permission);
+                              } else {
+                                permissions.remove(permission);
+                              }
+                              _stageUserAccess(
+                                user,
+                                draft.copyWith(
+                                  permissions: _normalizePermissions(
+                                    permissions,
+                                  ),
                                 ),
-                              )
-                              .toList(),
-                      onChanged: (role) {
-                        if (role == null) return;
-                        _saveUser(user.copyWith(role: role));
-                      },
-                    ),
+                              );
+                            },
+                            selectedColor: AppColors.accentBlue.withValues(
+                              alpha: 0.18,
+                            ),
+                            backgroundColor: AppColors.surfaceDark.withValues(
+                              alpha: 0.5,
+                            ),
+                            labelStyle: TextStyle(
+                              color:
+                                  selected
+                                      ? AppColors.textPrimary
+                                      : AppColors.textSecondary,
+                            ),
+                            side: BorderSide(
+                              color:
+                                  selected
+                                      ? AppColors.accentBlue
+                                      : AppColors.borderColor.withValues(
+                                        alpha: 0.65,
+                                      ),
+                            ),
+                          );
+                        }).toList(),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children:
-                    _availablePermissions.map((permission) {
-                      final selected = user.permissions.contains(permission);
-                      return FilterChip(
-                        label: Text(permission),
-                        selected: selected,
-                        onSelected: (value) {
-                          final permissions = List<String>.from(
-                            user.permissions,
-                          );
-                          if (value) {
-                            permissions.add(permission);
-                          } else {
-                            permissions.remove(permission);
-                          }
-                          _saveUser(user.copyWith(permissions: permissions));
-                        },
-                        selectedColor: AppColors.accentBlue.withValues(
-                          alpha: 0.18,
-                        ),
-                        backgroundColor: AppColors.surfaceDark.withValues(
-                          alpha: 0.5,
-                        ),
-                        labelStyle: TextStyle(
-                          color:
-                              selected
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
-                        ),
-                        side: BorderSide(
-                          color:
-                              selected
-                                  ? AppColors.accentBlue
-                                  : AppColors.borderColor.withValues(
-                                    alpha: 0.65,
-                                  ),
-                        ),
-                      );
-                    }).toList(),
-              ),
-            ],
+            );
+          },
+        ),
+        if (_hasPendingAccessChanges)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: _SaveAccessButton(
+              changedCount: changedCount,
+              isSaving: _isSavingAccess,
+              onPressed: _savePendingAccessChanges,
+            ),
           ),
-        );
-      },
+      ],
     );
   }
 
@@ -348,7 +475,7 @@ class _AccessManagementPageState extends State<AccessManagementPage>
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 620;
+              final isNarrow = constraints.maxWidth < ResponsiveLayout.compact;
               final description = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
@@ -526,7 +653,8 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                                   label: Text(inviteActionLabel),
                                 );
 
-                                if (constraints.maxWidth < 520) {
+                                if (constraints.maxWidth <
+                                    ResponsiveLayout.compact) {
                                   return Column(
                                     children: [
                                       SizedBox(
@@ -645,6 +773,50 @@ class _AccessManagementPageState extends State<AccessManagementPage>
     final hour = safeDate.hour.toString().padLeft(2, '0');
     final minute = safeDate.minute.toString().padLeft(2, '0');
     return '$day/$month/$year $hour:$minute';
+  }
+}
+
+class _SaveAccessButton extends StatelessWidget {
+  final int changedCount;
+  final bool isSaving;
+  final VoidCallback onPressed;
+
+  const _SaveAccessButton({
+    required this.changedCount,
+    required this.isSaving,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label =
+        changedCount == 1
+            ? 'Salvar permissoes e papel'
+            : 'Salvar permissoes e papeis';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: AppColors.glowShadows(AppColors.accentGold),
+      ),
+      child: ElevatedButton.icon(
+        onPressed: isSaving ? null : onPressed,
+        icon:
+            isSaving
+                ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+                : const Icon(Icons.save_rounded),
+        label: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accentGold,
+          foregroundColor: AppColors.primaryDark,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        ),
+      ),
+    );
   }
 }
 
@@ -777,11 +949,15 @@ class _ClientAccountDialogState extends State<_ClientAccountDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.client != null;
+    final size = MediaQuery.sizeOf(context);
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 560.0);
 
     return AlertDialog(
+      insetPadding: EdgeInsets.all(inset),
       title: Text(isEditing ? 'Editar cliente' : 'Cadastrar cliente'),
       content: SizedBox(
-        width: 560,
+        width: dialogWidth.toDouble(),
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(

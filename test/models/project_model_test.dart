@@ -48,16 +48,25 @@ void main() {
         teamSize: 4,
         clientAccountId: 'client-7',
         clientAccountName: 'Conta XPTO',
+        coordinatorId: 'coord-1',
+        coordinatorName: 'Ana Coordenadora',
       );
 
       final map = project.toMap();
+      final restored = Project.fromMap('project-1', map);
 
       expect(map.containsKey('id'), isFalse);
       expect(map['clientAccountId'], 'client-7');
       expect(map['client_account_id'], 'client-7');
       expect(map['clientAccountName'], 'Conta XPTO');
       expect(map['client_account_name'], 'Conta XPTO');
+      expect(map['coordinatorId'], 'coord-1');
+      expect(map['coordinator_id'], 'coord-1');
+      expect(map['coordinatorName'], 'Ana Coordenadora');
+      expect(map['coordinator_name'], 'Ana Coordenadora');
       expect(map['projectKey'], 'obra centro_cliente xpto');
+      expect(restored.coordinatorId, 'coord-1');
+      expect(restored.coordinatorName, 'Ana Coordenadora');
     });
 
     test('statistics consolida totais da lista', () {

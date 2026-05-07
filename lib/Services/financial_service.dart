@@ -1,5 +1,6 @@
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 
 class FinancialService {
@@ -72,7 +73,7 @@ class FinancialService {
     final row =
         await AppSupabase.client
             .from(_table)
-            .select()
+            .select(SupabaseSelects.financialTransaction)
             .eq('id', id)
             .maybeSingle();
     if (row == null) return null;
@@ -84,7 +85,7 @@ class FinancialService {
   ) async {
     final response = await AppSupabase.client
         .from(_table)
-        .select()
+        .select(SupabaseSelects.financialTransaction)
         .eq('referenceId', referenceId)
         .order('dueDate', ascending: false);
 

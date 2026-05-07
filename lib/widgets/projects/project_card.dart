@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/projects/project_image.dart';
 
 class ProjectCard extends StatelessWidget {
@@ -25,28 +26,53 @@ class ProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compactScreen = MediaQuery.sizeOf(context).width < 600;
+    final alertColor =
+        project.isOverBudget || project.isOverdue
+            ? AppColors.accentRed
+            : AppColors.borderColor;
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      child: Card(
-        elevation: 0,
-        color: AppColors.surfaceDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            // Borda vermelha sutil se overBudget ou overdue
-            color:
-                project.isOverBudget || project.isOverdue
-                    ? Colors.redAccent.withOpacity(0.35)
-                    : AppColors.borderColor,
-            width: 1,
-          ),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: alertColor.withOpacity(compactScreen ? 0.40 : 0.58),
+          width: 1,
         ),
+        boxShadow:
+            compactScreen
+                ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.14),
+                    blurRadius: 14,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+                : AppColors.glowShadows(
+                  project.isOverBudget || project.isOverdue
+                      ? AppColors.accentRed
+                      : AppColors.accentBlue,
+                ),
+      ),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: AppColors.accentGold.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(18),
+          splashColor: AppColors.accentGold.withOpacity(0.10),
           highlightColor: AppColors.accentGold.withOpacity(0.05),
-          child: isListView ? _buildListContent() : _buildGridContent(),
+          child:
+              isListView
+                  ? LayoutBuilder(
+                    builder:
+                        (context, constraints) =>
+                            constraints.maxWidth < ResponsiveLayout.compact
+                                ? _buildCompactListContent()
+                                : _buildListContent(),
+                  )
+                  : _buildGridContent(),
         ),
       ),
     );
@@ -55,128 +81,131 @@ class ProjectCard extends StatelessWidget {
   // ─── Grid ─────────────────────────────────────────────────────────────────
 
   Widget _buildGridContent() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Imagem + badges flutuantes
-        Expanded(
-          flex: 4,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                child: ProjectImageWidget(
-                  imageUrl: project.imageUrl,
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenCompact = MediaQuery.sizeOf(context).width < 600;
+        final compact = screenCompact || constraints.maxWidth < 420;
+        final imageHeight = compact ? 118.0 : 150.0;
+        final contentPadding =
+            compact
+                ? const EdgeInsets.fromLTRB(12, 10, 12, 12)
+                : const EdgeInsets.fromLTRB(15, 14, 15, 15);
 
-              // Gradiente inferior
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 80,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        AppColors.surfaceDark.withOpacity(0.8),
-                        AppColors.surfaceDark,
-                      ],
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Imagem + badges flutuantes
+            SizedBox(
+              height: imageHeight,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
+                    child: ProjectImageWidget(
+                      imageUrl: project.imageUrl,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
                     ),
                   ),
-                ),
-              ),
 
-              // Status badge
-              Positioned(
-                top: 12,
-                left: 12,
-                child: _StatusBadge(project: project),
-              ),
-
-              // Badges de alerta (overdue / overBudget) — empilhados à direita
-              Positioned(
-                top: 12,
-                right: 44,
-                child: _AlertBadges(project: project),
-              ),
-
-              // Menu
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.black26,
-                    shape: BoxShape.circle,
+                  // Gradiente inferior
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: compact ? 84 : 92,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            AppColors.backgroundDark.withOpacity(0.72),
+                            AppColors.backgroundDark.withOpacity(0.95),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                  child: _buildPopupMenu(iconColor: Colors.white),
-                ),
+
+                  // Status badge
+                  Positioned(
+                    left: 12,
+                    bottom: 12,
+                    child: _StatusBadge(project: project),
+                  ),
+
+                  // Badges de alerta (overdue / overBudget) — empilhados à direita
+                  if (!compact)
+                    Positioned(
+                      top: 8,
+                      left: 10,
+                      right: 8,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Align(
+                              alignment: Alignment.topLeft,
+                              child: _AlertBadges(project: project),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: const BoxDecoration(
+                              color: Colors.black26,
+                              shape: BoxShape.circle,
+                            ),
+                            child: _buildPopupMenu(iconColor: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
-            ],
-          ),
-        ),
-
-        // Conteúdo inferior
-        Expanded(
-          flex: 3,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                // Nome + cliente
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      project.name,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      project.client,
-                      style: const TextStyle(
-                        color: AppColors.accentGold,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _MeasuredProgressBar(project: project),
-                    const SizedBox(height: 10),
-                    _BudgetBar(project: project, budgetService: budgetService),
-                  ],
-                ),
-              ],
             ),
-          ),
-        ),
-      ],
+
+            // Conteúdo inferior
+            Expanded(
+              child: Padding(
+                padding: contentPadding,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (compact) ...[
+                      _CompactCardActions(
+                        alerts: _AlertBadges(project: project, inline: true),
+                        menu: _buildPopupMenu(),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    _ProjectTitleBlock(project: project, compact: compact),
+                    SizedBox(height: compact ? 8 : 10),
+                    if (compact)
+                      _CompactProjectMetaLine(project: project)
+                    else
+                      _ProjectMetaWrap(project: project),
+                    const Spacer(),
+                    _MeasuredProgressBar(project: project),
+                    if (!compact) ...[
+                      const SizedBox(height: 10),
+                      _BudgetBar(
+                        project: project,
+                        budgetService: budgetService,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -288,6 +317,88 @@ class ProjectCard extends StatelessWidget {
 
   // ─── Popup menu ───────────────────────────────────────────────────────────
 
+  Widget _buildCompactListContent() {
+    return Padding(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ProjectImageWidget(
+                  imageUrl: project.imageUrl,
+                  width: 70,
+                  height: 70,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      project.name,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      project.client,
+                      style: TextStyle(
+                        color: AppColors.accentGold.withOpacity(0.85),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      project.location,
+                      style: TextStyle(
+                        color: AppColors.textMuted.withOpacity(0.85),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _buildPopupMenu(),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _StatusBadge(project: project, small: true),
+              _AlertBadges(project: project, inline: true),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _BudgetValues(project: project, budgetService: budgetService),
+          const SizedBox(height: 8),
+          _MeasuredProgressBar(project: project),
+          const SizedBox(height: 8),
+          _BudgetBar(project: project, budgetService: budgetService),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPopupMenu({Color? iconColor}) {
     return PopupMenuButton<String>(
       icon: Icon(
@@ -371,6 +482,208 @@ class ProjectCard extends StatelessWidget {
 }
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
+
+class _ProjectTitleBlock extends StatelessWidget {
+  final Project project;
+  final bool compact;
+
+  const _ProjectTitleBlock({required this.project, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          project.name,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: compact ? 15 : 16,
+            fontWeight: FontWeight.w800,
+            height: 1.15,
+            letterSpacing: 0,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            const Icon(
+              Icons.business_center_rounded,
+              size: 13,
+              color: AppColors.accentGold,
+            ),
+            const SizedBox(width: 5),
+            Expanded(
+              child: Text(
+                project.client,
+                style: TextStyle(
+                  color: AppColors.accentGold.withOpacity(0.92),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _CompactCardActions extends StatelessWidget {
+  final Widget alerts;
+  final Widget menu;
+
+  const _CompactCardActions({required this.alerts, required this.menu});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 34,
+      child: Row(
+        children: [
+          Expanded(
+            child: Align(alignment: Alignment.centerLeft, child: alerts),
+          ),
+          const SizedBox(width: 8),
+          Align(alignment: Alignment.centerRight, child: menu),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompactProjectMetaLine extends StatelessWidget {
+  final Project project;
+
+  const _CompactProjectMetaLine({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = <String>[
+      if (project.location.trim().isNotEmpty) project.location.trim(),
+      '${project.teamSize} pessoas',
+    ];
+
+    return Text(
+      parts.join(' • '),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: AppColors.textMuted.withOpacity(0.86),
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
+class _ProjectMetaWrap extends StatelessWidget {
+  final Project project;
+  final bool compact;
+
+  const _ProjectMetaWrap({required this.project, this.compact = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final deadline = _deadlineLabel(project);
+    final coordinator = project.coordinatorName?.trim();
+
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        if (project.location.trim().isNotEmpty)
+          _ProjectMetaChip(
+            icon: Icons.location_on_rounded,
+            label: project.location,
+            color: AppColors.accentBlue,
+          ),
+        _ProjectMetaChip(
+          icon: Icons.groups_2_rounded,
+          label: '${project.teamSize} pessoas',
+          color: AppColors.accentGreen,
+        ),
+        if (!compact && coordinator != null && coordinator.isNotEmpty)
+          _ProjectMetaChip(
+            icon: Icons.assignment_ind_rounded,
+            label: 'Coord. $coordinator',
+            color: AppColors.accentGold,
+          ),
+        if (deadline != null)
+          _ProjectMetaChip(
+            icon: Icons.event_available_rounded,
+            label: deadline,
+            color:
+                project.isOverdue ? AppColors.accentRed : AppColors.textMuted,
+          ),
+      ],
+    );
+  }
+
+  String? _deadlineLabel(Project project) {
+    if (project.isCompleted) return 'Concluido';
+    if (project.endDate == null) return null;
+    if (project.isOverdue) return 'Atrasado';
+
+    final days = project.daysUntilDeadline;
+    if (days == null) return null;
+    if (days == 0) return 'vence hoje';
+    if (days <= 7) return '$days dias';
+    return DateFormat('dd/MM').format(project.endDate!);
+  }
+}
+
+class _ProjectMetaChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _ProjectMetaChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 190),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.22)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    color == AppColors.textMuted
+                        ? AppColors.textSecondary
+                        : color,
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatusBadge extends StatelessWidget {
   final Project project;

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:project_granith/models/project_measurement_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class ProjectMeasurementFormDialog extends StatefulWidget {
   final List<Project> projects;
@@ -66,6 +67,10 @@ class _ProjectMeasurementFormDialogState
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.measurement != null;
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < ResponsiveLayout.compact;
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 560.0);
     final projectItems =
         widget.projects
             .map(
@@ -78,9 +83,10 @@ class _ProjectMeasurementFormDialogState
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      insetPadding: EdgeInsets.all(inset),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
+        width: dialogWidth.toDouble(),
+        constraints: BoxConstraints(maxHeight: size.height * 0.92),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(28),
@@ -90,7 +96,7 @@ class _ProjectMeasurementFormDialogState
           boxShadow: AppColors.glowShadows(AppColors.accentBlue),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: ResponsiveLayout.pagePadding(size.width),
           child: Form(
             key: _formKey,
             child: Column(
@@ -162,114 +168,100 @@ class _ProjectMeasurementFormDialogState
                   ),
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _grossAmountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Valor bruto',
-                          prefixText: 'R\$ ',
-                        ),
-                        validator: (value) {
-                          final amount = _parseAmount(value);
-                          if (amount <= 0) {
-                            return 'Informe um valor bruto maior que zero.';
-                          }
-                          return null;
-                        },
-                      ),
+                _responsivePair(
+                  TextFormField(
+                    controller: _grossAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _discountAmountController,
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(
-                          labelText: 'Descontos',
-                          prefixText: 'R\$ ',
-                        ),
-                        validator: (value) {
-                          final discount = _parseAmount(value);
-                          final gross = _parseAmount(
-                            _grossAmountController.text,
-                          );
-                          if (discount < 0) {
-                            return 'Desconto invalido.';
-                          }
-                          if (discount > gross) {
-                            return 'Desconto maior que o valor bruto.';
-                          }
-                          return null;
-                        },
-                      ),
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      labelText: 'Valor bruto',
+                      prefixText: 'R\$ ',
                     ),
-                  ],
+                    validator: (value) {
+                      final amount = _parseAmount(value);
+                      if (amount <= 0) {
+                        return 'Informe um valor bruto maior que zero.';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _discountAmountController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                      labelText: 'Descontos',
+                      prefixText: 'R\$ ',
+                    ),
+                    validator: (value) {
+                      final discount = _parseAmount(value);
+                      final gross = _parseAmount(_grossAmountController.text);
+                      if (discount < 0) {
+                        return 'Desconto invalido.';
+                      }
+                      if (discount > gross) {
+                        return 'Desconto maior que o valor bruto.';
+                      }
+                      return null;
+                    },
+                  ),
+                  compact,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<ProjectMeasurementStatus>(
-                        initialValue: _selectedStatus,
-                        dropdownColor: AppColors.surfaceDark,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: const InputDecoration(labelText: 'Status'),
-                        items:
-                            ProjectMeasurementStatus.values
-                                .map(
-                                  (status) => DropdownMenuItem(
-                                    value: status,
-                                    child: Text(status.displayName),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _selectedStatus = value);
-                          }
-                        },
+                _responsivePair(
+                  DropdownButtonFormField<ProjectMeasurementStatus>(
+                    initialValue: _selectedStatus,
+                    dropdownColor: AppColors.surfaceDark,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: const InputDecoration(labelText: 'Status'),
+                    items:
+                        ProjectMeasurementStatus.values
+                            .map(
+                              (status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status.displayName),
+                              ),
+                            )
+                            .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedStatus = value);
+                      }
+                    },
+                  ),
+                  InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: _pickDate,
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Data da medicao',
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_today_rounded,
+                            color: AppColors.textMuted,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              DateFormat('dd/MM/yyyy').format(_measurementDate),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
-                        onTap: _pickDate,
-                        child: InputDecorator(
-                          decoration: const InputDecoration(
-                            labelText: 'Data da medicao',
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.calendar_today_rounded,
-                                color: AppColors.textMuted,
-                                size: 18,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                DateFormat(
-                                  'dd/MM/yyyy',
-                                ).format(_measurementDate),
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
+                  compact,
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -284,14 +276,16 @@ class _ProjectMeasurementFormDialogState
                   ),
                 ),
                 const SizedBox(height: 26),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Cancelar'),
                     ),
-                    const SizedBox(width: 12),
                     ElevatedButton.icon(
                       onPressed: _submit,
                       icon: Icon(
@@ -306,6 +300,20 @@ class _ProjectMeasurementFormDialogState
           ),
         ),
       ),
+    );
+  }
+
+  Widget _responsivePair(Widget first, Widget second, bool compact) {
+    if (compact) {
+      return Column(children: [first, const SizedBox(height: 16), second]);
+    }
+
+    return Row(
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 16),
+        Expanded(child: second),
+      ],
     );
   }
 

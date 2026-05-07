@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/constants/supplier_constants.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class SupplierCard extends StatelessWidget {
   final Supplier supplier;
@@ -44,7 +45,16 @@ class SupplierCard extends StatelessWidget {
               width: 1,
             ),
           ),
-          child: isListView ? _buildListView() : _buildGridView(),
+          child:
+              isListView
+                  ? LayoutBuilder(
+                    builder:
+                        (context, constraints) =>
+                            constraints.maxWidth < ResponsiveLayout.compact
+                                ? _buildCompactListView()
+                                : _buildListView(),
+                  )
+                  : _buildGridView(),
         ),
       ),
     );
@@ -74,6 +84,39 @@ class SupplierCard extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         _buildActions(),
+      ],
+    );
+  }
+
+  Widget _buildCompactListView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildLeadingIcon(),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSupplierName(),
+                  const SizedBox(height: 4),
+                  _buildSupplierCnpj(),
+                ],
+              ),
+            ),
+            _buildActions(),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [_buildStatusBadge(), _buildSupplierInfo()],
+        ),
       ],
     );
   }
@@ -154,6 +197,8 @@ class SupplierCard extends StatelessWidget {
   Widget _buildSupplierCnpj() {
     return Text(
       supplier.formattedCnpj,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(
         color:
             supplier.isActive
@@ -187,6 +232,8 @@ class SupplierCard extends StatelessWidget {
         supplier.isActive
             ? SupplierConstants.statusActive
             : SupplierConstants.statusInactive,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: TextStyle(
           color:
               supplier.isActive ? AppColors.accentGreen : AppColors.textMuted,
@@ -198,26 +245,30 @@ class SupplierCard extends StatelessWidget {
   }
 
   Widget _buildSupplierInfo() {
-    return Row(
-      children: [
-        Icon(
-          Icons.schedule_rounded,
-          size: 14,
-          color: AppColors.textMuted.withOpacity(0.7),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            'Criado em ${_formatDate(supplier.createdAt)}',
-            style: TextStyle(
-              color: AppColors.textMuted.withOpacity(0.8),
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule_rounded,
+            size: 14,
+            color: AppColors.textMuted.withOpacity(0.7),
           ),
-        ),
-      ],
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              'Criado em ${_formatDate(supplier.createdAt)}',
+              style: TextStyle(
+                color: AppColors.textMuted.withOpacity(0.8),
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

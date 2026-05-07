@@ -37,23 +37,27 @@ class GranitCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final radius = borderRadius ?? BorderRadius.circular(16);
     final decoration = BoxDecoration(
       gradient: AppColors.cardGradient,
       color: backgroundColor ?? AppColors.surfaceDark.withValues(alpha: 0.76),
-      borderRadius: borderRadius ?? GranitTokens.cardRadius,
+      borderRadius: radius,
       border:
           customBorder ??
-          Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
+          Border.all(color: AppColors.borderColor.withValues(alpha: 0.66)),
       boxShadow: AppColors.glowShadows(),
     );
 
     if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: borderRadius ?? GranitTokens.cardRadius,
-        child: Ink(
-          decoration: decoration,
-          child: Padding(padding: padding, child: child),
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: radius,
+          child: Ink(
+            decoration: decoration,
+            child: Padding(padding: padding, child: child),
+          ),
         ),
       );
     }
@@ -85,7 +89,12 @@ class GranitCardTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padding,
-      child: Text(text.toUpperCase(), style: GranitTokens.labelTiny),
+      child: Text(
+        text.toUpperCase(),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: GranitTokens.labelTiny,
+      ),
     );
   }
 }

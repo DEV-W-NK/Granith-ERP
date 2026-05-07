@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:project_granith/controllers/supplier_controller.dart';
 import 'package:project_granith/services/supplier_service.dart' as services;
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
 
 class CNPJLookupDialog extends StatefulWidget {
@@ -369,30 +370,37 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < ResponsiveLayout.compact;
+          final labelText = Text(
+            '$label:',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
+          );
+          final valueText = Text(
+            value,
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [labelText, const SizedBox(height: 2), valueText],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 120, child: labelText),
+              Expanded(child: valueText),
+            ],
+          );
+        },
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -97,6 +98,10 @@ class ServiceProjetos {
       'client_account_id': project.clientAccountId,
       'clientAccountName': project.clientAccountName,
       'client_account_name': project.clientAccountName,
+      'coordinatorId': project.coordinatorId,
+      'coordinator_id': project.coordinatorId,
+      'coordinatorName': project.coordinatorName,
+      'coordinator_name': project.coordinatorName,
       'projectKey': _generateProjectKey(project.name, project.client),
       'contentHash': project.contentHash,
       'updatedAt': now,
@@ -126,7 +131,24 @@ class ServiceProjetos {
   }
 
   Future<List<Project>> getProjectsByClientAccount(String clientAccountId) {
-    return getProjects(clientAccountId: clientAccountId);
+    return _getClientPortalProjects(clientAccountId);
+  }
+
+  Future<List<Project>> _getClientPortalProjects(String clientAccountId) async {
+    if (clientAccountId.trim().isEmpty) {
+      return <Project>[];
+    }
+
+    final response = await _client
+        .from('client_portal_projects')
+        .select(SupabaseSelects.clientPortalProject)
+        .eq('clientAccountId', clientAccountId.trim())
+        .order('startDate', ascending: false);
+
+    return (response as List).map((row) {
+      final data = Map<String, dynamic>.from(row as Map);
+      return Project.fromMap((data['id'] ?? '').toString(), data);
+    }).toList();
   }
 
   Future<String> addProject(Project project) async {

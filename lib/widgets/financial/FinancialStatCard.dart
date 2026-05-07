@@ -13,6 +13,8 @@ class FinancialStatCard extends StatelessWidget {
   final Color color;
   final int? badgeCount;
   final VoidCallback? onTap;
+  final double width;
+  final bool compact;
 
   const FinancialStatCard({
     super.key,
@@ -22,6 +24,8 @@ class FinancialStatCard extends StatelessWidget {
     required this.color,
     this.badgeCount,
     this.onTap,
+    this.width = 220,
+    this.compact = false,
   });
 
   @override
@@ -35,8 +39,8 @@ class FinancialStatCard extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: 220,
-            padding: const EdgeInsets.all(20),
+            width: width,
+            padding: EdgeInsets.all(compact ? 16 : 20),
             decoration: BoxDecoration(
               color: AppColors.surfaceDark,
               borderRadius: BorderRadius.circular(16),
@@ -70,7 +74,12 @@ class FinancialStatCard extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
-                _AnimatedValue(value: value, color: color, format: currency),
+                _AnimatedValue(
+                  value: value,
+                  color: color,
+                  format: currency,
+                  compact: compact,
+                ),
               ],
             ),
           ),
@@ -111,11 +120,13 @@ class _AnimatedValue extends StatelessWidget {
   final double value;
   final Color color;
   final NumberFormat format;
+  final bool compact;
 
   const _AnimatedValue({
     required this.value,
     required this.color,
     required this.format,
+    required this.compact,
   });
 
   @override
@@ -125,12 +136,19 @@ class _AnimatedValue extends StatelessWidget {
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOut,
       builder:
-          (_, v, __) => Text(
-            format.format(v),
-            style: TextStyle(
-              color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+          (_, v, __) => Align(
+            alignment: Alignment.centerLeft,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                format.format(v),
+                maxLines: 1,
+                style: TextStyle(
+                  color: color,
+                  fontSize: compact ? 18 : 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
     );

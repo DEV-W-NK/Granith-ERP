@@ -6,6 +6,7 @@ import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/project_measurement_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/project_measurements/project_measurement_form_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -33,7 +34,9 @@ class _ProjectMeasurementsPageViewState
   bool _isLoading = true;
   bool _isSaving = false;
   String? _errorMessage;
-  String? _selectedProjectId;
+  final TextEditingController _projectSearchController =
+      TextEditingController();
+  String _projectSearchQuery = '';
   List<Project> _projects = const <Project>[];
   List<ProjectMeasurement> _measurements = const <ProjectMeasurement>[];
 
@@ -49,17 +52,37 @@ class _ProjectMeasurementsPageViewState
   }
 
   List<ProjectMeasurement> get _filteredMeasurements {
-    if (_selectedProjectId == null || _selectedProjectId!.isEmpty) {
+    final query = _projectSearchQuery.trim().toLowerCase();
+    if (query.isEmpty) {
       return _measurements;
     }
+
+    final projectsById = <String, Project>{
+      for (final project in _projects) project.id: project,
+    };
+
     return _measurements
-        .where((measurement) => measurement.projectId == _selectedProjectId)
+        .where(
+          (measurement) => _measurementMatchesProjectSearch(
+            measurement,
+            projectsById[measurement.projectId],
+            query,
+          ),
+        )
         .toList();
   }
 
   Map<String, ProjectMeasurement> get _latestMeasurementByProject {
     final latest = <String, ProjectMeasurement>{};
     for (final measurement in _measurements) {
+      latest[measurement.projectId] = measurement;
+    }
+    return latest;
+  }
+
+  Map<String, ProjectMeasurement> get _latestFilteredMeasurementByProject {
+    final latest = <String, ProjectMeasurement>{};
+    for (final measurement in _filteredMeasurements) {
       latest[measurement.projectId] = measurement;
     }
     return latest;
@@ -72,11 +95,9 @@ class _ProjectMeasurementsPageViewState
 
   double get _averageMeasuredProgress {
     final latest =
-        _selectedProjectId == null || _selectedProjectId!.isEmpty
+        _projectSearchQuery.trim().isEmpty
             ? _latestMeasurementByProject.values.toList()
-            : _filteredMeasurements.isEmpty
-            ? const <ProjectMeasurement>[]
-            : <ProjectMeasurement>[_filteredMeasurements.last];
+            : _latestFilteredMeasurementByProject.values.toList();
 
     if (latest.isEmpty) {
       return 0;
@@ -87,6 +108,24 @@ class _ProjectMeasurementsPageViewState
       (sum, measurement) => sum + measurement.accumulatedPercentage,
     );
     return total / latest.length;
+  }
+
+  bool _measurementMatchesProjectSearch(
+    ProjectMeasurement measurement,
+    Project? project,
+    String query,
+  ) {
+    final fields = <String>[
+      measurement.projectName,
+      measurement.projectClient,
+      project?.name ?? '',
+      project?.client ?? '',
+      project?.location ?? '',
+      project?.coordinatorName ?? '',
+      project?.tags.join(' ') ?? '',
+    ];
+
+    return fields.any((field) => field.toLowerCase().contains(query));
   }
 
   Future<void> _loadData({bool showLoader = true}) async {
@@ -108,10 +147,6 @@ class _ProjectMeasurementsPageViewState
         results[1] as List<ProjectMeasurement>,
       );
 
-      final selectedExists =
-          _selectedProjectId != null &&
-          projects.any((project) => project.id == _selectedProjectId);
-
       if (!mounted) {
         return;
       }
@@ -120,7 +155,6 @@ class _ProjectMeasurementsPageViewState
         _projects = projects;
         _measurements = measurements;
         _errorMessage = null;
-        _selectedProjectId = selectedExists ? _selectedProjectId : null;
       });
     } catch (error) {
       if (!mounted) {
@@ -137,6 +171,12 @@ class _ProjectMeasurementsPageViewState
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _projectSearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -171,9 +211,9 @@ class _ProjectMeasurementsPageViewState
                       _buildMessageCard(
                         title: 'Nenhuma medicao registrada',
                         message:
-                            _selectedProjectId == null
+                            _projectSearchQuery.trim().isEmpty
                                 ? 'Cadastre a primeira medicao para transformar valor executado em progresso estimado da obra.'
-                                : 'Este projeto ainda nao recebeu medicoes. Registre a primeira para alimentar o andamento estimado.',
+                                : 'Nenhuma medicao foi encontrada para a busca "${_projectSearchQuery.trim()}".',
                         color: AppColors.accentGold,
                       )
                     else
@@ -214,19 +254,6 @@ class _ProjectMeasurementsPageViewState
   }
 
   Widget _buildHeader(BuildContext context) {
-    final filterItems = <DropdownMenuItem<String>>[
-      const DropdownMenuItem<String>(
-        value: '',
-        child: Text('Todos os projetos'),
-      ),
-      ..._projects.map(
-        (project) => DropdownMenuItem<String>(
-          value: project.id,
-          child: Text(project.name),
-        ),
-      ),
-    ];
-
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -289,18 +316,21 @@ class _ProjectMeasurementsPageViewState
                 isWide ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               SizedBox(
-                width: isWide ? 300 : double.infinity,
-                child: DropdownButtonFormField<String>(
-                  isExpanded: true,
-                  initialValue: _selectedProjectId ?? '',
-                  decoration: const InputDecoration(
-                    labelText: 'Filtrar projeto',
-                  ),
-                  items: filterItems,
+                width: isWide ? 360 : double.infinity,
+                child: _ProjectMeasurementSearchField(
+                  controller: _projectSearchController,
+                  query: _projectSearchQuery,
+                  projectCount: _projects.length,
+                  resultCount: _filteredMeasurements.length,
                   onChanged: (value) {
                     setState(() {
-                      _selectedProjectId =
-                          value == null || value.isEmpty ? null : value;
+                      _projectSearchQuery = value;
+                    });
+                  },
+                  onClear: () {
+                    _projectSearchController.clear();
+                    setState(() {
+                      _projectSearchQuery = '';
                     });
                   },
                 ),
@@ -335,11 +365,10 @@ class _ProjectMeasurementsPageViewState
   }
 
   Widget _buildSummaryStrip() {
-    final impactedProjects = _latestMeasurementByProject.length;
     final filteredProjects =
-        _selectedProjectId == null || _selectedProjectId!.isEmpty
-            ? impactedProjects
-            : (_filteredMeasurements.isEmpty ? 0 : 1);
+        _projectSearchQuery.trim().isEmpty
+            ? _latestMeasurementByProject.length
+            : _latestFilteredMeasurementByProject.length;
 
     return Wrap(
       spacing: 16,
@@ -354,7 +383,7 @@ class _ProjectMeasurementsPageViewState
         _SummaryCard(
           title: 'Projetos impactados',
           value: filteredProjects.toString(),
-          subtitle: 'obras com progresso por medicao',
+          subtitle: 'obras no filtro atual',
           color: AppColors.accentGold,
         ),
         _SummaryCard(
@@ -543,6 +572,69 @@ class _ProjectMeasurementsPageViewState
   }
 }
 
+class _ProjectMeasurementSearchField extends StatelessWidget {
+  const _ProjectMeasurementSearchField({
+    required this.controller,
+    required this.query,
+    required this.projectCount,
+    required this.resultCount,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final TextEditingController controller;
+  final String query;
+  final int projectCount;
+  final int resultCount;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasQuery = query.trim().isNotEmpty;
+
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        labelText: 'Buscar projeto',
+        hintText: 'Nome, cliente ou local',
+        helperText:
+            hasQuery
+                ? '$resultCount medicoes encontradas'
+                : '$projectCount projetos carregados',
+        prefixIcon: const Icon(Icons.search_rounded),
+        suffixIcon:
+            hasQuery
+                ? IconButton(
+                  tooltip: 'Limpar busca',
+                  onPressed: onClear,
+                  icon: const Icon(Icons.close_rounded),
+                )
+                : null,
+        filled: true,
+        fillColor: AppColors.surfaceDark.withValues(alpha: 0.62),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.55),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.accentBlue, width: 2),
+        ),
+      ),
+      style: const TextStyle(
+        color: AppColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+}
+
 class _MeasurementCard extends StatelessWidget {
   const _MeasurementCard({
     required this.measurement,
@@ -722,8 +814,10 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      width: 240,
+      width: width < ResponsiveLayout.compact ? double.infinity : 240,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: AppColors.cardGradient,
@@ -738,6 +832,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
@@ -747,6 +843,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
@@ -763,8 +861,10 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      width: 180,
+      width: width < ResponsiveLayout.compact ? double.infinity : 180,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.44),
@@ -783,6 +883,8 @@ class _MetricTile extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,

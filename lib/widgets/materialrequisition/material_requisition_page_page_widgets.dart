@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:project_granith/viewmodels/materialrequisitionviewmodel.dart';
 import 'package:project_granith/models/requisition_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 // O "Miolo" da página
 class MaterialRequisitionPageView extends StatefulWidget {
@@ -37,12 +38,13 @@ class _MaterialRequisitionPageViewState
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<MaterialRequisitionViewModel>();
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > ResponsiveLayout.compact;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       body: Padding(
-        padding: EdgeInsets.all(isDesktop ? 32 : 16),
+        padding: ResponsiveLayout.pagePadding(width),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -89,21 +91,27 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Aqui você pode expandir para o header oficial se já existir em outro arquivo
-    return const Column(
+    final compact = MediaQuery.sizeOf(context).width < 420;
+
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Requisições de Materiais',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 26,
+            fontSize: compact ? 22 : 26,
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: 4),
-        Text(
+        const SizedBox(height: 4),
+        const Text(
           'Acompanhe e gerencie pedidos de materiais para as obras.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -185,14 +193,21 @@ class _CardWrapper extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
-                requisition.projectName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: Text(
+                  requisition.projectName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               _StatusBadge(status: requisition.status),

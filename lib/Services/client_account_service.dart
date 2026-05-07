@@ -1,5 +1,6 @@
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/client_account_model.dart';
 
 class ClientAccountService {
@@ -8,7 +9,7 @@ class ClientAccountService {
   Future<List<ClientAccount>> getClientAccounts() async {
     final response = await AppSupabase.client
         .from(_table)
-        .select()
+        .select(SupabaseSelects.clientAccount)
         .order('name');
 
     return (response as List)
@@ -23,7 +24,7 @@ class ClientAccountService {
 
     final response = await AppSupabase.client
         .from(_table)
-        .select()
+        .select(SupabaseSelects.clientAccount)
         .eq('ownerEmail', email.trim().toLowerCase())
         .order('name');
 
@@ -52,14 +53,14 @@ class ClientAccountService {
           await AppSupabase.client
               .from(_table)
               .insert(payload)
-              .select()
+              .select(SupabaseSelects.clientAccount)
               .single();
     } else {
       response =
           await AppSupabase.client
               .from(_table)
               .upsert(payload)
-              .select()
+              .select(SupabaseSelects.clientAccount)
               .single();
     }
 

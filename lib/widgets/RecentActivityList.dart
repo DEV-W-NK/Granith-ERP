@@ -15,7 +15,7 @@ class RecentActivityList extends StatelessWidget {
       return const AppCard(
         child: Center(
           child: Text(
-            "Nenhuma atividade.",
+            'Nenhuma atividade.',
             style: TextStyle(color: AppColors.tx3),
           ),
         ),
@@ -40,6 +40,8 @@ class RecentActivityList extends StatelessWidget {
                 ),
                 child: const Text(
                   'Ver tudo',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.tx3,
                     fontSize: 10,
@@ -85,6 +87,8 @@ class RecentActivityList extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.tx,
                       fontSize: 12,
@@ -93,17 +97,25 @@ class RecentActivityList extends StatelessWidget {
                   ),
                   Text(
                     item.subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(color: AppColors.tx3, fontSize: 10),
                   ),
                 ],
               ),
             ),
-            Text(
-              item.value,
-              style: TextStyle(
-                color: item.isPositive ? AppColors.green : AppColors.red,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                item.value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: TextStyle(
+                  color: item.isPositive ? AppColors.green : AppColors.red,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

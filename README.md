@@ -45,25 +45,59 @@ Faltam três frentes principais para considerar o Granith ERP fechado como MVP. 
 
 ---
 
+## Lista de ajustes do ERP
+
+Backlog incremental para atacar aos poucos, mantendo cada item rastreável:
+
+- [x] **Configurações:** adicionar botão de seeder dentro da tela de configurações.
+- [x] **Permissões e papéis:** ao clicar em permissões, exibir botão para salvar permissões e papel somente quando houver alteração; o botão deve ficar fixo no canto inferior direito.
+- [x] **Diário de obras:** enviar o relatório para o coordenador responsável da obra assinar, com coordenador selecionado no cadastro do projeto.
+- [ ] **RH:** revisar o módulo de RH, que está visualmente amassado, e aplicar um visual mais clean.
+- [x] **Equipes:** permitir visualização e montagem de equipes pelo RH; equipes podem ser gerenciadas por Coordenadores, Supervisores RH e Gerência.
+- [x] **Header e menu:** retirar a pesquisa de módulo do header para dar mais espaço à página e mover a busca para dentro do menu hamburguer.
+- [ ] **Responsividade:** trabalhar responsividade de ícones, widgets e telas para permitir uso web mobile em tablet ou celular quando o cliente não tiver acesso por notebook ou PC. O foco principal continua sendo web desktop.
+- [x] **Benefícios:** alterar o benefício atual para comportar valores e reembolsos.
+- [x] **Categorias de benefícios:** permitir criação e gerenciamento de categorias de benefícios.
+
+### Levantamento rápido do README (05/05/2026)
+
+Itens já confirmados no código:
+- **Orçamento aprovado → projeto:** `ServiceOrcamentos.approveBudget()` cria ou reaproveita projeto via `sourceBudgetId`.
+- **Requisições:** aprovar/rejeitar e converter requisição aprovada em pedido de compra já existem; a compra gerada entra como aprovação CEO.
+- **Compras:** aprovação/recusa CEO, confirmação de entrega, despesa financeira, entrada no estoque e sync de custo do projeto estão implementados.
+- **RH base:** `EmployeeModel` já contém CPF, CTPS, admissão, desligamento e salário base; reajustes ficam em `salary_history`.
+- **Benefícios por colaborador:** catálogo, categorias e vínculos ficam em `Benefícios > Vínculos`, com valor mensal, reembolso/limite e histórico por colaborador.
+- **Diário de obra:** assinatura do coordenador responsável já está modelada, migrada e coberta por testes.
+- **Relatórios/DRE:** DRE real usa transações do Supabase via `ReportsController`.
+
+Itens parciais ou ainda pendentes:
+- **Configurações / seeder:** botão de seeder fica em `Configurações` e aparece somente em build debug.
+- **Responsividade:** há `ResponsiveLayout` e smoke tests, mas o item continua amplo e deve ser validado tela a tela.
+- **Reembolsos financeiros reais:** catálogo e limites já existem; fluxo de lançamento/aprovação do reembolso real fica para etapa futura.
+- **Requisição estoque vs compra:** a conversão para compra existe; não localizei a decisão automática "baixa estoque se houver saldo, senão gera compra".
+- **IA, veículos, geofencing/ponto e banco de talentos completo:** há schema/seeds para talentos, mas não localizei módulos funcionais completos no app.
+
+---
+
 ## Estrutura de pastas (`lib/`)
 
 ```
 lib/
 ├── constants/           # budget_type_constants, projects_constants, supplier_constants
-├── controllers/         # 12 controllers (ChangeNotifier)
+├── controllers/         # controllers ChangeNotifier
 │   └── (futuro)         # hr_controller.dart, talent_controller.dart, ai_controller.dart
 ├── helpers/             # projects_helpers.dart
-├── models/              # 19 modelos de domínio
-│   └── (futuro)         # benefit_model.dart, talent_candidate_model.dart, salary_history_model.dart
-├── screens/             # 17 telas
-│   └── (futuro)         # hr_page.dart, talent_bank_page.dart, ai_assistant_page.dart
+├── models/              # modelos de domínio
+│   └── (futuro)         # talent_candidate_model.dart
+├── screens/             # telas do app
+│   └── (futuro)         # talent_bank_page.dart, ai_assistant_page.dart
 ├── services/            # services de acesso ao Supabase
-│   └── (futuro)         # benefit_service.dart, talent_service.dart, gemini_service.dart, storage_service.dart
+│   └── (futuro)         # talent_service.dart, gemini_service.dart, storage_service.dart
 ├── themes/              # app_theme.dart
 ├── utils/               # seeder.dart
 ├── widgets/
 │   ├── financial/
-│   ├── hr/              # (futuro) employee_card.dart, benefit_chip.dart, salary_history_tile.dart
+│   ├── hr/              # hrpage_page_widgets.dart
 │   ├── inventory/
 │   ├── navigation/      # sidebar_menu, mobile_drawer
 │   ├── projects/
@@ -91,7 +125,7 @@ lib/
 ### Orçamentos
 - `budget_model.dart`, `budget_type.dart`, `budget_type_controller.dart`
 - `service_orcamentos.dart`, `budget_type_service.dart`
-- Orçamento aprovado deve disparar criação de projeto (regra pendente)
+- Orçamento aprovado cria ou reaproveita projeto automaticamente via `ServiceOrcamentos.approveBudget()`.
 
 ### Financeiro ⭐ (alicerce — implementado)
 - `financial_transaction_model.dart` — modelo completo com:
@@ -124,23 +158,24 @@ lib/
 
 ### Supply Chain — Requisições
 - `requisition_model.dart`, `material_requisition_controller.dart`, `material_requisition_service.dart`
-- **Fluxo de aprovação pendente:** nível gerência → CEO
-- **TODO:** ao aprovar, verificar estoque — se tem: baixa; se não tem: gera pedido de compra
+- **Fluxo implementado:** aprovar/rejeitar requisição; requisição aprovada pode gerar pedido de compra.
+- **Fluxo de compra:** pedido gerado por requisição fica em aprovação CEO antes de seguir para entrega.
+- **TODO:** automatizar decisão estoque vs compra — se tem saldo: baixa; se não tem: gera pedido de compra.
 
 ### Budget vs Realizado (implementado)
 - `project_budget_service.dart` — `watchProjectBudget()`, `syncProjectCurrentCost()`, `ProjectBudgetSnapshot`
 - `project_budget_summary.dart` — widget compacto e completo
 
-### RH + Equipes ⭐ (expansão planejada)
+### RH + Equipes ⭐ (expansão em andamento)
 
 #### Estado atual
-- `employee_model.dart` — campos básicos (nome, cargo, equipe)
-- `team_model.dart`, `job_role_model.dart`
-- `job_role_model` contém `hourlyRate` para cálculo futuro de custo de M.O.
-- **Regra corrigida:** cargos NÃO têm salário fixo — o salário pertence ao funcionário
+- `employee_model.dart` — dados pessoais/contratuais, CPF, CTPS, admissão, desligamento, status, cargo textual, setor, hierarquia e salário base.
+- `SalaryHistoryModel.dart` — histórico de reajustes salariais em tabela própria.
+- `BenefitModel.dart`, `BenefitCategoryModel.dart`, `EmployeeBenefitModel.dart` — catálogo com valor mensal/reembolso, categorias e vínculo funcionário ↔ benefício com histórico.
+- `team_model.dart`, `job_role_model.dart` — equipes e cargos; `job_role_model` mantém `hourlyRate` para cálculo futuro de custo de M.O.
+- **Regra corrigida:** cargos NÃO têm salário fixo — o salário pertence ao funcionário.
 
-#### Expansão do `employee_model.dart`
-Campos a adicionar:
+#### Organização atual do `employee_model.dart`
 ```dart
 // Dados pessoais / contratuais
 String cpf
@@ -150,10 +185,10 @@ DateTime? dismissalDate
 
 // Remuneração (salário no funcionário, não no cargo)
 double baseSalary
-List<SalaryHistory> salaryHistory  // histórico de reajustes
+// Histórico de reajustes em salary_history
 
 // Benefícios
-List<String> benefitIds      // referências para benefit_model
+// Vínculos em employee_benefits
 ```
 
 #### Novo: `salary_history_model.dart`
@@ -172,6 +207,9 @@ String updatedBy
 String id
 String name                  // "Vale Transporte", "Vale Refeição", "Plano de Saúde"...
 String type                  // 'vt' | 'vr' | 'health' | 'dental' | 'other'
+String valueMode             // 'fixedMonthly' | 'reimbursement'
+double defaultValue          // valor mensal padrao
+double reimbursementLimit    // limite mensal para reembolso
 String description
 bool isActive
 DateTime createdAt
@@ -190,18 +228,16 @@ List<BenefitHistoryEntry> history   // log de alterações de valor
 bool isActive
 ```
 
-#### Novos services
-- `benefit_service.dart` — CRUD de tipos de benefício + associações por funcionário
-- `hr_service.dart` — CRUD expandido de funcionários com salário e documentos
+#### Services atuais
+- `HrService.dart` — CRUD de funcionários, categorias, benefícios, vínculos, reajustes salariais e desligamento.
+- `team_service.dart` — equipes, membros e líderes.
+- `job_role_service.dart` — catálogo de cargos e valor/hora.
 
-#### Novas telas / widgets
-- `hr_page.dart` — substitui `employee_registration_page.dart`, com abas:
-  - **Funcionários** — lista com card expandido (salário, docs, benefícios)
-  - **Benefícios** — cadastro e gestão de tipos de benefício
-  - **Cargos** — mantém `job_role_model` com `hourlyRate`, sem salário fixo
-- `widgets/hr/employee_card.dart`
-- `widgets/hr/benefit_chip.dart`
-- `widgets/hr/salary_history_tile.dart`
+#### Telas / widgets atuais
+- `HrPage.dart` — aba de colaboradores e cargos.
+- `benefits_page.dart` — catálogo, categorias e vínculos de benefícios por colaborador.
+- `team_page.dart` — visualização e montagem de equipes.
+- `widgets/employee/*`, `widgets/hr/hrpage_page_widgets.dart`, `widgets/benefits/*`, `widgets/team/*`.
 
 ### Banco de Talentos ⭐ (novo módulo)
 
@@ -303,11 +339,9 @@ Retorno: score, pontos fortes, pontos fracos, recomendação
 Salvar em candidate.aiAnalysis (Supabase)
 ```
 
-#### Dependências a adicionar (`pubspec.yaml`)
+#### Dependência a adicionar para IA (`pubspec.yaml`)
 ```yaml
 google_generative_ai: ^0.4.0    # SDK oficial Gemini
-supabase_flutter: ^2.12.0       # Auth, banco e Storage
-file_picker: ^8.0.0             # seleção de PDF no device
 ```
 
 ---
@@ -327,7 +361,7 @@ file_picker: ^8.0.0             # seleção de PDF no device
 ## Mapa de dependências
 
 ```
-Orçamento aprovado ──────────────────────▶ Projeto (pendente)
+Orçamento aprovado ──────────────────────▶ Projeto (implementado)
                                                │
                      ┌─────────────────────────┼──────────────────┐
                      ▼                         ▼                   ▼
@@ -372,32 +406,31 @@ Todos ───────────────▶ Relatórios
 | 20 | IA | Modelo Gemini configurável por empresa no Supabase | 🔲 | Será feito Depois
 | 21 | Orçamentos | Orçamento aprovado cria projeto automaticamente | ✅ |
 | 22 | Requisições | Fluxo de aprovação: gerência → CEO | ✅ |
-| 23 | Requisições | Se item em estoque → baixa; se não → gera compra | ✅ |
+| 23 | Requisições | Se item em estoque → baixa; se não → gera compra | 🔲 parcial — compra é gerada manualmente após aprovação; baixa automática por saldo não localizada |
 | 24 | Relatórios | DRE real a partir das transações do Supabase | ✅ |
 | 25 | Diário de Obra | Horas × valor/hora = custo M.O. no financeiro | 🔲 futuro |
 | 26 | Custos | Calculo de Consumo real integrado com as leituras de Banco + Consumo de API´s. | ✅ |
 
 ---
 
-## Providers registrados (`main.dart`)
+## Providers registrados (`lib/app/di/app_providers.dart`)
+
+`main.dart` agora delega o bootstrap para `lib/app/bootstrap.dart`; os providers globais ficam concentrados em `AppProviders`.
 
 ```dart
 MultiProvider(providers: [
-  ChangeNotifierProvider(create: (_) => AuthController()),
-  ChangeNotifierProvider(create: (_) => LoginController()),
+  ChangeNotifierProvider(create: (_) => AuthViewModel()),
+  ChangeNotifierProvider(create: (_) => LoginViewModel()),
+  ChangeNotifierProvider(create: (_) => SystemSettingsViewModel()),
   ChangeNotifierProvider(create: (_) => SubscriptionController()),
   ChangeNotifierProvider(create: (_) => DailyLogController()),
   ChangeNotifierProvider(create: (_) => ProjectsController(ServiceProjetos())),
-  ChangeNotifierProvider(create: (_) => HomeController()),
-  ChangeNotifierProvider(create: (_) => FinancialController()..init()),
+  ChangeNotifierProvider(create: (_) => HomeViewModel()),
   ChangeNotifierProvider(create: (_) => TeamController()),
   ChangeNotifierProvider(create: (_) => JobRoleController()),
   ChangeNotifierProvider(create: (_) => ReportsController()),
   ChangeNotifierProvider(create: (_) => MaterialRequisitionController()),
-  // A adicionar:
-  // ChangeNotifierProvider(create: (_) => HrController()),
-  // ChangeNotifierProvider(create: (_) => TalentController()),
-  // ChangeNotifierProvider(create: (_) => AiController()),
+  ChangeNotifierProvider(create: (_) => FinancialController()..init()),
 ])
 ```
 
@@ -409,21 +442,22 @@ MultiProvider(providers: [
 |--------|------|
 | 0 | HomePage |
 | 1 | ProjectsPage |
-| 2 | DailyLogsPage |
-| 3 | MaterialRequisitionPage |
-| 4 | HrPage (substituirá EmployeeRegistrationPage) |
-| 5 | JobRoleRegistrationPage |
-| 6 | TeamPage |
-| 7 | BudgetsPage |
-| 8 | BudgetTypesPage |
-| 9 | SuppliersPage |
-| 10 | ItemsPage |
-| 11 | PurchasesPage |
-| 12 | InventoryPage |
-| 13 | FinancialPage |
-| 14 | ReportsPage (dark-premium + fl_chart) |
-| 15 | TalentBankPage (novo) |
-| 16 | Configurações (placeholder) |
+| 2 | ProjectMeasurementsPage |
+| 3 | DailyLogsPage |
+| 4 | MaterialRequisitionPage |
+| 5 | HrPage |
+| 6 | BenefitsPage |
+| 7 | TeamPage |
+| 8 | BudgetsPage |
+| 9 | BudgetTypesPage |
+| 10 | SuppliersPage |
+| 11 | ItemsPage |
+| 12 | PurchasesPage |
+| 13 | InventoryPage |
+| 14 | FinancialPage |
+| 15 | ReportsPage |
+| 16 | AccessManagementPage |
+| 17 | SystemSettingsPage |
 
 ---
 
@@ -431,11 +465,14 @@ MultiProvider(providers: [
 
 ```yaml
 dependencies:
-  fl_chart: ^0.68.0                # gráficos DRE
-  google_generative_ai: ^0.4.0    # SDK Gemini
+  fl_chart: ^1.2.0                # gráficos DRE
   supabase_flutter: ^2.12.0       # Auth, banco e Storage
-  file_picker: ^8.0.0             # seleção de PDF no device
+  file_picker: ^10.3.2            # seleção de arquivos no device
+  provider: ^6.1.5+1              # estado global atual
+  http: ^1.5.0                    # integrações HTTP
 ```
+
+`google_generative_ai` ainda não está no `pubspec.yaml`; o bloco de IA continua como planejamento.
 
 ---
 
@@ -447,8 +484,8 @@ dependencies:
 4. **IA — RH** apoiar triagem, histórico funcional, benefícios, alertas e leitura de documentos.
 5. **Veículos — módulo operacional** criar cadastro, status, documentação, manutenção, custos e vínculo com obras/equipes.
 6. **Granith Mobile — ponto/geofencing** sincronizar batidas, validar geofence por obra e consolidar horas no ERP.
-7. **RH — refatorar `employee_model`** adicionar `baseSalary`, `salaryHistory`, `cpf`, `ctps`, `admissionDate`.
-8. **RH — `benefit_model` + `benefit_service`** CRUD de tipos e associações por funcionário.
+7. **RH — validar acabamento da tela e fluxos complementares** revisar UX final, documentos e histórico salarial na interface.
+8. **Benefícios — evoluir reembolsos financeiros** criar fluxo de lançamento, aprovação e conciliação de reembolsos reais.
 9. **Talentos — `talent_candidate_model` + `storage_service`** upload de PDF + Supabase.
 10. **Migração MVVM** separar ViewModels, preparar para web + mobile.
 

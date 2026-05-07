@@ -8,6 +8,7 @@ import 'package:project_granith/services/item_service.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class PurchaseFormDialog extends StatefulWidget {
   final Purchase? purchase;
@@ -136,26 +137,29 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.purchase != null;
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < ResponsiveLayout.compact;
+    final inset = size.width < 420 ? 8.0 : 16.0;
+    final padding = ResponsiveLayout.pagePadding(size.width);
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 600.0);
 
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.all(inset),
       child: SlideTransition(
         position: _slideAnim,
         child: FadeTransition(
           opacity: _fadeAnim,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 860),
+            width: dialogWidth.toDouble(),
+            constraints: BoxConstraints(maxHeight: size.height * 0.92),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
+              gradient: AppColors.cardGradient,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryDark.withOpacity(0.5),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-              ],
+              border: Border.all(
+                color: AppColors.borderColor.withValues(alpha: 0.66),
+              ),
+              boxShadow: AppColors.glowShadows(AppColors.accentGold),
             ),
             child:
                 _isLoading
@@ -175,7 +179,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
                           children: [
                             _buildHeader(isEditing),
                             Padding(
-                              padding: const EdgeInsets.all(24),
+                              padding: padding,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -195,32 +199,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
                                   const SizedBox(height: 20),
 
                                   // Quantidade + Valor
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            _label('Quantidade'),
-                                            _quantityField(),
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            _label('Valor total (R\$)'),
-                                            _valueField(),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                  _buildQuantityValueFields(isCompact),
                                   const SizedBox(height: 20),
 
                                   // Endereço
@@ -233,7 +212,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
                                   _statusDropdown(),
                                   const SizedBox(height: 32),
 
-                                  _buildActions(),
+                                  _buildActions(isCompact),
                                 ],
                               ),
                             ),
@@ -250,9 +229,12 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   // ─── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader(bool isEditing) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 420;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(compact ? 16 : 24),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [AppColors.accentGold, Color(0xFFB8941F)],
@@ -266,7 +248,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primaryDark.withOpacity(0.2),
+              color: AppColors.primaryDark.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Icon(
@@ -276,12 +258,16 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            isEditing ? 'Editar compra' : 'Registrar compra',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primaryDark,
+          Expanded(
+            child: Text(
+              isEditing ? 'Editar compra' : 'Registrar compra',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: compact ? 18 : 20,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
             ),
           ),
         ],
@@ -289,11 +275,34 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     );
   }
 
+  Widget _buildQuantityValueFields(bool isCompact) {
+    final quantity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [_label('Quantidade'), _quantityField()],
+    );
+    final value = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [_label('Valor total (R\$)'), _valueField()],
+    );
+
+    if (isCompact) {
+      return Column(children: [quantity, const SizedBox(height: 16), value]);
+    }
+
+    return Row(
+      children: [
+        Expanded(child: quantity),
+        const SizedBox(width: 14),
+        Expanded(flex: 2, child: value),
+      ],
+    );
+  }
+
   // ─── Campos ───────────────────────────────────────────────────────────────
 
   Widget _projectDropdown() {
     return DropdownButtonFormField<Project>(
-      value: _selectedProject,
+      initialValue: _selectedProject,
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('Selecione o projeto', Icons.business_rounded),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -317,7 +326,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
   Widget _itemDropdown() {
     return DropdownButtonFormField<Item>(
-      value: _selectedItem,
+      initialValue: _selectedItem,
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('Selecione o item', Icons.inventory_2_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -337,7 +346,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
   Widget _supplierDropdown() {
     return DropdownButtonFormField<Supplier>(
-      value: _selectedSupplier,
+      initialValue: _selectedSupplier,
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('Selecione o fornecedor', Icons.storefront_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -400,7 +409,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
   Widget _statusDropdown() {
     return DropdownButtonFormField<PurchaseStatus>(
-      value: _status,
+      initialValue: _status,
       dropdownColor: AppColors.secondaryDark,
       decoration: _dec('', Icons.flag_outlined),
       style: const TextStyle(color: AppColors.textPrimary),
@@ -427,40 +436,43 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
 
   // ─── Botões ───────────────────────────────────────────────────────────────
 
-  Widget _buildActions() {
+  Widget _buildActions(bool isCompact) {
+    final cancel = TextButton(
+      onPressed: () => Navigator.pop(context),
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: const Text(
+        'Cancelar',
+        style: TextStyle(color: AppColors.textSecondary),
+      ),
+    );
+    final save = ElevatedButton(
+      onPressed: _submit,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accentGold,
+        foregroundColor: AppColors.primaryDark,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      child: const Text(
+        'Salvar compra',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [save, const SizedBox(height: 8), cancel],
+      );
+    }
+
     return Row(
       children: [
-        Expanded(
-          child: TextButton(
-            onPressed: () => Navigator.pop(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text(
-              'Cancelar',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-          ),
-        ),
+        Expanded(child: cancel),
         const SizedBox(width: 16),
-        Expanded(
-          flex: 2,
-          child: ElevatedButton(
-            onPressed: _submit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentGold,
-              foregroundColor: AppColors.primaryDark,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Salvar compra',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
+        Expanded(flex: 2, child: save),
       ],
     );
   }
@@ -522,22 +534,26 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   InputDecoration _dec(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.5)),
-      prefixIcon: Icon(icon, color: AppColors.accentGold, size: 20),
+      hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.68)),
+      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
       filled: true,
-      fillColor: AppColors.secondaryDark,
+      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.borderColor),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: AppColors.borderColor.withValues(alpha: 0.72),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.borderColor),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: AppColors.borderColor.withValues(alpha: 0.72),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.accentGold),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
       ),
     );
   }

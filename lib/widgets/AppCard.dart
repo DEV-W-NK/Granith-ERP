@@ -34,6 +34,8 @@ class AppCardTitle extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 12),
     child: Text(
       text.toUpperCase(),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
       style: const TextStyle(
         color: AppColors.textSecondary,
         fontSize: 10,

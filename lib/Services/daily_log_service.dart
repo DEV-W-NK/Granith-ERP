@@ -35,6 +35,32 @@ class DailyLogService {
     }
   }
 
+  Future<void> signLog(
+    DailyLogModel log, {
+    String? signedByCoordinatorId,
+    String? signedByCoordinatorName,
+  }) async {
+    if (log.id.trim().isEmpty) {
+      throw Exception('ID do diario e obrigatorio para assinatura');
+    }
+
+    try {
+      final now = DateTime.now().toUtc();
+      final data = DbValue.normalizeMap({
+        'status': LogStatus.signed.name,
+        'signedAt': now,
+        'signedByCoordinatorId': signedByCoordinatorId ?? log.coordinatorId,
+        'signedByCoordinatorName':
+            signedByCoordinatorName ?? log.coordinatorName,
+        'updatedAt': now,
+      });
+
+      await AppSupabase.client.from(_table).update(data).eq('id', log.id);
+    } catch (e) {
+      throw Exception('Erro ao assinar diario: $e');
+    }
+  }
+
   Future<List<DailyLogModel>> getRecentLogs({int limit = 20}) async {
     try {
       final response = await AppSupabase.client

@@ -25,7 +25,7 @@ Widget _buildHarness({
 
 void main() {
   group('AccessManagementPage', () {
-    testWidgets('carrega usuarios, altera permissao e mostra clientes', (
+    testWidgets('carrega usuarios, altera permissao, salva e mostra clientes', (
       tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1440, 1800));
@@ -67,13 +67,21 @@ void main() {
 
       expect(find.text('Permissoes e Clientes'), findsOneWidget);
       expect(find.text('gestor@granith.com'), findsOneWidget);
+      expect(find.text('Salvar permissoes e papel'), findsNothing);
 
       await tester.tap(find.text('projects.write'));
       await tester.pumpAndSettle();
+      expect(accessService.lastUpdatedUser, isNull);
+      expect(find.text('Salvar permissoes e papel'), findsOneWidget);
+
+      await tester.tap(find.text('Salvar permissoes e papel'));
+      await tester.pumpAndSettle();
+
       expect(
         accessService.lastUpdatedUser?.permissions,
         contains('projects.write'),
       );
+      expect(find.text('Salvar permissoes e papel'), findsNothing);
 
       await tester.tap(find.text('Cadastro de Clientes'));
       await tester.pumpAndSettle();

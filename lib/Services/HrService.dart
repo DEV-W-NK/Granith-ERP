@@ -1,5 +1,6 @@
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/models/BenefitCategoryModel.dart';
 import 'package:project_granith/models/BenefitModel.dart';
 import 'package:project_granith/models/EmployeeBenefitModel.dart';
 import 'package:project_granith/models/SalaryHistoryModel.dart';
@@ -7,6 +8,7 @@ import 'package:project_granith/models/employee_model.dart';
 
 class HrService {
   static const _employeesTable = 'employees';
+  static const _benefitCategoriesTable = 'benefit_categories';
   static const _benefitsTable = 'benefits';
   static const _salaryHistoryTable = 'salary_history';
   static const _employeeBenefitsTable = 'employee_benefits';
@@ -164,6 +166,54 @@ class HrService {
         );
   }
 
+  Stream<List<BenefitCategoryModel>> watchBenefitCategories({
+    bool onlyActive = false,
+  }) {
+    return AppSupabase.client
+        .from(_benefitCategoriesTable)
+        .stream(primaryKey: ['id'])
+        .order('name')
+        .map((rows) => rows.map(_benefitCategoryFromRow).toList())
+        .map(
+          (rows) =>
+              onlyActive
+                  ? rows.where((category) => category.isActive).toList()
+                  : rows,
+        );
+  }
+
+  Future<String> addBenefitCategory(BenefitCategoryModel category) async {
+    final row =
+        await AppSupabase.client
+            .from(_benefitCategoriesTable)
+            .insert(DbValue.normalizeMap(category.toMap()))
+            .select('id')
+            .single();
+
+    return row['id'] as String;
+  }
+
+  Future<void> updateBenefitCategory(BenefitCategoryModel category) async {
+    await AppSupabase.client
+        .from(_benefitCategoriesTable)
+        .update(
+          DbValue.normalizeMap(
+            category.copyWith(updatedAt: DateTime.now()).toMap(),
+          ),
+        )
+        .eq('id', category.id);
+  }
+
+  Future<void> toggleBenefitCategory(String id, bool isActive) async {
+    await AppSupabase.client
+        .from(_benefitCategoriesTable)
+        .update({
+          'isActive': isActive,
+          'updatedAt': DbValue.toPrimitive(DateTime.now()),
+        })
+        .eq('id', id);
+  }
+
   Future<String> addBenefit(BenefitModel benefit) async {
     final row =
         await AppSupabase.client
@@ -205,6 +255,21 @@ class HrService {
         );
   }
 
+  Stream<List<EmployeeBenefitModel>> watchAllEmployeeBenefits({
+    bool onlyActive = false,
+  }) {
+    return AppSupabase.client
+        .from(_employeeBenefitsTable)
+        .stream(primaryKey: ['id'])
+        .map((rows) => rows.map(_employeeBenefitFromRow).toList())
+        .map(
+          (rows) =>
+              onlyActive
+                  ? rows.where((benefit) => benefit.isActive).toList()
+                  : rows,
+        );
+  }
+
   Future<String> assignBenefit(EmployeeBenefitModel empBenefit) async {
     final row =
         await AppSupabase.client
@@ -214,6 +279,13 @@ class HrService {
             .single();
 
     return row['id'] as String;
+  }
+
+  Future<void> updateEmployeeBenefit(EmployeeBenefitModel empBenefit) async {
+    await AppSupabase.client
+        .from(_employeeBenefitsTable)
+        .update(DbValue.normalizeMap(empBenefit.toMap()))
+        .eq('id', empBenefit.id);
   }
 
   Future<void> updateBenefitValue({
@@ -293,6 +365,11 @@ class HrService {
   BenefitModel _benefitFromRow(dynamic row) {
     final data = Map<String, dynamic>.from(row as Map);
     return BenefitModel.fromMap(data, data['id'] as String? ?? '');
+  }
+
+  BenefitCategoryModel _benefitCategoryFromRow(Map<dynamic, dynamic> row) {
+    final data = Map<String, dynamic>.from(row);
+    return BenefitCategoryModel.fromMap(data, data['id'] as String? ?? '');
   }
 
   EmployeeBenefitModel _employeeBenefitFromRow(Map<dynamic, dynamic> row) {

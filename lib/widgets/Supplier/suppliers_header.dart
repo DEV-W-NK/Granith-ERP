@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/controllers/supplier_controller.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class SuppliersHeader extends StatelessWidget {
   final bool isDesktop;
@@ -34,19 +35,32 @@ class SuppliersHeader extends StatelessWidget {
               ),
             ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: SupplierHeaderTitle(
-                  isDesktop: isDesktop,
-                  supplierCount: controller.suppliers.length,
-                  activeCount:
-                      controller.suppliers.where((s) => s.isActive).length,
-                  isLoading: controller.isLoading,
-                ),
-              ),
-              SupplierHeaderActions(isDesktop: isDesktop),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final title = SupplierHeaderTitle(
+                isDesktop: isDesktop,
+                supplierCount: controller.suppliers.length,
+                activeCount:
+                    controller.suppliers.where((s) => s.isActive).length,
+                isLoading: controller.isLoading,
+              );
+              final actions = SupplierHeaderActions(isDesktop: isDesktop);
+
+              if (constraints.maxWidth < ResponsiveLayout.compact) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [title, const SizedBox(height: 14), actions],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 12),
+                  actions,
+                ],
+              );
+            },
           ),
         );
       },
@@ -90,7 +104,10 @@ class SupplierHeaderTitle extends StatelessWidget {
             ),
           )
         else
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Text(
                 supplierCount == 0
@@ -102,7 +119,6 @@ class SupplierHeaderTitle extends StatelessWidget {
                 ),
               ),
               if (supplierCount > 0) ...[
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,

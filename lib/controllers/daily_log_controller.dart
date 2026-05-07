@@ -80,6 +80,12 @@ class DailyLogController extends ChangeNotifier {
         photoUrls: uploadedUrls,
         createdByUserId: log.createdByUserId,
         status: log.status,
+        coordinatorId: log.coordinatorId,
+        coordinatorName: log.coordinatorName,
+        signatureRequestedAt: log.signatureRequestedAt,
+        signedAt: log.signedAt,
+        signedByCoordinatorId: log.signedByCoordinatorId,
+        signedByCoordinatorName: log.signedByCoordinatorName,
       );
 
       await _service.saveLog(updatedLog);

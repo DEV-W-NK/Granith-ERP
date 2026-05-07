@@ -5,6 +5,7 @@ import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 // Classe para representar um tipo de orçamento com valor
 class BudgetTypeItem {
@@ -611,47 +612,61 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.borderColor),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            color: iconColor.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Icon(iconData, color: iconColor, size: 16),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item.budgetType.name,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final compact =
+                            constraints.maxWidth < ResponsiveLayout.compact;
+                        final itemInfo = Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: iconColor.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              if (item.budgetType.description.isNotEmpty)
-                                Text(
-                                  item.budgetType.description,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.textSecondary,
+                              child: Icon(iconData, color: iconColor, size: 16),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.budgetType.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        SizedBox(
-                          width: 120,
+                                  if (item.budgetType.description.isNotEmpty)
+                                    Text(
+                                      item.budgetType.description,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => _removeBudgetTypeItem(index),
+                              icon: const Icon(
+                                Icons.remove_circle_outline,
+                                color: AppColors.accentRed,
+                                size: 20,
+                              ),
+                            ),
+                          ],
+                        );
+                        final valueField = SizedBox(
+                          width: compact ? double.infinity : 120,
                           child: TextFormField(
                             initialValue:
                                 item.value > 0 ? item.value.toString() : '',
@@ -682,17 +697,26 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                               _updateBudgetTypeItemValue(index, numValue);
                             },
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: () => _removeBudgetTypeItem(index),
-                          icon: const Icon(
-                            Icons.remove_circle_outline,
-                            color: AppColors.accentRed,
-                            size: 20,
-                          ),
-                        ),
-                      ],
+                        );
+
+                        if (compact) {
+                          return Column(
+                            children: [
+                              itemInfo,
+                              const SizedBox(height: 12),
+                              valueField,
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            Expanded(child: itemInfo),
+                            const SizedBox(width: 12),
+                            valueField,
+                          ],
+                        );
+                      },
                     ),
                   );
                 },
@@ -719,24 +743,27 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                       style: BorderStyle.solid,
                     ),
                   ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_rounded,
-                        color: AppColors.accentGold,
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Adicionar Tipo de Orçamento',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                  child: const FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_rounded,
                           color: AppColors.accentGold,
+                          size: 20,
                         ),
-                      ),
-                    ],
+                        SizedBox(width: 8),
+                        Text(
+                          'Adicionar Tipo de Orçamento',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accentGold,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1268,14 +1295,22 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < ResponsiveLayout.compact;
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final padding = ResponsiveLayout.pagePadding(size.width);
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 600.0);
+
     return Dialog(
       backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.all(inset),
       child: SlideTransition(
         position: _slideAnimation,
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600, maxHeight: 800),
+            width: dialogWidth.toDouble(),
+            constraints: BoxConstraints(maxHeight: size.height * 0.92),
             decoration: BoxDecoration(
               color: AppColors.surfaceDark,
               borderRadius: BorderRadius.circular(20),
@@ -1302,7 +1337,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                     // Header
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(24),
+                      padding: padding,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
@@ -1347,8 +1382,10 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                   widget.budget != null
                                       ? 'Editar Orçamento'
                                       : 'Novo Orçamento',
-                                  style: const TextStyle(
-                                    fontSize: 20,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: isCompact ? 18 : 20,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primaryDark,
                                   ),
@@ -1358,11 +1395,13 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                       ? 'Modifique as informações do orçamento'
                                       : 'Preencha os dados para criar um novo orçamento',
                                   style: TextStyle(
-                                    fontSize: 14,
+                                    fontSize: isCompact ? 13 : 14,
                                     color: AppColors.primaryDark.withOpacity(
                                       0.8,
                                     ),
                                   ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ],
                             ),
@@ -1373,7 +1412,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
 
                     // Content
                     Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: padding,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1626,21 +1665,28 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(Icons.save_rounded, size: 20),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        widget.budget != null
-                                            ? 'Salvar Alterações'
-                                            : 'Criar Orçamento',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.save_rounded,
+                                          size: 20,
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          widget.budget != null
+                                              ? 'Salvar Alterações'
+                                              : 'Criar Orçamento',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

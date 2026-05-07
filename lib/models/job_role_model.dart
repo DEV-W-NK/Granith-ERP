@@ -6,11 +6,11 @@ class JobRoleModel {
   final String sector;
   final String description;
 
-  // hourlyRate é usado para cálculo de custo de M.O. em obras (DiárioObra)
-  // Salário fixo NÃO pertence ao cargo — fica em EmployeeModel.baseSalary
+  // Usado para calculo de custo de mao de obra em obras.
+  // Salario fixo pertence ao funcionario, nao ao cargo.
   final double hourlyRate;
 
-  final List<String> requirements; // "Experiência 2 anos", "NR-35", etc.
+  final List<String> requirements;
   final bool isActive;
   final DateTime createdAt;
 
@@ -35,20 +35,26 @@ class JobRoleModel {
     'createdAt': DbValue.toPrimitive(createdAt),
   };
 
-  factory JobRoleModel.fromMap(
-    Map<String, dynamic> map,
-    String docId,
-  ) => JobRoleModel(
-    id: docId,
-    title: map['title'] ?? '',
-    sector: map['sector'] ?? '',
-    description: map['description'] ?? '',
-    // retrocompatibilidade: aceita 'baseSalary' antigo → ignora, usa hourlyRate
-    hourlyRate: (map['hourlyRate'] ?? 0.0).toDouble(),
-    requirements: List<String>.from(map['requirements'] ?? []),
-    isActive: map['isActive'] ?? true,
-    createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
-  );
+  factory JobRoleModel.fromMap(Map<String, dynamic> map, String docId) =>
+      JobRoleModel(
+        id: docId,
+        title: map['title'] ?? '',
+        sector: map['sector'] ?? '',
+        description: map['description'] ?? '',
+        hourlyRate: _toDouble(map['hourlyRate']),
+        requirements: List<String>.from(map['requirements'] ?? []),
+        isActive: map['isActive'] ?? true,
+        createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      );
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+    }
+    return 0.0;
+  }
 
   JobRoleModel copyWith({
     String? title,

@@ -1,6 +1,25 @@
 import 'package:project_granith/core/data/db_value.dart';
 
-enum EmployeeRole { funcionario, supervisor, coordenador }
+enum EmployeeRole { funcionario, supervisor, coordenador, gerente }
+
+extension EmployeeRoleHierarchy on EmployeeRole {
+  int get level => switch (this) {
+    EmployeeRole.funcionario => 1,
+    EmployeeRole.supervisor => 2,
+    EmployeeRole.coordenador => 3,
+    EmployeeRole.gerente => 4,
+  };
+
+  String get label => switch (this) {
+    EmployeeRole.funcionario => 'Colaborador',
+    EmployeeRole.supervisor => 'Supervisao',
+    EmployeeRole.coordenador => 'Coordenacao',
+    EmployeeRole.gerente => 'Gerencia',
+  };
+
+  bool get isSupervisorOrAbove => level >= EmployeeRole.supervisor.level;
+  bool get isManager => this == EmployeeRole.gerente;
+}
 
 enum EmployeeStatus { ativo, ferias, afastado, desligado }
 
@@ -65,10 +84,14 @@ class EmployeeModel {
       status == EmployeeStatus.ferias || status == EmployeeStatus.afastado;
 
   String get initials {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2)
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return '?';
+
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
       return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
+    }
+    return trimmed[0].toUpperCase();
   }
 
   // ── Serialização ──────────────────────────────────────────────────────────
@@ -118,12 +141,21 @@ class EmployeeModel {
         cpf: map['cpf'] ?? '',
         ctps: map['ctps'] ?? '',
         // retrocompatibilidade: aceita 'salary' antigo ou novo 'baseSalary'
-        baseSalary: (map['baseSalary'] ?? map['salary'] ?? 0.0).toDouble(),
+        baseSalary: _toDouble(map['baseSalary'] ?? map['salary']),
         educationLevel: map['educationLevel'] ?? '',
         courses: map['courses'] ?? '',
         createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
         updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
       );
+
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+    }
+    return 0.0;
+  }
 
   EmployeeModel copyWith({
     String? name,

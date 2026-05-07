@@ -1,68 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/job_role_model.dart';
 import 'package:project_granith/services/job_role_service.dart';
 
 class JobRoleController extends ChangeNotifier {
-  final JobRoleService _service = JobRoleService();
+  final JobRoleService _service;
 
+  JobRoleController({JobRoleService? service})
+    : _service = service ?? JobRoleService();
+
+  final List<JobRoleModel> _roles = [];
+  StreamSubscription<List<JobRoleModel>>? _rolesSub;
+  bool _initialized = false;
   bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
   String? _error;
+
+  bool get isLoading => _isLoading;
   String? get error => _error;
-
-  // Lista local usada como estado inicial para visualizacao imediata.
-  final List<JobRoleModel> _roles = [
-    JobRoleModel(
-      id: '1',
-      title: 'Engenheiro Civil Júnior',
-      sector: 'Engenharia',
-      description:
-          'Responsável pelo acompanhamento técnico de obras residenciais.',
-      hourlyRate: 28.50,
-      requirements: ['CREA Ativo', 'Experiência em Obras'],
-      createdAt: DateTime.now(),
-    ),
-    JobRoleModel(
-      id: '2',
-      title: 'Mestre de Obras',
-      sector: 'Obras',
-      description: 'Liderança de equipes de campo e gestão de materiais.',
-      hourlyRate: 35.00,
-      requirements: ['Experiência comprovada'],
-      createdAt: DateTime.now(),
-    ),
-    JobRoleModel(
-      id: '3',
-      title: 'Pedreiro',
-      sector: 'Obras',
-      description: 'Execução de alvenaria e acabamentos.',
-      hourlyRate: 22.00,
-      requirements: ['NR-18'],
-      createdAt: DateTime.now(),
-    ),
-    JobRoleModel(
-      id: '4',
-      title: 'Auxiliar Administrativo',
-      sector: 'Administrativo',
-      description: 'Suporte às rotinas administrativas do escritório.',
-      hourlyRate: 15.00,
-      requirements: ['Ensino médio completo'],
-      createdAt: DateTime.now(),
-    ),
-  ];
-
   List<JobRoleModel> get roles => List.unmodifiable(_roles);
+
+  void init() {
+    if (_initialized) return;
+    _initialized = true;
+
+    _rolesSub = _service.getJobRoles().listen(
+      (roles) {
+        _roles
+          ..clear()
+          ..addAll(roles);
+        _error = null;
+        notifyListeners();
+      },
+      onError: (error) {
+        _error = 'Erro ao carregar cargos: $error';
+        notifyListeners();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _rolesSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> addRole(JobRoleModel role) async {
     _setLoading(true);
     try {
-      // Quando persistir: final id = await _service.addRole(role);
-      await Future.delayed(const Duration(milliseconds: 300));
-      _roles.add(role);
+      await _service.saveJobRole(role);
       _error = null;
-    } catch (e) {
-      _error = 'Erro ao adicionar cargo: $e';
+    } catch (error) {
+      _error = 'Erro ao adicionar cargo: $error';
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -71,27 +61,25 @@ class JobRoleController extends ChangeNotifier {
   Future<void> updateRole(JobRoleModel updated) async {
     _setLoading(true);
     try {
-      // Quando persistir: await _service.updateRole(updated);
-      await Future.delayed(const Duration(milliseconds: 300));
-      final idx = _roles.indexWhere((r) => r.id == updated.id);
-      if (idx != -1) _roles[idx] = updated;
+      await _service.saveJobRole(updated);
       _error = null;
-    } catch (e) {
-      _error = 'Erro ao atualizar cargo: $e';
+    } catch (error) {
+      _error = 'Erro ao atualizar cargo: $error';
+      rethrow;
     } finally {
       _setLoading(false);
     }
   }
 
   Future<void> toggleActive(String id) async {
-    final idx = _roles.indexWhere((r) => r.id == id);
-    if (idx == -1) return;
-    final role = _roles[idx];
+    final index = _roles.indexWhere((entry) => entry.id == id);
+    if (index < 0) return;
+    final role = _roles[index];
     await updateRole(role.copyWith(isActive: !role.isActive));
   }
 
-  void _setLoading(bool v) {
-    _isLoading = v;
+  void _setLoading(bool value) {
+    _isLoading = value;
     notifyListeners();
   }
 }

@@ -7,20 +7,61 @@ class HrViewModel extends ChangeNotifier {
 
   HrViewModel(this._hrService);
 
-  // Estados de busca e filtro
+  HrService get hrService => _hrService;
+
   String _searchQuery = '';
   String get searchQuery => _searchQuery;
 
-  // No seu código original, você usa EmployeeStatus? para o filtro
-  // Mas no StreamBuilder você usa employee.status.
-  // Vou manter a lógica de filtros reativos aqui.
+  EmployeeStatus? _statusFilter;
+  EmployeeStatus? get statusFilter => _statusFilter;
 
   void updateSearch(String value) {
-    _searchQuery = value;
+    final next = value.trim();
+    if (_searchQuery == next) return;
+    _searchQuery = next;
     notifyListeners();
   }
 
-  // Lógica de Insights ou processamento de dados para o Header
+  void updateStatusFilter(EmployeeStatus? value) {
+    if (_statusFilter == value) return;
+    _statusFilter = value;
+    notifyListeners();
+  }
+
+  List<EmployeeModel> filterEmployees(List<EmployeeModel> employees) {
+    final query = _searchQuery.toLowerCase();
+    final filtered =
+        employees.where((employee) {
+          final matchesStatus =
+              _statusFilter == null || employee.status == _statusFilter;
+          if (!matchesStatus) return false;
+          if (query.isEmpty) return true;
+
+          final searchable =
+              [
+                employee.name,
+                employee.email,
+                employee.phone,
+                employee.jobTitle,
+                employee.sector,
+                employee.role.label,
+                employee.status.name,
+              ].join(' ').toLowerCase();
+
+          return searchable.contains(query);
+        }).toList();
+
+    filtered.sort((a, b) {
+      final statusOrder = _statusOrder(
+        a.status,
+      ).compareTo(_statusOrder(b.status));
+      if (statusOrder != 0) return statusOrder;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+
+    return filtered;
+  }
+
   Map<String, int> getEmployeeStats(List<EmployeeModel> employees) {
     return {
       'ativos': employees.where((e) => e.isActive).length,
@@ -28,4 +69,11 @@ class HrViewModel extends ChangeNotifier {
       'desligados': employees.where((e) => e.isDismissed).length,
     };
   }
+
+  int _statusOrder(EmployeeStatus status) => switch (status) {
+    EmployeeStatus.ativo => 0,
+    EmployeeStatus.ferias => 1,
+    EmployeeStatus.afastado => 1,
+    EmployeeStatus.desligado => 2,
+  };
 }

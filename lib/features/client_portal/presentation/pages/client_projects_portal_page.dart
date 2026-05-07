@@ -4,6 +4,7 @@ import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/client_portal/presentation/viewmodels/client_projects_portal_view_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:provider/provider.dart';
 
@@ -473,8 +474,10 @@ class _ProjectMetaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      width: 190,
+      width: width < ResponsiveLayout.compact ? double.infinity : 190,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.46),
@@ -493,6 +496,8 @@ class _ProjectMetaCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
@@ -519,8 +524,10 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+
     return Container(
-      width: 230,
+      width: width < ResponsiveLayout.compact ? double.infinity : 230,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: AppColors.cardGradient,
@@ -535,6 +542,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 24,
@@ -544,6 +553,8 @@ class _SummaryCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             subtitle,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
@@ -615,11 +626,15 @@ class _ClientInfoPill extends StatelessWidget {
         children: [
           Icon(icon, size: 15, color: AppColors.textSecondary),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

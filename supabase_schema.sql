@@ -157,6 +157,10 @@ create table if not exists public.projects (
   client_account_id text,
   "clientAccountName" text,
   client_account_name text,
+  "coordinatorId" text references public.employees(id) on delete set null,
+  coordinator_id text,
+  "coordinatorName" text,
+  coordinator_name text,
   constraint projects_status_check check (
     status in ('planning', 'inProgress', 'completed')
   ),
@@ -170,6 +174,7 @@ create unique index if not exists idx_projects_project_key
 create index if not exists idx_projects_status on public.projects (status);
 create index if not exists idx_projects_client on public.projects (client);
 create index if not exists idx_projects_created_at on public.projects ("createdAt" desc);
+create index if not exists idx_projects_coordinator_id on public.projects ("coordinatorId");
 
 alter table public.projects
   add column if not exists "estimatedProgress" numeric(7,3) not null default 0;
@@ -281,7 +286,7 @@ create table if not exists public.employees (
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
   constraint employees_role_check check (
-    role in ('funcionario', 'supervisor', 'coordenador')
+    role in ('funcionario', 'supervisor', 'coordenador', 'gerente')
   ),
   constraint employees_status_check check (
     status in ('ativo', 'ferias', 'afastado', 'desligado')
@@ -425,15 +430,23 @@ create table if not exists public.daily_logs (
   "photoUrls" text[] not null default '{}',
   "createdByUserId" text not null default '',
   status text not null default 'draft',
+  "coordinatorId" text references public.employees(id) on delete set null,
+  "coordinatorName" text,
+  "signatureRequestedAt" timestamptz,
+  "signedAt" timestamptz,
+  "signedByCoordinatorId" text references public.employees(id) on delete set null,
+  "signedByCoordinatorName" text,
   "createdAt" timestamptz not null default now(),
   "updatedAt" timestamptz not null default now(),
   constraint daily_logs_status_check check (
-    status in ('draft', 'finalized', 'synced', 'pendente')
+    status in ('draft', 'finalized', 'pendingSignature', 'signed', 'synced', 'pendente')
   )
 );
 
 create index if not exists idx_daily_logs_project_id on public.daily_logs ("projectId");
 create index if not exists idx_daily_logs_date on public.daily_logs (date desc);
+create index if not exists idx_daily_logs_coordinator_id on public.daily_logs ("coordinatorId");
+create index if not exists idx_daily_logs_status on public.daily_logs (status);
 
 create table if not exists public.financial_transactions (
   id text primary key default gen_random_uuid()::text,
@@ -477,17 +490,39 @@ create index if not exists idx_financial_transactions_status
 create index if not exists idx_financial_transactions_type
   on public.financial_transactions (type);
 
+create table if not exists public.benefit_categories (
+  id text primary key default gen_random_uuid()::text,
+  name text not null unique,
+  description text not null default '',
+  "isActive" boolean not null default true,
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now()
+);
+
 create table if not exists public.benefits (
   id text primary key default gen_random_uuid()::text,
   name text not null unique,
   type text not null default 'other',
+  "categoryId" text references public.benefit_categories(id) on delete set null,
+  "categoryName" text not null default '',
+  "valueMode" text not null default 'fixedMonthly',
+  "defaultValue" numeric(14,2) not null default 0,
+  "reimbursementLimit" numeric(14,2) not null default 0,
   description text not null default '',
   "isActive" boolean not null default true,
   "createdAt" timestamptz not null default now(),
   constraint benefits_type_check check (
     type in ('vt', 'vr', 'health', 'dental', 'lifeInsurance', 'other')
-  )
+  ),
+  constraint benefits_value_mode_check check (
+    "valueMode" in ('fixedMonthly', 'reimbursement')
+  ),
+  constraint benefits_default_value_non_negative check ("defaultValue" >= 0),
+  constraint benefits_reimbursement_limit_non_negative check ("reimbursementLimit" >= 0)
 );
+
+create index if not exists idx_benefits_category_id
+  on public.benefits ("categoryId");
 
 create table if not exists public.employee_benefits (
   id text primary key default gen_random_uuid()::text,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/AppCard.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
 
@@ -9,60 +10,71 @@ class QuickActionsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AppCardTitle('Ações rápidas'),
-          Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 360;
+          final actions = [
+            _QuickActionData(
+              icon: Icons.add_rounded,
+              label: 'Nova receita',
+              color: AppColors.green,
+              route: '/nova-receita',
+            ),
+            _QuickActionData(
+              icon: Icons.remove_rounded,
+              label: 'Nova despesa',
+              color: AppColors.red,
+              route: '/nova-despesa',
+            ),
+            _QuickActionData(
+              icon: Icons.bar_chart_rounded,
+              label: 'Ver DRE',
+              color: AppColors.gold,
+              route: '/reports',
+            ),
+            _QuickActionData(
+              icon: Icons.people_outline_rounded,
+              label: 'Clientes',
+              color: AppColors.blue,
+              route: '/clientes',
+            ),
+          ];
+          final gap =
+              ResponsiveLayout.gap(
+                constraints.maxWidth,
+              ).clamp(8.0, 12.0).toDouble();
+          final columns = compact ? 1 : 2;
+          final itemWidth =
+              (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildQuickAction(
-                  context: context,
-                  icon: Icons.add_rounded,
-                  label: 'Nova receita',
-                  color: AppColors.green,
-                  route: '/nova-receita',
-                ),
+              const AppCardTitle('Acoes rapidas'),
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children:
+                    actions
+                        .map(
+                          (action) => SizedBox(
+                            width: itemWidth,
+                            child: _buildQuickAction(
+                              context: context,
+                              icon: action.icon,
+                              label: action.label,
+                              color: action.color,
+                              route: action.route,
+                            ),
+                          ),
+                        )
+                        .toList(),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildQuickAction(
-                  context: context,
-                  icon: Icons.remove_rounded,
-                  label: 'Nova despesa',
-                  color: AppColors.red,
-                  route: '/nova-despesa',
-                ),
-              ),
+              SizedBox(height: gap),
+              _buildSystemStatus(),
             ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _buildQuickAction(
-                  context: context,
-                  icon: Icons.bar_chart_rounded,
-                  label: 'Ver DRE',
-                  color: AppColors.gold,
-                  route: '/reports',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildQuickAction(
-                  context: context,
-                  icon: Icons.people_outline_rounded,
-                  label: 'Clientes',
-                  color: AppColors.blue,
-                  route: '/clientes',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _buildSystemStatus(),
-        ],
+          );
+        },
       ),
     );
   }
@@ -104,6 +116,8 @@ class QuickActionsGrid extends StatelessWidget {
             const SizedBox(height: 7),
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.tx2,
@@ -142,15 +156,37 @@ class QuickActionsGrid extends StatelessWidget {
           const Expanded(
             child: Text(
               'Todos os sistemas operacionais',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(color: AppColors.tx2, fontSize: 10),
             ),
           ),
-          const Text(
-            'Atualizado agora',
-            style: TextStyle(color: AppColors.tx3, fontSize: 9),
+          const SizedBox(width: 8),
+          const Flexible(
+            child: Text(
+              'Atualizado agora',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: TextStyle(color: AppColors.tx3, fontSize: 9),
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+class _QuickActionData {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final String route;
+
+  const _QuickActionData({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.route,
+  });
 }

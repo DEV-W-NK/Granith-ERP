@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class StatsGrid extends StatelessWidget {
@@ -26,34 +27,30 @@ class StatsGrid extends StatelessWidget {
             )
             .toList();
 
-    if (isDesktop) {
-      return Row(
-        children:
-            cards
-                .expand((c) => [Expanded(child: c), const SizedBox(width: 12)])
-                .toList()
-              ..removeLast(),
-      );
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth =
+            constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+        final gap = ResponsiveLayout.gap(maxWidth).clamp(10.0, 14.0).toDouble();
+        final columns =
+            isDesktop
+                ? cards.length.clamp(1, 4).toInt()
+                : maxWidth < 360
+                ? 1
+                : 2;
+        final itemWidth = (maxWidth - (gap * (columns - 1))) / columns;
 
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(child: cards[0]),
-            const SizedBox(width: 10),
-            Expanded(child: cards[1]),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: cards[2]),
-            const SizedBox(width: 10),
-            if (cards.length > 3) Expanded(child: cards[3]),
-          ],
-        ),
-      ],
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children:
+              cards
+                  .map((card) => SizedBox(width: itemWidth, child: card))
+                  .toList(),
+        );
+      },
     );
   }
 
@@ -94,6 +91,8 @@ class StatsGrid extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               stat.label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: AppColors.textSecondary,
                 fontSize: 9,
@@ -102,27 +101,38 @@ class StatsGrid extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 5),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 280),
-              transitionBuilder:
-                  (child, animation) => FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.18),
-                        end: Offset.zero,
-                      ).animate(animation),
-                      child: child,
+            SizedBox(
+              height: 24,
+              width: double.infinity,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  transitionBuilder:
+                      (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.18),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                  child: FittedBox(
+                    key: ValueKey(stat.value),
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      stat.value,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: stat.accent,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-              child: Text(
-                stat.value,
-                key: ValueKey(stat.value),
-                style: TextStyle(
-                  color: stat.accent,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.5,
                 ),
               ),
             ),
@@ -143,6 +153,8 @@ class StatsGrid extends StatelessWidget {
                 Flexible(
                   child: Text(
                     stat.delta,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color:
                           stat.deltaUp

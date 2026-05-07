@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
 
 class HomeHeader extends StatelessWidget {
@@ -18,32 +19,50 @@ class HomeHeader extends StatelessWidget {
 
     return FadeTransition(
       opacity: fadeAnimation,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  settings.dashboardGreetingTitle,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < ResponsiveLayout.compact;
+          final titleStyle = Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+            fontSize: compact ? 22 : null,
+          );
+
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      settings.dashboardGreetingTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: titleStyle,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      settings.dashboardGreetingSubtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  settings.dashboardGreetingSubtitle,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+              ),
+              if (settings.aiAssistantPreviewEnabled) ...[
+                const SizedBox(width: 12),
+                _buildAiButton(context),
               ],
-            ),
-          ),
-          if (settings.aiAssistantPreviewEnabled) _buildAiButton(context),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

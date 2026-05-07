@@ -2,7 +2,7 @@ import 'package:project_granith/core/data/db_value.dart';
 
 enum WeatherCondition { sol, nublado, chuvoso, tempestade }
 
-enum LogStatus { draft, finalized, synced }
+enum LogStatus { draft, finalized, pendingSignature, signed, synced }
 
 class DailyLogModel {
   final String id;
@@ -24,6 +24,12 @@ class DailyLogModel {
 
   final String createdByUserId;
   final LogStatus status;
+  final String? coordinatorId;
+  final String? coordinatorName;
+  final DateTime? signatureRequestedAt;
+  final DateTime? signedAt;
+  final String? signedByCoordinatorId;
+  final String? signedByCoordinatorName;
 
   DailyLogModel({
     required this.id,
@@ -38,7 +44,21 @@ class DailyLogModel {
     this.photoUrls = const [],
     required this.createdByUserId,
     this.status = LogStatus.draft,
+    this.coordinatorId,
+    this.coordinatorName,
+    this.signatureRequestedAt,
+    this.signedAt,
+    this.signedByCoordinatorId,
+    this.signedByCoordinatorName,
   });
+
+  bool get hasCoordinator =>
+      coordinatorId != null && coordinatorId!.trim().isNotEmpty;
+
+  bool get isPendingSignature =>
+      status == LogStatus.pendingSignature && signedAt == null;
+
+  bool get isSigned => status == LogStatus.signed || signedAt != null;
 
   Map<String, dynamic> toMap() {
     return {
@@ -53,6 +73,15 @@ class DailyLogModel {
       'photoUrls': photoUrls,
       'createdByUserId': createdByUserId,
       'status': status.name,
+      'coordinatorId': coordinatorId,
+      'coordinatorName': coordinatorName,
+      'signatureRequestedAt':
+          signatureRequestedAt != null
+              ? DbValue.toPrimitive(signatureRequestedAt!)
+              : null,
+      'signedAt': signedAt != null ? DbValue.toPrimitive(signedAt!) : null,
+      'signedByCoordinatorId': signedByCoordinatorId,
+      'signedByCoordinatorName': signedByCoordinatorName,
     };
   }
 
@@ -75,10 +104,72 @@ class DailyLogModel {
       impediments: map['impediments'] ?? '',
       photoUrls: List<String>.from(map['photoUrls'] ?? []),
       createdByUserId: map['createdByUserId'] ?? '',
-      status: LogStatus.values.firstWhere(
-        (e) => e.name == map['status'],
-        orElse: () => LogStatus.draft,
-      ),
+      status: _statusFrom(map['status']),
+      coordinatorId: _nullableText(map['coordinatorId']),
+      coordinatorName: _nullableText(map['coordinatorName']),
+      signatureRequestedAt: DbValue.toDateTime(map['signatureRequestedAt']),
+      signedAt: DbValue.toDateTime(map['signedAt']),
+      signedByCoordinatorId: _nullableText(map['signedByCoordinatorId']),
+      signedByCoordinatorName: _nullableText(map['signedByCoordinatorName']),
+    );
+  }
+
+  DailyLogModel copyWith({
+    String? id,
+    String? projectId,
+    String? projectName,
+    DateTime? date,
+    WeatherCondition? weatherMorning,
+    WeatherCondition? weatherAfternoon,
+    Map<String, int>? manpower,
+    String? activitiesDescription,
+    String? impediments,
+    List<String>? photoUrls,
+    String? createdByUserId,
+    LogStatus? status,
+    String? coordinatorId,
+    String? coordinatorName,
+    DateTime? signatureRequestedAt,
+    DateTime? signedAt,
+    String? signedByCoordinatorId,
+    String? signedByCoordinatorName,
+  }) {
+    return DailyLogModel(
+      id: id ?? this.id,
+      projectId: projectId ?? this.projectId,
+      projectName: projectName ?? this.projectName,
+      date: date ?? this.date,
+      weatherMorning: weatherMorning ?? this.weatherMorning,
+      weatherAfternoon: weatherAfternoon ?? this.weatherAfternoon,
+      manpower: manpower ?? Map<String, int>.from(this.manpower),
+      activitiesDescription:
+          activitiesDescription ?? this.activitiesDescription,
+      impediments: impediments ?? this.impediments,
+      photoUrls: photoUrls ?? List<String>.from(this.photoUrls),
+      createdByUserId: createdByUserId ?? this.createdByUserId,
+      status: status ?? this.status,
+      coordinatorId: coordinatorId ?? this.coordinatorId,
+      coordinatorName: coordinatorName ?? this.coordinatorName,
+      signatureRequestedAt: signatureRequestedAt ?? this.signatureRequestedAt,
+      signedAt: signedAt ?? this.signedAt,
+      signedByCoordinatorId:
+          signedByCoordinatorId ?? this.signedByCoordinatorId,
+      signedByCoordinatorName:
+          signedByCoordinatorName ?? this.signedByCoordinatorName,
+    );
+  }
+
+  static String? _nullableText(dynamic value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
+  }
+
+  static LogStatus _statusFrom(dynamic value) {
+    final raw = value?.toString();
+    if (raw == 'pendente') return LogStatus.pendingSignature;
+    return LogStatus.values.firstWhere(
+      (status) => status.name == raw,
+      orElse: () => LogStatus.draft,
     );
   }
 }

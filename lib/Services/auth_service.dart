@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/services/client_account_service.dart';
@@ -21,7 +22,11 @@ class AuthService implements AuthServiceContract {
   Future<UserModel?> fetchUserData(String uid) async {
     try {
       final data =
-          await _client.from('users').select().eq('id', uid).maybeSingle();
+          await _client
+              .from('users')
+              .select(SupabaseSelects.userProfile)
+              .eq('id', uid)
+              .maybeSingle();
 
       if (data == null) {
         return null;

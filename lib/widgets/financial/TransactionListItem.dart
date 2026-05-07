@@ -125,17 +125,18 @@ class TransactionListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  Row(
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       _chip(_categoryLabel(t.category)),
-                      const SizedBox(width: 6),
                       if (t.projectId != null) ...[
                         _chip(
                           'Projeto',
                           color: Colors.blueAccent.withOpacity(0.15),
                           textColor: Colors.blueAccent,
                         ),
-                        const SizedBox(width: 6),
                       ],
                       Text(
                         dateFormat.format(t.dueDate),

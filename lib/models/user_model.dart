@@ -19,7 +19,7 @@ enum UserRole {
       case UserRole.admin:
         return 'Administrador';
       case UserRole.employee:
-        return 'Funcionario';
+        return 'Colaborador';
       case UserRole.client:
         return 'Cliente';
     }

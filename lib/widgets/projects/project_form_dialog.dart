@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:project_granith/models/client_account_model.dart';
+import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
+import 'package:project_granith/services/team_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import '../../models/project_model.dart';
 import 'package:project_granith/widgets/projects/keep_alive.dart';
@@ -16,6 +18,7 @@ class ProjectFormDialog extends StatefulWidget {
   final Function(Project) onSave;
   final ServiceProjetos? projectService;
   final ClientAccountService? clientAccountService;
+  final TeamService? teamService;
 
   const ProjectFormDialog({
     super.key,
@@ -23,6 +26,7 @@ class ProjectFormDialog extends StatefulWidget {
     required this.onSave,
     this.projectService,
     this.clientAccountService,
+    this.teamService,
   });
 
   @override
@@ -48,13 +52,18 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   late final ServiceProjetos _service;
   late final ClientAccountService _clientAccountService;
+  late final TeamService _teamService;
+  StreamSubscription<List<EmployeeModel>>? _employeesSubscription;
 
   ProjectStatus _selectedStatus = ProjectStatus.planning;
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   List<String> _tags = [];
   List<ClientAccount> _clientAccounts = [];
+  List<EmployeeModel> _coordinators = [];
   String? _selectedClientAccountId;
+  String? _selectedCoordinatorId;
+  bool _isLoadingCoordinators = true;
 
   // Estados de controle melhorados
   bool _isSaving = false;
@@ -77,10 +86,12 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     _service = widget.projectService ?? ServiceProjetos();
     _clientAccountService =
         widget.clientAccountService ?? ClientAccountService();
+    _teamService = widget.teamService ?? TeamService();
     _initializeControllers();
     _initializeProjectData();
     _initializeAnimations();
     _loadClientAccounts();
+    _listenCoordinators();
   }
 
   void _initializeAnimations() {
@@ -126,6 +137,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       _endDate = widget.project!.endDate;
       _tags = List.from(widget.project!.tags);
       _selectedClientAccountId = widget.project!.clientAccountId;
+      _selectedCoordinatorId = widget.project!.coordinatorId;
     }
   }
 
@@ -147,9 +159,47 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     }
   }
 
+  void _listenCoordinators() {
+    _employeesSubscription = _teamService.getEmployees().listen(
+      (employees) {
+        final coordinators =
+            employees
+                .where(
+                  (employee) =>
+                      employee.isActive &&
+                      employee.role == EmployeeRole.coordenador,
+                )
+                .toList()
+              ..sort(
+                (left, right) =>
+                    left.name.toLowerCase().compareTo(right.name.toLowerCase()),
+              );
+
+        if (!mounted) return;
+        setState(() {
+          _coordinators = coordinators;
+          _isLoadingCoordinators = false;
+          if (_selectedCoordinatorId != null &&
+              !_coordinators.any(
+                (employee) => employee.id == _selectedCoordinatorId,
+              )) {
+            _selectedCoordinatorId = null;
+          }
+        });
+      },
+      onError: (_) {
+        if (!mounted) return;
+        setState(() {
+          _isLoadingCoordinators = false;
+        });
+      },
+    );
+  }
+
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _employeesSubscription?.cancel();
     _slideController.dispose();
     _nameController.dispose();
     _clientController.dispose();
@@ -163,8 +213,17 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 768;
-    final padding = isDesktop ? 24.0 : 16.0;
+    final size = MediaQuery.sizeOf(context);
+    final isDesktop = size.width >= 900;
+    final inset = size.width < 420 ? 8.0 : (isDesktop ? 40.0 : 16.0);
+    final padding =
+        size.width < 380
+            ? 12.0
+            : isDesktop
+            ? 24.0
+            : 16.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 700.0);
+    final dialogHeight = size.height * (size.width < 420 ? 0.94 : 0.85);
 
     return SlideTransition(
       position: _slideAnimation,
@@ -172,19 +231,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         elevation: 20,
         shadowColor: Colors.black.withOpacity(0.3),
         backgroundColor: Colors.transparent,
-        insetPadding: EdgeInsets.all(isDesktop ? 40 : 16),
+        insetPadding: EdgeInsets.all(inset),
         child: Container(
-          width:
-              isDesktop
-                  ? 700
-                  : double
-                      .infinity, // Reduzido de 800 para 700 para um layout mais focado
-          constraints: BoxConstraints(
-            maxHeight:
-                MediaQuery.of(context).size.height *
-                0.85, // 85% da tela no máximo
-            // Removido minHeight: 600 para não esticar em telas menores
-          ),
+          width: dialogWidth.toDouble(),
+          height: dialogHeight,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -513,6 +563,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           _buildSectionTitle('Detalhes do Projeto', Icons.settings_outlined),
           const SizedBox(height: 20),
           _buildEnhancedStatusDropdown(),
+          const SizedBox(height: 16),
+          _buildCoordinatorDropdown(),
           const SizedBox(height: 16),
           _buildEnhancedTextField(
             controller: _locationController,
@@ -924,6 +976,95 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
+  Widget _buildCoordinatorDropdown() {
+    final selectedValue =
+        _coordinators.any((employee) => employee.id == _selectedCoordinatorId)
+            ? _selectedCoordinatorId
+            : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Coordenador Responsavel',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: selectedValue,
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+          dropdownColor: AppColors.secondaryDark,
+          decoration: InputDecoration(
+            hintText:
+                _isLoadingCoordinators
+                    ? 'Carregando coordenadores...'
+                    : _coordinators.isEmpty
+                    ? 'Nenhum coordenador ativo cadastrado'
+                    : 'Selecione o coordenador da obra',
+            hintStyle: const TextStyle(color: AppColors.textMuted),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 14, right: 10),
+              child: Icon(
+                Icons.verified_user_outlined,
+                color: AppColors.accentGold.withOpacity(0.7),
+                size: 20,
+              ),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 40),
+            filled: true,
+            fillColor: AppColors.secondaryDark.withOpacity(0.7),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.accentGold,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.accentRed,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 14,
+              horizontal: 16,
+            ),
+          ),
+          items:
+              _coordinators
+                  .map(
+                    (employee) => DropdownMenuItem<String>(
+                      value: employee.id,
+                      child: Text(employee.name),
+                    ),
+                  )
+                  .toList(),
+          validator: (value) {
+            if (_coordinators.isNotEmpty &&
+                (value == null || value.trim().isEmpty)) {
+              return 'Selecione o coordenador responsavel';
+            }
+            return null;
+          },
+          onChanged:
+              _canInteract() && _coordinators.isNotEmpty
+                  ? (value) => setState(() => _selectedCoordinatorId = value)
+                  : null,
+        ),
+      ],
+    );
+  }
+
   Widget _buildEnhancedDateFields() {
     return Row(
       children: [
@@ -1232,6 +1373,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 : 'Não informado',
           ),
           _buildSummaryItem('Status', _selectedStatus.displayName),
+          _buildSummaryItem(
+            'Coordenador',
+            _selectedCoordinatorName ?? 'Nao informado',
+          ),
           if (_budgetController.text.isNotEmpty)
             _buildSummaryItem('Orçamento', 'R\$ ${_budgetController.text}'),
           if (_tags.isNotEmpty) _buildSummaryItem('Tags', _tags.join(', ')),
@@ -1298,8 +1443,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         children: [
           // Navegação entre páginas
           if (_currentPage < 2)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 if (_currentPage > 0)
                   TextButton.icon(
@@ -1346,8 +1494,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             )
           else
             // Ações finais
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 TextButton.icon(
                   onPressed: () {
@@ -1362,7 +1513,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                     foregroundColor: AppColors.textSecondary,
                   ),
                 ),
-                Row(
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     TextButton(
                       onPressed:
@@ -1379,7 +1534,6 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                       ),
                       child: const Text('Cancelar'),
                     ),
-                    const SizedBox(width: 8),
                     ElevatedButton.icon(
                       onPressed: _canSave() ? _handleSaveWithDebounce : null,
                       icon: _buildSaveButtonContent(),
@@ -1623,6 +1777,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Future<Project> _prepareProjectData() async {
     String? imageUrl;
     String projectId = widget.project?.id ?? _generateProjectId();
+    final selectedCoordinator = _selectedCoordinator;
 
     if (_selectedFile != null || _selectedImageWeb != null) {
       try {
@@ -1663,6 +1818,12 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 orElse: () => null,
               )
               ?.name,
+      coordinatorId: _selectedCoordinatorId,
+      coordinatorName:
+          selectedCoordinator?.name ??
+          (_selectedCoordinatorId == widget.project?.coordinatorId
+              ? widget.project?.coordinatorName
+              : null),
       estimatedProgress: widget.project?.estimatedProgress ?? 0,
       measuredAmount: widget.project?.measuredAmount ?? 0,
       measurementCount: widget.project?.measurementCount ?? 0,
@@ -1672,6 +1833,22 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   Future<void> _createNewProject(Project project) async {
     await _service.addProject(project);
+  }
+
+  EmployeeModel? get _selectedCoordinator {
+    for (final coordinator in _coordinators) {
+      if (coordinator.id == _selectedCoordinatorId) return coordinator;
+    }
+    return null;
+  }
+
+  String? get _selectedCoordinatorName {
+    final selected = _selectedCoordinator;
+    if (selected != null) return selected.name;
+    if (_selectedCoordinatorId == widget.project?.coordinatorId) {
+      return widget.project?.coordinatorName;
+    }
+    return null;
   }
 
   Future<void> _updateExistingProject(Project project) async {

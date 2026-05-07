@@ -50,7 +50,9 @@ class TransparencyBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Transparência & Custos',
+                    'Transparencia & Custos',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.tx,
                       fontSize: 13,
@@ -60,11 +62,14 @@ class TransparencyBanner extends StatelessWidget {
                   SizedBox(height: 2),
                   Text(
                     'Detalhamento de recursos e fatura estimada',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: AppColors.tx3, fontSize: 11),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             const Icon(
               Icons.chevron_right_rounded,
               color: AppColors.gold,

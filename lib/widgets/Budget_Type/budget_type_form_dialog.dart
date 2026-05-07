@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class BudgetTypeFormDialog extends StatefulWidget {
   final BudgetType? budgetType;
@@ -58,18 +59,21 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop =
-        MediaQuery.of(context).size.width >
-        BudgetTypeConstants.desktopBreakpoint;
+    final size = MediaQuery.sizeOf(context);
+    final isDesktop = size.width > BudgetTypeConstants.desktopBreakpoint;
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 600.0);
+    final padding = ResponsiveLayout.pagePadding(size.width);
 
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
+      insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        width: isDesktop ? 600 : null,
+        width: dialogWidth.toDouble(),
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-          maxWidth: isDesktop ? 600 : MediaQuery.of(context).size.width * 0.9,
+          maxHeight: size.height * 0.9,
+          maxWidth: isDesktop ? 600 : size.width * 0.95,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -77,7 +81,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             _buildDialogHeader(),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: padding,
                 child: _buildDialogBody(),
               ),
             ),
@@ -90,7 +94,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
 
   Widget _buildDialogHeader() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -381,53 +385,64 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
           ),
-          child: GridView.builder(
-            padding: const EdgeInsets.all(12),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 6,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1,
-            ),
-            itemCount: BudgetTypeConstants.availableIcons.length,
-            itemBuilder: (context, index) {
-              final iconEntry = BudgetTypeConstants.availableIcons.entries
-                  .elementAt(index);
-              final iconName = iconEntry.key;
-              final iconData = iconEntry.value;
-              final isSelected = _selectedIcon == iconName;
-              final displayColor =
-                  _selectedColor ??
-                  BudgetTypeConstants.categoryColors[_selectedCategory] ??
-                  AppColors.accentGold;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final columns =
+                  constraints.maxWidth < 320
+                      ? 4
+                      : constraints.maxWidth < 460
+                      ? 5
+                      : 6;
 
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedIcon = isSelected ? null : iconName;
-                  });
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color:
-                        isSelected
-                            ? displayColor.withOpacity(0.2)
-                            : AppColors.surfaceDark,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color:
-                          isSelected
-                              ? displayColor
-                              : AppColors.borderColor.withOpacity(0.3),
-                      width: isSelected ? 2 : 1,
-                    ),
-                  ),
-                  child: Icon(
-                    iconData,
-                    color: isSelected ? displayColor : AppColors.textMuted,
-                    size: 20,
-                  ),
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 1,
                 ),
+                itemCount: BudgetTypeConstants.availableIcons.length,
+                itemBuilder: (context, index) {
+                  final iconEntry = BudgetTypeConstants.availableIcons.entries
+                      .elementAt(index);
+                  final iconName = iconEntry.key;
+                  final iconData = iconEntry.value;
+                  final isSelected = _selectedIcon == iconName;
+                  final displayColor =
+                      _selectedColor ??
+                      BudgetTypeConstants.categoryColors[_selectedCategory] ??
+                      AppColors.accentGold;
+
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedIcon = isSelected ? null : iconName;
+                      });
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color:
+                            isSelected
+                                ? displayColor.withOpacity(0.2)
+                                : AppColors.surfaceDark,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color:
+                              isSelected
+                                  ? displayColor
+                                  : AppColors.borderColor.withOpacity(0.3),
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Icon(
+                        iconData,
+                        color: isSelected ? displayColor : AppColors.textMuted,
+                        size: 20,
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -574,7 +589,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
 
   Widget _buildDialogActions() {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
       decoration: BoxDecoration(
         color: AppColors.backgroundDark.withOpacity(0.3),
         borderRadius: const BorderRadius.only(

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para input formatters
+import 'package:flutter/services.dart';
 import 'package:project_granith/models/item_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class ItemFormDialog extends StatefulWidget {
-  final Item? item; // Se null, é criação. Se preenchido, é edição.
+  final Item? item;
 
   const ItemFormDialog({super.key, this.item});
 
@@ -15,7 +16,6 @@ class ItemFormDialog extends StatefulWidget {
 class _ItemFormDialogState extends State<ItemFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
-  // Controllers
   late TextEditingController _nameController;
   late TextEditingController _descController;
   late TextEditingController _unitController;
@@ -30,8 +30,6 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
     _nameController = TextEditingController(text: widget.item?.name);
     _descController = TextEditingController(text: widget.item?.description);
     _unitController = TextEditingController(text: widget.item?.unit ?? 'un');
-
-    // Formatação numérica simples
     _weightController = TextEditingController(
       text: widget.item?.weight?.toString(),
     );
@@ -61,15 +59,20 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.item != null;
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < ResponsiveLayout.compact;
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 500.0);
 
     return AlertDialog(
       backgroundColor: AppColors.surfaceDark,
+      insetPadding: EdgeInsets.all(inset),
       title: Text(
         isEditing ? 'Editar Item' : 'Novo Item',
         style: const TextStyle(color: AppColors.textPrimary),
       ),
       content: SizedBox(
-        width: 500, // Largura fixa para desktop/tablet
+        width: dialogWidth.toDouble(),
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -77,63 +80,21 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // === Informações Básicas ===
-                const Text(
-                  'Informações Básicas',
-                  style: TextStyle(
-                    color: AppColors.accentGold,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                _sectionTitle('Informa\u00e7\u00f5es B\u00e1sicas'),
                 const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: TextFormField(
-                        controller: _nameController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration('Nome do Item*'),
-                        validator:
-                            (value) =>
-                                value?.isEmpty == true ? 'Obrigatório' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 1,
-                      child: TextFormField(
-                        controller: _unitController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration('Unidade (ex: kg)*'),
-                        validator:
-                            (value) =>
-                                value?.isEmpty == true ? 'Obrigatório' : null,
-                      ),
-                    ),
-                  ],
-                ),
+                _buildBasicFields(isCompact),
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _descController,
                   style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: _inputDecoration('Descrição (Opcional)'),
+                  decoration: _inputDecoration(
+                    'Descri\u00e7\u00e3o (Opcional)',
+                  ),
                   maxLines: 2,
                 ),
-
                 const SizedBox(height: 24),
-
-                // === Informações de Frete ===
-                const Text(
-                  'Logística & Frete (Opcional)',
-                  style: TextStyle(
-                    color: AppColors.accentGold,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                _sectionTitle('Log\u00edstica & Frete (Opcional)'),
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _weightController,
                   style: const TextStyle(color: AppColors.textPrimary),
@@ -143,63 +104,10 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                  ],
+                  inputFormatters: [_decimalFormatter],
                 ),
                 const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _widthController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration(
-                          'Largura',
-                        ).copyWith(suffixText: 'cm'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d*'),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _heightController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration(
-                          'Altura',
-                        ).copyWith(suffixText: 'cm'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d*'),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _lengthController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: _inputDecoration(
-                          'Comp.',
-                        ).copyWith(suffixText: 'cm'),
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d*'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                _buildDimensionFields(isCompact),
               ],
             ),
           ),
@@ -219,16 +127,101 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
             backgroundColor: AppColors.accentGold,
             foregroundColor: AppColors.primaryDark,
           ),
-          child: Text(isEditing ? 'Salvar Alterações' : 'Criar Item'),
+          child: Text(isEditing ? 'Salvar Altera\u00e7\u00f5es' : 'Criar Item'),
         ),
       ],
     );
   }
 
+  Widget _sectionTitle(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: AppColors.accentGold,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildBasicFields(bool isCompact) {
+    final nameField = TextFormField(
+      controller: _nameController,
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: _inputDecoration('Nome do Item*'),
+      validator: _requiredValidator,
+    );
+    final unitField = TextFormField(
+      controller: _unitController,
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: _inputDecoration('Unidade (ex: kg)*'),
+      validator: _requiredValidator,
+    );
+
+    if (isCompact) {
+      return Column(
+        children: [nameField, const SizedBox(height: 16), unitField],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(flex: 2, child: nameField),
+        const SizedBox(width: 16),
+        Expanded(child: unitField),
+      ],
+    );
+  }
+
+  Widget _buildDimensionFields(bool isCompact) {
+    final fields = [
+      _dimensionField(_widthController, 'Largura'),
+      _dimensionField(_heightController, 'Altura'),
+      _dimensionField(_lengthController, 'Comp.'),
+    ];
+
+    if (isCompact) {
+      return Column(
+        children: [
+          for (var index = 0; index < fields.length; index++) ...[
+            fields[index],
+            if (index < fields.length - 1) const SizedBox(height: 16),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(child: fields[0]),
+        const SizedBox(width: 16),
+        Expanded(child: fields[1]),
+        const SizedBox(width: 16),
+        Expanded(child: fields[2]),
+      ],
+    );
+  }
+
+  Widget _dimensionField(TextEditingController controller, String label) {
+    return TextFormField(
+      controller: controller,
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: _inputDecoration(label).copyWith(suffixText: 'cm'),
+      keyboardType: TextInputType.number,
+      inputFormatters: [_decimalFormatter],
+    );
+  }
+
+  FilteringTextInputFormatter get _decimalFormatter =>
+      FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*'));
+
+  String? _requiredValidator(String? value) {
+    return value?.isEmpty == true ? 'Obrigat\u00f3rio' : null;
+  }
+
   void _submit() {
     if (_formKey.currentState!.validate()) {
       final newItem = Item(
-        id: widget.item?.id ?? '', // ID vazio na criação, será ignorado/gerado
+        id: widget.item?.id ?? '',
         name: _nameController.text.trim(),
         description: _descController.text.trim(),
         unit: _unitController.text.trim(),
@@ -249,15 +242,17 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
       labelText: label,
       labelStyle: const TextStyle(color: AppColors.textSecondary),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.borderColor),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: AppColors.borderColor.withValues(alpha: 0.72),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentGold),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
       ),
       filled: true,
-      fillColor: AppColors.backgroundDark,
+      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
     );
   }
 }

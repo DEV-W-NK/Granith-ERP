@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -41,7 +40,9 @@ class _GranithAppBackdropState extends State<GranithAppBackdrop>
       child: Stack(
         children: [
           Positioned.fill(
-            child: RepaintBoundary(child: _AuraLayer(animation: _controller)),
+            child: RepaintBoundary(
+              child: _AtmosphereLayer(animation: _controller),
+            ),
           ),
           widget.child,
         ],
@@ -95,108 +96,97 @@ class GranithPageBackground extends StatelessWidget {
   }
 }
 
-class _AuraLayer extends StatelessWidget {
+class _AtmosphereLayer extends StatelessWidget {
   final Animation<double> animation;
 
-  const _AuraLayer({required this.animation});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        _AuraOrb(
-          animation: animation,
-          alignment: Alignment.topLeft,
-          size: 340,
-          color: AppColors.duskBlue,
-          dx: -90,
-          dy: -60,
-          phase: 0.0,
-        ),
-        _AuraOrb(
-          animation: animation,
-          alignment: Alignment.topRight,
-          size: 280,
-          color: AppColors.accentGold,
-          dx: 90,
-          dy: -110,
-          phase: 0.9,
-        ),
-        _AuraOrb(
-          animation: animation,
-          alignment: Alignment.centerRight,
-          size: 360,
-          color: AppColors.auraCyan,
-          dx: 160,
-          dy: 40,
-          phase: 2.2,
-        ),
-        _AuraOrb(
-          animation: animation,
-          alignment: Alignment.bottomLeft,
-          size: 320,
-          color: AppColors.auraBlue,
-          dx: -110,
-          dy: 120,
-          phase: 3.0,
-        ),
-      ],
-    );
-  }
-}
-
-class _AuraOrb extends StatelessWidget {
-  final Animation<double> animation;
-  final Alignment alignment;
-  final double size;
-  final Color color;
-  final double dx;
-  final double dy;
-  final double phase;
-
-  const _AuraOrb({
-    required this.animation,
-    required this.alignment,
-    required this.size,
-    required this.color,
-    required this.dx,
-    required this.dy,
-    required this.phase,
-  });
+  const _AtmosphereLayer({required this.animation});
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: animation,
-      builder: (context, child) {
-        final wave = math.sin((animation.value * math.pi * 2) + phase);
-        final driftX = dx + (wave * 18);
-        final driftY =
-            dy + (math.cos((animation.value * math.pi * 2) + phase) * 14);
-        final scale = 0.96 + ((wave + 1) * 0.025);
-
-        return Align(
-          alignment: alignment,
-          child: Transform.translate(
-            offset: Offset(driftX, driftY),
-            child: Transform.scale(scale: scale, child: child),
-          ),
-        );
-      },
-      child: IgnorePointer(
-        child: ImageFiltered(
-          imageFilter: ImageFilter.blur(sigmaX: 90, sigmaY: 90),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withValues(alpha: 0.12),
+      builder:
+          (context, _) => IgnorePointer(
+            child: CustomPaint(
+              painter: _AtmospherePainter(progress: animation.value),
             ),
           ),
-        ),
-      ),
     );
+  }
+}
+
+class _AtmospherePainter extends CustomPainter {
+  final double progress;
+
+  const _AtmospherePainter({required this.progress});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final wave = math.sin(progress * math.pi * 2);
+    final width = size.width;
+    final height = size.height;
+
+    final topWash =
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0x1F6EA8FF), Color(0x00000000)],
+          ).createShader(Rect.fromLTWH(0, 0, width, height * 0.46));
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, height * 0.46), topWash);
+
+    final lowerWash =
+        Paint()
+          ..shader = const LinearGradient(
+            begin: Alignment.bottomRight,
+            end: Alignment.topLeft,
+            colors: [Color(0x1AD4AF37), Color(0x00000000)],
+          ).createShader(Rect.fromLTWH(0, height * 0.46, width, height * 0.54));
+    canvas.drawRect(
+      Rect.fromLTWH(0, height * 0.46, width, height * 0.54),
+      lowerWash,
+    );
+
+    final diagonalPaint =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Colors.white.withValues(alpha: 0.035);
+    final offset = wave * 18;
+    for (double x = -height; x < width + height; x += 180) {
+      canvas.drawLine(
+        Offset(x + offset, height),
+        Offset(x + height * 0.42 + offset, 0),
+        diagonalPaint,
+      );
+    }
+
+    final goldLine =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = AppColors.accentGold.withValues(alpha: 0.055);
+    canvas.drawLine(
+      Offset(width * 0.18, 0),
+      Offset(width * 0.72, height),
+      goldLine,
+    );
+
+    final cyanLine =
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = AppColors.auraCyan.withValues(alpha: 0.045);
+    canvas.drawLine(
+      Offset(width * 0.82, 0),
+      Offset(width * 0.42, height),
+      cyanLine,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _AtmospherePainter oldDelegate) {
+    return oldDelegate.progress != progress;
   }
 }
 

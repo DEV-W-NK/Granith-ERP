@@ -7,6 +7,7 @@ import 'package:project_granith/models/inventory_model.dart';
 import 'package:project_granith/models/InventoryMovementType.dart';
 import 'package:project_granith/services/inventory_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class InventoryPageView extends StatefulWidget {
   const InventoryPageView({super.key});
@@ -34,14 +35,23 @@ class _InventoryPageViewState extends State<InventoryPageView>
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 420;
+
     return ChangeNotifierProvider(
       create: (_) => InventoryViewModel(_service),
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
         appBar: AppBar(
-          title: const Text(
+          title: Text(
             'Controle de Estoque',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: compact ? 17 : null,
+            ),
           ),
           backgroundColor: AppColors.surfaceDark,
           elevation: 0,
@@ -148,7 +158,9 @@ class _InventoryList extends StatelessWidget {
         if (items.isEmpty) return _buildEmptyState();
 
         return ListView.builder(
-          padding: const EdgeInsets.all(14),
+          padding: ResponsiveLayout.pagePadding(
+            MediaQuery.sizeOf(context).width,
+          ),
           itemCount: items.length,
           itemBuilder:
               (_, i) => _InventoryCard(item: items[i], viewModel: viewModel),
@@ -225,6 +237,8 @@ class _InventoryCard extends StatelessWidget {
             ),
             title: Text(
               item.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -235,26 +249,37 @@ class _InventoryCard extends StatelessWidget {
               'Mínimo: ${item.minQuantity.toStringAsFixed(0)} ${item.unit}',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
             ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1),
-                  style: TextStyle(
-                    color: barColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+            trailing: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 84),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      item.quantity.toStringAsFixed(
+                        item.quantity % 1 == 0 ? 0 : 1,
+                      ),
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: barColor,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-                Text(
-                  item.unit,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 10,
+                  Text(
+                    item.unit,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           if (item.minQuantity > 0)

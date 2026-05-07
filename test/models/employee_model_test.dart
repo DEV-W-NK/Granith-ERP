@@ -47,5 +47,46 @@ void main() {
       expect(employee.role, EmployeeRole.coordenador);
       expect(employee.status, EmployeeStatus.ativo);
     });
+
+    test('hierarquia reconhece gerente como maior nivel operacional', () {
+      final employee = EmployeeModel.fromMap({
+        'name': 'Helena Duarte',
+        'email': 'helena@empresa.com',
+        'phone': '11977776666',
+        'jobTitle': 'Gerente de Obras',
+        'sector': 'Operacional',
+        'role': 'gerente',
+        'status': 'ativo',
+        'baseSalary': 12500,
+        'educationLevel': 'Superior',
+      }, 'emp-3');
+
+      expect(employee.role, EmployeeRole.gerente);
+      expect(employee.role.level, greaterThan(EmployeeRole.coordenador.level));
+      expect(employee.role.isManager, isTrue);
+    });
+
+    test('rotulos da hierarquia seguem os niveis do Mobile', () {
+      expect(EmployeeRole.funcionario.label, 'Colaborador');
+      expect(EmployeeRole.supervisor.label, 'Supervisao');
+      expect(EmployeeRole.coordenador.label, 'Coordenacao');
+      expect(EmployeeRole.gerente.label, 'Gerencia');
+    });
+
+    test('fromMap aceita baseSalary numerico em string', () {
+      final employee = EmployeeModel.fromMap({
+        'name': 'Pedro Lima',
+        'email': 'pedro@empresa.com',
+        'phone': '11977776666',
+        'jobTitle': 'Analista',
+        'sector': 'RH',
+        'role': 'funcionario',
+        'status': 'ativo',
+        'baseSalary': '4321.50',
+        'educationLevel': 'Superior',
+      }, 'emp-4');
+
+      expect(employee.baseSalary, 4321.5);
+    });
   });
 }

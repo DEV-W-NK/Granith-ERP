@@ -1,5 +1,6 @@
 import 'package:project_granith/core/config/supabase_config.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
+import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/usage_stats_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -86,7 +87,7 @@ class UsageService {
     final row =
         await AppSupabase.client
             .from('usage_stats')
-            .select()
+            .select(SupabaseSelects.usageStats)
             .eq('id', documentId)
             .maybeSingle();
 

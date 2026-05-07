@@ -8,6 +8,7 @@ import 'package:project_granith/models/requisition_model.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HEADER
@@ -19,7 +20,8 @@ class MaterialRequisitionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<MaterialRequisitionController>();
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final isDesktop =
+        MediaQuery.of(context).size.width > ResponsiveLayout.compact;
 
     return Row(
       children: [
@@ -57,7 +59,7 @@ class MaterialRequisitionHeader extends StatelessWidget {
           ),
         ),
         // Badge de pendentes
-        if (ctrl.pendingCount > 0)
+        if (ctrl.pendingCount > 0 && isDesktop)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -668,12 +670,19 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   @override
   Widget build(BuildContext context) {
     final r = widget.requisition;
+    final size = MediaQuery.sizeOf(context);
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 560.0);
 
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
+      insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 700),
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth.toDouble(),
+          maxHeight: size.height * 0.9,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

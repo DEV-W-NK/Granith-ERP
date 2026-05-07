@@ -3,6 +3,15 @@ import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/team_model.dart';
 
+class EmployeeSchemaException implements Exception {
+  final String message;
+
+  const EmployeeSchemaException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class TeamService {
   static const _employees = 'employees';
   static const _teams = 'teams';
@@ -27,21 +36,37 @@ class TeamService {
 
   Future<String> saveEmployee(EmployeeModel employee) async {
     final data = DbValue.normalizeMap(employee.toMap());
-    if (employee.id.isEmpty) {
-      final response =
-          await AppSupabase.client
-              .from(_employees)
-              .insert(data)
-              .select('id')
-              .single();
-      return response['id'] as String;
-    } else {
-      await AppSupabase.client
-          .from(_employees)
-          .update(data)
-          .eq('id', employee.id);
-      return employee.id;
+    try {
+      if (employee.id.isEmpty) {
+        final response =
+            await AppSupabase.client
+                .from(_employees)
+                .insert(data)
+                .select('id')
+                .single();
+        return response['id'] as String;
+      } else {
+        await AppSupabase.client
+            .from(_employees)
+            .update(data)
+            .eq('id', employee.id);
+        return employee.id;
+      }
+    } catch (error) {
+      if (_isEmployeesRoleConstraintError(error)) {
+        throw EmployeeSchemaException(
+          'O banco Supabase ainda nao aceita o nivel "Gerencia". '
+          'Aplique a migration que atualiza employees_role_check ou selecione '
+          'Colaborador, Supervisao ou Coordenacao.',
+        );
+      }
+      rethrow;
     }
+  }
+
+  bool _isEmployeesRoleConstraintError(Object error) {
+    final text = error.toString();
+    return text.contains('23514') && text.contains('employees_role_check');
   }
 
   Future<void> deleteEmployee(String id) async {

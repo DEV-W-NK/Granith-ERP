@@ -7,6 +7,7 @@ import 'package:project_granith/controllers/projects_controller.dart';
 import 'package:project_granith/controllers/auth_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class TransactionFormDialog extends StatefulWidget {
   final FinancialTransactionModel? initial;
@@ -80,107 +81,131 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 700;
+    final size = MediaQuery.sizeOf(context);
+    final isDesktop = size.width > 700;
+    final isCompact = size.width < ResponsiveLayout.compact;
+    final horizontalPadding = isCompact ? 16.0 : 24.0;
 
     return Dialog(
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.all(size.width < 420 ? 8 : 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: isDesktop ? 560 : double.infinity,
-          maxHeight: MediaQuery.of(context).size.height * 0.92,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.cardGradient,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppColors.borderColor.withValues(alpha: 0.72),
+          ),
+          boxShadow: AppColors.glowShadows(AppColors.accentBlue),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(),
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.forceType == null) ...[
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isDesktop ? 560 : double.infinity,
+            maxHeight: size.height * 0.92,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildHeader(),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(
+                    horizontalPadding,
+                    0,
+                    horizontalPadding,
+                    24,
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.forceType == null) ...[
+                          const SizedBox(height: 20),
+                          _buildTypeToggle(),
+                        ],
                         const SizedBox(height: 20),
-                        _buildTypeToggle(),
+                        _buildTextField(
+                          ctrl: _descCtrl,
+                          label: 'Descrição',
+                          icon: Icons.description_outlined,
+                          validator:
+                              (v) =>
+                                  v!.trim().isEmpty
+                                      ? 'Campo obrigatório'
+                                      : null,
+                        ),
+                        const SizedBox(height: 16),
+                        _responsivePair(
+                          _buildAmountField(),
+                          _buildStatusDropdown(),
+                          isCompact,
+                        ),
+                        const SizedBox(height: 16),
+                        _responsivePair(
+                          _buildDatePicker(
+                            label: 'Vencimento',
+                            icon: Icons.calendar_today_outlined,
+                            date: _dueDate,
+                            nullable: false,
+                            onChanged: (d) {
+                              if (d != null) setState(() => _dueDate = d);
+                            },
+                          ),
+                          _buildDatePicker(
+                            label: 'Pagamento',
+                            icon: Icons.check_circle_outline,
+                            date: _paymentDate,
+                            nullable: true,
+                            onChanged: (d) => setState(() => _paymentDate = d),
+                          ),
+                          isCompact,
+                        ),
+                        const SizedBox(height: 16),
+                        _responsivePair(
+                          _buildCategoryDropdown(),
+                          _buildOriginDropdown(),
+                          isCompact,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildProjectDropdown(),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          ctrl: _notesCtrl,
+                          label: 'Observações (opcional)',
+                          icon: Icons.notes_outlined,
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 28),
+                        _buildSaveButton(),
                       ],
-                      const SizedBox(height: 20),
-                      _buildTextField(
-                        ctrl: _descCtrl,
-                        label: 'Descrição',
-                        icon: Icons.description_outlined,
-                        validator:
-                            (v) =>
-                                v!.trim().isEmpty ? 'Campo obrigatório' : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: _buildAmountField()),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildStatusDropdown()),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildDatePicker(
-                              label: 'Vencimento',
-                              icon: Icons.calendar_today_outlined,
-                              date: _dueDate,
-                              nullable: false,
-                              onChanged: (d) {
-                                if (d != null) setState(() => _dueDate = d);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildDatePicker(
-                              label: 'Pagamento',
-                              icon: Icons.check_circle_outline,
-                              date: _paymentDate,
-                              nullable: true,
-                              onChanged:
-                                  (d) => setState(() => _paymentDate = d),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(child: _buildCategoryDropdown()),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildOriginDropdown()),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildProjectDropdown(),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        ctrl: _notesCtrl,
-                        label: 'Observações (opcional)',
-                        icon: Icons.notes_outlined,
-                        maxLines: 2,
-                      ),
-                      const SizedBox(height: 28),
-                      _buildSaveButton(),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   // ─── Header ──────────────────────────────────────────────────────────────────
+
+  Widget _responsivePair(Widget first, Widget second, bool isCompact) {
+    if (isCompact) {
+      return Column(children: [first, const SizedBox(height: 12), second]);
+    }
+
+    return Row(
+      children: [
+        Expanded(child: first),
+        const SizedBox(width: 12),
+        Expanded(child: second),
+      ],
+    );
+  }
 
   Widget _buildHeader() {
     final isIncome = _type == TransactionType.income;
@@ -194,7 +219,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
       padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.white.withOpacity(0.07)),
+          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
       ),
       child: Row(
@@ -202,8 +227,9 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.24)),
             ),
             child: Icon(
               isIncome ? Icons.arrow_upward : Icons.arrow_downward,
@@ -212,15 +238,18 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
             ),
           ),
           const SizedBox(width: 14),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const Spacer(),
           IconButton(
             icon: const Icon(Icons.close, color: AppColors.textMuted),
             onPressed: () => Navigator.of(context).pop(),
@@ -269,10 +298,16 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.12) : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+          color:
+              selected
+                  ? color.withValues(alpha: 0.12)
+                  : AppColors.surfaceDark.withValues(alpha: 0.42),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? color.withOpacity(0.5) : Colors.white12,
+            color:
+                selected
+                    ? color.withValues(alpha: 0.50)
+                    : AppColors.borderColor.withValues(alpha: 0.58),
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -331,7 +366,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   Widget _buildStatusDropdown() {
     return DropdownButtonFormField<TransactionStatus>(
-      value: _status,
+      initialValue: _status,
       isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -348,7 +383,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<TransactionCategory>(
-      value: _category,
+      initialValue: _category,
       isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -366,7 +401,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   Widget _buildOriginDropdown() {
     return DropdownButtonFormField<TransactionOrigin>(
-      value: _origin,
+      initialValue: _origin,
       isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -385,7 +420,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
     final projects = context.watch<ProjectsController>().projects;
 
     return DropdownButtonFormField<String?>(
-      value: _selectedProjectId,
+      initialValue: _selectedProjectId,
       isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -554,25 +589,27 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   InputDecoration _decoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
       prefixIcon: Icon(icon, color: AppColors.textMuted, size: 18),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.04),
+      fillColor: AppColors.surfaceDark.withValues(alpha: 0.72),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
-        borderRadius: BorderRadius.circular(10),
+        borderSide: BorderSide(
+          color: AppColors.borderColor.withValues(alpha: 0.72),
+        ),
+        borderRadius: BorderRadius.circular(14),
       ),
       focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentGold),
-        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
+        borderRadius: BorderRadius.circular(14),
       ),
       errorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.accentRed, width: 1.2),
+        borderRadius: BorderRadius.circular(14),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: Colors.redAccent),
-        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: AppColors.accentRed, width: 1.4),
+        borderRadius: BorderRadius.circular(14),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
     );

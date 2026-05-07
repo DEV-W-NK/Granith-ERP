@@ -1,27 +1,10 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:project_granith/constants/GranitTokens.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
+import 'package:project_granith/constants/GranitTokens.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/components/GranitCard.dart';
 import 'package:project_granith/widgets/components/GranitSectionHeader.dart';
-
-// =============================================================================
-// HOME PAGE WIDGETS
-// Cada widget é um card independente, stateless, alimentado pelo HomeController.
-// Arquivo único para facilitar importação; separe em arquivos individuais
-// quando a pasta home_page/ crescer além de 5 widgets.
-//
-// Widgets exportados:
-//   - ProjectsCard
-//   - AlertsCard
-//   - MiniChartCard
-//   - TeamCard
-//   - QuickActionsCard
-// =============================================================================
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PROJECTS CARD — barras de progresso reativas por projeto
-// ─────────────────────────────────────────────────────────────────────────────
 
 class ProjectsCard extends StatelessWidget {
   final List<ProjectProgress> projects;
@@ -34,7 +17,7 @@ class ProjectsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GranitCardTitle('Projetos em andamento'),
+          const GranitCardTitle('Projetos em andamento'),
           if (projects.isEmpty)
             _empty('Nenhum projeto ativo no momento')
           else
@@ -46,7 +29,15 @@ class ProjectsCard extends StatelessWidget {
 
   Widget _empty(String msg) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 24),
-    child: Center(child: Text(msg, style: GranitTokens.bodySmall)),
+    child: Center(
+      child: Text(
+        msg,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: GranitTokens.bodySmall,
+      ),
+    ),
   );
 }
 
@@ -74,24 +65,26 @@ class _ProjectRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
                   project.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: GranitTokens.textPrimary,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
-              GranitBadge(
-                label: project.isOverBudget ? '⚠ $pctLabel' : pctLabel,
-                color: color,
-                fontSize: 10,
+              Flexible(
+                child: GranitBadge(
+                  label: project.isOverBudget ? '! $pctLabel' : pctLabel,
+                  color: color,
+                  fontSize: 10,
+                ),
               ),
             ],
           ),
@@ -100,8 +93,10 @@ class _ProjectRow extends StatelessWidget {
             [
               if (project.dueDateLabel.isNotEmpty) project.dueDateLabel,
               if (project.budget > 0)
-                GranitTokens.brlCompact(project.budget) + ' orçado',
-            ].join(' · '),
+                '${GranitTokens.brlCompact(project.budget)} orcado',
+            ].join(' - '),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: GranitTokens.bodySmall.copyWith(fontSize: 10),
           ),
           const SizedBox(height: 6),
@@ -119,10 +114,6 @@ class _ProjectRow extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// ALERTS CARD — notificações automáticas geradas pelo HomeController
-// ─────────────────────────────────────────────────────────────────────────────
 
 class AlertsCard extends StatelessWidget {
   final List<HomeAlert> alerts;
@@ -142,7 +133,7 @@ class AlertsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GranitCardTitle('Alertas'),
+          const GranitCardTitle('Alertas'),
           if (alerts.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 20),
@@ -154,10 +145,14 @@ class AlertsCard extends StatelessWidget {
                     size: 16,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Tudo em ordem por aqui.',
-                    style: GranitTokens.bodySmall.copyWith(
-                      color: GranitTokens.green,
+                  Expanded(
+                    child: Text(
+                      'Tudo em ordem por aqui.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GranitTokens.bodySmall.copyWith(
+                        color: GranitTokens.green,
+                      ),
                     ),
                   ),
                 ],
@@ -197,6 +192,8 @@ class _AlertRow extends StatelessWidget {
               children: [
                 Text(
                   alert.message,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
                   style: GranitTokens.bodySmall.copyWith(
                     color: GranitTokens.textSecondary,
                   ),
@@ -204,6 +201,8 @@ class _AlertRow extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   alert.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: GranitTokens.bodySmall.copyWith(
                     color: GranitTokens.textMuted,
                     fontSize: 10,
@@ -217,10 +216,6 @@ class _AlertRow extends StatelessWidget {
     );
   }
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// MINI CHART CARD — bar chart de receita vs despesa (últimos 6 meses)
-// ─────────────────────────────────────────────────────────────────────────────
 
 class MiniChartCard extends StatefulWidget {
   final List<MonthlyMini> data;
@@ -246,11 +241,12 @@ class _MiniChartCardState extends State<MiniChartCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GranitCardTitle('Receita últimos 6 meses'),
-          Row(
+          const GranitCardTitle('Receita ultimos 6 meses'),
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
               _dot(GranitTokens.green, 'Receita'),
-              const SizedBox(width: 12),
               _dot(GranitTokens.red, 'Despesa'),
             ],
           ),
@@ -297,12 +293,15 @@ class _MiniChartCardState extends State<MiniChartCard> {
                               reservedSize: 20,
                               getTitlesWidget: (v, _) {
                                 final i = v.toInt();
-                                if (i < 0 || i >= widget.data.length)
+                                if (i < 0 || i >= widget.data.length) {
                                   return const SizedBox.shrink();
+                                }
                                 return Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
                                     widget.data[i].label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
                                       color: GranitTokens.textMuted,
                                       fontSize: 9,
@@ -376,14 +375,10 @@ class _MiniChartCardState extends State<MiniChartCard> {
         ),
       ),
       const SizedBox(width: 5),
-      Text(label, style: GranitTokens.bodySmall),
+      Text(label, maxLines: 1, style: GranitTokens.bodySmall),
     ],
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TEAM CARD — snapshot de RH para o dashboard
-// ─────────────────────────────────────────────────────────────────────────────
 
 class TeamCard extends StatelessWidget {
   final int activeEmployees;
@@ -405,15 +400,15 @@ class TeamCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GranitCardTitle('Equipe'),
+          const GranitCardTitle('Equipe'),
           _row(
-            'Funcionários ativos',
+            'Funcionarios ativos',
             activeEmployees.toString(),
             GranitTokens.textPrimary,
           ),
           _row('Em campo hoje', fieldToday.toString(), GranitTokens.green),
           _row(
-            'Diários pendentes',
+            'Diarios pendentes',
             pendingDailyLogs.toString(),
             GranitTokens.orange,
           ),
@@ -434,25 +429,33 @@ class TeamCard extends StatelessWidget {
   Widget _row(String label, String value, Color valueColor) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: GranitTokens.bodySmall),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: GranitTokens.bodySmall,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              color: valueColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
     ),
   );
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
-// QUICK ACTIONS CARD — atalhos de navegação
-// ─────────────────────────────────────────────────────────────────────────────
 
 class QuickActionItem {
   final String label;
@@ -481,7 +484,7 @@ class QuickActionsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GranitCardTitle('Ações rápidas'),
+          const GranitCardTitle('Acoes rapidas'),
           ...actions.map((a) => _ActionRow(item: a)),
         ],
       ),
@@ -514,28 +517,98 @@ class _ActionRow extends StatelessWidget {
             child: Icon(item.icon, color: item.color, size: 15),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                item.label,
-                style: const TextStyle(
-                  color: GranitTokens.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: GranitTokens.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-              Text(
-                item.subtitle,
-                style: GranitTokens.bodySmall.copyWith(fontSize: 10),
-              ),
-            ],
+                Text(
+                  item.subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GranitTokens.bodySmall.copyWith(fontSize: 10),
+                ),
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 8),
           const Icon(
             Icons.arrow_forward_ios_rounded,
             color: GranitTokens.textMuted,
             size: 11,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color color;
+
+  const _FeatureCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < ResponsiveLayout.compact;
+
+    return Container(
+      width: compact ? 150 : 140,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: GranitTokens.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            description,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: GranitTokens.textMuted.withOpacity(0.8),
+              fontSize: 12,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

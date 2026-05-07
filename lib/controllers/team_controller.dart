@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/team_model.dart';
@@ -9,11 +10,11 @@ class TeamController extends ChangeNotifier {
 
   TeamController({TeamService? service}) : _service = service ?? TeamService();
 
-  // ─── Estado ─────────────────────────────────────────────────────────────────
   List<EmployeeModel> _employees = [];
   List<TeamModel> _teams = [];
   bool _isLoading = false;
   String? _error;
+  bool _initialized = false;
 
   StreamSubscription<List<EmployeeModel>>? _employeeSub;
   StreamSubscription<List<TeamModel>>? _teamSub;
@@ -23,17 +24,18 @@ class TeamController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  // ─── Inicialização ──────────────────────────────────────────────────────────
-
-  /// Chame no initState da página para iniciar as streams.
   void init() {
+    if (_initialized) return;
+    _initialized = true;
+
     _employeeSub = _service.getEmployees().listen(
       (list) {
         _employees = list;
+        _clearError();
         notifyListeners();
       },
       onError: (e) {
-        _error = 'Erro ao carregar funcionários: $e';
+        _error = 'Erro ao carregar funcionarios: $e';
         notifyListeners();
       },
     );
@@ -41,6 +43,7 @@ class TeamController extends ChangeNotifier {
     _teamSub = _service.getTeams().listen(
       (list) {
         _teams = list;
+        _clearError();
         notifyListeners();
       },
       onError: (e) {
@@ -50,6 +53,15 @@ class TeamController extends ChangeNotifier {
     );
   }
 
+  Future<void> refresh() async {
+    await _employeeSub?.cancel();
+    await _teamSub?.cancel();
+    _employeeSub = null;
+    _teamSub = null;
+    _initialized = false;
+    init();
+  }
+
   @override
   void dispose() {
     _employeeSub?.cancel();
@@ -57,21 +69,13 @@ class TeamController extends ChangeNotifier {
     super.dispose();
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
-
-  /// Retorna os EmployeeModel de uma equipe específica.
   List<EmployeeModel> getMembersOfTeam(TeamModel team) {
     return _employees.where((e) => team.memberIds.contains(e.id)).toList();
   }
 
-  /// Retorna funcionários que NÃO pertencem a uma equipe específica.
   List<EmployeeModel> getAvailableEmployees(TeamModel team) {
     return _employees.where((e) => !team.memberIds.contains(e.id)).toList();
   }
-
-  // ════════════════════════════════════════════════════════════════════════════
-  // EMPLOYEES
-  // ════════════════════════════════════════════════════════════════════════════
 
   Future<void> saveEmployee(EmployeeModel employee) async {
     _setLoading(true);
@@ -79,7 +83,8 @@ class TeamController extends ChangeNotifier {
       await _service.saveEmployee(employee);
       _clearError();
     } catch (e) {
-      _error = 'Erro ao salvar funcionário: $e';
+      _error = 'Erro ao salvar funcionario: $e';
+      rethrow;
     } finally {
       _setLoading(false);
     }
@@ -91,14 +96,13 @@ class TeamController extends ChangeNotifier {
       await _service.deleteEmployee(id);
       _clearError();
     } catch (e) {
-      _error = 'Erro ao excluir funcionário: $e';
+      _error = 'Erro ao excluir funcionario: $e';
+      rethrow;
     } finally {
       _setLoading(false);
     }
   }
 
-  /// Registra desligamento: altera status para [desligado] sem excluir do banco.
-  /// Remove o funcionário de todas as equipes automaticamente (via service).
   Future<void> dismissEmployee(String id) async {
     _setLoading(true);
     try {
@@ -106,18 +110,17 @@ class TeamController extends ChangeNotifier {
       _clearError();
     } catch (e) {
       _error = 'Erro ao registrar desligamento: $e';
+      rethrow;
     } finally {
       _setLoading(false);
     }
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // TEAMS
-  // ════════════════════════════════════════════════════════════════════════════
-
   Future<TeamModel?> createTeam({
     required String name,
     String description = '',
+    List<String> memberIds = const [],
+    String? leaderId,
     String? projectId,
   }) async {
     _setLoading(true);
@@ -127,6 +130,8 @@ class TeamController extends ChangeNotifier {
         id: '',
         name: name,
         description: description,
+        memberIds: memberIds,
+        leaderId: leaderId,
         projectId: projectId,
         createdAt: now,
         updatedAt: now,
@@ -191,12 +196,10 @@ class TeamController extends ChangeNotifier {
       await _service.setTeamLeader(teamId, employeeId);
       _clearError();
     } catch (e) {
-      _error = 'Erro ao definir líder: $e';
+      _error = 'Erro ao definir lider: $e';
       notifyListeners();
     }
   }
-
-  // ─── Privados ───────────────────────────────────────────────────────────────
 
   void _setLoading(bool value) {
     _isLoading = value;

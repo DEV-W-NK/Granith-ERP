@@ -9,11 +9,11 @@ class HomeHeader extends StatelessWidget {
     final now = DateTime.now();
     final weekdays = [
       'Segunda',
-      'Terça',
+      'Terca',
       'Quarta',
       'Quinta',
       'Sexta',
-      'Sábado',
+      'Sabado',
       'Domingo',
     ];
     final months = [
@@ -55,22 +55,26 @@ class HomeHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Visão Geral',
+                'Visao Geral',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: AppColors.tx,
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.3,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                'Granith · $dateStr',
+                'Granith - $dateStr',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: AppColors.tx3, fontSize: 12),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 12),
         Container(
           width: 36,
           height: 36,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/controllers/budget_type_controller.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_form_dialog.dart';
 import 'package:provider/provider.dart';
@@ -186,21 +187,24 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 500.0);
+
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
+      insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
-        width: 500,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
-        ),
+        width: dialogWidth.toDouble(),
+        constraints: BoxConstraints(maxHeight: size.height * 0.86),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildDetailsHeader(),
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: ResponsiveLayout.pagePadding(size.width),
                 child: _buildDetailsContent(),
               ),
             ),

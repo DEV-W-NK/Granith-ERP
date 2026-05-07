@@ -10,12 +10,14 @@ import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/team_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
+import 'package:project_granith/services/daily_log_service.dart';
 
 // Widgets Partilhados
 import 'package:project_granith/widgets/projects/ProjectBudgetSummary.dart';
 import 'package:project_granith/widgets/projects/project_image.dart';
 import 'package:project_granith/helpers/projects_helpers.dart';
 import 'package:project_granith/ViewModels/ProjectDetailsViewModel.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class ProjectDetailsPageView extends StatefulWidget {
   const ProjectDetailsPageView({super.key});
@@ -44,7 +46,8 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
   Widget build(BuildContext context) {
     final viewModel = context.watch<ProjectDetailsViewModel>();
     final p = viewModel.project;
-    final isDesktop = MediaQuery.of(context).size.width > 900;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > 900;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -123,6 +126,8 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -133,11 +138,15 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                         color: AppColors.textMuted,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        p.location,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
+                      Expanded(
+                        child: Text(
+                          p.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 13,
+                          ),
                         ),
                       ),
                     ],
@@ -166,6 +175,8 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
         labelColor: AppColors.accentGold,
         unselectedLabelColor: AppColors.textMuted,
         dividerColor: Colors.transparent,
+        isScrollable:
+            MediaQuery.sizeOf(context).width < ResponsiveLayout.compact,
         tabs: const [
           Tab(icon: Icon(Icons.dashboard_outlined, size: 18), text: 'Resumo'),
           Tab(
@@ -191,7 +202,7 @@ class _ResumoTab extends StatelessWidget {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
       children: [
         ProjectBudgetSummary(
           project: project,
@@ -276,7 +287,9 @@ class _FinanceiroTab extends StatelessWidget {
           );
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveLayout.pagePadding(
+            MediaQuery.sizeOf(context).width,
+          ),
           itemCount: transactions.length,
           itemBuilder: (context, i) {
             final t = transactions[i];
@@ -340,9 +353,17 @@ class _FinanceiroTab extends StatelessWidget {
 
 // ─── ABA DIÁRIO DE OBRA ─────────────────────────────────────────────────────
 
-class _DiarioTab extends StatelessWidget {
+class _DiarioTab extends StatefulWidget {
   final Project project;
   const _DiarioTab({required this.project});
+
+  @override
+  State<_DiarioTab> createState() => _DiarioTabState();
+}
+
+class _DiarioTabState extends State<_DiarioTab> {
+  final DailyLogService _dailyLogService = DailyLogService();
+  final Set<String> _signingLogIds = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -350,7 +371,7 @@ class _DiarioTab extends StatelessWidget {
       stream: AppSupabase.client
           .from('daily_logs')
           .stream(primaryKey: ['id'])
-          .eq('projectId', project.id)
+          .eq('projectId', widget.project.id)
           .order('date', ascending: false)
           .map(
             (rows) =>
@@ -375,10 +396,13 @@ class _DiarioTab extends StatelessWidget {
           );
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveLayout.pagePadding(
+            MediaQuery.sizeOf(context).width,
+          ),
           itemCount: logs.length,
           itemBuilder: (context, i) {
             final log = logs[i];
+            final isSigning = _signingLogIds.contains(log.id);
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
@@ -421,6 +445,89 @@ class _DiarioTab extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _DailyLogSignaturePill(log: log),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _dailyLogSignatureDescription(log, widget.project),
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      if (log.isPendingSignature)
+                        TextButton.icon(
+                          onPressed:
+                              isSigning
+                                  ? null
+                                  : () async {
+                                    setState(() {
+                                      _signingLogIds.add(log.id);
+                                    });
+                                    try {
+                                      await _dailyLogService.signLog(
+                                        log,
+                                        signedByCoordinatorId:
+                                            widget.project.coordinatorId ??
+                                            log.coordinatorId,
+                                        signedByCoordinatorName:
+                                            widget.project.coordinatorName ??
+                                            log.coordinatorName,
+                                      );
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Diario assinado pelo coordenador.',
+                                          ),
+                                          backgroundColor:
+                                              AppColors.accentGreen,
+                                        ),
+                                      );
+                                    } catch (error) {
+                                      if (!context.mounted) return;
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Erro ao assinar diario: $error',
+                                          ),
+                                          backgroundColor: AppColors.accentRed,
+                                        ),
+                                      );
+                                    } finally {
+                                      if (mounted) {
+                                        setState(() {
+                                          _signingLogIds.remove(log.id);
+                                        });
+                                      }
+                                    }
+                                  },
+                          icon:
+                              isSigning
+                                  ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.accentGold,
+                                    ),
+                                  )
+                                  : const Icon(Icons.draw_outlined, size: 16),
+                          label: const Text('Assinar relatorio'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: AppColors.accentGold,
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             );
@@ -432,6 +539,62 @@ class _DiarioTab extends StatelessWidget {
 }
 
 // ─── ABA EQUIPE ─────────────────────────────────────────────────────────────
+
+class _DailyLogSignaturePill extends StatelessWidget {
+  final DailyLogModel log;
+
+  const _DailyLogSignaturePill({required this.log});
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        log.isSigned
+            ? AppColors.accentGreen
+            : log.isPendingSignature
+            ? AppColors.accentGold
+            : AppColors.textMuted;
+    final label =
+        log.isSigned
+            ? 'Assinado'
+            : log.isPendingSignature
+            ? 'Pendente'
+            : 'Sem assinatura';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+String _dailyLogSignatureDescription(DailyLogModel log, Project project) {
+  if (log.isSigned) {
+    final signer = log.signedByCoordinatorName ?? log.coordinatorName;
+    final signedAt = log.signedAt;
+    if (signedAt != null) {
+      return 'Assinado por ${signer ?? 'coordenador'} em ${DateFormat('dd/MM/yyyy HH:mm').format(signedAt)}';
+    }
+    return 'Assinado por ${signer ?? 'coordenador'}';
+  }
+
+  if (log.isPendingSignature) {
+    return 'Pendente de assinatura de ${log.coordinatorName ?? project.coordinatorName ?? 'coordenador responsavel'}';
+  }
+
+  return 'Sem assinatura pendente';
+}
 
 class _EquipeTab extends StatelessWidget {
   final Project project;
@@ -471,7 +634,9 @@ class _EquipeTab extends StatelessWidget {
           );
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveLayout.pagePadding(
+            MediaQuery.sizeOf(context).width,
+          ),
           itemCount: teams.length,
           itemBuilder: (context, i) {
             final team = teams[i];
@@ -570,12 +735,18 @@ class _InfoRow extends StatelessWidget {
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

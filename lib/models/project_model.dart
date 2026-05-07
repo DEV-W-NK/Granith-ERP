@@ -54,6 +54,8 @@ class Project {
   final String? imageUrl;
   final String? clientAccountId;
   final String? clientAccountName;
+  final String? coordinatorId;
+  final String? coordinatorName;
   final double estimatedProgress;
   final double measuredAmount;
   final int measurementCount;
@@ -75,6 +77,8 @@ class Project {
     this.imageUrl,
     this.clientAccountId,
     this.clientAccountName,
+    this.coordinatorId,
+    this.coordinatorName,
     this.estimatedProgress = 0,
     this.measuredAmount = 0,
     this.measurementCount = 0,
@@ -130,7 +134,7 @@ class Project {
       '${name.trim().toLowerCase()}_${client.trim().toLowerCase()}';
 
   String get contentHash =>
-      '$name$client$description${status.name}$budget$location${tags.join(',')}$teamSize$clientAccountId'
+      '$name$client$description${status.name}$budget$location${tags.join(',')}$teamSize$clientAccountId$coordinatorId'
           .hashCode
           .toString();
 
@@ -167,6 +171,8 @@ class Project {
     String? imageUrl,
     String? clientAccountId,
     String? clientAccountName,
+    String? coordinatorId,
+    String? coordinatorName,
     double? estimatedProgress,
     double? measuredAmount,
     int? measurementCount,
@@ -188,6 +194,8 @@ class Project {
       imageUrl: imageUrl ?? this.imageUrl,
       clientAccountId: clientAccountId ?? this.clientAccountId,
       clientAccountName: clientAccountName ?? this.clientAccountName,
+      coordinatorId: coordinatorId ?? this.coordinatorId,
+      coordinatorName: coordinatorName ?? this.coordinatorName,
       estimatedProgress: estimatedProgress ?? this.estimatedProgress,
       measuredAmount: measuredAmount ?? this.measuredAmount,
       measurementCount: measurementCount ?? this.measurementCount,
@@ -240,6 +248,12 @@ class Project {
       clientAccountName:
           data['clientAccountName']?.toString() ??
           data['client_account_name']?.toString(),
+      coordinatorId:
+          data['coordinatorId']?.toString() ??
+          data['coordinator_id']?.toString(),
+      coordinatorName:
+          data['coordinatorName']?.toString() ??
+          data['coordinator_name']?.toString(),
       estimatedProgress:
           ((data['estimatedProgress'] ?? data['estimated_progress']) as num?)
               ?.toDouble() ??
@@ -275,6 +289,8 @@ class Project {
       'imageUrl': imageUrl,
       'clientAccountName': clientAccountName,
       'client_account_name': clientAccountName,
+      'coordinatorName': coordinatorName,
+      'coordinator_name': coordinatorName,
       'projectKey': uniqueKey,
       'contentHash': contentHash,
       'estimatedProgress': estimatedProgress,
@@ -301,6 +317,14 @@ class Project {
       map['client_account_id'] = null;
     }
 
+    if (coordinatorId != null && coordinatorId!.trim().isNotEmpty) {
+      map['coordinatorId'] = coordinatorId;
+      map['coordinator_id'] = coordinatorId;
+    } else {
+      map['coordinatorId'] = null;
+      map['coordinator_id'] = null;
+    }
+
     return map;
   }
 
@@ -322,6 +346,8 @@ class Project {
         other.imageUrl == imageUrl &&
         other.clientAccountId == clientAccountId &&
         other.clientAccountName == clientAccountName &&
+        other.coordinatorId == coordinatorId &&
+        other.coordinatorName == coordinatorName &&
         other.estimatedProgress == estimatedProgress &&
         other.measuredAmount == measuredAmount &&
         other.measurementCount == measurementCount &&
@@ -344,6 +370,8 @@ class Project {
     imageUrl,
     clientAccountId,
     clientAccountName,
+    coordinatorId,
+    coordinatorName,
     estimatedProgress,
     measuredAmount,
     measurementCount,

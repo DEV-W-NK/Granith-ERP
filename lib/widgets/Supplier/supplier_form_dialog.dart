@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/constants/supplier_constants.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 
 class SupplierFormDialog extends StatefulWidget {
   final Supplier? supplier;
@@ -46,17 +47,20 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop =
-        MediaQuery.of(context).size.width > SupplierConstants.desktopBreakpoint;
+    final size = MediaQuery.sizeOf(context);
+    final isDesktop = size.width > SupplierConstants.desktopBreakpoint;
+    final inset = size.width < 420 ? 8.0 : 16.0;
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 500.0);
 
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      insetPadding: EdgeInsets.all(inset),
       child: Container(
-        width: isDesktop ? 500 : double.infinity,
+        width: dialogWidth.toDouble(),
         constraints: BoxConstraints(
-          maxWidth: isDesktop ? 500 : MediaQuery.of(context).size.width - 32,
-          maxHeight: MediaQuery.of(context).size.height - 100,
+          maxWidth: isDesktop ? 500 : size.width - inset * 2,
+          maxHeight: size.height * 0.92,
         ),
         child: Card(
           color: AppColors.surfaceDark,
@@ -70,7 +74,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
               _buildHeader(),
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: ResponsiveLayout.pagePadding(size.width),
                   child: _buildForm(),
                 ),
               ),
@@ -83,8 +87,10 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
   }
 
   Widget _buildHeader() {
+    final compact = MediaQuery.sizeOf(context).width < 420;
+
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -94,7 +100,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: AppColors.borderColor.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -109,13 +115,13 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.accentGold.withOpacity(0.2),
-                  AppColors.accentGold.withOpacity(0.1),
+                  AppColors.accentGold.withValues(alpha: 0.2),
+                  AppColors.accentGold.withValues(alpha: 0.1),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.accentGold.withOpacity(0.3),
+                color: AppColors.accentGold.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -132,9 +138,11 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
               children: [
                 Text(
                   _isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor',
-                  style: const TextStyle(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 20,
+                    fontSize: compact ? 18 : 20,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -144,9 +152,11 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
                       ? 'Atualize as informações do fornecedor'
                       : 'Preencha os dados para cadastrar',
                   style: TextStyle(
-                    color: AppColors.textMuted.withOpacity(0.8),
-                    fontSize: 14,
+                    color: AppColors.textMuted.withValues(alpha: 0.8),
+                    fontSize: compact ? 13 : 14,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -186,7 +196,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
             Icon(
               Icons.business_rounded,
               size: 18,
-              color: AppColors.accentGold.withOpacity(0.8),
+              color: AppColors.accentGold.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 8),
             Text(
@@ -213,40 +223,42 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           focusNode: _nameFocusNode,
           decoration: InputDecoration(
             hintText: SupplierConstants.hintSupplierName,
-            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
+            hintStyle: TextStyle(
+              color: AppColors.textMuted.withValues(alpha: 0.68),
+            ),
             filled: true,
-            fillColor: AppColors.backgroundDark.withOpacity(0.5),
+            fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
+                color: AppColors.borderColor.withValues(alpha: 0.72),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
+                color: AppColors.borderColor.withValues(alpha: 0.72),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.accentGold,
-                width: 2,
+                color: AppColors.accentBlue,
+                width: 1.4,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
                 color: AppColors.accentRed,
-                width: 1,
+                width: 1.2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
                 color: AppColors.accentRed,
-                width: 2,
+                width: 1.4,
               ),
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -272,7 +284,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
             Icon(
               Icons.badge_rounded,
               size: 18,
-              color: AppColors.accentGold.withOpacity(0.8),
+              color: AppColors.accentGold.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 8),
             Text(
@@ -299,40 +311,42 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
           focusNode: _cnpjFocusNode,
           decoration: InputDecoration(
             hintText: SupplierConstants.hintSupplierCnpj,
-            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
+            hintStyle: TextStyle(
+              color: AppColors.textMuted.withValues(alpha: 0.68),
+            ),
             filled: true,
-            fillColor: AppColors.backgroundDark.withOpacity(0.5),
+            fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
+                color: AppColors.borderColor.withValues(alpha: 0.72),
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
+                color: AppColors.borderColor.withValues(alpha: 0.72),
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.accentGold,
-                width: 2,
+                color: AppColors.accentBlue,
+                width: 1.4,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
                 color: AppColors.accentRed,
-                width: 1,
+                width: 1.2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
                 color: AppColors.accentRed,
-                width: 2,
+                width: 1.4,
               ),
             ),
             contentPadding: const EdgeInsets.symmetric(
@@ -361,10 +375,10 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.accentBlue.withOpacity(0.1),
+        color: AppColors.accentBlue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.accentBlue.withOpacity(0.2),
+          color: AppColors.accentBlue.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -372,7 +386,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
         children: [
           Icon(
             Icons.info_outline_rounded,
-            color: AppColors.accentBlue.withOpacity(0.8),
+            color: AppColors.accentBlue.withValues(alpha: 0.8),
             size: 20,
           ),
           const SizedBox(width: 12),
@@ -380,7 +394,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
             child: Text(
               'Digite apenas os números do CNPJ. A formatação será aplicada automaticamente.',
               style: TextStyle(
-                color: AppColors.accentBlue.withOpacity(0.9),
+                color: AppColors.accentBlue.withValues(alpha: 0.9),
                 fontSize: 13,
                 height: 1.4,
               ),
@@ -397,7 +411,7 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: AppColors.borderColor.withOpacity(0.2),
+            color: AppColors.borderColor.withValues(alpha: 0.2),
             width: 1,
           ),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/QuickActionsGrid.dart';
 import 'package:project_granith/widgets/RecentActivityList.dart';
 import 'package:project_granith/widgets/TransparencyBanner.dart';
@@ -42,7 +43,8 @@ class _HomePageViewState extends State<HomePageView>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 800;
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = width > ResponsiveLayout.compact;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -57,7 +59,7 @@ class _HomePageViewState extends State<HomePageView>
 
             return GranithPageBackground(
               scrollable: true,
-              padding: EdgeInsets.all(isDesktop ? 28 : 16),
+              padding: ResponsiveLayout.pagePadding(width),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

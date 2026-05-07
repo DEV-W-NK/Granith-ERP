@@ -77,7 +77,46 @@ void main() {
 
       expect(find.text('dashboard-page'), findsOneWidget);
 
-      await tester.tap(find.text('Projetos'));
+      final projectIcon = find.byIcon(Icons.business_rounded);
+      if (projectIcon.evaluate().isNotEmpty) {
+        await tester.tap(projectIcon.first);
+      } else {
+        await tester.tap(find.byIcon(Icons.menu));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Projetos').last);
+      }
+      await tester.pumpAndSettle();
+
+      expect(find.text('projects-page'), findsOneWidget);
+      await authService.dispose();
+    });
+
+    testWidgets('usa navegacao mobile em largura de tablet', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 1024));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final authService = FakeAuthService(
+        currentUserValue: const FakeAuthUser('employee-1', 'colab@granith.com'),
+        profile: const UserModel(
+          uid: 'employee-1',
+          email: 'colab@granith.com',
+          role: UserRole.employee,
+        ),
+      );
+      final auth = AuthViewModel(service: authService);
+      final settings = SystemSettingsViewModel(
+        service: FakeSystemSettingsService(),
+      );
+
+      await tester.pumpWidget(_buildHarness(auth: auth, settings: settings));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SidebarMenu), findsNothing);
+      expect(find.text('dashboard-page'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Projetos').last);
       await tester.pumpAndSettle();
 
       expect(find.text('projects-page'), findsOneWidget);
@@ -104,7 +143,7 @@ void main() {
       await tester.pumpWidget(_buildHarness(auth: auth, settings: settings));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Sair').first);
+      await tester.tap(find.byIcon(Icons.logout_rounded).first);
       await tester.pumpAndSettle();
 
       expect(find.text('Encerrar sessao?'), findsOneWidget);

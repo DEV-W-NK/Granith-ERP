@@ -4,6 +4,7 @@ import 'package:project_granith/viewmodels/itemsviewmodel.dart';
 import 'package:project_granith/services/item_service.dart';
 import 'package:project_granith/models/item_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/items/item_form_dialog.dart';
 
 class ItemsPageView extends StatelessWidget {
@@ -77,6 +78,8 @@ class _AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 420;
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -96,19 +99,29 @@ class _AddButton extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: compact ? 10 : 16,
+              vertical: 8,
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.add_rounded, color: AppColors.primaryDark, size: 20),
-                SizedBox(width: 4),
-                Text(
-                  'Novo',
-                  style: TextStyle(
-                    color: AppColors.primaryDark,
-                    fontWeight: FontWeight.bold,
-                  ),
+                const Icon(
+                  Icons.add_rounded,
+                  color: AppColors.primaryDark,
+                  size: 20,
                 ),
+                if (!compact) ...[
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Novo',
+                    style: TextStyle(
+                      color: AppColors.primaryDark,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -194,7 +207,9 @@ class _ItemsList extends StatelessWidget {
           return _EmptyState(isSearch: viewModel.searchQuery.isNotEmpty);
 
         return ListView.separated(
-          padding: const EdgeInsets.all(16),
+          padding: ResponsiveLayout.pagePadding(
+            MediaQuery.sizeOf(context).width,
+          ),
           itemCount: items.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder:
@@ -259,7 +274,7 @@ class _ItemCard extends StatelessWidget {
                             color: AppColors.textSecondary.withOpacity(0.8),
                             fontSize: 13,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       const SizedBox(height: 12),

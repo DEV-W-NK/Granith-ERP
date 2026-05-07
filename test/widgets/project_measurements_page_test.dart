@@ -134,6 +134,75 @@ void main() {
       );
     });
 
+    testWidgets('filtra medicoes pela busca de projeto', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1440, 1600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final projectService = FakeProjectService(initialProjects: projects);
+      final measurementService = FakeProjectMeasurementService(
+        initialMeasurements: [
+          ProjectMeasurement(
+            id: 'measurement-1',
+            projectId: 'project-1',
+            projectName: 'Obra Alfa',
+            projectClient: 'Cliente Norte',
+            title: '1a medicao',
+            sequence: 1,
+            status: ProjectMeasurementStatus.approved,
+            measurementDate: DateTime(2026, 4, 15),
+            grossAmount: 20000,
+            discountAmount: 1000,
+            netAmount: 19000,
+            accumulatedGrossAmount: 20000,
+            measurementPercentage: 25,
+            accumulatedPercentage: 25,
+            contractBalance: 60000,
+            notes: 'Estrutura finalizada',
+          ),
+          ProjectMeasurement(
+            id: 'measurement-2',
+            projectId: 'project-2',
+            projectName: 'Obra Beta',
+            projectClient: 'Cliente Sul',
+            title: '2a medicao',
+            sequence: 1,
+            status: ProjectMeasurementStatus.paid,
+            measurementDate: DateTime(2026, 4, 20),
+            grossAmount: 40000,
+            discountAmount: 2000,
+            netAmount: 38000,
+            accumulatedGrossAmount: 40000,
+            measurementPercentage: 33.3,
+            accumulatedPercentage: 95,
+            contractBalance: 80000,
+            notes: 'Fachada e cobertura',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        _buildHarness(
+          projectService: projectService,
+          measurementService: measurementService,
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Beta');
+      await tester.pump();
+
+      expect(find.text('1a medicao'), findsNothing);
+      expect(find.text('2a medicao'), findsOneWidget);
+      expect(find.text('1 medicoes encontradas'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Limpar busca'));
+      await tester.pump();
+
+      expect(find.text('1a medicao'), findsOneWidget);
+      expect(find.text('2a medicao'), findsOneWidget);
+    });
+
     testWidgets('mostra estado vazio quando nao existem medicoes', (
       tester,
     ) async {

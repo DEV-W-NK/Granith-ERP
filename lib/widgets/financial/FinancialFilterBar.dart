@@ -19,7 +19,10 @@ class FinancialFilterBar extends StatelessWidget {
         ctrl.periodFrom != null ||
         ctrl.periodTo != null;
 
-    return Row(
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         // Filtro de período
         _FilterChip(
@@ -28,11 +31,8 @@ class FinancialFilterBar extends StatelessWidget {
           active: ctrl.periodFrom != null,
           onTap: () => _showPeriodPicker(context, ctrl),
         ),
-        const SizedBox(width: 8),
-
         // Filtro de projeto
         _ProjectFilterChip(),
-        const SizedBox(width: 8),
 
         // Badge de vencidos (clicável — filtra por overdue)
         if (overdueCount > 0) ...[
@@ -52,7 +52,6 @@ class FinancialFilterBar extends StatelessWidget {
               );
             },
           ),
-          const SizedBox(width: 8),
         ],
 
         // Limpar filtros

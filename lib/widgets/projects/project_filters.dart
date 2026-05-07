@@ -19,8 +19,10 @@ class ProjectFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final phone = MediaQuery.sizeOf(context).width < 600;
+
     return SizedBox(
-      height: 40,
+      height: phone ? 38 : 42,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
@@ -30,26 +32,51 @@ class ProjectFilters extends StatelessWidget {
 
           return Padding(
             padding: EdgeInsets.only(right: index < filters.length - 1 ? 8 : 0),
-            child: FilterChip(
+            child: ChoiceChip(
+              avatar: Icon(
+                filter == 'Todos'
+                    ? Icons.layers_rounded
+                    : _statusIconFor(filter),
+                size: phone ? 13 : 15,
+                color: isSelected ? AppColors.accentGold : AppColors.textMuted,
+              ),
               label: Text(filter),
               selected: isSelected,
               onSelected: (_) => onFilterChanged(filter),
-              backgroundColor: Colors.transparent,
-              selectedColor: AppColors.accentGold.withOpacity(0.1),
+              backgroundColor: AppColors.backgroundMid.withOpacity(0.54),
+              selectedColor: AppColors.accentGold.withOpacity(0.13),
               side: BorderSide(
                 color:
-                    isSelected ? AppColors.accentGold : AppColors.borderColor,
+                    isSelected
+                        ? AppColors.accentGold.withOpacity(0.42)
+                        : AppColors.borderColor.withOpacity(0.42),
+              ),
+              showCheckmark: false,
+              padding: EdgeInsets.symmetric(
+                horizontal: phone ? 8 : 10,
+                vertical: phone ? 7 : 9,
               ),
               labelStyle: TextStyle(
                 color:
                     isSelected ? AppColors.accentGold : AppColors.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: phone ? 11 : 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               ),
-              showCheckmark: false,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
           );
         },
       ),
     );
+  }
+
+  IconData _statusIconFor(String filter) {
+    final status = ProjectStatus.values.firstWhere(
+      (status) => status.displayName == filter,
+      orElse: () => ProjectStatus.planning,
+    );
+    return status.icon;
   }
 }

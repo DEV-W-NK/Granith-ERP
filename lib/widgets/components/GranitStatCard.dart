@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
+import 'package:project_granith/themes/app_theme.dart';
 
 // =============================================================================
 // GRANIT STAT CARD
@@ -51,8 +52,15 @@ class GranitStatCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-        decoration: GranitTokens.cardDecoration,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+        decoration: BoxDecoration(
+          gradient: AppColors.cardGradient,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.borderColor.withValues(alpha: 0.66),
+          ),
+          boxShadow: AppColors.glowShadows(accent),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -62,17 +70,33 @@ class GranitStatCard extends StatelessWidget {
               height: 2,
               decoration: BoxDecoration(
                 color: accent,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
             const SizedBox(height: 10),
 
             // Label
-            Text(label, style: GranitTokens.labelSmall),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GranitTokens.labelSmall,
+            ),
             const SizedBox(height: 5),
 
             // Value
-            Text(value, style: GranitTokens.valueStyle.copyWith(color: accent)),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  style: GranitTokens.valueStyle.copyWith(color: accent),
+                ),
+              ),
+            ),
             const SizedBox(height: 4),
 
             // Delta
@@ -89,6 +113,8 @@ class GranitStatCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     delta,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color:
                           deltaPositive ? GranitTokens.green : GranitTokens.red,
@@ -148,8 +174,8 @@ class _GranitStatCardSkeletonState extends State<GranitStatCardSkeleton>
           width: w,
           height: h,
           decoration: BoxDecoration(
-            color: GranitTokens.surface3.withOpacity(_anim.value),
-            borderRadius: BorderRadius.circular(4),
+            color: AppColors.surfaceElevated.withValues(alpha: _anim.value),
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
   );
@@ -157,8 +183,14 @@ class _GranitStatCardSkeletonState extends State<GranitStatCardSkeleton>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: GranitTokens.cardDecoration,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.66),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:project_granith/controllers/team_controller.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
 
 class EmployeeFormDialog extends StatefulWidget {
@@ -23,6 +24,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _cpfCtrl = TextEditingController();
+  final _ctpsCtrl = TextEditingController();
   final _jobTitleCtrl = TextEditingController();
   final _sectorCtrl = TextEditingController();
   final _salaryCtrl = TextEditingController();
@@ -43,6 +46,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
       _nameCtrl.text = e.name;
       _emailCtrl.text = e.email;
       _phoneCtrl.text = e.phone;
+      _cpfCtrl.text = e.cpf;
+      _ctpsCtrl.text = e.ctps;
       _jobTitleCtrl.text = e.jobTitle;
       _sectorCtrl.text = e.sector;
       _salaryCtrl.text = e.baseSalary.toStringAsFixed(2);
@@ -59,6 +64,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
+    _cpfCtrl.dispose();
+    _ctpsCtrl.dispose();
     _jobTitleCtrl.dispose();
     _sectorCtrl.dispose();
     _salaryCtrl.dispose();
@@ -74,22 +81,45 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     setState(() => _saving = true);
 
     final now = DateTime.now();
-    final employee = EmployeeModel(
-      id: _isEdit ? widget.employee!.id : '',
-      name: _nameCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      jobTitle: _jobTitleCtrl.text.trim(),
-      sector: _sectorCtrl.text.trim(),
-      baseSalary: double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0,
-      role: _role,
-      admissionDate: _admissionDate,
-      status: _status,
-      educationLevel: _educationCtrl.text.trim(),
-      courses: _coursesCtrl.text.trim(),
-      createdAt: _isEdit ? widget.employee!.createdAt : now,
-      updatedAt: now,
-    );
+    final baseSalary =
+        double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0;
+    final existing = widget.employee;
+    final employee =
+        existing == null
+            ? EmployeeModel(
+              id: '',
+              name: _nameCtrl.text.trim(),
+              email: _emailCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim(),
+              cpf: _cpfCtrl.text.trim(),
+              ctps: _ctpsCtrl.text.trim(),
+              jobTitle: _jobTitleCtrl.text.trim(),
+              sector: _sectorCtrl.text.trim(),
+              baseSalary: baseSalary,
+              role: _role,
+              admissionDate: _admissionDate,
+              status: _status,
+              educationLevel: _educationCtrl.text.trim(),
+              courses: _coursesCtrl.text.trim(),
+              createdAt: now,
+              updatedAt: now,
+            )
+            : existing.copyWith(
+              name: _nameCtrl.text.trim(),
+              email: _emailCtrl.text.trim(),
+              phone: _phoneCtrl.text.trim(),
+              cpf: _cpfCtrl.text.trim(),
+              ctps: _ctpsCtrl.text.trim(),
+              jobTitle: _jobTitleCtrl.text.trim(),
+              sector: _sectorCtrl.text.trim(),
+              baseSalary: baseSalary,
+              role: _role,
+              admissionDate: _admissionDate,
+              status: _status,
+              educationLevel: _educationCtrl.text.trim(),
+              courses: _coursesCtrl.text.trim(),
+              updatedAt: now,
+            );
 
     try {
       await context.read<TeamController>().saveEmployee(employee);
@@ -143,15 +173,20 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < ResponsiveLayout.compact;
+    final inset = size.width < 420 ? 8.0 : 24.0;
+    final padding = ResponsiveLayout.pagePadding(size.width);
+    final dialogWidth = (size.width - inset * 2).clamp(300.0, 620.0);
+
     return Dialog(
       backgroundColor: AppColors.surfaceDark,
+      insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        width: 620,
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.9,
-        ),
-        padding: const EdgeInsets.all(28),
+        width: dialogWidth.toDouble(),
+        constraints: BoxConstraints(maxHeight: size.height * 0.9),
+        padding: padding,
         child: Form(
           key: _formKey,
           child: Column(
@@ -167,15 +202,19 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                     size: 24,
                   ),
                   const SizedBox(width: 10),
-                  Text(
-                    _isEdit ? 'Editar Funcionário' : 'Novo Funcionário',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      _isEdit ? 'Editar Funcionário' : 'Novo Funcionário',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isCompact ? 19 : 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   IconButton(
                     icon: const Icon(
                       Icons.close_rounded,
@@ -251,6 +290,32 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildField(
+                              controller: _cpfCtrl,
+                              label: 'CPF',
+                              hint: '000.000.000-00',
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[\d.-]'),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildField(
+                              controller: _ctpsCtrl,
+                              label: 'CTPS',
+                              hint: 'Carteira de trabalho',
+                            ),
+                          ),
+                        ],
+                      ),
 
                       const SizedBox(height: 24),
 
@@ -304,11 +369,13 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                                 ),
                               ],
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty)
+                                if (v == null || v.trim().isEmpty) {
                                   return 'Informe o salário';
+                                }
                                 if (double.tryParse(v.replaceAll(',', '.')) ==
-                                    null)
+                                    null) {
                                   return 'Valor inválido';
+                                }
                                 return null;
                               },
                             ),
@@ -319,12 +386,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                               label: 'Nível Hierárquico',
                               value: _role,
                               items: EmployeeRole.values,
-                              itemLabel:
-                                  (r) => switch (r) {
-                                    EmployeeRole.funcionario => 'Funcionário',
-                                    EmployeeRole.supervisor => 'Supervisor',
-                                    EmployeeRole.coordenador => 'Coordenador',
-                                  },
+                              itemLabel: (r) => r.label,
                               onChanged: (v) => setState(() => _role = v!),
                             ),
                           ),
@@ -377,49 +439,59 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
               const SizedBox(height: 12),
 
               // Ações
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: _saving ? null : () => Navigator.pop(context),
-                    child: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: Colors.white60),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton.icon(
-                    onPressed: _saving ? null : _submit,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGold,
-                      foregroundColor: AppColors.primaryDark,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
+              isCompact
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildSaveAction(),
+                      const SizedBox(height: 8),
+                      _buildCancelAction(),
+                    ],
+                  )
+                  : Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed:
+                            _saving ? null : () => Navigator.pop(context),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(color: Colors.white60),
+                        ),
                       ),
-                    ),
-                    icon:
-                        _saving
-                            ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.primaryDark,
-                              ),
-                            )
-                            : Icon(
-                              _isEdit
-                                  ? Icons.save_rounded
-                                  : Icons.check_rounded,
-                            ),
-                    label: Text(
-                      _isEdit ? 'Salvar alterações' : 'Cadastrar',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: _saving ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.accentGold,
+                          foregroundColor: AppColors.primaryDark,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 14,
+                          ),
+                        ),
+                        icon:
+                            _saving
+                                ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryDark,
+                                  ),
+                                )
+                                : Icon(
+                                  _isEdit
+                                      ? Icons.save_rounded
+                                      : Icons.check_rounded,
+                                ),
+                        label: Text(
+                          _isEdit ? 'Salvar alterações' : 'Cadastrar',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
             ],
           ),
         ),
@@ -428,6 +500,39 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   }
 
   // ─── Helpers de construção ─────────────────────────────────────────────────
+
+  Widget _buildCancelAction() {
+    return TextButton(
+      onPressed: _saving ? null : () => Navigator.pop(context),
+      child: const Text('Cancelar', style: TextStyle(color: Colors.white60)),
+    );
+  }
+
+  Widget _buildSaveAction() {
+    return ElevatedButton.icon(
+      onPressed: _saving ? null : _submit,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accentGold,
+        foregroundColor: AppColors.primaryDark,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      ),
+      icon:
+          _saving
+              ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primaryDark,
+                ),
+              )
+              : Icon(_isEdit ? Icons.save_rounded : Icons.check_rounded),
+      label: Text(
+        _isEdit ? 'Salvar alteraÃ§Ãµes' : 'Cadastrar',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
 
   Widget _buildField({
     required TextEditingController controller,
@@ -451,7 +556,7 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         hintStyle: const TextStyle(color: Colors.white24),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.04),
+        fillColor: Colors.white.withValues(alpha: 0.04),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Colors.white24),
@@ -484,14 +589,14 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     required void Function(T?) onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: AppColors.textSecondary),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.04),
+        fillColor: Colors.white.withValues(alpha: 0.04),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: Colors.white24),
@@ -544,7 +649,7 @@ class _DatePickerField extends StatelessWidget {
           labelText: label,
           labelStyle: const TextStyle(color: AppColors.textSecondary),
           filled: true,
-          fillColor: Colors.white.withOpacity(0.04),
+          fillColor: Colors.white.withValues(alpha: 0.04),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: const BorderSide(color: Colors.white24),
