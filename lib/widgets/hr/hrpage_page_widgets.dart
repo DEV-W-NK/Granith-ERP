@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import 'package:project_granith/ViewModels/HrViewModel.dart';
+import 'package:project_granith/constants/permission_constants.dart';
 import 'package:project_granith/controllers/team_controller.dart';
+import 'package:project_granith/features/auth/presentation/viewmodels/auth_view_model.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/job_role_model.dart';
+import 'package:project_granith/models/sector_model.dart';
 import 'package:project_granith/services/HrService.dart';
 import 'package:project_granith/services/job_role_service.dart';
+import 'package:project_granith/services/sector_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/employee/employee_card.dart';
@@ -28,7 +31,7 @@ class _HrPageViewState extends State<HrPageView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<TeamController>().init();
@@ -67,7 +70,11 @@ class _HrPageViewState extends State<HrPageView>
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
-                        children: const [_EmployeesTab(), _JobRolesTab()],
+                        children: const [
+                          _EmployeesTab(),
+                          _JobRolesTab(),
+                          _SectorsTab(),
+                        ],
                       ),
                     ),
                   ],
@@ -153,6 +160,11 @@ class _EmployeesTabState extends State<_EmployeesTab> {
     return Consumer2<TeamController, HrViewModel>(
       builder: (context, controller, viewModel, _) {
         final employees = viewModel.filterEmployees(controller.employees);
+        final auth = context.watch<AuthViewModel?>();
+        final canViewSalary = PermissionCodes.canViewPeopleSalary(
+          isAdmin: auth?.isAdminUser ?? false,
+          permissions: auth?.user?.permissions ?? const <String>[],
+        );
 
         return Column(
           children: [
@@ -161,7 +173,7 @@ class _EmployeesTabState extends State<_EmployeesTab> {
               viewModel: viewModel,
               visibleCount: employees.length,
               totalCount: controller.employees.length,
-              onCreate: () => _openEmployeeForm(context),
+              onCreate: () => _openEmployeeForm(context, canViewSalary),
             ),
             if (controller.error != null) ...[
               const SizedBox(height: 12),
@@ -183,9 +195,13 @@ class _EmployeesTabState extends State<_EmployeesTab> {
                         )
                         : _EmployeeGrid(
                           employees: employees,
+                          canViewSalary: canViewSalary,
                           onEdit:
-                              (employee) =>
-                                  _openEmployeeForm(context, employee),
+                              (employee) => _openEmployeeForm(
+                                context,
+                                canViewSalary,
+                                employee,
+                              ),
                           onDismiss:
                               (employee) => _confirmDismiss(context, employee),
                           onDelete:
@@ -201,11 +217,16 @@ class _EmployeesTabState extends State<_EmployeesTab> {
 
   Future<void> _openEmployeeForm(
     BuildContext context, [
+    bool canViewSalary = false,
     EmployeeModel? employee,
   ]) {
     return showDialog<void>(
       context: context,
-      builder: (_) => EmployeeFormDialog(employee: employee),
+      builder:
+          (_) => EmployeeFormDialog(
+            employee: employee,
+            canViewSalary: canViewSalary,
+          ),
     );
   }
 
@@ -320,7 +341,7 @@ class _EmployeesToolbar extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < ResponsiveLayout.compact;
-        final roomy = constraints.maxWidth >= 980;
+        final roomy = constraints.maxWidth >= 1320;
         final searchField = SizedBox(
           width:
               compact
@@ -447,13 +468,9 @@ class _EmployeesToolbar extends StatelessWidget {
                 const SizedBox(height: 10),
                 statusField,
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(child: resultChip),
-                    const SizedBox(width: 10),
-                    Expanded(child: createButton),
-                  ],
-                ),
+                Row(children: [Expanded(child: resultChip)]),
+                const SizedBox(height: 10),
+                createButton,
               ],
             ),
           );
@@ -486,12 +503,14 @@ class _EmployeesToolbar extends StatelessWidget {
 
 class _EmployeeGrid extends StatelessWidget {
   final List<EmployeeModel> employees;
+  final bool canViewSalary;
   final ValueChanged<EmployeeModel> onEdit;
   final ValueChanged<EmployeeModel> onDismiss;
   final ValueChanged<EmployeeModel> onDelete;
 
   const _EmployeeGrid({
     required this.employees,
+    required this.canViewSalary,
     required this.onEdit,
     required this.onDismiss,
     required this.onDelete,
@@ -522,6 +541,7 @@ class _EmployeeGrid extends StatelessWidget {
             final employee = employees[index];
             return EmployeeCard(
               employee: employee,
+              canViewSalary: canViewSalary,
               onTap: () => onEdit(employee),
               onDismiss:
                   employee.isDismissed ? null : () => onDismiss(employee),
@@ -793,6 +813,9 @@ class _JobRolesTabState extends State<_JobRolesTab> {
       children: [
         _SectionToolbar(
           title: 'Cargos',
+          subtitle: 'Catalogo de funcoes usado no cadastro de colaboradores',
+          leadingIcon: Icons.work_outline_rounded,
+          leadingColor: AppColors.accentGold,
           actionLabel: 'Novo cargo',
           actionIcon: Icons.work_rounded,
           onAction: () => _openForm(),
@@ -877,8 +900,6 @@ class _JobRolesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
-
     return ListView.separated(
       padding: const EdgeInsets.only(bottom: 20),
       itemCount: roles.length,
@@ -887,7 +908,6 @@ class _JobRolesList extends StatelessWidget {
         final role = roles[index];
         return _JobRoleTile(
           role: role,
-          hourlyText: '${currency.format(role.hourlyRate)}/h',
           onEdit: () => onEdit(role),
           onToggle: () => onToggle(role),
         );
@@ -898,13 +918,11 @@ class _JobRolesList extends StatelessWidget {
 
 class _JobRoleTile extends StatelessWidget {
   final JobRoleModel role;
-  final String hourlyText;
   final VoidCallback onEdit;
   final VoidCallback onToggle;
 
   const _JobRoleTile({
     required this.role,
-    required this.hourlyText,
     required this.onEdit,
     required this.onToggle,
   });
@@ -950,11 +968,6 @@ class _JobRoleTile extends StatelessWidget {
                   icon: Icons.apartment_rounded,
                   label: role.sector,
                   color: AppColors.accentBlue,
-                ),
-                _SmallInfoChip(
-                  icon: Icons.payments_rounded,
-                  label: hourlyText,
-                  color: AppColors.accentGold,
                 ),
               ],
             ),
@@ -1077,7 +1090,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _sectorCtrl = TextEditingController();
-  final _hourlyCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
   final _requirementsCtrl = TextEditingController();
   bool _isActive = true;
@@ -1092,7 +1104,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
     if (role != null) {
       _titleCtrl.text = role.title;
       _sectorCtrl.text = role.sector;
-      _hourlyCtrl.text = role.hourlyRate.toStringAsFixed(2);
       _descriptionCtrl.text = role.description;
       _requirementsCtrl.text = role.requirements.join('\n');
       _isActive = role.isActive;
@@ -1103,7 +1114,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
   void dispose() {
     _titleCtrl.dispose();
     _sectorCtrl.dispose();
-    _hourlyCtrl.dispose();
     _descriptionCtrl.dispose();
     _requirementsCtrl.dispose();
     super.dispose();
@@ -1149,26 +1159,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
                                 ? 'Informe o setor'
                                 : null,
                   ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _hourlyCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Valor hora de mao de obra',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Informe o valor hora';
-                      }
-                      if (double.tryParse(value.replaceAll(',', '.')) == null) {
-                        return 'Valor invalido';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
                   TextFormField(
                     controller: _descriptionCtrl,
                     maxLines: 3,
@@ -1236,8 +1226,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
               title: _titleCtrl.text.trim(),
               sector: _sectorCtrl.text.trim(),
               description: _descriptionCtrl.text.trim(),
-              hourlyRate:
-                  double.tryParse(_hourlyCtrl.text.replaceAll(',', '.')) ?? 0.0,
               requirements: requirements,
               isActive: _isActive,
               createdAt: now,
@@ -1246,8 +1234,6 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
               title: _titleCtrl.text.trim(),
               sector: _sectorCtrl.text.trim(),
               description: _descriptionCtrl.text.trim(),
-              hourlyRate:
-                  double.tryParse(_hourlyCtrl.text.replaceAll(',', '.')) ?? 0.0,
               requirements: requirements,
               isActive: _isActive,
             );
@@ -1274,14 +1260,448 @@ class _JobRoleFormDialogState extends State<_JobRoleFormDialog> {
   }
 }
 
+class _SectorsTab extends StatefulWidget {
+  const _SectorsTab();
+
+  @override
+  State<_SectorsTab> createState() => _SectorsTabState();
+}
+
+class _SectorsTabState extends State<_SectorsTab> {
+  final _service = SectorService();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _SectionToolbar(
+          title: 'Setores',
+          subtitle: 'Catalogo usado no vinculo dos colaboradores',
+          leadingIcon: Icons.apartment_rounded,
+          leadingColor: AppColors.accentBlue,
+          actionLabel: 'Novo setor',
+          actionIcon: Icons.apartment_rounded,
+          onAction: () => _openForm(),
+        ),
+        const SizedBox(height: 14),
+        Expanded(
+          child: StreamBuilder<List<SectorModel>>(
+            stream: _service.getSectors(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return _CenteredMessage(
+                  icon: Icons.error_outline_rounded,
+                  title: 'Erro ao carregar setores',
+                  message: snapshot.error.toString(),
+                  actionLabel: 'Tentar novamente',
+                  onAction: () => setState(() {}),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return const _LoadingState();
+              }
+
+              final sectors = snapshot.data!;
+              if (sectors.isEmpty) {
+                return _CenteredMessage(
+                  icon: Icons.apartment_outlined,
+                  title: 'Nenhum setor cadastrado',
+                  message:
+                      'Use Novo setor para criar as areas usadas nos colaboradores.',
+                  actionLabel: 'Novo setor',
+                  onAction: () => _openForm(),
+                );
+              }
+
+              return _SectorsList(
+                sectors: sectors,
+                onEdit: _openForm,
+                onToggle: _toggleSector,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openForm([SectorModel? sector]) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => _SectorFormDialog(service: _service, sector: sector),
+    );
+  }
+
+  Future<void> _toggleSector(SectorModel sector) async {
+    try {
+      await _service.saveSector(
+        sector.copyWith(isActive: !sector.isActive, updatedAt: DateTime.now()),
+      );
+      if (!mounted) return;
+      _showSnack(sector.isActive ? 'Setor desativado.' : 'Setor reativado.');
+    } catch (error) {
+      if (!mounted) return;
+      _showSnack('Erro ao atualizar setor: $error');
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _SectorsList extends StatelessWidget {
+  final List<SectorModel> sectors;
+  final ValueChanged<SectorModel> onEdit;
+  final ValueChanged<SectorModel> onToggle;
+
+  const _SectorsList({
+    required this.sectors,
+    required this.onEdit,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 20),
+      itemCount: sectors.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final sector = sectors[index];
+        return _SectorTile(
+          sector: sector,
+          onEdit: () => onEdit(sector),
+          onToggle: () => onToggle(sector),
+        );
+      },
+    );
+  }
+}
+
+class _SectorTile extends StatelessWidget {
+  final SectorModel sector;
+  final VoidCallback onEdit;
+  final VoidCallback onToggle;
+
+  const _SectorTile({
+    required this.sector,
+    required this.onEdit,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 520;
+        final content = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    sector.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _StatusBadge(
+                  label: sector.isActive ? 'Ativo' : 'Inativo',
+                  color:
+                      sector.isActive
+                          ? AppColors.accentGreen
+                          : AppColors.textMuted,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _SmallInfoChip(
+              icon:
+                  sector.isActive
+                      ? Icons.person_add_alt_1_rounded
+                      : Icons.visibility_off_rounded,
+              label:
+                  sector.isActive
+                      ? 'Disponivel no cadastro'
+                      : 'Oculto no cadastro',
+              color:
+                  sector.isActive ? AppColors.accentBlue : AppColors.textMuted,
+            ),
+            if (sector.description.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                sector.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ],
+        );
+
+        final menu = PopupMenuButton<_TileAction>(
+          tooltip: 'Acoes',
+          color: AppColors.surfaceDark,
+          icon: const Icon(
+            Icons.more_horiz_rounded,
+            color: AppColors.textSecondary,
+          ),
+          onSelected: (action) {
+            switch (action) {
+              case _TileAction.edit:
+                onEdit();
+                break;
+              case _TileAction.toggle:
+                onToggle();
+                break;
+            }
+          },
+          itemBuilder:
+              (context) => [
+                const PopupMenuItem(
+                  value: _TileAction.edit,
+                  child: _PopupActionLabel(
+                    icon: Icons.edit_rounded,
+                    label: 'Editar',
+                  ),
+                ),
+                PopupMenuItem(
+                  value: _TileAction.toggle,
+                  child: _PopupActionLabel(
+                    icon:
+                        sector.isActive
+                            ? Icons.toggle_off_rounded
+                            : Icons.toggle_on_rounded,
+                    label: sector.isActive ? 'Desativar' : 'Reativar',
+                  ),
+                ),
+              ],
+        );
+
+        return _SurfaceTile(
+          child:
+              compact
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _TileIcon(
+                            icon: Icons.apartment_rounded,
+                            color: AppColors.accentBlue,
+                          ),
+                          const Spacer(),
+                          menu,
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      content,
+                    ],
+                  )
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _TileIcon(
+                        icon: Icons.apartment_rounded,
+                        color: AppColors.accentBlue,
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: content),
+                      const SizedBox(width: 8),
+                      menu,
+                    ],
+                  ),
+        );
+      },
+    );
+  }
+}
+
+class _SectorFormDialog extends StatefulWidget {
+  final SectorService service;
+  final SectorModel? sector;
+
+  const _SectorFormDialog({required this.service, this.sector});
+
+  @override
+  State<_SectorFormDialog> createState() => _SectorFormDialogState();
+}
+
+class _SectorFormDialogState extends State<_SectorFormDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
+  bool _isActive = true;
+  bool _saving = false;
+
+  bool get _isEdit => widget.sector != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final sector = widget.sector;
+    if (sector != null) {
+      _nameCtrl.text = sector.name;
+      _descriptionCtrl.text = sector.description;
+      _isActive = sector.isActive;
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _descriptionCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final dialogWidth = (size.width - 48).clamp(280.0, 500.0).toDouble();
+
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      title: Text(_isEdit ? 'Editar setor' : 'Novo setor'),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: size.height * 0.82,
+        ),
+        child: Form(
+          key: _formKey,
+          child: SizedBox(
+            width: dialogWidth,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome do setor',
+                    ),
+                    validator:
+                        (value) =>
+                            value == null || value.trim().isEmpty
+                                ? 'Informe o setor'
+                                : null,
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _descriptionCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Descricao',
+                      hintText: 'Opcional',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    value: _isActive,
+                    onChanged: (value) => setState(() => _isActive = value),
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Setor ativo'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton.icon(
+          onPressed: _saving ? null : _save,
+          icon:
+              _saving
+                  ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                  : const Icon(Icons.save_rounded, size: 18),
+          label: Text(_isEdit ? 'Salvar' : 'Cadastrar'),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _saving = true);
+    final now = DateTime.now();
+    final existing = widget.sector;
+    final sector =
+        existing == null
+            ? SectorModel(
+              id: '',
+              name: _nameCtrl.text.trim(),
+              description: _descriptionCtrl.text.trim(),
+              isActive: _isActive,
+              createdAt: now,
+              updatedAt: now,
+            )
+            : existing.copyWith(
+              name: _nameCtrl.text.trim(),
+              description: _descriptionCtrl.text.trim(),
+              isActive: _isActive,
+              updatedAt: now,
+            );
+
+    try {
+      await widget.service.saveSector(sector);
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            existing == null ? 'Setor cadastrado.' : 'Setor atualizado.',
+          ),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao salvar setor: $error')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+}
+
 class _SectionToolbar extends StatelessWidget {
   final String title;
+  final String subtitle;
+  final IconData leadingIcon;
+  final Color leadingColor;
   final String actionLabel;
   final IconData actionIcon;
   final VoidCallback onAction;
 
   const _SectionToolbar({
     required this.title,
+    required this.subtitle,
+    required this.leadingIcon,
+    required this.leadingColor,
     required this.actionLabel,
     required this.actionIcon,
     required this.onAction,
@@ -1294,10 +1714,7 @@ class _SectionToolbar extends StatelessWidget {
         final compact = constraints.maxWidth < ResponsiveLayout.compact;
         final heading = Row(
           children: [
-            _TileIcon(
-              icon: Icons.assignment_ind_rounded,
-              color: AppColors.accentBlue,
-            ),
+            _TileIcon(icon: leadingIcon, color: leadingColor),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1314,11 +1731,14 @@ class _SectionToolbar extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  const Text(
-                    'Catalogo de funcoes e valores de mao de obra',
+                  Text(
+                    subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -1627,7 +2047,7 @@ class _HeaderTitle extends StatelessWidget {
         if (!compact) ...[
           const SizedBox(height: 2),
           const Text(
-            'Colaboradores e cargos',
+            'Colaboradores, cargos e setores',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -1649,6 +2069,8 @@ class _HrTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 430;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDark.withValues(alpha: 0.42),
@@ -1671,45 +2093,45 @@ class _HrTabBar extends StatelessWidget {
         dividerColor: Colors.transparent,
         labelColor: AppColors.accentGold,
         unselectedLabelColor: AppColors.textMuted,
-        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-        unselectedLabelStyle: const TextStyle(
-          fontSize: 13,
+        labelPadding: const EdgeInsets.symmetric(horizontal: 6),
+        labelStyle: TextStyle(
+          fontSize: compact ? 12 : 13,
+          fontWeight: FontWeight.w800,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontSize: compact ? 12 : 13,
           fontWeight: FontWeight.w700,
         ),
-        tabs: const [
-          Tab(
-            height: 38,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.people_rounded, size: 17),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Colaboradores',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+        tabs: [
+          _HrTab(
+            icon: Icons.people_rounded,
+            label: compact ? 'Pessoas' : 'Colaboradores',
           ),
-          Tab(
-            height: 38,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.work_rounded, size: 17),
-                SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    'Cargos',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+          const _HrTab(icon: Icons.work_rounded, label: 'Cargos'),
+          const _HrTab(icon: Icons.apartment_rounded, label: 'Setores'),
+        ],
+      ),
+    );
+  }
+}
+
+class _HrTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _HrTab({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      height: 38,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 17),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ],
       ),

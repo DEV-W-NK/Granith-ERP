@@ -4,11 +4,15 @@ import 'package:project_granith/models/requisition_model.dart';
 
 class MaterialRequisitionViewModel extends ChangeNotifier {
   final MaterialRequisitionController _controller;
+  bool _initialized = false;
 
   MaterialRequisitionViewModel(this._controller);
 
   // Inicializa o controller através do ViewModel
   void init() {
+    if (_initialized) return;
+    _initialized = true;
+
     _controller.init();
     _controller.addListener(notifyListeners);
   }
@@ -35,7 +39,9 @@ class MaterialRequisitionViewModel extends ChangeNotifier {
 
   @override
   void dispose() {
-    _controller.removeListener(notifyListeners);
+    if (_initialized) {
+      _controller.removeListener(notifyListeners);
+    }
     super.dispose();
   }
 }

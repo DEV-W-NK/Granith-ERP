@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 // Controllers e Models
@@ -79,7 +78,7 @@ class _JobRoleHeader extends StatelessWidget {
         ),
         SizedBox(height: 4),
         Text(
-          'Defina a hierarquia e o valor-hora de cada função.',
+          'Defina o catalogo de cargos usado no cadastro de colaboradores.',
           style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
         ),
       ],
@@ -93,8 +92,6 @@ class _JobRoleList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<JobRoleController>();
-    final hourlyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-
     if (controller.roles.isEmpty) {
       return const Center(
         child: Text(
@@ -106,17 +103,15 @@ class _JobRoleList extends StatelessWidget {
 
     return ListView.builder(
       itemCount: controller.roles.length,
-      itemBuilder:
-          (_, i) => _JobRoleCard(role: controller.roles[i], fmt: hourlyFormat),
+      itemBuilder: (_, i) => _JobRoleCard(role: controller.roles[i]),
     );
   }
 }
 
 class _JobRoleCard extends StatelessWidget {
   final JobRoleModel role;
-  final NumberFormat fmt;
 
-  const _JobRoleCard({required this.role, required this.fmt});
+  const _JobRoleCard({required this.role});
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +149,7 @@ class _JobRoleCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${role.sector} • ${fmt.format(role.hourlyRate)}/h',
+                        role.sector,
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,
@@ -217,7 +212,6 @@ class _JobRoleFormPanel extends StatefulWidget {
 class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
   final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
-  final _hourlyCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   String _selectedSector = 'Obras';
 
@@ -233,7 +227,6 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
   @override
   void dispose() {
     _titleCtrl.dispose();
-    _hourlyCtrl.dispose();
     _descCtrl.dispose();
     super.dispose();
   }
@@ -247,13 +240,11 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
       title: _titleCtrl.text.trim(),
       sector: _selectedSector,
       description: _descCtrl.text.trim(),
-      hourlyRate: double.tryParse(_hourlyCtrl.text.replaceAll(',', '.')) ?? 0.0,
       createdAt: DateTime.now(),
     );
 
     controller.addRole(role);
     _titleCtrl.clear();
-    _hourlyCtrl.clear();
     _descCtrl.clear();
 
     if (MediaQuery.of(context).size.width <= 900) {
@@ -297,14 +288,6 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
             _buildTextField(_titleCtrl, 'Título do Cargo', Icons.title),
             const SizedBox(height: 16),
             _buildSectorDropdown(),
-            const SizedBox(height: 16),
-            _buildTextField(
-              _hourlyCtrl,
-              'Valor Hora M.O. (R\$)',
-              Icons.timer_outlined,
-              isNumber: true,
-              hint: 'Ex: 28.50',
-            ),
             const SizedBox(height: 16),
             _buildTextField(
               _descCtrl,

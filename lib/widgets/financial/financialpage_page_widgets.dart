@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/constants/permission_constants.dart';
 
 // Imports dos componentes que você já possui
 import 'package:project_granith/widgets/financial/FinancialFilterBar.dart';
@@ -38,6 +40,35 @@ class _FinancialPageViewState extends State<FinancialPageView>
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
+    final user = auth.user;
+
+    if (!auth.isInitialized) {
+      return const Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.accentGold),
+        ),
+      );
+    }
+
+    final canViewFinancial = PermissionCodes.canViewFinancial(
+      isAdmin: auth.isAdminUser || (user?.isAdmin ?? false),
+      permissions: user?.permissions ?? const <String>[],
+    );
+
+    if (!canViewFinancial) {
+      return const Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: Center(
+          child: Text(
+            'Voce nao tem permissao para acessar o financeiro geral.',
+            style: TextStyle(color: AppColors.textMuted),
+          ),
+        ),
+      );
+    }
+
     final ctrl = context.watch<FinancialController>();
     final width = MediaQuery.sizeOf(context).width;
     final isDesktop = width > 900;
@@ -241,7 +272,7 @@ class _TransactionList extends StatelessWidget {
             Icon(
               Icons.receipt_long_rounded,
               size: 56,
-              color: AppColors.textMuted.withOpacity(0.2),
+              color: AppColors.textMuted.withValues(alpha: 0.2),
             ),
             const SizedBox(height: 14),
             const Text(

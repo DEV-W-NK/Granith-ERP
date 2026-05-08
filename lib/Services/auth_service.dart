@@ -1,6 +1,8 @@
-import 'package:flutter/foundation.dart' show debugPrint, kIsWeb;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kIsWeb, visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/client_account_model.dart';
@@ -164,12 +166,11 @@ class AuthService implements AuthServiceContract {
           linkedAccounts.isNotEmpty ? linkedAccounts.first : null;
 
       if (primaryClientAccount != null) {
-        await _clientAccountService.saveClientAccount(
-          primaryClientAccount.copyWith(
-            portalAccessStatus: ClientPortalAccessStatus.active,
-            portalAuthUserId: user.id,
-            portalLastAccessAt: DateTime.now().toUtc(),
-          ),
+        await _clientAccountService.updateClientPortalSession(
+          accountId: primaryClientAccount.id,
+          authUserId: user.id,
+          portalAccessStatus: ClientPortalAccessStatus.active,
+          portalLastAccessAt: DateTime.now().toUtc(),
         );
       }
 
@@ -217,36 +218,40 @@ class AuthService implements AuthServiceContract {
       hasClientAccount: primaryClientAccount != null,
     );
 
-    await _client.from('users').upsert({
-      'id': user.id,
-      'email': normalizedEmail,
-      'displayName': displayName,
-      'display_name': displayName,
-      'photoUrl': photoUrl,
-      'photo_url': photoUrl,
-      'lastLogin': now,
-      'last_login': now,
-      'created_at': now,
-      'updated_at': now,
-      'status': 'ativo',
-      'permissions': existingProfile?.permissions ?? const <String>[],
-      'role': resolvedRole.value,
-      'clientAccountId':
-          existingProfile?.clientAccountId ?? primaryClientAccount?.id,
-      'client_account_id':
-          existingProfile?.clientAccountId ?? primaryClientAccount?.id,
-      'clientAccountName':
-          existingProfile?.clientAccountName ?? primaryClientAccount?.name,
-      'client_account_name':
-          existingProfile?.clientAccountName ?? primaryClientAccount?.name,
-    });
+    if (existingProfile == null) {
+      await _client
+          .from('users')
+          .insert(
+            buildAuthUserProfileInsertPayload(
+              uid: user.id,
+              email: normalizedEmail,
+              displayName: displayName,
+              photoUrl: photoUrl,
+              nowIso: now,
+              role: resolvedRole,
+              primaryClientAccount: primaryClientAccount,
+            ),
+          );
+    } else {
+      await _client
+          .from('users')
+          .update(
+            buildAuthUserProfileUpdatePayload(
+              existingProfile: existingProfile,
+              displayName: displayName,
+              photoUrl: photoUrl,
+              nowIso: now,
+              primaryClientAccount: primaryClientAccount,
+            ),
+          )
+          .eq('id', user.id);
+    }
 
     if (primaryClientAccount != null) {
-      await _clientAccountService.saveClientAccount(
-        primaryClientAccount.copyWith(
-          portalAuthUserId: user.id,
-          portalLastAccessAt: DateTime.now().toUtc(),
-        ),
+      await _clientAccountService.updateClientPortalSession(
+        accountId: primaryClientAccount.id,
+        authUserId: user.id,
+        portalLastAccessAt: DateTime.now().toUtc(),
       );
     }
   }
@@ -313,6 +318,75 @@ class AuthService implements AuthServiceContract {
         return error.message.isNotEmpty ? error.message : fallbackMessage;
     }
   }
+}
+
+@visibleForTesting
+Map<String, dynamic> buildAuthUserProfileInsertPayload({
+  required String uid,
+  required String email,
+  required String? displayName,
+  required String? photoUrl,
+  required String nowIso,
+  required UserRole role,
+  required ClientAccount? primaryClientAccount,
+}) {
+  return DbValue.normalizeMap({
+    'id': uid,
+    'email': email,
+    'displayName': displayName,
+    'display_name': displayName,
+    'photoUrl': photoUrl,
+    'photo_url': photoUrl,
+    'lastLogin': nowIso,
+    'last_login': nowIso,
+    'created_at': nowIso,
+    'updated_at': nowIso,
+    'status': 'ativo',
+    'permissions': const <String>[],
+    'role': role.value,
+    'clientAccountId': primaryClientAccount?.id,
+    'client_account_id': primaryClientAccount?.id,
+    'clientAccountName': primaryClientAccount?.name,
+    'client_account_name': primaryClientAccount?.name,
+  });
+}
+
+@visibleForTesting
+Map<String, dynamic> buildAuthUserProfileUpdatePayload({
+  required UserModel existingProfile,
+  required String? displayName,
+  required String? photoUrl,
+  required String nowIso,
+  required ClientAccount? primaryClientAccount,
+}) {
+  final payload = <String, dynamic>{
+    'displayName': displayName,
+    'display_name': displayName,
+    'photoUrl': photoUrl,
+    'photo_url': photoUrl,
+    'lastLogin': nowIso,
+    'last_login': nowIso,
+    'updated_at': nowIso,
+  };
+
+  if (existingProfile.role == UserRole.client) {
+    final clientAccountId =
+        existingProfile.clientAccountId ?? primaryClientAccount?.id;
+    final clientAccountName =
+        existingProfile.clientAccountName ?? primaryClientAccount?.name;
+
+    if (clientAccountId != null && clientAccountId.isNotEmpty) {
+      payload['clientAccountId'] = clientAccountId;
+      payload['client_account_id'] = clientAccountId;
+    }
+
+    if (clientAccountName != null && clientAccountName.isNotEmpty) {
+      payload['clientAccountName'] = clientAccountName;
+      payload['client_account_name'] = clientAccountName;
+    }
+  }
+
+  return DbValue.normalizeMap(payload);
 }
 
 class AppAuthException implements Exception {

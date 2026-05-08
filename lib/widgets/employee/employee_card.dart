@@ -8,6 +8,7 @@ class EmployeeCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onDismiss;
   final VoidCallback? onDelete;
+  final bool canViewSalary;
 
   const EmployeeCard({
     super.key,
@@ -15,6 +16,7 @@ class EmployeeCard extends StatelessWidget {
     required this.onTap,
     this.onDismiss,
     this.onDelete,
+    this.canViewSalary = true,
   });
 
   @override
@@ -151,8 +153,10 @@ class EmployeeCard extends StatelessWidget {
               _buildInfoRow(Icons.school_rounded, employee.educationLevel),
               const SizedBox(height: 8),
               _buildInfoRow(
-                Icons.payments_rounded,
-                'Salario: ${currency.format(employee.baseSalary)}',
+                canViewSalary ? Icons.payments_rounded : Icons.lock_rounded,
+                canViewSalary
+                    ? 'Salario: ${currency.format(employee.baseSalary)}'
+                    : 'Salario restrito',
               ),
               const SizedBox(height: 8),
               if (employee.courses.isNotEmpty)

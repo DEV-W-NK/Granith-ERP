@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/constants/permission_constants.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/services/access_management_service.dart';
@@ -6,6 +7,20 @@ import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/client_portal_access_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+
+class _PermissionOption {
+  final String code;
+  final String label;
+  final String description;
+  final bool visibleByDefault;
+
+  const _PermissionOption({
+    required this.code,
+    required this.label,
+    required this.description,
+    this.visibleByDefault = true,
+  });
+}
 
 class AccessManagementPage extends StatefulWidget {
   final int initialTabIndex;
@@ -31,21 +46,193 @@ class _AccessManagementPageState extends State<AccessManagementPage>
   late final ClientAccountService _clientAccountService;
   late final ClientPortalAccessService _clientPortalAccessService;
 
-  final List<String> _availablePermissions = const [
-    'projects.read',
-    'projects.write',
-    'budgets.read',
-    'budgets.write',
-    'financial.read',
-    'inventory.read',
-    'people.manage',
-    'access.manage',
-    'mobile.hierarchy.manage',
-    'mobile.materials.request',
-    'mobile.daily_logs.write',
-    'mobile.team.manage',
-    'mobile.payroll.self.read',
+  static const List<_PermissionOption> _knownPermissions = [
+    _PermissionOption(
+      code: 'projects.read',
+      label: 'Visualizar projetos',
+      description: 'Permite consultar obras, contratos e detalhes do projeto.',
+    ),
+    _PermissionOption(
+      code: 'projects.write',
+      label: 'Criar e editar projetos',
+      description: 'Permite cadastrar obras e alterar dados de projetos.',
+    ),
+    _PermissionOption(
+      code: 'budgets.read',
+      label: 'Visualizar orcamentos',
+      description: 'Permite consultar propostas, valores e historico.',
+    ),
+    _PermissionOption(
+      code: 'budgets.write',
+      label: 'Criar e editar orcamentos',
+      description: 'Permite montar, aprovar e atualizar orcamentos.',
+    ),
+    _PermissionOption(
+      code: 'financial.read',
+      label: 'Visualizar financeiro',
+      description: 'Permite consultar entradas, saidas e relatorios.',
+    ),
+    _PermissionOption(
+      code: 'financial.write',
+      label: 'Lancar financeiro',
+      description: 'Permite criar e atualizar contas a pagar ou receber.',
+    ),
+    _PermissionOption(
+      code: 'inventory.read',
+      label: 'Visualizar estoque',
+      description: 'Permite consultar saldos e movimentacoes de materiais.',
+    ),
+    _PermissionOption(
+      code: 'inventory.write',
+      label: 'Movimentar estoque',
+      description: 'Permite registrar entradas, saidas e ajustes.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.purchasesApprove,
+      label: 'Aprovar orcamentos de compra',
+      description:
+          'Permite aprovar orcamentos de compra de qualquer setor solicitante.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.purchasesConsolidate,
+      label: 'Consolidar compras',
+      description:
+          'Permite informar nota fiscal, prazo de entrega e enviar a compra ao financeiro.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.purchaseFinanceRead,
+      label: 'Ver contas de compras',
+      description:
+          'Permite consultar apenas contas financeiras originadas por compras.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.purchaseFinanceWrite,
+      label: 'Pagar contas de compras',
+      description:
+          'Permite quitar ou cancelar contas a pagar originadas por compras.',
+    ),
+    _PermissionOption(
+      code: 'people.manage',
+      label: 'Gerenciar pessoas',
+      description: 'Permite administrar colaboradores, cargos e beneficios.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.peopleSalaryRead,
+      label: 'Visualizar salarios no RH',
+      description:
+          'Permite ver e alterar os salarios dos colaboradores no modulo de RH.',
+    ),
+    _PermissionOption(
+      code: 'access.manage',
+      label: 'Gerenciar acessos',
+      description: 'Permite alterar papeis, permissoes e acessos de clientes.',
+    ),
+    _PermissionOption(
+      code: 'settings.manage',
+      label: 'Configurar sistema',
+      description: 'Permite alterar preferencias gerais do ERP.',
+    ),
+    _PermissionOption(
+      code: 'billing.manage',
+      label: 'Gerenciar assinatura',
+      description: 'Permite consultar consumo e dados de assinatura.',
+    ),
+    _PermissionOption(
+      code: 'mobile.hierarchy.manage',
+      label: 'Gerenciar hierarquia mobile',
+      description: 'Permite configurar niveis de acesso do app mobile.',
+    ),
+    _PermissionOption(
+      code: 'mobile.materials.request',
+      label: 'Solicitar materiais no app',
+      description: 'Permite criar requisicoes de materiais pelo mobile.',
+    ),
+    _PermissionOption(
+      code: 'mobile.daily_logs.write',
+      label: 'Lancar diario no app',
+      description: 'Permite registrar diario de obra pelo mobile.',
+    ),
+    _PermissionOption(
+      code: 'mobile.team.manage',
+      label: 'Gerenciar equipes no app',
+      description: 'Permite administrar equipes pelo mobile.',
+    ),
+    _PermissionOption(
+      code: 'mobile.payroll.self.read',
+      label: 'Ver proprio pagamento',
+      description: 'Permite consultar informacoes pessoais de pagamento.',
+    ),
+    _PermissionOption(
+      code: 'obras',
+      label: 'Obras',
+      description: 'Permissao legada para acesso aos modulos de obras.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'diario',
+      label: 'Diario de obras',
+      description: 'Permissao legada para acessar diarios de obra.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'medicoes',
+      label: 'Medicoes',
+      description: 'Permissao legada para acessar medicoes de obra.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'financeiro',
+      label: 'Financeiro',
+      description: 'Permissao legada para o modulo financeiro.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'relatorios',
+      label: 'Relatorios',
+      description: 'Permissao legada para relatorios gerenciais.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'rh',
+      label: 'Recursos humanos',
+      description: 'Permissao legada para os modulos de RH.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'suprimentos',
+      label: 'Suprimentos',
+      description: 'Permissao legada para fornecedores e requisicoes.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'compras',
+      label: 'Compras',
+      description: 'Permissao legada para compras e pedidos.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'estoque',
+      label: 'Estoque',
+      description: 'Permissao legada para controle de estoque.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'portal_cliente',
+      label: 'Portal do cliente',
+      description: 'Permissao legada para acesso ao portal do cliente.',
+      visibleByDefault: false,
+    ),
+    _PermissionOption(
+      code: 'admin',
+      label: 'Administrador legado',
+      description:
+          'Permissao antiga de administrador mantida por compatibilidade.',
+      visibleByDefault: false,
+    ),
   ];
+
+  List<String> get _availablePermissionCodes =>
+      _knownPermissions.map((permission) => permission.code).toList();
 
   late final TabController _tabController;
   bool _isLoading = true;
@@ -167,9 +354,50 @@ class _AccessManagementPageState extends State<AccessManagementPage>
   List<String> _normalizePermissions(Iterable<String> permissions) {
     final set = permissions.toSet();
     return [
-      ..._availablePermissions.where(set.contains),
-      ...set.where((permission) => !_availablePermissions.contains(permission)),
+      ..._availablePermissionCodes.where(set.contains),
+      ...set.where(
+        (permission) => !_availablePermissionCodes.contains(permission),
+      ),
     ];
+  }
+
+  List<_PermissionOption> _permissionOptionsFor(UserModel draft) {
+    final knownCodes = _availablePermissionCodes.toSet();
+    final currentPermissionCodes = draft.permissions.toSet();
+    final visibleKnownPermissions = _knownPermissions.where(
+      (permission) =>
+          permission.visibleByDefault ||
+          currentPermissionCodes.contains(permission.code),
+    );
+    final unknownCurrentPermissions = draft.permissions
+        .where((permission) => !knownCodes.contains(permission))
+        .map(
+          (permission) => _PermissionOption(
+            code: permission,
+            label: _humanizePermissionCode(permission),
+            description:
+                'Permissao cadastrada anteriormente. Codigo interno: $permission',
+          ),
+        );
+
+    return [...visibleKnownPermissions, ...unknownCurrentPermissions];
+  }
+
+  String _humanizePermissionCode(String code) {
+    final normalized =
+        code
+            .replaceAll('.', ' ')
+            .replaceAll('_', ' ')
+            .replaceAll('-', ' ')
+            .trim();
+    if (normalized.isEmpty) return 'Permissao sem nome';
+    return normalized
+        .split(RegExp(r'\s+'))
+        .map((part) {
+          if (part.isEmpty) return part;
+          return part[0].toUpperCase() + part.substring(1).toLowerCase();
+        })
+        .join(' ');
   }
 
   Future<void> _openClientDialog([ClientAccount? client]) async {
@@ -253,7 +481,7 @@ class _AccessManagementPageState extends State<AccessManagementPage>
               ),
               const SizedBox(height: 8),
               Text(
-                'Gerencie papeis internos e o fluxo de portal do cliente, desde o cadastro ate o convite de primeiro acesso.',
+                'Controle quem acessa cada area do ERP e acompanhe o cadastro dos clientes com acesso ao portal.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 20),
@@ -276,8 +504,8 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                   labelColor: AppColors.textPrimary,
                   unselectedLabelColor: AppColors.textMuted,
                   tabs: const [
-                    Tab(text: 'Usuarios e Permissoes'),
-                    Tab(text: 'Cadastro de Clientes'),
+                    Tab(text: 'Usuarios e acessos'),
+                    Tab(text: 'Clientes do portal'),
                   ],
                 ),
               ),
@@ -372,7 +600,9 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                           key: ValueKey('${user.uid}-${draft.role.name}'),
                           initialValue: draft.role,
                           isExpanded: true,
-                          decoration: const InputDecoration(labelText: 'Papel'),
+                          decoration: const InputDecoration(
+                            labelText: 'Tipo de usuario',
+                          ),
                           items:
                               UserRole.values
                                   .map(
@@ -395,48 +625,52 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                     spacing: 10,
                     runSpacing: 10,
                     children:
-                        _availablePermissions.map((permission) {
+                        _permissionOptionsFor(draft).map((permission) {
                           final selected = draft.permissions.contains(
-                            permission,
+                            permission.code,
                           );
-                          return FilterChip(
-                            label: Text(permission),
-                            selected: selected,
-                            onSelected: (value) {
-                              final permissions = draft.permissions.toSet();
-                              if (value) {
-                                permissions.add(permission);
-                              } else {
-                                permissions.remove(permission);
-                              }
-                              _stageUserAccess(
-                                user,
-                                draft.copyWith(
-                                  permissions: _normalizePermissions(
-                                    permissions,
+                          return Tooltip(
+                            message:
+                                '${permission.description}\nCodigo interno: ${permission.code}',
+                            child: FilterChip(
+                              label: Text(permission.label),
+                              selected: selected,
+                              onSelected: (value) {
+                                final permissions = draft.permissions.toSet();
+                                if (value) {
+                                  permissions.add(permission.code);
+                                } else {
+                                  permissions.remove(permission.code);
+                                }
+                                _stageUserAccess(
+                                  user,
+                                  draft.copyWith(
+                                    permissions: _normalizePermissions(
+                                      permissions,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                            selectedColor: AppColors.accentBlue.withValues(
-                              alpha: 0.18,
-                            ),
-                            backgroundColor: AppColors.surfaceDark.withValues(
-                              alpha: 0.5,
-                            ),
-                            labelStyle: TextStyle(
-                              color:
-                                  selected
-                                      ? AppColors.textPrimary
-                                      : AppColors.textSecondary,
-                            ),
-                            side: BorderSide(
-                              color:
-                                  selected
-                                      ? AppColors.accentBlue
-                                      : AppColors.borderColor.withValues(
-                                        alpha: 0.65,
-                                      ),
+                                );
+                              },
+                              selectedColor: AppColors.accentBlue.withValues(
+                                alpha: 0.18,
+                              ),
+                              backgroundColor: AppColors.surfaceDark.withValues(
+                                alpha: 0.5,
+                              ),
+                              labelStyle: TextStyle(
+                                color:
+                                    selected
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                              ),
+                              side: BorderSide(
+                                color:
+                                    selected
+                                        ? AppColors.accentBlue
+                                        : AppColors.borderColor.withValues(
+                                          alpha: 0.65,
+                                        ),
+                              ),
                             ),
                           );
                         }).toList(),
@@ -791,8 +1025,8 @@ class _SaveAccessButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final label =
         changedCount == 1
-            ? 'Salvar permissoes e papel'
-            : 'Salvar permissoes e papeis';
+            ? 'Salvar acesso do usuario'
+            : 'Salvar acessos dos usuarios';
 
     return DecoratedBox(
       decoration: BoxDecoration(

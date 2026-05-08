@@ -14,6 +14,7 @@ class FinancialController extends ChangeNotifier {
   List<FinancialTransactionModel> _transactions = [];
   bool _isLoading = false;
   String? _error;
+  bool _initialized = false;
 
   /// Filtro de projeto ativo. Null = todas as transações.
   String? _activeProjectId;
@@ -100,6 +101,31 @@ class FinancialController extends ChangeNotifier {
           )
           .toList();
 
+  List<FinancialTransactionModel> get purchaseTransactions =>
+      _transactions
+          .where(
+            (t) =>
+                t.origin == TransactionOrigin.purchase &&
+                t.type == TransactionType.expense,
+          )
+          .toList();
+
+  List<FinancialTransactionModel> get pendingPurchaseTransactions =>
+      purchaseTransactions
+          .where(
+            (t) =>
+                t.status == TransactionStatus.pending ||
+                t.status == TransactionStatus.overdue ||
+                (t.status == TransactionStatus.pending && t.isOverdue),
+          )
+          .toList();
+
+  double get totalPurchaseTransactions =>
+      purchaseTransactions.fold(0.0, (sum, t) => sum + t.amount);
+
+  double get totalPendingPurchaseTransactions =>
+      pendingPurchaseTransactions.fold(0.0, (sum, t) => sum + t.amount);
+
   /// Agrupa despesas pagas por categoria — alimenta gráficos e DRE.
   Map<TransactionCategory, double> get expensesByCategory {
     final map = <TransactionCategory, double>{};
@@ -138,7 +164,10 @@ class FinancialController extends ChangeNotifier {
   // ─── Inicialização ───────────────────────────────────────────────────────────
 
   /// Inicia o stream de transacoes. Chamar no initState ou no Provider.
-  void init() {
+  void init({bool forceReload = false}) {
+    if (_initialized && !forceReload) return;
+    _initialized = true;
+
     _setLoading(true);
     _subscription?.cancel();
     _subscription = _service.watchAll().listen(
@@ -195,8 +224,9 @@ class FinancialController extends ChangeNotifier {
     }
   }
 
-  /// Usado pelo purchase_service ao confirmar recebimento de compra.
-  /// Cria a transação financeira e retorna o ID gerado.
+  /// Usado por fluxos de compra quando precisam gerar uma conta a pagar.
+  /// A aprovacao da compra cria o titulo financeiro; pagamento e uma acao
+  /// posterior do financeiro.
   Future<String?> addTransactionFromPurchase({
     required String description,
     required double amount,
@@ -211,11 +241,11 @@ class FinancialController extends ChangeNotifier {
         description: description,
         amount: amount,
         type: TransactionType.expense,
-        status: TransactionStatus.paid,
+        status: TransactionStatus.pending,
         origin: TransactionOrigin.purchase,
         category: TransactionCategory.material,
         dueDate: DateTime.now(),
-        paymentDate: DateTime.now(),
+        paymentDate: null,
         projectId: projectId,
         supplierId: supplierId,
         referenceId: purchaseId,

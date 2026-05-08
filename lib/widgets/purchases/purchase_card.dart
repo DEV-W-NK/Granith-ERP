@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:project_granith/controllers/auth_controller.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/constants/permission_constants.dart';
+import 'package:project_granith/controllers/team_controller.dart';
+import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/purchase_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -26,6 +29,8 @@ class PurchaseCard extends StatelessWidget {
     final isDelivered = p.status == PurchaseStatus.delivered;
     final isCancelled = p.status == PurchaseStatus.cancelled;
     final isAwaiting = p.status == PurchaseStatus.awaitingApproval;
+    final hasFinancialLink = p.financialTransactionId != null;
+    final canApprove = _canApproveSectorBudget(context, p);
 
     return GestureDetector(
       onTap: onTap,
@@ -37,12 +42,12 @@ class PurchaseCard extends StatelessWidget {
           border: Border.all(
             color:
                 isAwaiting
-                    ? Colors.purpleAccent.withOpacity(0.3)
+                    ? Colors.purpleAccent.withValues(alpha: 0.3)
                     : isDelivered
-                    ? Colors.green.withOpacity(0.2)
+                    ? Colors.green.withValues(alpha: 0.2)
                     : isCancelled
-                    ? Colors.red.withOpacity(0.1)
-                    : Colors.white.withOpacity(0.05),
+                    ? Colors.red.withValues(alpha: 0.1)
+                    : Colors.white.withValues(alpha: 0.05),
           ),
         ),
         child: Column(
@@ -87,6 +92,10 @@ class PurchaseCard extends StatelessWidget {
                 _Meta(icon: Icons.store_outlined, label: p.supplierName),
                 _Meta(icon: Icons.folder_outlined, label: p.projectName),
                 _Meta(
+                  icon: Icons.domain_outlined,
+                  label: 'Setor: ${_sectorLabel(p)}',
+                ),
+                _Meta(
                   icon: Icons.numbers_outlined,
                   label:
                       'Qtd: ${p.quantity.toStringAsFixed(p.quantity % 1 == 0 ? 0 : 1)}',
@@ -95,6 +104,19 @@ class PurchaseCard extends StatelessWidget {
                   icon: Icons.calendar_today_outlined,
                   label: dateFormat.format(p.purchaseDate),
                 ),
+                if (p.expectedDeliveryDate != null)
+                  _Meta(
+                    icon: Icons.event_available_outlined,
+                    label:
+                        'Prev. ${dateFormat.format(p.expectedDeliveryDate!)}',
+                    color: Colors.lightBlueAccent,
+                  ),
+                if (p.invoiceNumber?.trim().isNotEmpty == true)
+                  _Meta(
+                    icon: Icons.receipt_long_outlined,
+                    label: 'NF ${p.invoiceNumber}',
+                    color: AppColors.accentGold,
+                  ),
                 if (p.deliveryDate != null)
                   _Meta(
                     icon: Icons.local_shipping_outlined,
@@ -103,36 +125,28 @@ class PurchaseCard extends StatelessWidget {
                   ),
               ],
             ),
-            // Motivo de recusa
+            if (p.notes?.trim().isNotEmpty == true) ...[
+              const SizedBox(height: 8),
+              _MessageBox(
+                icon: Icons.sticky_note_2_outlined,
+                text: p.notes!.trim(),
+                color: AppColors.textMuted,
+              ),
+            ],
+            if (isAwaiting && !canApprove) ...[
+              const SizedBox(height: 10),
+              _MessageBox(
+                icon: Icons.lock_clock_outlined,
+                text: 'Aguardando coordenacao de ${_sectorLabel(p)}',
+                color: Colors.purpleAccent,
+              ),
+            ],
             if (isCancelled && p.rejectionReason != null) ...[
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent.withOpacity(0.07),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.redAccent.withOpacity(0.2)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.cancel_outlined,
-                      size: 13,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Recusado: ${p.rejectionReason}',
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _MessageBox(
+                icon: Icons.cancel_outlined,
+                text: 'Recusado: ${p.rejectionReason}',
+                color: Colors.redAccent,
               ),
             ],
             const SizedBox(height: 12),
@@ -150,31 +164,18 @@ class PurchaseCard extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-                if (isAwaiting)
-                  _CeoApprovalButton(
+                if (isAwaiting && canApprove)
+                  _SectorApprovalButton(
                     purchase: p,
                     purchaseService: purchaseService,
                   )
-                else if (!isDelivered && !isCancelled)
-                  _ActionButton(purchase: p, purchaseService: purchaseService),
-                if (isDelivered && p.financialTransactionId != null)
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.greenAccent,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Despesa lançada',
-                        style: TextStyle(
-                          color: Colors.greenAccent.withOpacity(0.8),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
+                else if (!isAwaiting && !isDelivered && !isCancelled)
+                  _PurchaseActionButton(
+                    purchase: p,
+                    purchaseService: purchaseService,
                   ),
+                if (hasFinancialLink && !isCancelled)
+                  _FinancialLinkBadge(isDelivered: isDelivered),
               ],
             ),
           ],
@@ -184,19 +185,81 @@ class PurchaseCard extends StatelessWidget {
   }
 }
 
-// ─── CEO approval ─────────────────────────────────────────────────────────────
+AuthViewModel? _maybeReadAuth(BuildContext context) {
+  try {
+    return context.read<AuthViewModel>();
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
 
-class _CeoApprovalButton extends StatefulWidget {
+TeamController? _maybeReadTeam(BuildContext context) {
+  try {
+    return context.read<TeamController>();
+  } on ProviderNotFoundException {
+    return null;
+  }
+}
+
+String _sectorLabel(Purchase purchase) {
+  final sector = purchase.approvalSector?.trim();
+  return sector == null || sector.isEmpty ? 'Geral' : sector;
+}
+
+bool _canApproveSectorBudget(BuildContext context, Purchase purchase) {
+  final auth = _maybeReadAuth(context);
+  final user = auth?.user;
+  final sector = _sectorLabel(purchase);
+  final permissions = user?.permissions ?? const <String>[];
+
+  if (PermissionCodes.canApprovePurchases(
+    isAdmin: (auth?.isAdminUser ?? false) || (user?.isAdmin ?? false),
+    permissions: permissions,
+    sector: sector,
+  )) {
+    return true;
+  }
+
+  final userEmail = user?.email.toLowerCase().trim();
+  if (userEmail == null || userEmail.isEmpty) return false;
+
+  final team = _maybeReadTeam(context);
+  if (team == null) return false;
+
+  final normalizedSector = PermissionCodes.normalizePermissionSegment(sector);
+  for (final employee in team.employees) {
+    if (employee.email.toLowerCase().trim() != userEmail) continue;
+    final employeeSector = PermissionCodes.normalizePermissionSegment(
+      employee.sector,
+    );
+    return employeeSector == normalizedSector &&
+        employee.role.level >= EmployeeRole.coordenador.level;
+  }
+
+  return false;
+}
+
+bool _canConsolidatePurchase(BuildContext context) {
+  final auth = _maybeReadAuth(context);
+  final user = auth?.user;
+  if (user == null) return true;
+  return PermissionCodes.canConsolidatePurchases(
+    isAdmin: (auth?.isAdminUser ?? false) || user.isAdmin,
+    permissions: user.permissions,
+  );
+}
+
+class _SectorApprovalButton extends StatefulWidget {
   final Purchase purchase;
   final PurchaseService? purchaseService;
 
-  const _CeoApprovalButton({required this.purchase, this.purchaseService});
+  const _SectorApprovalButton({required this.purchase, this.purchaseService});
 
   @override
-  State<_CeoApprovalButton> createState() => _CeoApprovalButtonState();
+  State<_SectorApprovalButton> createState() => _SectorApprovalButtonState();
 }
 
-class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
+class _SectorApprovalButtonState extends State<_SectorApprovalButton> {
   bool _loading = false;
 
   PurchaseService get _service => widget.purchaseService ?? PurchaseService();
@@ -213,7 +276,7 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
           onTap: () => _showRejectDialog(context),
         ),
         _pill(
-          'Aprovar compra',
+          'Aprovar orcamento',
           Colors.purpleAccent,
           icon: Icons.verified_outlined,
           onTap: () => _approve(context),
@@ -234,9 +297,9 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.35)),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child:
             _loading
@@ -270,10 +333,10 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
   }
 
   Future<void> _approve(BuildContext context) async {
-    final auth = context.read<AuthController>();
+    final auth = _maybeReadAuth(context);
     final confirm = await _confirmDialog(
       context: context,
-      title: 'Aprovar compra?',
+      title: 'Aprovar orcamento?',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,6 +350,7 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
           ),
           const SizedBox(height: 10),
           _InfoRow('Fornecedor', widget.purchase.supplierName),
+          _InfoRow('Setor', _sectorLabel(widget.purchase)),
           _InfoRow(
             'Quantidade',
             '${widget.purchase.quantity.toStringAsFixed(widget.purchase.quantity % 1 == 0 ? 0 : 1)} un',
@@ -310,31 +374,30 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
     try {
       await _service.approvePurchase(
         purchaseId: widget.purchase.id,
-        approvedBy: auth.user?.uid ?? 'unknown',
-        approvedByName: auth.user?.displayName ?? auth.user?.email ?? 'CEO',
+        approvedBy: auth?.user?.uid ?? 'unknown',
+        approvedByName:
+            auth?.user?.displayName ?? auth?.user?.email ?? 'Coordenacao',
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compra aprovada'),
-            backgroundColor: Colors.purpleAccent,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Orcamento aprovado para consolidacao de compra'),
+          backgroundColor: Colors.purpleAccent,
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _showRejectDialog(BuildContext context) async {
-    final auth = context.read<AuthController>();
+    final auth = _maybeReadAuth(context);
     final reasonCtrl = TextEditingController();
 
     final confirm =
@@ -344,7 +407,7 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
               (ctx) => AlertDialog(
                 backgroundColor: AppColors.surfaceDark,
                 title: const Text(
-                  'Recusar compra?',
+                  'Recusar orcamento?',
                   style: TextStyle(color: Colors.white),
                 ),
                 content: Column(
@@ -363,13 +426,13 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
                       maxLines: 3,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        labelText: 'Motivo da recusa (obrigatório)',
+                        labelText: 'Motivo da recusa (obrigatorio)',
                         labelStyle: const TextStyle(color: AppColors.textMuted),
                         filled: true,
-                        fillColor: Colors.white.withOpacity(0.04),
+                        fillColor: Colors.white.withValues(alpha: 0.04),
                         enabledBorder: OutlineInputBorder(
                           borderSide: BorderSide(
-                            color: Colors.white.withOpacity(0.1),
+                            color: Colors.white.withValues(alpha: 0.1),
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -416,24 +479,23 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
     try {
       await _service.rejectPurchase(
         purchaseId: widget.purchase.id,
-        rejectedBy: auth.user?.uid ?? 'unknown',
-        rejectedByName: auth.user?.displayName ?? auth.user?.email ?? 'CEO',
+        rejectedBy: auth?.user?.uid ?? 'unknown',
+        rejectedByName:
+            auth?.user?.displayName ?? auth?.user?.email ?? 'Coordenacao',
         reason: reasonCtrl.text.trim(),
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compra recusada'),
-            backgroundColor: Colors.redAccent,
-          ),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Orcamento recusado'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -473,19 +535,17 @@ class _CeoApprovalButtonState extends State<_CeoApprovalButton> {
   }
 }
 
-// ─── Action button (setor de compras) ────────────────────────────────────────
-
-class _ActionButton extends StatefulWidget {
+class _PurchaseActionButton extends StatefulWidget {
   final Purchase purchase;
   final PurchaseService? purchaseService;
 
-  const _ActionButton({required this.purchase, this.purchaseService});
+  const _PurchaseActionButton({required this.purchase, this.purchaseService});
 
   @override
-  State<_ActionButton> createState() => _ActionButtonState();
+  State<_PurchaseActionButton> createState() => _PurchaseActionButtonState();
 }
 
-class _ActionButtonState extends State<_ActionButton> {
+class _PurchaseActionButtonState extends State<_PurchaseActionButton> {
   bool _loading = false;
 
   PurchaseService get _service => widget.purchaseService ?? PurchaseService();
@@ -496,11 +556,18 @@ class _ActionButtonState extends State<_ActionButton> {
     final isOrdered = widget.purchase.status == PurchaseStatus.ordered;
 
     if (isPending) {
+      if (!_canConsolidatePurchase(context)) {
+        return const _MessageBox(
+          icon: Icons.lock_outline,
+          text: 'Aguardando setor de compras',
+          color: AppColors.textMuted,
+        );
+      }
       return _btn(
-        'Confirmar pedido',
-        Icons.send_outlined,
+        'Consolidar compra',
+        Icons.receipt_long_outlined,
         Colors.blue,
-        () => _updateStatus(PurchaseStatus.ordered),
+        () => _showConsolidationDialog(context),
       );
     }
     if (isOrdered) {
@@ -521,9 +588,9 @@ class _ActionButtonState extends State<_ActionButton> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child:
             _loading
@@ -554,23 +621,46 @@ class _ActionButtonState extends State<_ActionButton> {
     );
   }
 
-  Future<void> _updateStatus(PurchaseStatus status) async {
+  Future<void> _showConsolidationDialog(BuildContext context) async {
+    final result = await showDialog<_ConsolidationResult>(
+      context: context,
+      builder: (ctx) => _ConsolidationDialog(purchase: widget.purchase),
+    );
+    if (result == null || !mounted || !context.mounted) return;
+
+    final auth = _maybeReadAuth(context);
     setState(() => _loading = true);
     try {
-      await _service.updateStatus(widget.purchase.id, status);
+      await _service.consolidatePurchase(
+        purchase: widget.purchase,
+        consolidatedBy: auth?.user?.uid ?? 'unknown',
+        consolidatedByName:
+            auth?.user?.displayName ?? auth?.user?.email ?? 'Compras',
+        invoiceNumber: result.invoiceNumber,
+        invoiceAccessKey: result.invoiceAccessKey,
+        expectedDeliveryDate: result.expectedDeliveryDate,
+        notes: result.notes,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Compra consolidada e enviada ao financeiro'),
+          backgroundColor: Colors.blue,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _confirmDelivery(BuildContext context) async {
-    final auth = context.read<AuthController>();
+    final auth = _maybeReadAuth(context);
+    final hasFinancialLink = widget.purchase.financialTransactionId != null;
     final confirm =
         await showDialog<bool>(
           context: context,
@@ -593,9 +683,11 @@ class _ActionButtonState extends State<_ActionButton> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Ao confirmar, uma despesa será lançada no financeiro e o estoque será atualizado.',
-                      style: TextStyle(
+                    Text(
+                      hasFinancialLink
+                          ? 'Ao confirmar, o estoque sera atualizado.'
+                          : 'Ao confirmar, o estoque sera atualizado e uma conta a pagar sera criada.',
+                      style: const TextStyle(
                         color: AppColors.textMuted,
                         fontSize: 13,
                       ),
@@ -618,9 +710,11 @@ class _ActionButtonState extends State<_ActionButton> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const Text(
-                          ' → Financeiro',
-                          style: TextStyle(
+                        Text(
+                          hasFinancialLink
+                              ? ' em Financeiro'
+                              : ' para Financeiro',
+                          style: const TextStyle(
                             color: AppColors.textMuted,
                             fontSize: 12,
                           ),
@@ -653,30 +747,257 @@ class _ActionButtonState extends State<_ActionButton> {
     try {
       await _service.confirmDelivery(
         purchase: widget.purchase,
-        receivedBy: auth.user?.uid ?? 'unknown',
+        receivedBy: auth?.user?.uid ?? 'unknown',
       );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Entrega confirmada — despesa lançada'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Entrega confirmada - estoque atualizado'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 }
 
-// ─── Shared widgets ───────────────────────────────────────────────────────────
+class _ConsolidationResult {
+  final String invoiceNumber;
+  final String invoiceAccessKey;
+  final DateTime? expectedDeliveryDate;
+  final String notes;
+
+  const _ConsolidationResult({
+    required this.invoiceNumber,
+    required this.invoiceAccessKey,
+    required this.expectedDeliveryDate,
+    required this.notes,
+  });
+}
+
+class _ConsolidationDialog extends StatefulWidget {
+  final Purchase purchase;
+
+  const _ConsolidationDialog({required this.purchase});
+
+  @override
+  State<_ConsolidationDialog> createState() => _ConsolidationDialogState();
+}
+
+class _ConsolidationDialogState extends State<_ConsolidationDialog> {
+  final _invoiceCtrl = TextEditingController();
+  final _invoiceKeyCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  DateTime? _expectedDeliveryDate;
+
+  @override
+  void dispose() {
+    _invoiceCtrl.dispose();
+    _invoiceKeyCtrl.dispose();
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    return AlertDialog(
+      backgroundColor: AppColors.surfaceDark,
+      title: const Text(
+        'Consolidar compra',
+        style: TextStyle(color: Colors.white),
+      ),
+      content: SizedBox(
+        width: 460,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.purchase.itemName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _InfoRow('Fornecedor', widget.purchase.supplierName),
+              _InfoRow('Valor', currency.format(widget.purchase.totalValue)),
+              _InfoRow('Projeto', widget.purchase.projectName),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _invoiceCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: _inputDecoration(
+                  label: 'Numero da nota fiscal',
+                  icon: Icons.receipt_long_outlined,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _invoiceKeyCtrl,
+                style: const TextStyle(color: Colors.white),
+                decoration: _inputDecoration(
+                  label: 'Chave de acesso da NF',
+                  icon: Icons.key_outlined,
+                ),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _pickExpectedDeliveryDate,
+                icon: const Icon(Icons.event_available_outlined, size: 16),
+                label: Text(
+                  _expectedDeliveryDate == null
+                      ? 'Previsao de entrega'
+                      : dateFormat.format(_expectedDeliveryDate!),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accentGold,
+                  side: BorderSide(
+                    color: AppColors.accentGold.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _notesCtrl,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: _inputDecoration(
+                  label: 'Observacoes da compra',
+                  icon: Icons.sticky_note_2_outlined,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton.icon(
+          onPressed: _submit,
+          icon: const Icon(Icons.send_outlined, size: 16),
+          label: const Text('Enviar ao financeiro'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: AppColors.textMuted),
+      prefixIcon: Icon(icon, color: AppColors.accentGold, size: 18),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.04),
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: AppColors.accentGold),
+        borderRadius: BorderRadius.circular(8),
+      ),
+    );
+  }
+
+  Future<void> _pickExpectedDeliveryDate() async {
+    final now = DateTime.now();
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _expectedDeliveryDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (selected != null) {
+      setState(() => _expectedDeliveryDate = selected);
+    }
+  }
+
+  void _submit() {
+    final invoiceNumber = _invoiceCtrl.text.trim();
+    if (invoiceNumber.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe o numero da nota fiscal'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _ConsolidationResult(
+        invoiceNumber: invoiceNumber,
+        invoiceAccessKey: _invoiceKeyCtrl.text.trim(),
+        expectedDeliveryDate: _expectedDeliveryDate,
+        notes: _notesCtrl.text.trim(),
+      ),
+    );
+  }
+}
+
+class _FinancialLinkBadge extends StatelessWidget {
+  final bool isDelivered;
+
+  const _FinancialLinkBadge({required this.isDelivered});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDelivered ? Colors.greenAccent : AppColors.accentGold;
+    final label = isDelivered ? 'Financeiro vinculado' : 'Conta a pagar';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isDelivered
+                ? Icons.check_circle_outline
+                : Icons.receipt_long_outlined,
+            color: color,
+            size: 14,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              color: color.withValues(alpha: 0.9),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _StatusBadge extends StatelessWidget {
   final PurchaseStatus status;
@@ -687,9 +1008,9 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: status.color.withOpacity(0.12),
+        color: status.color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: status.color.withOpacity(0.3)),
+        border: Border.all(color: status.color.withValues(alpha: 0.3)),
       ),
       child: Text(
         status.label,
@@ -731,6 +1052,42 @@ class _Meta extends StatelessWidget {
   }
 }
 
+class _MessageBox extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const _MessageBox({
+    required this.icon,
+    required this.text,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: Text(text, style: TextStyle(color: color, fontSize: 11)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
@@ -743,7 +1100,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         children: [
           SizedBox(
-            width: 80,
+            width: 95,
             child: Text(
               label,
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12),

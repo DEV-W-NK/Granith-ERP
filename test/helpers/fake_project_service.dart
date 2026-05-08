@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/service_projetos.dart';
 
@@ -6,6 +8,8 @@ class FakeProjectService extends ServiceProjetos {
     : _projects = List<Project>.from(initialProjects ?? const <Project>[]);
 
   final List<Project> _projects;
+  final StreamController<List<Project>> _projectStreamController =
+      StreamController<List<Project>>.broadcast();
   Object? getProjectsError;
   Object? getProjectsByClientAccountError;
   Object? addProjectError;
@@ -16,12 +20,7 @@ class FakeProjectService extends ServiceProjetos {
   Project? lastAddedProject;
   Project? lastUpdatedProject;
 
-  @override
-  Future<List<Project>> getProjects({String? clientAccountId}) async {
-    if (getProjectsError != null) {
-      throw getProjectsError!;
-    }
-
+  List<Project> _visibleProjects(String? clientAccountId) {
     if (clientAccountId == null || clientAccountId.trim().isEmpty) {
       return List<Project>.from(_projects);
     }
@@ -29,6 +28,40 @@ class FakeProjectService extends ServiceProjetos {
     return _projects
         .where((project) => project.clientAccountId == clientAccountId)
         .toList();
+  }
+
+  void _emitProjects() {
+    if (!_projectStreamController.isClosed) {
+      _projectStreamController.add(List<Project>.from(_projects));
+    }
+  }
+
+  void emitProjects(List<Project> projects) {
+    _projects
+      ..clear()
+      ..addAll(projects);
+    _emitProjects();
+  }
+
+  Future<void> dispose() async {
+    await _projectStreamController.close();
+  }
+
+  @override
+  Future<List<Project>> getProjects({String? clientAccountId}) async {
+    if (getProjectsError != null) {
+      throw getProjectsError!;
+    }
+
+    return _visibleProjects(clientAccountId);
+  }
+
+  @override
+  Stream<List<Project>> watchProjects({String? clientAccountId}) async* {
+    yield _visibleProjects(clientAccountId);
+    yield* _projectStreamController.stream.map(
+      (_) => _visibleProjects(clientAccountId),
+    );
   }
 
   @override
@@ -53,6 +86,7 @@ class FakeProjectService extends ServiceProjetos {
     lastAddedProject = project;
     final created = project.copyWith(id: createdId);
     _projects.add(created);
+    _emitProjects();
     return createdId;
   }
 
@@ -66,6 +100,7 @@ class FakeProjectService extends ServiceProjetos {
     final index = _projects.indexWhere((item) => item.id == project.id);
     if (index != -1) {
       _projects[index] = project;
+      _emitProjects();
     }
   }
 
@@ -77,6 +112,7 @@ class FakeProjectService extends ServiceProjetos {
 
     deletedProjectId = projectId;
     _projects.removeWhere((project) => project.id == projectId);
+    _emitProjects();
   }
 
   @override

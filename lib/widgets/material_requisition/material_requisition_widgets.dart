@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:project_granith/controllers/auth_controller.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/controllers/material_requisition_controller.dart';
 import 'package:project_granith/models/requisition_model.dart';
 import 'package:project_granith/models/supplier_model.dart';
@@ -28,7 +28,7 @@ class MaterialRequisitionHeader extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.accentGold.withOpacity(0.1),
+            color: AppColors.accentGold.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -63,9 +63,11 @@ class MaterialRequisitionHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.orangeAccent.withOpacity(0.15),
+              color: Colors.orangeAccent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orangeAccent.withOpacity(0.4)),
+              border: Border.all(
+                color: Colors.orangeAccent.withValues(alpha: 0.4),
+              ),
             ),
             child: Row(
               children: [
@@ -107,7 +109,7 @@ class MaterialRequisitionEmptyState extends StatelessWidget {
           Icon(
             Icons.inbox_rounded,
             size: 64,
-            color: AppColors.textMuted.withOpacity(0.3),
+            color: AppColors.textMuted.withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -143,8 +145,8 @@ class MaterialRequisitionCard extends StatelessWidget {
         side: BorderSide(
           color:
               r.priority == 'Alta' && r.status == RequisitionStatus.pending
-                  ? Colors.redAccent.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.05),
+                  ? Colors.redAccent.withValues(alpha: 0.3)
+                  : Colors.white.withValues(alpha: 0.05),
         ),
       ),
       child: Theme(
@@ -152,7 +154,7 @@ class MaterialRequisitionCard extends StatelessWidget {
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           leading: CircleAvatar(
-            backgroundColor: statusColor.withOpacity(0.12),
+            backgroundColor: statusColor.withValues(alpha: 0.12),
             child: Icon(r.status.icon, color: statusColor, size: 20),
           ),
           title: Text(
@@ -190,9 +192,9 @@ class MaterialRequisitionCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: statusColor.withOpacity(0.3)),
+                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   r.status.label,
@@ -228,7 +230,7 @@ class MaterialRequisitionCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 border: const Border(top: BorderSide(color: Colors.white10)),
               ),
               child: Column(
@@ -332,9 +334,9 @@ class MaterialRequisitionCard extends StatelessWidget {
 
   Widget _buildActions(BuildContext context, MaterialRequisitionModel r) {
     final ctrl = context.read<MaterialRequisitionController>();
-    final auth = context.read<AuthController>();
+    final auth = context.read<AuthViewModel>();
 
-    // Etapa 1 → 2: Aprovar ou Rejeitar
+    // Etapa 1: compras monta o orcamento e envia para aprovacao setorial.
     if (r.status == RequisitionStatus.pending) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
@@ -350,26 +352,26 @@ class MaterialRequisitionCard extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
-            onPressed: () => _showApproveDialog(context, r, ctrl, auth),
-            icon: const Icon(Icons.check, size: 16),
-            label: const Text('Aprovar'),
+            onPressed: () => _showConvertDialog(context, r, ctrl, auth),
+            icon: const Icon(Icons.request_quote_outlined, size: 16),
+            label: const Text('Fazer orcamento'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.accentGold,
+              foregroundColor: AppColors.primaryDark,
             ),
           ),
         ],
       );
     }
 
-    // Etapa 2 → 3: Converter em compra
+    // Compatibilidade com requisicoes antigas que ja foram aprovadas.
     if (r.status == RequisitionStatus.approved) {
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: () => _showConvertDialog(context, r, ctrl, auth),
-          icon: const Icon(Icons.shopping_cart_outlined, size: 16),
-          label: const Text('Gerar pedido de compra'),
+          icon: const Icon(Icons.request_quote_outlined, size: 16),
+          label: const Text('Fazer orcamento da compra'),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.accentGold,
             foregroundColor: AppColors.primaryDark,
@@ -378,14 +380,14 @@ class MaterialRequisitionCard extends StatelessWidget {
       );
     }
 
-    // Compra já gerada
+    // Orcamento ja gerado
     if (r.status == RequisitionStatus.purchased) {
       return Row(
         children: [
           const Icon(Icons.check_circle, color: Colors.blueAccent, size: 14),
           const SizedBox(width: 6),
           const Text(
-            'Compra gerada — veja em Compras & Pedidos',
+            'Orcamento gerado - veja em Compras & Pedidos',
             style: TextStyle(color: Colors.blueAccent, fontSize: 12),
           ),
         ],
@@ -395,98 +397,13 @@ class MaterialRequisitionCard extends StatelessWidget {
     return const SizedBox.shrink();
   }
 
-  // ─── Dialog: Confirmar aprovação ─────────────────────────────────────────
-
-  Future<void> _showApproveDialog(
-    BuildContext context,
-    MaterialRequisitionModel r,
-    MaterialRequisitionController ctrl,
-    AuthController auth,
-  ) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder:
-          (ctx) => AlertDialog(
-            backgroundColor: AppColors.surfaceDark,
-            title: const Text(
-              'Aprovar requisição?',
-              style: TextStyle(color: Colors.white),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  r.projectName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${r.itemCount} item(ns) • solicitado por ${r.requesterName}',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Ao aprovar, o responsável poderá gerar o pedido de compra.',
-                  style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(false),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(ctx).pop(true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Confirmar aprovação'),
-              ),
-            ],
-          ),
-    );
-
-    if (confirm != true || !context.mounted) return;
-
-    try {
-      await ctrl.approve(
-        requisition: r,
-        approvedBy: auth.user?.uid ?? 'unknown',
-        approvedByName: auth.user?.displayName ?? 'Gestor',
-      );
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Requisição aprovada'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
   // ─── Dialog: Motivo da rejeição ───────────────────────────────────────────
 
   Future<void> _showRejectDialog(
     BuildContext context,
     MaterialRequisitionModel r,
     MaterialRequisitionController ctrl,
-    AuthController auth,
+    AuthViewModel auth,
   ) async {
     final reasonCtrl = TextEditingController();
 
@@ -518,10 +435,10 @@ class MaterialRequisitionCard extends StatelessWidget {
                     labelText: 'Motivo da rejeição (obrigatório)',
                     labelStyle: const TextStyle(color: AppColors.textMuted),
                     filled: true,
-                    fillColor: Colors.white.withOpacity(0.04),
+                    fillColor: Colors.white.withValues(alpha: 0.04),
                     enabledBorder: OutlineInputBorder(
                       borderSide: BorderSide(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -585,8 +502,6 @@ class MaterialRequisitionCard extends StatelessWidget {
         );
       }
     }
-
-    reasonCtrl.dispose();
   }
 }
 
@@ -598,7 +513,7 @@ Future<void> _showConvertDialog(
   BuildContext context,
   MaterialRequisitionModel r,
   MaterialRequisitionController ctrl,
-  AuthController auth,
+  AuthViewModel auth,
 ) async {
   await showDialog(
     context: context,
@@ -615,7 +530,7 @@ Future<void> _showConvertDialog(
 class _ConvertToPurchaseDialog extends StatefulWidget {
   final MaterialRequisitionModel requisition;
   final MaterialRequisitionController controller;
-  final AuthController auth;
+  final AuthViewModel auth;
 
   const _ConvertToPurchaseDialog({
     required this.requisition,
@@ -630,6 +545,7 @@ class _ConvertToPurchaseDialog extends StatefulWidget {
 
 class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   final _supplierService = SupplierService();
+  final _approvalSectorCtrl = TextEditingController();
 
   List<Supplier> _suppliers = [];
   Supplier? _selectedSupplier;
@@ -642,6 +558,10 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   @override
   void initState() {
     super.initState();
+    final requesterSector = widget.requisition.requesterSector.trim();
+    if (requesterSector.isNotEmpty && requesterSector != 'Geral') {
+      _approvalSectorCtrl.text = requesterSector;
+    }
     for (final item in widget.requisition.items) {
       _priceCtrl[item.itemName] = TextEditingController();
     }
@@ -651,11 +571,12 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   Future<void> _loadSuppliers() async {
     try {
       final list = await _supplierService.getSuppliers();
-      if (mounted)
+      if (mounted) {
         setState(() {
           _suppliers = list;
           _loadingSuppliers = false;
         });
+      }
     } catch (_) {
       if (mounted) setState(() => _loadingSuppliers = false);
     }
@@ -663,7 +584,10 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
 
   @override
   void dispose() {
-    for (final c in _priceCtrl.values) c.dispose();
+    _approvalSectorCtrl.dispose();
+    for (final c in _priceCtrl.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -691,7 +615,9 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
               padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
               decoration: BoxDecoration(
                 border: Border(
-                  bottom: BorderSide(color: Colors.white.withOpacity(0.07)),
+                  bottom: BorderSide(
+                    color: Colors.white.withValues(alpha: 0.07),
+                  ),
                 ),
               ),
               child: Row(
@@ -699,7 +625,7 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.accentGold.withOpacity(0.12),
+                      color: AppColors.accentGold.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -714,7 +640,7 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Gerar pedido de compra',
+                          'Orcamento da compra',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -745,6 +671,17 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    _sectionLabel('Setor aprovador'),
+                    TextField(
+                      controller: _approvalSectorCtrl,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: _dec(
+                        'Ex.: Engenharia, Obras, Administrativo',
+                        Icons.domain_outlined,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
                     // Fornecedor
                     _sectionLabel('Fornecedor'),
                     _loadingSuppliers
@@ -755,7 +692,7 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
                           ),
                         )
                         : DropdownButtonFormField<Supplier>(
-                          value: _selectedSupplier,
+                          initialValue: _selectedSupplier,
                           dropdownColor: AppColors.surfaceDark,
                           style: const TextStyle(
                             color: Colors.white,
@@ -878,7 +815,7 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
                                   ),
                                 )
                                 : const Text(
-                                  'Criar pedido de compra',
+                                  'Enviar orcamento para aprovacao',
                                   style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                       ),
@@ -918,6 +855,10 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
         supplier: _selectedSupplier!,
         createdBy: widget.auth.user?.uid ?? 'unknown',
         itemPrices: prices,
+        approvalSector:
+            _approvalSectorCtrl.text.trim().isEmpty
+                ? null
+                : _approvalSectorCtrl.text.trim(),
       );
 
       if (mounted) {
@@ -925,7 +866,7 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Pedido de compra criado — veja em Compras & Pedidos',
+              'Orcamento enviado para aprovacao em Compras & Pedidos',
             ),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 3),
@@ -960,13 +901,13 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   InputDecoration _dec(String hint, IconData icon) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.5)),
+      hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.5)),
       prefixIcon: Icon(icon, color: AppColors.accentGold, size: 18),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.04),
+      fillColor: Colors.white.withValues(alpha: 0.04),
       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.08)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         borderRadius: BorderRadius.circular(8),
       ),
       focusedBorder: OutlineInputBorder(

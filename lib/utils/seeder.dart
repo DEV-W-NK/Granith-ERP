@@ -1,12 +1,27 @@
+import 'dart:developer' as developer;
+
+import 'package:flutter/foundation.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
+class DatabaseSeederException implements Exception {
+  const DatabaseSeederException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class DatabaseSeeder {
   DatabaseSeeder();
 
   SupabaseClient get _supabase => AppSupabase.client;
+
+  String? _lastErrorMessage;
+  String? get lastErrorMessage => _lastErrorMessage;
 
   static const Uuid _uuid = Uuid();
   static const String _seedUuidNamespace =
@@ -27,6 +42,13 @@ class DatabaseSeeder {
   static const String _projectLogprimeCrossdock =
       'seed-project-logprime-crossdock-campinas';
 
+  static const String _vehicleHilux = 'seed-vehicle-hilux-mariana';
+  static const String _vehicleFiorino = 'seed-vehicle-fiorino-suprimentos';
+  static const String _vehicleAmarok = 'seed-vehicle-amarok-canteiro';
+  static const String _vehicleCorollaCross =
+      'seed-vehicle-corolla-cross-financeiro';
+  static const String _vehicleSprinter = 'seed-vehicle-sprinter-equipes';
+
   static const String _adminUser = 'seed-user-admin';
   static const String _engineerUser = 'seed-user-engineer';
   static const String _financeUser = 'seed-user-finance';
@@ -38,6 +60,7 @@ class DatabaseSeeder {
     'client_accounts',
     'users',
     'budget_types',
+    'sectors',
     'job_roles',
     'items',
     'suppliers',
@@ -46,15 +69,18 @@ class DatabaseSeeder {
     'project_measurements',
     'budgets',
     'teams',
+    'benefit_categories',
     'benefits',
     'employee_benefits',
     'salary_history',
+    'vehicles',
     'purchases',
     'inventory',
     'inventory_movements',
     'material_requisitions',
     'daily_logs',
     'financial_transactions',
+    'vehicle_fuel_logs',
     'talent_candidates',
     'usage_stats',
   ];
@@ -62,16 +88,17 @@ class DatabaseSeeder {
   Future<bool> seed() async {
     final now = DateTime.now().toUtc();
 
-    print('SEEDER: iniciando base realista Granith ERP...');
+    _lastErrorMessage = null;
+    _logSeed('iniciando base realista Granith ERP...');
 
     try {
       await _assertSupabaseSchemaReady();
       await _seedSupabase(now);
-      print('SEEDER: base realista criada/atualizada com sucesso.');
+      _logSeed('base realista criada/atualizada com sucesso.');
       return true;
     } catch (error, stackTrace) {
-      print('SEEDER: erro critico: $error');
-      print(stackTrace);
+      _lastErrorMessage = _describeSeedError(error);
+      _logSeed('erro critico: $_lastErrorMessage', stackTrace: stackTrace);
       return false;
     }
   }
@@ -93,6 +120,10 @@ class DatabaseSeeder {
           );
         }
 
+        if (_isPermissionError(error)) {
+          throw _permissionException(table, error);
+        }
+
         rethrow;
       }
     }
@@ -109,14 +140,17 @@ class DatabaseSeeder {
     await _upsertSupabase('client_accounts', _clientAccounts(now));
     await _upsertSupabase('users', _users(now));
     await _upsertSupabase('budget_types', _budgetTypes(now));
+    await _upsertSupabase('sectors', _sectors(now));
     await _upsertSupabase('job_roles', _jobRoles(now));
     await _upsertSupabase('items', _items(now));
     await _upsertSupabase('suppliers', _suppliers(now));
     await _upsertSupabase('employees', _employees(now));
+    await _upsertSupabase('vehicles', _vehicles(now));
     await _upsertSupabase('projects', _projects(now));
     await _upsertSupabase('project_measurements', _projectMeasurements(now));
     await _upsertSupabase('budgets', _budgets(now));
     await _upsertSupabase('teams', _teams(now));
+    await _upsertSupabase('benefit_categories', _benefitCategories(now));
     await _upsertSupabase('benefits', _benefits(now));
     await _upsertSupabase('employee_benefits', _employeeBenefits(now));
     await _upsertSupabase('salary_history', _salaryHistory(now));
@@ -129,6 +163,7 @@ class DatabaseSeeder {
       'financial_transactions',
       _financialTransactions(now),
     );
+    await _upsertSupabase('vehicle_fuel_logs', _vehicleFuelLogs(now));
     await _upsertSupabase('talent_candidates', _talentCandidates(now));
     await _upsertSupabase('usage_stats', _usageStats(now));
   }
@@ -138,10 +173,83 @@ class DatabaseSeeder {
     List<Map<String, dynamic>> rows,
   ) async {
     if (rows.isEmpty) return;
-    print('SEEDER: Supabase $table (${rows.length})');
+    _logSeed('Supabase $table (${rows.length})');
 
     final payload = rows.map(_toSupabaseMap).map(DbValue.normalizeMap).toList();
-    await _supabase.from(table).upsert(payload);
+    try {
+      await _supabase
+          .from(table)
+          .upsert(payload, onConflict: _upsertConflictTarget(table));
+    } catch (error) {
+      if (_isPermissionError(error)) {
+        throw _permissionException(table, error);
+      }
+
+      rethrow;
+    }
+  }
+
+  String? _upsertConflictTarget(String table) {
+    return switch (table) {
+      // The sectors migration can pre-create rows from existing employees and
+      // job roles with generated IDs. Merge by the catalog key to avoid 409.
+      'sectors' => 'name',
+      _ => null,
+    };
+  }
+
+  void _logSeed(String message, {StackTrace? stackTrace}) {
+    debugPrint('[DatabaseSeeder] $message');
+    developer.log(message, name: 'DatabaseSeeder', stackTrace: stackTrace);
+  }
+
+  bool _isPermissionError(Object error) {
+    if (error is PostgrestException) {
+      final code = error.code?.toLowerCase();
+      final message = error.message.toLowerCase();
+      final details = error.details?.toString().toLowerCase() ?? '';
+      return code == '42501' ||
+          code == '403' ||
+          message.contains('permission denied') ||
+          message.contains('row-level security') ||
+          details.contains('permission denied') ||
+          details.contains('row-level security');
+    }
+
+    final message = error.toString().toLowerCase();
+    return message.contains('permission denied') ||
+        message.contains('row-level security') ||
+        message.contains('403');
+  }
+
+  DatabaseSeederException _permissionException(String table, Object error) {
+    final detail = _supabaseErrorDetail(error);
+    return DatabaseSeederException(
+      'Sem permissao para acessar public.$table. '
+      'Aplique as migrations/grants do Supabase e execute o seeder logado '
+      'com um usuario interno ou admin. Detalhe: $detail',
+    );
+  }
+
+  String _describeSeedError(Object error) {
+    if (error is DatabaseSeederException) return error.message;
+    if (error is PostgrestException) return _supabaseErrorDetail(error);
+    return error.toString();
+  }
+
+  String _supabaseErrorDetail(Object error) {
+    if (error is PostgrestException) {
+      final parts = <String>[
+        error.message,
+        if (error.code != null && error.code!.isNotEmpty)
+          'codigo ${error.code}',
+        if (error.details != null) 'detalhes ${error.details}',
+        if (error.hint != null && error.hint!.isNotEmpty) 'hint ${error.hint}',
+      ];
+      return parts.join(' | ');
+    }
+
+    return error.toString();
   }
 
   Map<String, dynamic> _toSupabaseMap(Map<String, dynamic> input) {
@@ -275,7 +383,18 @@ class DatabaseSeeder {
         'photoUrl': '',
         'photo_url': '',
         'status': 'ativo',
-        'permissions': ['admin', 'financeiro', 'obras', 'rh', 'suprimentos'],
+        'permissions': [
+          'admin',
+          'financeiro',
+          'obras',
+          'rh',
+          'suprimentos',
+          'people.salary.read',
+          'purchases.approve',
+          'purchases.consolidate',
+          'purchase_finance.read',
+          'purchase_finance.write',
+        ],
         'role': 'admin',
         'clientAccountId': null,
         'client_account_id': null,
@@ -313,7 +432,13 @@ class DatabaseSeeder {
         'photoUrl': '',
         'photo_url': '',
         'status': 'ativo',
-        'permissions': ['financeiro', 'relatorios', 'medicoes'],
+        'permissions': [
+          'financeiro',
+          'relatorios',
+          'medicoes',
+          'purchase_finance.read',
+          'purchase_finance.write',
+        ],
         'role': 'employee',
         'clientAccountId': null,
         'client_account_id': null,
@@ -332,7 +457,13 @@ class DatabaseSeeder {
         'photoUrl': '',
         'photo_url': '',
         'status': 'ativo',
-        'permissions': ['suprimentos', 'estoque', 'compras'],
+        'permissions': [
+          'suprimentos',
+          'estoque',
+          'compras',
+          'purchases.consolidate',
+          'purchase_finance.read',
+        ],
         'role': 'employee',
         'clientAccountId': null,
         'client_account_id': null,
@@ -482,6 +613,32 @@ class DatabaseSeeder {
     };
   }
 
+  List<Map<String, dynamic>> _sectors(DateTime now) {
+    return [
+      _sector('seed-sector-operational', 'Operacional', now),
+      _sector('seed-sector-technical', 'Tecnico', now),
+      _sector('seed-sector-engineering', 'Engenharia', now),
+      _sector('seed-sector-installations', 'Instalacoes', now),
+      _sector('seed-sector-supplies', 'Suprimentos', now),
+      _sector('seed-sector-financial', 'Financeiro', now),
+      _sector('seed-sector-administrative', 'Administrativo', now),
+      _sector('seed-sector-hr', 'RH', now),
+      _sector('seed-sector-sales', 'Vendas', now),
+      _sector('seed-sector-construction', 'Obras', now),
+    ];
+  }
+
+  Map<String, dynamic> _sector(String id, String name, DateTime now) {
+    return {
+      'id': id,
+      'name': name,
+      'description': '',
+      'isActive': true,
+      'createdAt': _daysAgo(now, 180),
+      'updatedAt': now,
+    };
+  }
+
   List<Map<String, dynamic>> _jobRoles(DateTime now) {
     return [
       _jobRole(
@@ -489,7 +646,6 @@ class DatabaseSeeder {
         title: 'Engenheiro Civil',
         sector: 'Tecnico',
         description: 'Responsavel tecnico, planejamento e medicoes.',
-        hourlyRate: 92,
         requirements: ['CREA ativo', 'Experiencia em obras verticais'],
         now: now,
       ),
@@ -498,7 +654,6 @@ class DatabaseSeeder {
         title: 'Mestre de Obras',
         sector: 'Operacional',
         description: 'Coordenacao diaria do canteiro.',
-        hourlyRate: 48,
         requirements: ['Experiencia minima de 5 anos'],
         now: now,
       ),
@@ -507,7 +662,6 @@ class DatabaseSeeder {
         title: 'Pedreiro',
         sector: 'Operacional',
         description: 'Execucao de alvenaria, reboco e concretagem.',
-        hourlyRate: 31,
         requirements: ['Leitura basica de projeto'],
         now: now,
       ),
@@ -516,7 +670,6 @@ class DatabaseSeeder {
         title: 'Servente',
         sector: 'Operacional',
         description: 'Apoio geral de obra, limpeza e transporte interno.',
-        hourlyRate: 20,
         requirements: ['Disponibilidade para campo'],
         now: now,
       ),
@@ -525,7 +678,6 @@ class DatabaseSeeder {
         title: 'Eletricista',
         sector: 'Instalacoes',
         description: 'Infraestrutura eletrica e quadros.',
-        hourlyRate: 42,
         requirements: ['NR-10', 'Experiencia com baixa tensao'],
         now: now,
       ),
@@ -534,7 +686,6 @@ class DatabaseSeeder {
         title: 'Encanador',
         sector: 'Instalacoes',
         description: 'Redes hidraulicas, esgoto e testes de estanqueidade.',
-        hourlyRate: 39,
         requirements: ['Experiencia em PVC/PPR'],
         now: now,
       ),
@@ -543,7 +694,6 @@ class DatabaseSeeder {
         title: 'Comprador',
         sector: 'Suprimentos',
         description: 'Cotacoes, pedidos e follow-up de fornecedores.',
-        hourlyRate: 36,
         requirements: ['Negociacao', 'Controle de estoque'],
         now: now,
       ),
@@ -552,7 +702,6 @@ class DatabaseSeeder {
         title: 'Analista Financeiro',
         sector: 'Financeiro',
         description: 'Contas a pagar/receber e conciliacao gerencial.',
-        hourlyRate: 44,
         requirements: ['Excel avancado', 'Fluxo de caixa'],
         now: now,
       ),
@@ -564,7 +713,6 @@ class DatabaseSeeder {
     required String title,
     required String sector,
     required String description,
-    required double hourlyRate,
     required List<String> requirements,
     required DateTime now,
   }) {
@@ -573,7 +721,6 @@ class DatabaseSeeder {
       'title': title,
       'sector': sector,
       'description': description,
-      'hourlyRate': hourlyRate,
       'requirements': requirements,
       'isActive': true,
       'createdAt': _daysAgo(now, 180),
@@ -758,6 +905,39 @@ class DatabaseSeeder {
         null,
         now,
       ),
+      _item(
+        'seed-item-diesel-s10',
+        'Diesel S10',
+        'Combustivel para frota diesel',
+        'l',
+        0.84,
+        null,
+        null,
+        null,
+        now,
+      ),
+      _item(
+        'seed-item-gasoline-common',
+        'Gasolina comum',
+        'Combustivel para frota flex/hibrida',
+        'l',
+        0.75,
+        null,
+        null,
+        null,
+        now,
+      ),
+      _item(
+        'seed-item-hygiene-paper',
+        'Papel higienico institucional',
+        'Fardo para escritorio e apoio administrativo',
+        'fd',
+        8.2,
+        null,
+        null,
+        null,
+        now,
+      ),
     ];
   }
 
@@ -822,6 +1002,18 @@ class DatabaseSeeder {
         'seed-supplier-prime-acabamentos',
         'Prime Acabamentos',
         '66777888000136',
+        now,
+      ),
+      _supplier(
+        'seed-supplier-posto-avenida',
+        'Posto Avenida Frota Corporativa',
+        '77888999000127',
+        now,
+      ),
+      _supplier(
+        'seed-supplier-office-clean',
+        'Office Clean Suprimentos',
+        '88999000000118',
         now,
       ),
     ];
@@ -1024,6 +1216,201 @@ class DatabaseSeeder {
     };
   }
 
+  List<Map<String, dynamic>> _vehicles(DateTime now) {
+    return [
+      _vehicle(
+        id: _vehicleHilux,
+        plate: 'RTA3F21',
+        brand: 'Toyota',
+        model: 'Hilux',
+        version: 'SRV 2.8 4x4',
+        manufactureYear: 2022,
+        modelYear: 2023,
+        fuelType: 'diesel',
+        status: 'active',
+        odometerKm: 42860,
+        expectedCityKmPerLiter: 10.2,
+        expectedHighwayKmPerLiter: 12.1,
+        tankCapacityLiters: 80,
+        assignedEmployeeId: 'seed-employee-mariana',
+        assignedEmployeeName: 'Mariana Rocha',
+        acquisitionDaysAgo: 390,
+        acquisitionValue: 238000,
+        fipeCode: '002186-0',
+        fipeValue: 226400,
+        fipeReferenceMonth: 'maio de 2026',
+        lastMeasuredKmPerLiter: 10.33,
+        lastFuelLogAt: _daysAgo(now, 4),
+        notes:
+            'Veiculo de campo para visitas tecnicas e acompanhamento de obras ativas.',
+        now: now,
+      ),
+      _vehicle(
+        id: _vehicleFiorino,
+        plate: 'GRA8N44',
+        brand: 'Fiat',
+        model: 'Fiorino',
+        version: 'Endurance 1.4',
+        manufactureYear: 2021,
+        modelYear: 2022,
+        fuelType: 'flex',
+        status: 'active',
+        odometerKm: 35396,
+        expectedCityKmPerLiter: 8.5,
+        expectedHighwayKmPerLiter: 10.2,
+        tankCapacityLiters: 58,
+        assignedEmployeeId: 'seed-employee-ana',
+        assignedEmployeeName: 'Ana Lima',
+        acquisitionDaysAgo: 610,
+        acquisitionValue: 86500,
+        fipeCode: '001508-8',
+        fipeValue: 78200,
+        fipeReferenceMonth: 'maio de 2026',
+        lastMeasuredKmPerLiter: 7.11,
+        lastFuelLogAt: _daysAgo(now, 3),
+        notes:
+            'Utilitario de suprimentos. Consumo recente abaixo do esperado para gerar alerta de troca/manutencao.',
+        now: now,
+      ),
+      _vehicle(
+        id: _vehicleAmarok,
+        plate: 'OBR2C19',
+        brand: 'Volkswagen',
+        model: 'Amarok',
+        version: 'Highline V6',
+        manufactureYear: 2019,
+        modelYear: 2020,
+        fuelType: 'diesel',
+        status: 'maintenance',
+        odometerKm: 90240,
+        expectedCityKmPerLiter: 9.4,
+        expectedHighwayKmPerLiter: 11.0,
+        tankCapacityLiters: 80,
+        assignedEmployeeId: 'seed-employee-carlos',
+        assignedEmployeeName: 'Carlos Nascimento',
+        acquisitionDaysAgo: 980,
+        acquisitionValue: 192000,
+        fipeCode: '005377-0',
+        fipeValue: 151800,
+        fipeReferenceMonth: 'maio de 2026',
+        lastMeasuredKmPerLiter: 8.53,
+        lastFuelLogAt: _daysAgo(now, 8),
+        notes:
+            'Em manutencao preventiva por consumo elevado e alta quilometragem.',
+        now: now,
+      ),
+      _vehicle(
+        id: _vehicleCorollaCross,
+        plate: 'ERP5H26',
+        brand: 'Toyota',
+        model: 'Corolla Cross',
+        version: 'XRX Hybrid',
+        manufactureYear: 2024,
+        modelYear: 2025,
+        fuelType: 'hybrid',
+        status: 'active',
+        odometerKm: 18540,
+        expectedCityKmPerLiter: 17.8,
+        expectedHighwayKmPerLiter: 16.5,
+        tankCapacityLiters: 36,
+        assignedEmployeeId: 'seed-employee-camila',
+        assignedEmployeeName: 'Camila Neves',
+        acquisitionDaysAgo: 130,
+        acquisitionValue: 196000,
+        fipeCode: '002214-9',
+        fipeValue: 188900,
+        fipeReferenceMonth: 'maio de 2026',
+        lastMeasuredKmPerLiter: 16.88,
+        lastFuelLogAt: _daysAgo(now, 6),
+        notes: 'Veiculo administrativo usado em visitas a clientes e bancos.',
+        now: now,
+      ),
+      _vehicle(
+        id: _vehicleSprinter,
+        plate: 'EQP7D80',
+        brand: 'Mercedes-Benz',
+        model: 'Sprinter',
+        version: '415 CDI',
+        manufactureYear: 2018,
+        modelYear: 2019,
+        fuelType: 'diesel',
+        status: 'inactive',
+        odometerKm: 148200,
+        expectedCityKmPerLiter: 7.3,
+        expectedHighwayKmPerLiter: 9.5,
+        tankCapacityLiters: 75,
+        assignedEmployeeId: null,
+        assignedEmployeeName: '',
+        acquisitionDaysAgo: 1440,
+        acquisitionValue: 168000,
+        fipeCode: '021372-6',
+        fipeValue: 118500,
+        fipeReferenceMonth: 'maio de 2026',
+        lastMeasuredKmPerLiter: 6.9,
+        lastFuelLogAt: _daysAgo(now, 42),
+        notes:
+            'Van antiga aguardando decisao de venda ou substituicao por modelo mais economico.',
+        now: now,
+      ),
+    ];
+  }
+
+  Map<String, dynamic> _vehicle({
+    required String id,
+    required String plate,
+    required String brand,
+    required String model,
+    required String version,
+    required int manufactureYear,
+    required int modelYear,
+    required String fuelType,
+    required String status,
+    required double odometerKm,
+    required double expectedCityKmPerLiter,
+    required double expectedHighwayKmPerLiter,
+    required double tankCapacityLiters,
+    required String? assignedEmployeeId,
+    required String assignedEmployeeName,
+    required int acquisitionDaysAgo,
+    required double acquisitionValue,
+    required String fipeCode,
+    required double fipeValue,
+    required String fipeReferenceMonth,
+    required double? lastMeasuredKmPerLiter,
+    required DateTime? lastFuelLogAt,
+    required String notes,
+    required DateTime now,
+  }) {
+    final acquisitionDate = _daysAgo(now, acquisitionDaysAgo);
+    return {
+      'id': id,
+      'plate': plate,
+      'brand': brand,
+      'model': model,
+      'version': version,
+      'manufactureYear': manufactureYear,
+      'modelYear': modelYear,
+      'fuelType': fuelType,
+      'status': status,
+      'odometerKm': odometerKm,
+      'expectedCityKmPerLiter': expectedCityKmPerLiter,
+      'expectedHighwayKmPerLiter': expectedHighwayKmPerLiter,
+      'tankCapacityLiters': tankCapacityLiters,
+      'assignedEmployeeId': assignedEmployeeId,
+      'assignedEmployeeName': assignedEmployeeName,
+      'acquisitionDate': acquisitionDate,
+      'acquisitionValue': acquisitionValue,
+      'fipeCode': fipeCode,
+      'fipeValue': fipeValue,
+      'fipeReferenceMonth': fipeReferenceMonth,
+      'lastMeasuredKmPerLiter': lastMeasuredKmPerLiter,
+      'lastFuelLogAt': lastFuelLogAt,
+      'notes': notes,
+      'createdAt': acquisitionDate,
+      'updatedAt': now,
+    };
+  }
+
   List<Map<String, dynamic>> _projects(DateTime now) {
     return [
       _project(
@@ -1037,7 +1424,10 @@ class DatabaseSeeder {
         endDate: _daysFromNow(now, 210),
         budget: 1850000,
         currentCost: 846000,
-        location: 'Sao Paulo - SP',
+        location: 'Rua das Acacias, 1800 - Sao Paulo - SP',
+        latitude: -23.557920,
+        longitude: -46.648284,
+        geofenceSideMeters: 140,
         tags: ['Residencial', 'Obra ativa', 'Portal cliente'],
         teamSize: 18,
         imageUrl:
@@ -1062,7 +1452,10 @@ class DatabaseSeeder {
         endDate: _daysFromNow(now, 95),
         budget: 920000,
         currentCost: 282500,
-        location: 'Rio de Janeiro - RJ',
+        location: 'Av. Atlantica, 450 - Rio de Janeiro - RJ',
+        latitude: -22.965521,
+        longitude: -43.173956,
+        geofenceSideMeters: 95,
         tags: ['Hospitalar', 'Reforma', 'Prazo critico'],
         teamSize: 11,
         imageUrl:
@@ -1087,7 +1480,10 @@ class DatabaseSeeder {
         endDate: _daysFromNow(now, 300),
         budget: 2480000,
         currentCost: 192000,
-        location: 'Curitiba - PR',
+        location: 'BR-376, km 122 - Curitiba - PR',
+        latitude: -25.475517,
+        longitude: -49.240641,
+        geofenceSideMeters: 220,
         tags: ['Logistica', 'Contrato novo', 'Planejamento'],
         teamSize: 8,
         imageUrl:
@@ -1112,7 +1508,10 @@ class DatabaseSeeder {
         endDate: _daysAgo(now, 25),
         budget: 420000,
         currentCost: 398500,
-        location: 'Sao Paulo - SP',
+        location: 'Rua das Acacias, 1820 - Sao Paulo - SP',
+        latitude: -23.558421,
+        longitude: -46.649112,
+        geofenceSideMeters: 80,
         tags: ['Residencial', 'Concluido', 'Acabamento'],
         teamSize: 7,
         imageUrl:
@@ -1137,7 +1536,10 @@ class DatabaseSeeder {
         endDate: _daysFromNow(now, 72),
         budget: 680000,
         currentCost: 358000,
-        location: 'Sao Paulo - SP',
+        location: 'Av. Paulista, 1450 - Sao Paulo - SP',
+        latitude: -23.562915,
+        longitude: -46.655327,
+        geofenceSideMeters: 110,
         tags: ['Corporativo', 'Retrofit', 'Fachada'],
         teamSize: 9,
         imageUrl:
@@ -1162,7 +1564,10 @@ class DatabaseSeeder {
         endDate: _daysFromNow(now, 155),
         budget: 760000,
         currentCost: 84500,
-        location: 'Niteroi - RJ',
+        location: 'Rua Noronha Torrez, 85 - Niteroi - RJ',
+        latitude: -22.883298,
+        longitude: -43.103846,
+        geofenceSideMeters: 100,
         tags: ['Saude', 'Clinica', 'Planejamento'],
         teamSize: 5,
         imageUrl:
@@ -1187,7 +1592,10 @@ class DatabaseSeeder {
         endDate: _daysAgo(now, 18),
         budget: 1320000,
         currentCost: 1198000,
-        location: 'Campinas - SP',
+        location: 'Rod. Anhanguera, km 92 - Campinas - SP',
+        latitude: -22.905892,
+        longitude: -47.084113,
+        geofenceSideMeters: 240,
         tags: ['Logistica', 'Concluido', 'Estrutura metalica'],
         teamSize: 14,
         imageUrl:
@@ -1215,6 +1623,9 @@ class DatabaseSeeder {
     required double budget,
     required double currentCost,
     required String location,
+    required double latitude,
+    required double longitude,
+    required double geofenceSideMeters,
     required List<String> tags,
     required int teamSize,
     required String imageUrl,
@@ -1241,6 +1652,10 @@ class DatabaseSeeder {
       'budget': budget,
       'currentCost': currentCost,
       'location': location,
+      'latitude': latitude,
+      'longitude': longitude,
+      'geofenceSideMeters': geofenceSideMeters,
+      'geofence_side_meters': geofenceSideMeters,
       'tags': tags,
       'teamSize': teamSize,
       'imageUrl': imageUrl,
@@ -1260,6 +1675,10 @@ class DatabaseSeeder {
       'client_account_id': clientAccountId,
       'clientAccountName': clientAccountName,
       'client_account_name': clientAccountName,
+      'coordinatorId': 'seed-employee-mariana',
+      'coordinator_id': 'seed-employee-mariana',
+      'coordinatorName': 'Mariana Rocha',
+      'coordinator_name': 'Mariana Rocha',
       'estimatedProgress': estimatedProgress,
       'estimated_progress': estimatedProgress,
       'measuredAmount': measuredAmount,
@@ -1807,57 +2226,158 @@ class DatabaseSeeder {
     ];
   }
 
-  List<Map<String, dynamic>> _benefits(DateTime now) {
+  List<Map<String, dynamic>> _benefitCategories(DateTime now) {
     return [
-      _benefit(
-        'seed-benefit-vt',
-        'Vale Transporte',
-        'vt',
-        'Credito mensal para deslocamento.',
+      _benefitCategory(
+        'seed-benefit-category-mobility',
+        'Mobilidade',
+        'Transporte, deslocamento e apoio ao trabalho externo.',
         now,
       ),
-      _benefit(
-        'seed-benefit-vr',
-        'Vale Refeicao',
-        'vr',
-        'Beneficio diario para refeicao em campo.',
+      _benefitCategory(
+        'seed-benefit-category-food',
+        'Alimentacao',
+        'Beneficios diarios de refeicao e alimentacao.',
         now,
       ),
-      _benefit(
-        'seed-benefit-health',
-        'Plano de Saude',
-        'health',
-        'Plano empresarial com coparticipacao.',
+      _benefitCategory(
+        'seed-benefit-category-health',
+        'Saude',
+        'Planos medicos, odontologicos e cuidados assistenciais.',
         now,
       ),
-      _benefit(
-        'seed-benefit-dental',
-        'Plano Odontologico',
-        'dental',
-        'Cobertura odontologica basica.',
+      _benefitCategory(
+        'seed-benefit-category-insurance',
+        'Seguros',
+        'Coberturas obrigatorias e corporativas para equipes.',
         now,
       ),
-      _benefit(
-        'seed-benefit-life',
-        'Seguro de Vida',
-        'lifeInsurance',
-        'Seguro obrigatorio para equipes de campo.',
+      _benefitCategory(
+        'seed-benefit-category-reimbursement',
+        'Reembolsos',
+        'Reembolsos controlados por nota fiscal e limite aprovado.',
         now,
       ),
     ];
   }
 
-  Map<String, dynamic> _benefit(
+  Map<String, dynamic> _benefitCategory(
     String id,
     String name,
-    String type,
     String description,
     DateTime now,
   ) {
     return {
       'id': id,
       'name': name,
+      'description': description,
+      'isActive': true,
+      'createdAt': _daysAgo(now, 180),
+      'updatedAt': now,
+    };
+  }
+
+  List<Map<String, dynamic>> _benefits(DateTime now) {
+    return [
+      _benefit(
+        id: 'seed-benefit-vt',
+        name: 'Vale Transporte',
+        type: 'vt',
+        categoryId: 'seed-benefit-category-mobility',
+        categoryName: 'Mobilidade',
+        description: 'Credito por dia trabalhado para deslocamento.',
+        dailyValue: 10.91,
+        reimbursementLimit: 0,
+        valueMode: 'workedDay',
+        now: now,
+      ),
+      _benefit(
+        id: 'seed-benefit-vr',
+        name: 'Vale Refeicao',
+        type: 'vr',
+        categoryId: 'seed-benefit-category-food',
+        categoryName: 'Alimentacao',
+        description: 'Beneficio diario para refeicao em campo.',
+        dailyValue: 31.36,
+        reimbursementLimit: 0,
+        valueMode: 'workedDay',
+        now: now,
+      ),
+      _benefit(
+        id: 'seed-benefit-health',
+        name: 'Plano de Saude',
+        type: 'health',
+        categoryId: 'seed-benefit-category-health',
+        categoryName: 'Saude',
+        description: 'Plano empresarial proporcional aos dias trabalhados.',
+        dailyValue: 21.00,
+        reimbursementLimit: 0,
+        valueMode: 'workedDay',
+        now: now,
+      ),
+      _benefit(
+        id: 'seed-benefit-dental',
+        name: 'Plano Odontologico',
+        type: 'dental',
+        categoryId: 'seed-benefit-category-health',
+        categoryName: 'Saude',
+        description:
+            'Cobertura odontologica proporcional aos dias trabalhados.',
+        dailyValue: 2.50,
+        reimbursementLimit: 0,
+        valueMode: 'workedDay',
+        now: now,
+      ),
+      _benefit(
+        id: 'seed-benefit-life',
+        name: 'Seguro de Vida',
+        type: 'lifeInsurance',
+        categoryId: 'seed-benefit-category-insurance',
+        categoryName: 'Seguros',
+        description: 'Seguro obrigatorio calculado por dia trabalhado.',
+        dailyValue: 1.73,
+        reimbursementLimit: 0,
+        valueMode: 'workedDay',
+        now: now,
+      ),
+      _benefit(
+        id: 'seed-benefit-fuel-reimbursement',
+        name: 'Reembolso Combustivel',
+        type: 'other',
+        categoryId: 'seed-benefit-category-reimbursement',
+        categoryName: 'Reembolsos',
+        description:
+            'Limite mensal para funcionarios autorizados a lancar combustivel com NF.',
+        dailyValue: 0,
+        reimbursementLimit: 650,
+        valueMode: 'reimbursement',
+        now: now,
+      ),
+    ];
+  }
+
+  Map<String, dynamic> _benefit({
+    required String id,
+    required String name,
+    required String type,
+    required String categoryId,
+    required String categoryName,
+    required String description,
+    required double dailyValue,
+    required double reimbursementLimit,
+    required String valueMode,
+    required DateTime now,
+  }) {
+    return {
+      'id': id,
+      'name': name,
       'type': type,
+      'categoryId': categoryId,
+      'categoryName': categoryName,
+      'valueMode': valueMode,
+      'dailyValue': dailyValue,
+      'defaultValue': dailyValue,
+      'reimbursementLimit': reimbursementLimit,
       'description': description,
       'isActive': true,
       'createdAt': _daysAgo(now, 180),
@@ -1881,21 +2401,21 @@ class DatabaseSeeder {
           employeeId,
           'seed-benefit-vr',
           'Vale Refeicao',
-          690,
+          31.36,
           now,
         ),
         _employeeBenefit(
           employeeId,
           'seed-benefit-vt',
           'Vale Transporte',
-          240,
+          10.91,
           now,
         ),
         _employeeBenefit(
           employeeId,
           'seed-benefit-life',
           'Seguro de Vida',
-          38,
+          1.73,
           now,
         ),
       ]);
@@ -1905,28 +2425,49 @@ class DatabaseSeeder {
         'seed-employee-mariana',
         'seed-benefit-health',
         'Plano de Saude',
-        510,
+        23.18,
         now,
       ),
       _employeeBenefit(
         'seed-employee-carlos',
         'seed-benefit-health',
         'Plano de Saude',
-        430,
+        19.55,
         now,
       ),
       _employeeBenefit(
         'seed-employee-camila',
         'seed-benefit-health',
         'Plano de Saude',
-        430,
+        19.55,
         now,
       ),
       _employeeBenefit(
         'seed-employee-ana',
         'seed-benefit-dental',
         'Plano Odontologico',
-        55,
+        2.50,
+        now,
+      ),
+      _employeeBenefit(
+        'seed-employee-mariana',
+        'seed-benefit-fuel-reimbursement',
+        'Reembolso Combustivel',
+        650,
+        now,
+      ),
+      _employeeBenefit(
+        'seed-employee-ana',
+        'seed-benefit-fuel-reimbursement',
+        'Reembolso Combustivel',
+        450,
+        now,
+      ),
+      _employeeBenefit(
+        'seed-employee-carlos',
+        'seed-benefit-fuel-reimbursement',
+        'Reembolso Combustivel',
+        500,
         now,
       ),
     ]);
@@ -1937,7 +2478,7 @@ class DatabaseSeeder {
     String employeeId,
     String benefitId,
     String benefitName,
-    double monthlyValue,
+    double dailyValue,
     DateTime now,
   ) {
     return {
@@ -1945,14 +2486,15 @@ class DatabaseSeeder {
       'employeeId': employeeId,
       'benefitId': benefitId,
       'benefitName': benefitName,
-      'monthlyValue': monthlyValue,
+      'dailyValue': dailyValue,
+      'monthlyValue': dailyValue,
       'startDate': _daysAgo(now, 150),
       'endDate': null,
       'isActive': true,
       'history': [
         {
-          'previousValue': monthlyValue * 0.92,
-          'newValue': monthlyValue,
+          'previousValue': dailyValue * 0.92,
+          'newValue': dailyValue,
           'changedAt': _daysAgo(now, 45),
           'changedBy': _adminUser,
           'reason': 'Reajuste anual de beneficios',
@@ -2092,7 +2634,7 @@ class DatabaseSeeder {
         projectId: _projectLogprime,
         projectName: 'Galpao Logistico LogPrime',
         requisitionId: 'seed-req-logprime-mobilizacao',
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-logprime-gravel',
         deliveryAddress: 'BR-376, km 122 - Curitiba - PR',
         quantity: 80,
         totalValue: 12400,
@@ -2134,7 +2676,7 @@ class DatabaseSeeder {
         projectId: _projectAtlasCorporate,
         projectName: 'Retrofit Fachada Atlas Corporate',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-atlas-corporate-glass',
         deliveryAddress: 'Av. Paulista, 1450 - Sao Paulo - SP',
         quantity: 180,
         totalValue: 126000,
@@ -2155,7 +2697,7 @@ class DatabaseSeeder {
         projectId: _projectAtlasCorporate,
         projectName: 'Retrofit Fachada Atlas Corporate',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-atlas-corporate-waterproofing',
         deliveryAddress: 'Av. Paulista, 1450 - Sao Paulo - SP',
         quantity: 95,
         totalValue: 34200,
@@ -2176,7 +2718,7 @@ class DatabaseSeeder {
         projectId: _projectVistaClinic,
         projectName: 'Clinica Diagnostica Vista Norte',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-vista-clinic-led',
         deliveryAddress: 'Rua Noronha Torrez, 85 - Niteroi - RJ',
         quantity: 140,
         totalValue: 36400,
@@ -2197,7 +2739,7 @@ class DatabaseSeeder {
         projectId: _projectVistaClinic,
         projectName: 'Clinica Diagnostica Vista Norte',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-vista-clinic-hydraulic',
         deliveryAddress: 'Rua Noronha Torrez, 85 - Niteroi - RJ',
         quantity: 42,
         totalValue: 26800,
@@ -2218,7 +2760,7 @@ class DatabaseSeeder {
         projectId: _projectLogprimeCrossdock,
         projectName: 'Cross Docking LogPrime Campinas',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-logprime-crossdock-steel',
         deliveryAddress: 'Rod. Anhanguera, km 92 - Campinas - SP',
         quantity: 26,
         totalValue: 214500,
@@ -2239,7 +2781,7 @@ class DatabaseSeeder {
         projectId: _projectLogprimeCrossdock,
         projectName: 'Cross Docking LogPrime Campinas',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-logprime-crossdock-safety',
         deliveryAddress: 'Rod. Anhanguera, km 92 - Campinas - SP',
         quantity: 72,
         totalValue: 18600,
@@ -2260,7 +2802,7 @@ class DatabaseSeeder {
         projectId: _projectAtlas,
         projectName: 'Torre B - Residencial Atlas',
         requisitionId: null,
-        financialTransactionId: null,
+        financialTransactionId: 'seed-ft-atlas-drywall',
         deliveryAddress: 'Rua das Acacias, 1800 - Sao Paulo - SP',
         quantity: 120,
         totalValue: 28800,
@@ -2317,6 +2859,12 @@ class DatabaseSeeder {
     required String? approvedByName,
     required DateTime? approvedAt,
   }) {
+    final isConsolidated = status == 2 || status == 3;
+    final invoiceNumber =
+        isConsolidated
+            ? 'NF-${id.replaceAll('seed-purchase-', '').toUpperCase()}'
+            : '';
+
     return {
       'id': id,
       'itemId': itemId,
@@ -2333,12 +2881,48 @@ class DatabaseSeeder {
       'status': status,
       'purchaseDate': purchaseDate,
       'deliveryDate': deliveryDate,
+      'expectedDeliveryDate':
+          isConsolidated
+              ? deliveryDate ?? purchaseDate.add(const Duration(days: 7))
+              : null,
       'receivedBy': receivedBy,
+      'invoiceNumber': invoiceNumber,
+      'invoiceAccessKey':
+          isConsolidated
+              ? '3526050000000000000055001000${invoiceNumber.hashCode.abs()}'
+              : '',
+      'notes':
+          isConsolidated
+              ? 'Compra consolidada por suprimentos e vinculada ao financeiro.'
+              : 'Orcamento pendente de aprovacao setorial.',
+      'approvalSector': _purchaseApprovalSector(itemName, projectName),
+      'quotedBy': _buyerUser,
+      'quotedByName': 'Ana Lima',
+      'quotedAt': purchaseDate,
       'approvedBy': approvedBy,
       'approvedByName': approvedByName,
       'approvedAt': approvedAt,
       'rejectionReason': null,
+      'consolidatedBy': isConsolidated ? _buyerUser : null,
+      'consolidatedByName': isConsolidated ? 'Ana Lima' : null,
+      'consolidatedAt': isConsolidated ? purchaseDate : null,
     };
+  }
+
+  String _purchaseApprovalSector(String itemName, String projectName) {
+    final normalized = '${itemName.toLowerCase()} ${projectName.toLowerCase()}';
+    if (normalized.contains('cabo') ||
+        normalized.contains('led') ||
+        normalized.contains('ppr') ||
+        normalized.contains('hidraulic')) {
+      return 'Instalacoes';
+    }
+    if (normalized.contains('epi') ||
+        normalized.contains('brita') ||
+        normalized.contains('canteiro')) {
+      return 'Operacional';
+    }
+    return 'Tecnico';
   }
 
   List<Map<String, dynamic>> _inventory(DateTime now) {
@@ -3076,6 +3660,7 @@ class DatabaseSeeder {
       'projectName': projectName,
       'requesterName': requesterName,
       'requesterId': requesterId,
+      'requesterSector': _requesterSector(requesterId),
       'requestDate': requestDate,
       'status': status,
       'items': items,
@@ -3086,6 +3671,15 @@ class DatabaseSeeder {
       'rejectionReason': rejectionReason,
       'purchaseId': purchaseId,
       'createdAt': createdAt,
+    };
+  }
+
+  String _requesterSector(String requesterId) {
+    return switch (requesterId) {
+      'seed-employee-mariana' => 'Tecnico',
+      'seed-employee-carlos' => 'Operacional',
+      'seed-employee-ricardo' => 'Instalacoes',
+      _ => 'Geral',
     };
   }
 
@@ -3614,6 +4208,279 @@ class DatabaseSeeder {
         createdAt: _daysAgo(now, 12),
         notes: 'Pendencia administrativa destacada no painel financeiro.',
       ),
+      _transaction(
+        id: 'seed-ft-logprime-gravel',
+        description: 'Brita 1 - mobilizacao LogPrime',
+        amount: 12400,
+        type: 'expense',
+        status: 'pending',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysFromNow(now, 9),
+        paymentDate: null,
+        projectId: _projectLogprime,
+        supplierId: 'seed-supplier-locamaq',
+        referenceId: 'seed-purchase-logprime-locamaq',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 4),
+        notes: 'Conta a pagar criada na aprovacao da compra de brita.',
+      ),
+      _transaction(
+        id: 'seed-ft-atlas-corporate-glass',
+        description: 'Pele de vidro laminado - Atlas Corporate',
+        amount: 126000,
+        type: 'expense',
+        status: 'paid',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysAgo(now, 34),
+        paymentDate: _daysAgo(now, 32),
+        projectId: _projectAtlasCorporate,
+        supplierId: 'seed-supplier-prime-acabamentos',
+        referenceId: 'seed-purchase-atlas-corporate-glass',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 40),
+        notes: 'NF de fachada entregue e conciliada.',
+      ),
+      _transaction(
+        id: 'seed-ft-atlas-corporate-waterproofing',
+        description: 'Manta asfaltica - Atlas Corporate',
+        amount: 34200,
+        type: 'expense',
+        status: 'paid',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysAgo(now, 27),
+        paymentDate: _daysAgo(now, 24),
+        projectId: _projectAtlasCorporate,
+        supplierId: 'seed-supplier-construmax',
+        referenceId: 'seed-purchase-atlas-corporate-waterproofing',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 31),
+        notes: 'Impermeabilizacao vinculada ao retrofit de fachada.',
+      ),
+      _transaction(
+        id: 'seed-ft-vista-clinic-led',
+        description: 'Painel LED 36W - Clinica Vista Norte',
+        amount: 36400,
+        type: 'expense',
+        status: 'paid',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysAgo(now, 3),
+        paymentDate: _daysAgo(now, 2),
+        projectId: _projectVistaClinic,
+        supplierId: 'seed-supplier-eletrica-luz',
+        referenceId: 'seed-purchase-vista-clinic-led',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 8),
+        notes: 'Material eletrico entregue no planejamento da clinica.',
+      ),
+      _transaction(
+        id: 'seed-ft-vista-clinic-hydraulic',
+        description: 'Kit conexoes PPR - Clinica Vista Norte',
+        amount: 26800,
+        type: 'expense',
+        status: 'pending',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysFromNow(now, 11),
+        paymentDate: null,
+        projectId: _projectVistaClinic,
+        supplierId: 'seed-supplier-hidrasul',
+        referenceId: 'seed-purchase-vista-clinic-hydraulic',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 2),
+        notes: 'Compra aprovada, aguardando recebimento e pagamento.',
+      ),
+      _transaction(
+        id: 'seed-ft-logprime-crossdock-steel',
+        description: 'Perfil metalico W310 - Cross Docking',
+        amount: 214500,
+        type: 'expense',
+        status: 'paid',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysAgo(now, 148),
+        paymentDate: _daysAgo(now, 145),
+        projectId: _projectLogprimeCrossdock,
+        supplierId: 'seed-supplier-aco-forte',
+        referenceId: 'seed-purchase-logprime-crossdock-steel',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 156),
+        notes: 'Estrutura metalica principal do cross docking.',
+      ),
+      _transaction(
+        id: 'seed-ft-logprime-crossdock-safety',
+        description: 'Kit EPI canteiro - Cross Docking',
+        amount: 18600,
+        type: 'expense',
+        status: 'paid',
+        origin: 'purchase',
+        category: 'administrative',
+        dueDate: _daysAgo(now, 181),
+        paymentDate: _daysAgo(now, 179),
+        projectId: _projectLogprimeCrossdock,
+        supplierId: 'seed-supplier-locamaq',
+        referenceId: 'seed-purchase-logprime-crossdock-safety',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 185),
+        notes: 'EPI e sinalizacao da obra concluida.',
+      ),
+      _transaction(
+        id: 'seed-ft-atlas-drywall',
+        description: 'Chapa drywall RU - Torre B',
+        amount: 28800,
+        type: 'expense',
+        status: 'pending',
+        origin: 'purchase',
+        category: 'material',
+        dueDate: _daysFromNow(now, 5),
+        paymentDate: null,
+        projectId: _projectAtlas,
+        supplierId: 'seed-supplier-prime-acabamentos',
+        referenceId: 'seed-purchase-atlas-drywall',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 1),
+        notes: 'Compra aprovada e em rota de entrega.',
+      ),
+      _transaction(
+        id: 'seed-ft-office-utilities',
+        description: 'Conta de luz e internet do escritorio',
+        amount: 6420,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'administrative',
+        dueDate: _daysAgo(now, 5),
+        paymentDate: _daysAgo(now, 4),
+        projectId: null,
+        supplierId: 'seed-supplier-office-clean',
+        referenceId: null,
+        createdBy: _financeUser,
+        createdAt: _daysAgo(now, 7),
+        notes:
+            'Despesa operacional corporativa sem vinculo direto com orcamento de obra.',
+      ),
+      _transaction(
+        id: 'seed-ft-office-hygiene',
+        description: 'Material de higiene e copa do escritorio',
+        amount: 2180,
+        type: 'expense',
+        status: 'pending',
+        origin: 'manual',
+        category: 'administrative',
+        dueDate: _daysFromNow(now, 3),
+        paymentDate: null,
+        projectId: null,
+        supplierId: 'seed-supplier-office-clean',
+        referenceId: null,
+        createdBy: _financeUser,
+        createdAt: _daysAgo(now, 2),
+        notes: 'Gasto operacional recorrente separado de orcamento de obra.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-hilux-01',
+        description: 'Abastecimento RTA3F21 - Diesel S10',
+        amount: 364.42,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'equipment',
+        dueDate: _daysAgo(now, 19),
+        paymentDate: _daysAgo(now, 19),
+        projectId: _projectAtlas,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-hilux-01',
+        createdBy: _engineerUser,
+        createdAt: _daysAgo(now, 19),
+        notes: 'NF de combustivel lancada para acompanhamento de consumo.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-hilux-02',
+        description: 'Abastecimento RTA3F21 - Diesel S10',
+        amount: 342.54,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'equipment',
+        dueDate: _daysAgo(now, 4),
+        paymentDate: _daysAgo(now, 4),
+        projectId: _projectAtlas,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-hilux-02',
+        createdBy: _engineerUser,
+        createdAt: _daysAgo(now, 4),
+        notes: 'Segundo abastecimento para calculo de km/l real.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-fiorino-01',
+        description: 'Abastecimento GRA8N44 - Gasolina comum',
+        amount: 238.59,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'equipment',
+        dueDate: _daysAgo(now, 16),
+        paymentDate: _daysAgo(now, 16),
+        projectId: _projectAtlasCorporate,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-fiorino-01',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 16),
+        notes: 'Abastecimento de utilitario de suprimentos.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-fiorino-02',
+        description: 'Abastecimento GRA8N44 - Gasolina comum',
+        amount: 230.86,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'equipment',
+        dueDate: _daysAgo(now, 3),
+        paymentDate: _daysAgo(now, 3),
+        projectId: _projectAtlasCorporate,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-fiorino-02',
+        createdBy: _buyerUser,
+        createdAt: _daysAgo(now, 3),
+        notes: 'Consumo abaixo do esperado para gerar alerta de frota.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-amarok-01',
+        description: 'Abastecimento OBR2C19 - Diesel S10',
+        amount: 450.45,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'equipment',
+        dueDate: _daysAgo(now, 8),
+        paymentDate: _daysAgo(now, 8),
+        projectId: _projectLogprime,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-amarok-01',
+        createdBy: _adminUser,
+        createdAt: _daysAgo(now, 8),
+        notes: 'Abastecimento antes da manutencao preventiva.',
+      ),
+      _transaction(
+        id: 'seed-ft-fuel-corolla-cross-01',
+        description: 'Abastecimento ERP5H26 - Gasolina comum',
+        amount: 246.14,
+        type: 'expense',
+        status: 'paid',
+        origin: 'manual',
+        category: 'administrative',
+        dueDate: _daysAgo(now, 6),
+        paymentDate: _daysAgo(now, 6),
+        projectId: null,
+        supplierId: 'seed-supplier-posto-avenida',
+        referenceId: 'seed-fuel-corolla-cross-01',
+        createdBy: _financeUser,
+        createdAt: _daysAgo(now, 6),
+        notes: 'Uso administrativo em visitas a clientes e bancos.',
+      ),
     ];
   }
 
@@ -3849,6 +4716,139 @@ class DatabaseSeeder {
       'createdAt': createdAt,
       'updatedAt': null,
       'notes': notes,
+    };
+  }
+
+  List<Map<String, dynamic>> _vehicleFuelLogs(DateTime now) {
+    return [
+      _vehicleFuelLog(
+        id: 'seed-fuel-hilux-01',
+        vehicleId: _vehicleHilux,
+        vehiclePlate: 'RTA3F21',
+        employeeId: 'seed-employee-mariana',
+        employeeName: 'Mariana Rocha',
+        liters: 58.4,
+        totalAmount: 364.42,
+        odometerKm: 42300,
+        previousOdometerKm: 41710,
+        fuelingDate: _daysAgo(now, 19),
+        financialTransactionId: 'seed-ft-fuel-hilux-01',
+        invoiceNumber: 'NF-FROTA-10021',
+        notes: 'Visita tecnica Torre B e Casa Modelo Atlas.',
+      ),
+      _vehicleFuelLog(
+        id: 'seed-fuel-hilux-02',
+        vehicleId: _vehicleHilux,
+        vehiclePlate: 'RTA3F21',
+        employeeId: 'seed-employee-mariana',
+        employeeName: 'Mariana Rocha',
+        liters: 54.2,
+        totalAmount: 342.54,
+        odometerKm: 42860,
+        previousOdometerKm: 42300,
+        fuelingDate: _daysAgo(now, 4),
+        financialTransactionId: 'seed-ft-fuel-hilux-02',
+        invoiceNumber: 'NF-FROTA-10112',
+        notes: 'Rota Sao Paulo x Campinas para acompanhamento de obra.',
+      ),
+      _vehicleFuelLog(
+        id: 'seed-fuel-fiorino-01',
+        vehicleId: _vehicleFiorino,
+        vehiclePlate: 'GRA8N44',
+        employeeId: 'seed-employee-ana',
+        employeeName: 'Ana Lima',
+        liters: 40.1,
+        totalAmount: 238.59,
+        odometerKm: 35120,
+        previousOdometerKm: 34810,
+        fuelingDate: _daysAgo(now, 16),
+        financialTransactionId: 'seed-ft-fuel-fiorino-01',
+        invoiceNumber: 'NF-FROTA-10064',
+        notes: 'Entrega de materiais leves no retrofit Atlas Corporate.',
+      ),
+      _vehicleFuelLog(
+        id: 'seed-fuel-fiorino-02',
+        vehicleId: _vehicleFiorino,
+        vehiclePlate: 'GRA8N44',
+        employeeId: 'seed-employee-ana',
+        employeeName: 'Ana Lima',
+        liters: 38.8,
+        totalAmount: 230.86,
+        odometerKm: 35396,
+        previousOdometerKm: 35120,
+        fuelingDate: _daysAgo(now, 3),
+        financialTransactionId: 'seed-ft-fuel-fiorino-02',
+        invoiceNumber: 'NF-FROTA-10118',
+        notes: 'Consumo real abaixo da media esperada.',
+      ),
+      _vehicleFuelLog(
+        id: 'seed-fuel-amarok-01',
+        vehicleId: _vehicleAmarok,
+        vehiclePlate: 'OBR2C19',
+        employeeId: 'seed-employee-carlos',
+        employeeName: 'Carlos Nascimento',
+        liters: 71.5,
+        totalAmount: 450.45,
+        odometerKm: 90240,
+        previousOdometerKm: 89630,
+        fuelingDate: _daysAgo(now, 8),
+        financialTransactionId: 'seed-ft-fuel-amarok-01',
+        invoiceNumber: 'NF-FROTA-10099',
+        notes: 'Abastecimento antes da parada de manutencao preventiva.',
+      ),
+      _vehicleFuelLog(
+        id: 'seed-fuel-corolla-cross-01',
+        vehicleId: _vehicleCorollaCross,
+        vehiclePlate: 'ERP5H26',
+        employeeId: 'seed-employee-camila',
+        employeeName: 'Camila Neves',
+        liters: 39.7,
+        totalAmount: 246.14,
+        odometerKm: 18540,
+        previousOdometerKm: 17870,
+        fuelingDate: _daysAgo(now, 6),
+        financialTransactionId: 'seed-ft-fuel-corolla-cross-01',
+        invoiceNumber: 'NF-FROTA-10102',
+        notes: 'Uso administrativo em reunioes com clientes.',
+      ),
+    ];
+  }
+
+  Map<String, dynamic> _vehicleFuelLog({
+    required String id,
+    required String vehicleId,
+    required String vehiclePlate,
+    required String employeeId,
+    required String employeeName,
+    required double liters,
+    required double totalAmount,
+    required double odometerKm,
+    required double previousOdometerKm,
+    required DateTime fuelingDate,
+    required String financialTransactionId,
+    required String invoiceNumber,
+    required String notes,
+  }) {
+    final kmTraveled = odometerKm - previousOdometerKm;
+    final kmPerLiter = liters <= 0 ? null : kmTraveled / liters;
+    return {
+      'id': id,
+      'vehicleId': vehicleId,
+      'vehiclePlate': vehiclePlate,
+      'employeeId': employeeId,
+      'employeeName': employeeName,
+      'liters': liters,
+      'totalAmount': totalAmount,
+      'unitPrice': totalAmount / liters,
+      'odometerKm': odometerKm,
+      'previousOdometerKm': previousOdometerKm,
+      'kmTraveled': kmTraveled,
+      'kmPerLiter': kmPerLiter,
+      'fuelingDate': fuelingDate,
+      'financialTransactionId': financialTransactionId,
+      'invoiceNumber': invoiceNumber,
+      'notes': notes,
+      'createdAt': fuelingDate,
     };
   }
 

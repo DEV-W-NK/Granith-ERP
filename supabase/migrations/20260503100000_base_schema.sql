@@ -103,12 +103,23 @@ create table if not exists public.budget_types (
   color text
 );
 
+create table if not exists public.sectors (
+  id text primary key default gen_random_uuid()::text,
+  name text not null unique,
+  description text not null default '',
+  "isActive" boolean not null default true,
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now()
+);
+
+create index if not exists idx_sectors_active_name
+  on public.sectors ("isActive", name);
+
 create table if not exists public.job_roles (
   id text primary key default gen_random_uuid()::text,
   title text not null unique,
   sector text not null default '',
   description text not null default '',
-  "hourlyRate" numeric(14,2) not null default 0,
   requirements text[] not null default '{}',
   "isActive" boolean not null default true,
   "createdAt" timestamptz not null default now()
@@ -341,11 +352,22 @@ create table if not exists public.purchases (
   status integer not null default 1,
   "purchaseDate" timestamptz not null default now(),
   "deliveryDate" timestamptz,
+  "expectedDeliveryDate" timestamptz,
   "receivedBy" text,
+  "invoiceNumber" text not null default '',
+  "invoiceAccessKey" text not null default '',
+  notes text not null default '',
+  "approvalSector" text not null default 'Geral',
+  "quotedBy" text,
+  "quotedByName" text,
+  "quotedAt" timestamptz,
   "approvedBy" text,
   "approvedByName" text,
   "approvedAt" timestamptz,
   "rejectionReason" text,
+  "consolidatedBy" text,
+  "consolidatedByName" text,
+  "consolidatedAt" timestamptz,
   constraint purchases_status_check check (status between 0 and 4)
 );
 
@@ -353,6 +375,7 @@ create index if not exists idx_purchases_project_id on public.purchases ("projec
 create index if not exists idx_purchases_supplier_id on public.purchases ("supplierId");
 create index if not exists idx_purchases_status on public.purchases (status);
 create index if not exists idx_purchases_purchase_date on public.purchases ("purchaseDate" desc);
+create index if not exists idx_purchases_approval_sector_status on public.purchases ("approvalSector", status);
 
 create table if not exists public.inventory (
   id text primary key default gen_random_uuid()::text,
@@ -398,6 +421,7 @@ create table if not exists public.material_requisitions (
   "projectName" text not null default '',
   "requesterName" text not null default '',
   "requesterId" text,
+  "requesterSector" text not null default 'Geral',
   "requestDate" timestamptz not null default now(),
   status text not null default 'pending',
   items jsonb not null default '[]'::jsonb,
@@ -641,6 +665,11 @@ create index if not exists idx_talent_candidates_status
 drop trigger if exists trg_budget_types_updated_at on public.budget_types;
 create trigger trg_budget_types_updated_at
 before update on public.budget_types
+for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_sectors_updated_at on public.sectors;
+create trigger trg_sectors_updated_at
+before update on public.sectors
 for each row execute function public.set_updated_at();
 
 drop trigger if exists trg_items_updated_at on public.items;

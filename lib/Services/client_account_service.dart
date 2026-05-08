@@ -66,4 +66,51 @@ class ClientAccountService {
 
     return ClientAccount.fromMap(Map<String, dynamic>.from(response));
   }
+
+  Future<ClientAccount> updateClientPortalSession({
+    required String accountId,
+    required String authUserId,
+    ClientPortalAccessStatus? portalAccessStatus,
+    required DateTime portalLastAccessAt,
+  }) async {
+    if (accountId.trim().isEmpty) {
+      throw ArgumentError.value(accountId, 'accountId', 'must not be empty');
+    }
+
+    final payload = buildClientPortalSessionUpdatePayload(
+      authUserId: authUserId,
+      portalAccessStatus: portalAccessStatus,
+      portalLastAccessAt: portalLastAccessAt,
+      updatedAt: DateTime.now().toUtc(),
+    );
+
+    final response =
+        await AppSupabase.client
+            .from(_table)
+            .update(payload)
+            .eq('id', accountId)
+            .select(SupabaseSelects.clientAccount)
+            .single();
+
+    return ClientAccount.fromMap(Map<String, dynamic>.from(response));
+  }
+}
+
+Map<String, dynamic> buildClientPortalSessionUpdatePayload({
+  required String authUserId,
+  required ClientPortalAccessStatus? portalAccessStatus,
+  required DateTime portalLastAccessAt,
+  required DateTime updatedAt,
+}) {
+  return DbValue.normalizeMap({
+    if (portalAccessStatus != null) ...{
+      'portalAccessStatus': portalAccessStatus.value,
+      'portal_access_status': portalAccessStatus.value,
+    },
+    'portalAuthUserId': authUserId,
+    'portal_auth_user_id': authUserId,
+    'portalLastAccessAt': portalLastAccessAt,
+    'portal_last_access_at': portalLastAccessAt,
+    'updated_at': updatedAt,
+  });
 }

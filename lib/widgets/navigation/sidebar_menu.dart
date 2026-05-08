@@ -581,9 +581,11 @@ class SidebarMenu extends StatelessWidget {
         return 'Catalogo de Itens';
       case 12:
         return 'Compras';
-      case 14:
-        return 'Entradas e Saidas';
       case 16:
+        return 'Entradas e Saidas';
+      case 17:
+        return 'Compras a Pagar';
+      case 19:
         return 'Permissoes';
       default:
         return module.title;

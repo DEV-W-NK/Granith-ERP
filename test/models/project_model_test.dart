@@ -44,6 +44,9 @@ void main() {
         budget: 1000,
         currentCost: 250,
         location: 'Sao Paulo',
+        latitude: -23.561,
+        longitude: -46.655,
+        geofenceSideMeters: 150,
         tags: const ['reforma'],
         teamSize: 4,
         clientAccountId: 'client-7',
@@ -64,9 +67,15 @@ void main() {
       expect(map['coordinator_id'], 'coord-1');
       expect(map['coordinatorName'], 'Ana Coordenadora');
       expect(map['coordinator_name'], 'Ana Coordenadora');
+      expect(map['latitude'], -23.561);
+      expect(map['longitude'], -46.655);
+      expect(map['geofenceSideMeters'], 150);
+      expect(map['geofence_side_meters'], 150);
       expect(map['projectKey'], 'obra centro_cliente xpto');
       expect(restored.coordinatorId, 'coord-1');
       expect(restored.coordinatorName, 'Ana Coordenadora');
+      expect(restored.hasGeofence, isTrue);
+      expect(restored.geofenceCenterCoordinate, '-23.561000, -46.655000');
     });
 
     test('statistics consolida totais da lista', () {

@@ -14,7 +14,7 @@ extension RequisitionStatusExt on RequisitionStatus {
     RequisitionStatus.pending => 'Pendente',
     RequisitionStatus.approved => 'Aprovado',
     RequisitionStatus.rejected => 'Rejeitado',
-    RequisitionStatus.purchased => 'Comprado',
+    RequisitionStatus.purchased => 'Em compras',
     RequisitionStatus.delivered => 'Entregue',
   };
 
@@ -106,6 +106,7 @@ class MaterialRequisitionModel {
   final String projectName;
   final String requesterName;
   final String? requesterId;
+  final String requesterSector;
   final DateTime requestDate;
   final RequisitionStatus status;
   final List<RequisitionItem> items;
@@ -128,6 +129,7 @@ class MaterialRequisitionModel {
     required this.projectName,
     required this.requesterName,
     this.requesterId,
+    this.requesterSector = 'Geral',
     required this.requestDate,
     required this.status,
     required this.items,
@@ -157,6 +159,7 @@ class MaterialRequisitionModel {
     'projectName': projectName,
     'requesterName': requesterName,
     'requesterId': requesterId,
+    'requesterSector': requesterSector,
     'requestDate': DbValue.toPrimitive(requestDate),
     'status': status.name,
     'items': items.map((x) => x.toMap()).toList(),
@@ -184,6 +187,8 @@ class MaterialRequisitionModel {
       projectName: map['projectName'] ?? '',
       requesterName: map['requesterName'] ?? '',
       requesterId: map['requesterId'] as String?,
+      requesterSector:
+          (map['requesterSector'] ?? map['sector'] ?? 'Geral').toString(),
       requestDate: parse(map['requestDate']),
       status: RequisitionStatusExt.fromString(map['status'] as String?),
       items:
@@ -209,6 +214,7 @@ class MaterialRequisitionModel {
     String? projectName,
     String? requesterName,
     String? requesterId,
+    String? requesterSector,
     DateTime? requestDate,
     RequisitionStatus? status,
     List<RequisitionItem>? items,
@@ -225,6 +231,7 @@ class MaterialRequisitionModel {
     projectName: projectName ?? this.projectName,
     requesterName: requesterName ?? this.requesterName,
     requesterId: requesterId ?? this.requesterId,
+    requesterSector: requesterSector ?? this.requesterSector,
     requestDate: requestDate ?? this.requestDate,
     status: status ?? this.status,
     items: items ?? List.from(this.items),

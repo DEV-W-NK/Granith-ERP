@@ -774,6 +774,7 @@ declare
   policy_name text;
 begin
   foreach table_name in array array[
+    'sectors',
     'benefit_categories',
     'benefits',
     'employee_benefits',
@@ -806,6 +807,8 @@ begin
     'purchases',
     'inventory',
     'inventory_movements',
+    'vehicles',
+    'vehicle_fuel_logs',
     'material_requisitions',
     'daily_logs',
     'teams'

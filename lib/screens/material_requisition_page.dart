@@ -11,7 +11,9 @@ class MaterialRequisitionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create:
-          (_) => MaterialRequisitionViewModel(MaterialRequisitionController()),
+          (context) => MaterialRequisitionViewModel(
+            context.read<MaterialRequisitionController>(),
+          ),
       child: const MaterialRequisitionPageView(),
     );
   }

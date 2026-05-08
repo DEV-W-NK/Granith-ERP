@@ -324,7 +324,11 @@ class HrService {
     await AppSupabase.client
         .from(_employeeBenefitsTable)
         .update(
-          DbValue.normalizeMap({'monthlyValue': newValue, 'history': history}),
+          DbValue.normalizeMap({
+            'dailyValue': newValue,
+            'monthlyValue': newValue,
+            'history': history,
+          }),
         )
         .eq('id', empBenefitId);
   }
@@ -339,17 +343,31 @@ class HrService {
         .eq('id', empBenefitId);
   }
 
-  Future<double> getTotalBenefitCost(String employeeId) async {
+  Future<double> getDailyBenefitCost(String employeeId) async {
     final response = await AppSupabase.client
         .from(_employeeBenefitsTable)
-        .select('monthlyValue')
+        .select('dailyValue, monthlyValue')
         .eq('employeeId', employeeId)
         .eq('isActive', true);
 
     return (response as List).fold<double>(0, (total, row) {
       final data = Map<String, dynamic>.from(row as Map);
-      return total + (data['monthlyValue'] as num? ?? 0).toDouble();
+      final value = data['dailyValue'] ?? data['monthlyValue'];
+      return total + (value as num? ?? 0).toDouble();
     });
+  }
+
+  Future<double> getBenefitCostForWorkedDays(
+    String employeeId,
+    int workedDays,
+  ) async {
+    if (workedDays <= 0) return 0;
+    return getDailyBenefitCost(employeeId).then((daily) => daily * workedDays);
+  }
+
+  @Deprecated('Use getDailyBenefitCost or getBenefitCostForWorkedDays instead.')
+  Future<double> getTotalBenefitCost(String employeeId) {
+    return getDailyBenefitCost(employeeId);
   }
 
   EmployeeModel _employeeFromRow(Map<dynamic, dynamic> row) {

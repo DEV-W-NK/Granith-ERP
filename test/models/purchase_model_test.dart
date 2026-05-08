@@ -18,9 +18,14 @@ void main() {
         'status': PurchaseStatus.delivered.index,
         'purchaseDate': now.toIso8601String(),
         'deliveryDate': now.toIso8601String(),
+        'expectedDeliveryDate':
+            now.add(const Duration(days: 5)).toIso8601String(),
         'requisitionId': 'req-1',
         'financialTransactionId': 'tx-1',
         'receivedBy': 'user-2',
+        'invoiceNumber': 'NF-123',
+        'approvalSector': 'Engenharia',
+        'consolidatedByName': 'Compras Granith',
       }, 'purchase-1');
 
       expect(purchase.id, 'purchase-1');
@@ -29,6 +34,9 @@ void main() {
       expect(purchase.requisitionId, 'req-1');
       expect(purchase.financialTransactionId, 'tx-1');
       expect(purchase.receivedBy, 'user-2');
+      expect(purchase.invoiceNumber, 'NF-123');
+      expect(purchase.approvalSector, 'Engenharia');
+      expect(purchase.consolidatedByName, 'Compras Granith');
     });
 
     test('copyWith substitui campos sem perder restante do estado', () {
@@ -48,10 +56,12 @@ void main() {
       final updated = original.copyWith(
         status: PurchaseStatus.ordered,
         quantity: 50,
+        invoiceNumber: 'NF-456',
       );
 
       expect(updated.status, PurchaseStatus.ordered);
       expect(updated.quantity, 50);
+      expect(updated.invoiceNumber, 'NF-456');
       expect(updated.itemName, 'Tijolo');
       expect(updated.projectId, 'project-1');
     });

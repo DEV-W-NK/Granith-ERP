@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/constants/permission_constants.dart';
 import 'package:project_granith/controllers/auth_controller.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/models/user_model.dart';
@@ -21,7 +23,7 @@ Widget _buildHarness({
   required Widget child,
   required AuthController authController,
 }) {
-  return ChangeNotifierProvider<AuthController>.value(
+  return ChangeNotifierProvider<AuthViewModel>.value(
     value: authController,
     child: MaterialApp(
       home: Scaffold(body: SizedBox(width: 960, height: 320, child: child)),
@@ -29,7 +31,7 @@ Widget _buildHarness({
   );
 }
 
-Purchase _purchase(PurchaseStatus status) {
+Purchase _purchase(PurchaseStatus status, {String? financialTransactionId}) {
   return Purchase(
     id: 'purchase-1',
     itemId: 'item-1',
@@ -43,15 +45,27 @@ Purchase _purchase(PurchaseStatus status) {
     totalValue: 4200,
     status: status,
     purchaseDate: DateTime(2026, 5, 3),
-    financialTransactionId: status == PurchaseStatus.delivered ? 'ft-1' : null,
+    approvalSector: 'Engenharia',
+    financialTransactionId:
+        financialTransactionId ??
+        (status == PurchaseStatus.delivered ? 'ft-1' : null),
   );
 }
 
 void main() {
   group('PurchaseCard', () {
-    testWidgets('confirma pedido para compra pendente', (tester) async {
+    testWidgets('consolida compra aprovada e envia ao financeiro', (
+      tester,
+    ) async {
       final purchaseService = FakePurchaseService();
-      final authController = AuthController(bootstrapOnInit: false);
+      final authController = _TestAuthController(
+        const UserModel(
+          uid: 'buyer-1',
+          email: 'compras@granith.com',
+          displayName: 'Compras Granith',
+          permissions: [PermissionCodes.purchasesConsolidate],
+        ),
+      );
 
       await tester.pumpWidget(
         _buildHarness(
@@ -66,14 +80,31 @@ void main() {
       await tester.pump(const Duration(milliseconds: 250));
 
       expect(find.text('Cimento CP-II'), findsOneWidget);
-      expect(find.text('Confirmar pedido'), findsOneWidget);
+      expect(find.text('Consolidar compra'), findsOneWidget);
 
-      await tester.tap(find.text('Confirmar pedido'));
+      await tester.tap(find.text('Consolidar compra'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Numero da nota fiscal'),
+        'NF-123',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Observacoes da compra'),
+        'Entrega parcial autorizada',
+      );
+      await tester.tap(find.text('Enviar ao financeiro'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      expect(purchaseService.lastUpdatedStatusId, 'purchase-1');
-      expect(purchaseService.lastUpdatedStatus, PurchaseStatus.ordered);
+      expect(purchaseService.lastConsolidatedPurchase?.id, 'purchase-1');
+      expect(purchaseService.lastConsolidatedBy, 'buyer-1');
+      expect(purchaseService.lastConsolidatedByName, 'Compras Granith');
+      expect(purchaseService.lastInvoiceNumber, 'NF-123');
+      expect(
+        purchaseService.lastConsolidationNotes,
+        'Entrega parcial autorizada',
+      );
       authController.dispose();
     });
 
@@ -113,7 +144,7 @@ void main() {
       authController.dispose();
     });
 
-    testWidgets('aprova e recusa compra aguardando CEO', (tester) async {
+    testWidgets('aprova e recusa orcamento aguardando setor', (tester) async {
       final authController = _TestAuthController(
         const UserModel(
           uid: 'user-1',
@@ -136,10 +167,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      expect(find.text('Aprovar compra'), findsOneWidget);
+      expect(find.text('Aprovar orcamento'), findsOneWidget);
       expect(find.text('Recusar'), findsOneWidget);
 
-      await tester.tap(find.text('Aprovar compra'));
+      await tester.tap(find.text('Aprovar orcamento'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(find.text('Aprovar'));
@@ -163,7 +194,7 @@ void main() {
       authController.dispose();
     });
 
-    testWidgets('mostra despesa lancada quando compra ja foi entregue', (
+    testWidgets('mostra financeiro vinculado quando compra ja foi entregue', (
       tester,
     ) async {
       final authController = AuthController(bootstrapOnInit: false);
@@ -177,9 +208,34 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      expect(find.textContaining('Despesa'), findsOneWidget);
+      expect(find.text('Financeiro vinculado'), findsOneWidget);
 
       authController.dispose();
     });
+
+    testWidgets(
+      'mostra conta a pagar quando compra consolidada foi ao financeiro',
+      (tester) async {
+        final authController = AuthController(bootstrapOnInit: false);
+
+        await tester.pumpWidget(
+          _buildHarness(
+            authController: authController,
+            child: PurchaseCard(
+              purchase: _purchase(
+                PurchaseStatus.ordered,
+                financialTransactionId: 'ft-1',
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.text('Conta a pagar'), findsOneWidget);
+
+        authController.dispose();
+      },
+    );
   });
 }

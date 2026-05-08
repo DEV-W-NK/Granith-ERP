@@ -81,11 +81,13 @@ void main() {
         supplier: supplier,
         createdBy: 'buyer-1',
         itemPrices: const {'Cimento': 1500},
+        approvalSector: 'Engenharia',
       );
 
       expect(service.lastApproved, req);
       expect(service.lastRejected, req);
       expect(service.lastConvertPayload?['createdBy'], 'buyer-1');
+      expect(service.lastConvertPayload?['approvalSector'], 'Engenharia');
       expect(purchaseIds, ['purchase-1']);
 
       await service.disposeController();

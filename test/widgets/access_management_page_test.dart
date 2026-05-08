@@ -37,7 +37,7 @@ void main() {
             uid: 'user-1',
             email: 'gestor@granith.com',
             displayName: 'Gestor',
-            permissions: ['projects.read'],
+            permissions: ['projects.read', 'financeiro'],
             role: UserRole.admin,
           ),
         ],
@@ -67,23 +67,27 @@ void main() {
 
       expect(find.text('Permissoes e Clientes'), findsOneWidget);
       expect(find.text('gestor@granith.com'), findsOneWidget);
-      expect(find.text('Salvar permissoes e papel'), findsNothing);
+      expect(find.text('Salvar acesso do usuario'), findsNothing);
+      expect(find.text('Visualizar projetos'), findsOneWidget);
+      expect(find.text('Visualizar salarios no RH'), findsOneWidget);
+      expect(find.text('Financeiro'), findsOneWidget);
+      expect(find.text('projects.read'), findsNothing);
 
-      await tester.tap(find.text('projects.write'));
+      await tester.tap(find.text('Criar e editar projetos'));
       await tester.pumpAndSettle();
       expect(accessService.lastUpdatedUser, isNull);
-      expect(find.text('Salvar permissoes e papel'), findsOneWidget);
+      expect(find.text('Salvar acesso do usuario'), findsOneWidget);
 
-      await tester.tap(find.text('Salvar permissoes e papel'));
+      await tester.tap(find.text('Salvar acesso do usuario'));
       await tester.pumpAndSettle();
 
       expect(
         accessService.lastUpdatedUser?.permissions,
         contains('projects.write'),
       );
-      expect(find.text('Salvar permissoes e papel'), findsNothing);
+      expect(find.text('Salvar acesso do usuario'), findsNothing);
 
-      await tester.tap(find.text('Cadastro de Clientes'));
+      await tester.tap(find.text('Clientes do portal'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cliente Norte'), findsOneWidget);
@@ -119,7 +123,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Cadastro de Clientes'));
+      await tester.tap(find.text('Clientes do portal'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cadastrar cliente').first);
       await tester.pumpAndSettle();

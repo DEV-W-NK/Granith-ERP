@@ -38,10 +38,10 @@ class _BenefitsPageViewState extends State<BenefitsPageView>
     final width = MediaQuery.sizeOf(context).width;
     final pagePadding =
         width >= 1100
-            ? 28.0
+            ? 20.0
             : width >= 480
-            ? 16.0
-            : 12.0;
+            ? 14.0
+            : 10.0;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -50,10 +50,8 @@ class _BenefitsPageViewState extends State<BenefitsPageView>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _BenefitsHeader(),
-            const SizedBox(height: 20),
-            _BenefitsTabBar(tabController: _tabController),
-            const SizedBox(height: 16),
+            _BenefitsTopBar(tabController: _tabController),
+            SizedBox(height: width < 480 ? 10 : 12),
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -354,9 +352,9 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
                   children: [
                     _AssignmentsToolbar(
                       activeCount: activeAssignments.length,
-                      monthlyTotal: activeAssignments.fold<double>(
+                      dailyTotal: activeAssignments.fold<double>(
                         0,
-                        (sum, item) => sum + item.monthlyValue,
+                        (sum, item) => sum + item.dailyValue,
                       ),
                       onCreate:
                           employees.isEmpty || benefits.isEmpty
@@ -509,12 +507,12 @@ class _CatalogToolbar extends StatelessWidget {
 
 class _AssignmentsToolbar extends StatelessWidget {
   final int activeCount;
-  final double monthlyTotal;
+  final double dailyTotal;
   final VoidCallback? onCreate;
 
   const _AssignmentsToolbar({
     required this.activeCount,
-    required this.monthlyTotal,
+    required this.dailyTotal,
     required this.onCreate,
   });
 
@@ -535,8 +533,8 @@ class _AssignmentsToolbar extends StatelessWidget {
               color: AppColors.accentGreen,
             ),
             _StatPill(
-              label: 'Custo/limite',
-              value: currency.format(monthlyTotal),
+              label: 'Custo diario',
+              value: currency.format(dailyTotal),
               color: AppColors.accentGold,
             ),
           ],
@@ -635,7 +633,7 @@ class _BenefitCard extends StatelessWidget {
     final valueLabel =
         benefit.valueMode == BenefitValueMode.reimbursement
             ? 'Limite ${currency.format(benefit.reimbursementLimit)}'
-            : 'Padrao ${currency.format(benefit.defaultValue)}';
+            : 'Diaria ${currency.format(benefit.dailyValue)}';
 
     return _SurfaceTile(
       child: Column(
@@ -997,8 +995,8 @@ class _AssignmentTile extends StatelessWidget {
                     _StatusBadge(
                       label:
                           isReimbursement
-                              ? 'Limite ${currency.format(assignment.monthlyValue)}'
-                              : currency.format(assignment.monthlyValue),
+                              ? 'Limite ${currency.format(assignment.dailyValue)}'
+                              : 'Diaria ${currency.format(assignment.dailyValue)}',
                       color: AppColors.accentGold,
                     ),
                     if (isReimbursement)
@@ -1079,11 +1077,11 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _descriptionCtrl = TextEditingController();
-  final _defaultValueCtrl = TextEditingController();
+  final _dailyValueCtrl = TextEditingController();
   final _reimbursementLimitCtrl = TextEditingController();
   BenefitType _type = BenefitType.vr;
   String? _categoryId;
-  BenefitValueMode _valueMode = BenefitValueMode.fixedMonthly;
+  BenefitValueMode _valueMode = BenefitValueMode.workedDay;
   bool _isActive = true;
   bool _saving = false;
 
@@ -1096,7 +1094,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
     if (benefit != null) {
       _nameCtrl.text = benefit.name;
       _descriptionCtrl.text = benefit.description;
-      _defaultValueCtrl.text = benefit.defaultValue.toStringAsFixed(2);
+      _dailyValueCtrl.text = benefit.dailyValue.toStringAsFixed(2);
       _reimbursementLimitCtrl.text = benefit.reimbursementLimit.toStringAsFixed(
         2,
       );
@@ -1105,7 +1103,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
       _valueMode = benefit.valueMode;
       _isActive = benefit.isActive;
     } else {
-      _defaultValueCtrl.text = '0.00';
+      _dailyValueCtrl.text = '0.00';
       _reimbursementLimitCtrl.text = '0.00';
     }
   }
@@ -1114,7 +1112,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
   void dispose() {
     _nameCtrl.dispose();
     _descriptionCtrl.dispose();
-    _defaultValueCtrl.dispose();
+    _dailyValueCtrl.dispose();
     _reimbursementLimitCtrl.dispose();
     super.dispose();
   }
@@ -1197,7 +1195,10 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
                     ),
                     dropdownColor: AppColors.surfaceDark,
                     items:
-                        BenefitValueMode.values
+                        const [
+                              BenefitValueMode.workedDay,
+                              BenefitValueMode.reimbursement,
+                            ]
                             .map(
                               (mode) => DropdownMenuItem(
                                 value: mode,
@@ -1208,14 +1209,14 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
                     onChanged: (value) => setState(() => _valueMode = value!),
                   ),
                   const SizedBox(height: 14),
-                  if (_valueMode == BenefitValueMode.fixedMonthly)
+                  if (_valueMode == BenefitValueMode.workedDay)
                     TextFormField(
-                      controller: _defaultValueCtrl,
+                      controller: _dailyValueCtrl,
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
                       decoration: const InputDecoration(
-                        labelText: 'Valor mensal padrao',
+                        labelText: 'Valor por dia trabalhado padrao',
                         prefixText: 'R\$ ',
                       ),
                       validator: _validateMoney,
@@ -1227,7 +1228,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
                         decimal: true,
                       ),
                       decoration: const InputDecoration(
-                        labelText: 'Limite de reembolso mensal',
+                        labelText: 'Limite de reembolso',
                         prefixText: 'R\$ ',
                       ),
                       validator: _validateMoney,
@@ -1287,9 +1288,9 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
     final now = DateTime.now();
     final existing = widget.benefit;
     final category = _selectedCategory();
-    final defaultValue =
-        _valueMode == BenefitValueMode.fixedMonthly
-            ? _parseMoney(_defaultValueCtrl.text) ?? 0
+    final dailyValue =
+        _valueMode == BenefitValueMode.workedDay
+            ? _parseMoney(_dailyValueCtrl.text) ?? 0
             : 0.0;
     final reimbursementLimit =
         _valueMode == BenefitValueMode.reimbursement
@@ -1304,7 +1305,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
               categoryId: category?.id,
               categoryName: category?.name ?? '',
               valueMode: _valueMode,
-              defaultValue: defaultValue,
+              dailyValue: dailyValue,
               reimbursementLimit: reimbursementLimit,
               description: _descriptionCtrl.text.trim(),
               isActive: _isActive,
@@ -1317,7 +1318,7 @@ class _BenefitFormDialogState extends State<_BenefitFormDialog> {
               categoryName: category?.name,
               clearCategory: category == null,
               valueMode: _valueMode,
-              defaultValue: defaultValue,
+              dailyValue: dailyValue,
               reimbursementLimit: reimbursementLimit,
               description: _descriptionCtrl.text.trim(),
               isActive: _isActive,
@@ -1542,7 +1543,7 @@ class _AssignmentFormDialogState extends State<_AssignmentFormDialog> {
     if (assignment != null) {
       _employeeId = assignment.employeeId;
       _benefitId = assignment.benefitId;
-      _valueCtrl.text = assignment.monthlyValue.toStringAsFixed(2);
+      _valueCtrl.text = assignment.dailyValue.toStringAsFixed(2);
       _startDate = assignment.startDate;
       _isActive = assignment.isActive;
     }
@@ -1569,8 +1570,8 @@ class _AssignmentFormDialogState extends State<_AssignmentFormDialog> {
     final selectedBenefit = _selectedBenefit();
     final valueLabel =
         selectedBenefit?.valueMode == BenefitValueMode.reimbursement
-            ? 'Limite de reembolso mensal'
-            : 'Valor mensal';
+            ? 'Limite de reembolso'
+            : 'Valor por dia trabalhado';
     final dialogWidth =
         (MediaQuery.sizeOf(context).width - 48).clamp(280.0, 520.0).toDouble();
     final dialogMaxHeight = MediaQuery.sizeOf(context).height * 0.72;
@@ -1735,7 +1736,7 @@ class _AssignmentFormDialogState extends State<_AssignmentFormDialog> {
               employeeId: _employeeId!,
               benefitId: _benefitId!,
               benefitName: benefit?.name ?? '',
-              monthlyValue: value,
+              dailyValue: value,
               startDate: _startDate,
               isActive: _isActive,
               endDate: endDate,
@@ -1744,7 +1745,7 @@ class _AssignmentFormDialogState extends State<_AssignmentFormDialog> {
               employeeId: _employeeId,
               benefitId: _benefitId,
               benefitName: benefit?.name,
-              monthlyValue: value,
+              dailyValue: value,
               startDate: _startDate,
               isActive: _isActive,
               endDate: endDate,
@@ -1827,8 +1828,10 @@ class _DatePickerTile extends StatelessWidget {
   }
 }
 
-class _BenefitsHeader extends StatelessWidget {
-  const _BenefitsHeader();
+class _BenefitsTopBar extends StatelessWidget {
+  final TabController tabController;
+
+  const _BenefitsTopBar({required this.tabController});
 
   @override
   Widget build(BuildContext context) {
@@ -1841,12 +1844,26 @@ class _BenefitsHeader extends StatelessWidget {
             const Expanded(child: _HeaderTitle()),
           ],
         );
+        final tabs = _BenefitsTabBar(tabController: tabController);
 
-        if (constraints.maxWidth < ResponsiveLayout.compact) {
-          return title;
+        if (constraints.maxWidth < 640) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              title,
+              const SizedBox(height: 10),
+              SizedBox(width: double.infinity, child: tabs),
+            ],
+          );
         }
 
-        return Row(children: [Expanded(child: title)]);
+        return Row(
+          children: [
+            Expanded(child: title),
+            const SizedBox(width: 16),
+            SizedBox(width: 390, child: tabs),
+          ],
+        );
       },
     );
   }
@@ -1861,19 +1878,19 @@ class _BenefitsTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = constraints.maxWidth < 430;
+        final iconOnly = constraints.maxWidth < 330;
 
         return Container(
+          height: 40,
           decoration: BoxDecoration(
             color: AppColors.secondaryDark,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.borderColor),
           ),
-          padding: const EdgeInsets.all(4),
+          padding: const EdgeInsets.all(3),
           child: TabBar(
             controller: tabController,
-            isScrollable: compact,
-            tabAlignment: compact ? TabAlignment.start : null,
+            isScrollable: false,
             indicator: BoxDecoration(
               color: AppColors.accentGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(7),
@@ -1885,25 +1902,69 @@ class _BenefitsTabBar extends StatelessWidget {
             dividerColor: Colors.transparent,
             labelColor: AppColors.accentGold,
             unselectedLabelColor: AppColors.textMuted,
-            labelStyle: TextStyle(
-              fontSize: compact ? 12 : 13,
+            labelPadding: EdgeInsets.zero,
+            labelStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
-            tabs: const [
-              Tab(
-                icon: Icon(Icons.card_giftcard_rounded, size: 16),
-                text: 'Catalogo',
+            tabs: [
+              _BenefitNavTab(
+                icon: Icons.card_giftcard_rounded,
+                label: 'Catalogo',
+                iconOnly: iconOnly,
               ),
-              Tab(
-                icon: Icon(Icons.category_rounded, size: 16),
-                text: 'Categorias',
+              _BenefitNavTab(
+                icon: Icons.category_rounded,
+                label: 'Categorias',
+                iconOnly: iconOnly,
               ),
-              Tab(icon: Icon(Icons.link_rounded, size: 16), text: 'Vinculos'),
+              _BenefitNavTab(
+                icon: Icons.link_rounded,
+                label: 'Vinculos',
+                iconOnly: iconOnly,
+              ),
             ],
           ),
         );
       },
     );
+  }
+}
+
+class _BenefitNavTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool iconOnly;
+
+  const _BenefitNavTab({
+    required this.icon,
+    required this.label,
+    required this.iconOnly,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Tab(
+      height: 34,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 15),
+          if (!iconOnly) ...[
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return iconOnly ? Tooltip(message: label, child: content) : content;
   }
 }
 
@@ -2214,8 +2275,9 @@ String _benefitTypeLabel(BenefitType type) => switch (type) {
 };
 
 String _benefitValueModeLabel(BenefitValueMode mode) => switch (mode) {
-  BenefitValueMode.fixedMonthly => 'Valor mensal fixo',
+  BenefitValueMode.workedDay => 'Por dia trabalhado',
   BenefitValueMode.reimbursement => 'Reembolso',
+  BenefitValueMode.fixedMonthly => 'Por dia trabalhado',
 };
 
 double? _parseMoney(String value) {

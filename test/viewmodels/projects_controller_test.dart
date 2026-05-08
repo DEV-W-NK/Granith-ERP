@@ -54,6 +54,11 @@ void main() {
       );
     });
 
+    tearDown(() async {
+      controller.dispose();
+      await service.dispose();
+    });
+
     test('loadProjects carrega e ordena projetos por data de inicio', () async {
       await controller.loadProjects();
 
@@ -61,6 +66,34 @@ void main() {
       expect(controller.filteredProjects.first.id, 'p-1');
       expect(controller.filteredProjects.last.id, 'p-2');
       expect(controller.hasError, isFalse);
+    });
+
+    test('init assina o stream e atualiza quando o service emite', () async {
+      controller.init();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.projects, hasLength(2));
+
+      service.emitProjects([
+        Project(
+          id: 'p-3',
+          name: 'Hospital Norte',
+          client: 'Cliente Prata',
+          description: 'Nova obra hospitalar',
+          status: ProjectStatus.inProgress,
+          startDate: DateTime(2026, 5, 8),
+          budget: 350000,
+          currentCost: 25000,
+          location: 'Jundiai',
+          tags: const ['saude'],
+          teamSize: 12,
+        ),
+      ]);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.projects, hasLength(1));
+      expect(controller.filteredProjects.single.id, 'p-3');
+      expect(controller.isLoading, isFalse);
     });
 
     test('updateSearchQuery filtra por texto apos debounce', () async {

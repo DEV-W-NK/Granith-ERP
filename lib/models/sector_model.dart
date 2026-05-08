@@ -1,0 +1,51 @@
+import 'package:project_granith/core/data/db_value.dart';
+
+class SectorModel {
+  final String id;
+  final String name;
+  final String description;
+  final bool isActive;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+
+  SectorModel({
+    required this.id,
+    required this.name,
+    this.description = '',
+    this.isActive = true,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'name': name,
+    'description': description,
+    'isActive': isActive,
+    'createdAt': DbValue.toPrimitive(createdAt),
+    'updatedAt': DbValue.toPrimitive(updatedAt),
+  };
+
+  factory SectorModel.fromMap(Map<String, dynamic> map, String docId) =>
+      SectorModel(
+        id: docId,
+        name: map['name'] ?? '',
+        description: map['description'] ?? '',
+        isActive: map['isActive'] ?? true,
+        createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+        updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
+      );
+
+  SectorModel copyWith({
+    String? name,
+    String? description,
+    bool? isActive,
+    DateTime? updatedAt,
+  }) => SectorModel(
+    id: id,
+    name: name ?? this.name,
+    description: description ?? this.description,
+    isActive: isActive ?? this.isActive,
+    createdAt: createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+}

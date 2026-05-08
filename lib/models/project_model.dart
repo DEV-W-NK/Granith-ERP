@@ -49,6 +49,9 @@ class Project {
   final double budget;
   final double currentCost;
   final String location;
+  final double? latitude;
+  final double? longitude;
+  final double geofenceSideMeters;
   final List<String> tags;
   final int teamSize;
   final String? imageUrl;
@@ -72,6 +75,9 @@ class Project {
     required this.budget,
     required this.currentCost,
     required this.location,
+    this.latitude,
+    this.longitude,
+    this.geofenceSideMeters = 120,
     required this.tags,
     required this.teamSize,
     this.imageUrl,
@@ -104,6 +110,18 @@ class Project {
   String get formattedProgress => '${progressPercentage.toStringAsFixed(1)}%';
   String get formattedMeasuredAmount =>
       'R\$ ${measuredAmount.toStringAsFixed(2)}';
+  bool get hasGeofence =>
+      latitude != null &&
+      longitude != null &&
+      latitude! >= -90 &&
+      latitude! <= 90 &&
+      longitude! >= -180 &&
+      longitude! <= 180 &&
+      geofenceSideMeters > 0;
+  String get geofenceCenterCoordinate =>
+      hasGeofence
+          ? '${latitude!.toStringAsFixed(6)}, ${longitude!.toStringAsFixed(6)}'
+          : '';
   double get remainingBudget =>
       (budget - currentCost).clamp(0, double.infinity);
   String get formattedRemainingBudget =>
@@ -134,7 +152,7 @@ class Project {
       '${name.trim().toLowerCase()}_${client.trim().toLowerCase()}';
 
   String get contentHash =>
-      '$name$client$description${status.name}$budget$location${tags.join(',')}$teamSize$clientAccountId$coordinatorId'
+      '$name$client$description${status.name}$budget$location$latitude$longitude$geofenceSideMeters${tags.join(',')}$teamSize$clientAccountId$coordinatorId'
           .hashCode
           .toString();
 
@@ -143,9 +161,24 @@ class Project {
 
     if (name.trim().isEmpty) errors.add('Nome do projeto e obrigatorio');
     if (client.trim().isEmpty) errors.add('Cliente e obrigatorio');
+    if (location.trim().isEmpty) {
+      errors.add('Localizacao da obra e obrigatoria');
+    }
     if (budget < 0) errors.add('Orcamento nao pode ser negativo');
     if (currentCost < 0) errors.add('Custo atual nao pode ser negativo');
     if (teamSize < 0) errors.add('Tamanho da equipe nao pode ser negativo');
+    if ((latitude == null) != (longitude == null)) {
+      errors.add('Latitude e longitude devem ser informadas juntas');
+    }
+    if (latitude != null && (latitude! < -90 || latitude! > 90)) {
+      errors.add('Latitude da obra invalida');
+    }
+    if (longitude != null && (longitude! < -180 || longitude! > 180)) {
+      errors.add('Longitude da obra invalida');
+    }
+    if (geofenceSideMeters <= 0) {
+      errors.add('Tamanho da cerca deve ser maior que zero');
+    }
     if (endDate != null && endDate!.isBefore(startDate)) {
       errors.add('Data de termino nao pode ser anterior a data de inicio');
     }
@@ -166,6 +199,9 @@ class Project {
     double? budget,
     double? currentCost,
     String? location,
+    double? latitude,
+    double? longitude,
+    double? geofenceSideMeters,
     List<String>? tags,
     int? teamSize,
     String? imageUrl,
@@ -189,6 +225,9 @@ class Project {
       budget: budget ?? this.budget,
       currentCost: currentCost ?? this.currentCost,
       location: location ?? this.location,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      geofenceSideMeters: geofenceSideMeters ?? this.geofenceSideMeters,
       tags: tags ?? List<String>.from(this.tags),
       teamSize: teamSize ?? this.teamSize,
       imageUrl: imageUrl ?? this.imageUrl,
@@ -213,6 +252,7 @@ class Project {
       budget: 0,
       currentCost: 0,
       location: '',
+      geofenceSideMeters: 120,
       tags: const [],
       teamSize: 0,
     );
@@ -236,6 +276,25 @@ class Project {
       budget: (data['budget'] ?? 0).toDouble(),
       currentCost: (data['currentCost'] ?? 0).toDouble(),
       location: (data['location'] ?? '').toString(),
+      latitude: _toNullableDouble(
+        data['latitude'] ??
+            data['projectLatitude'] ??
+            data['project_latitude'] ??
+            data['geofenceLatitude'] ??
+            data['geofence_latitude'],
+      ),
+      longitude: _toNullableDouble(
+        data['longitude'] ??
+            data['projectLongitude'] ??
+            data['project_longitude'] ??
+            data['geofenceLongitude'] ??
+            data['geofence_longitude'],
+      ),
+      geofenceSideMeters:
+          _toNullableDouble(
+            data['geofenceSideMeters'] ?? data['geofence_side_meters'],
+          ) ??
+          120,
       tags: data['tags'] != null ? List<String>.from(data['tags']) : <String>[],
       teamSize: (data['teamSize'] ?? 0) as int,
       imageUrl:
@@ -284,6 +343,10 @@ class Project {
       'budget': budget,
       'currentCost': currentCost,
       'location': location.trim(),
+      'latitude': latitude,
+      'longitude': longitude,
+      'geofenceSideMeters': geofenceSideMeters,
+      'geofence_side_meters': geofenceSideMeters,
       'tags': tags.map((tag) => tag.trim()).toList(),
       'teamSize': teamSize,
       'imageUrl': imageUrl,
@@ -342,6 +405,9 @@ class Project {
         other.budget == budget &&
         other.currentCost == currentCost &&
         other.location == location &&
+        other.latitude == latitude &&
+        other.longitude == longitude &&
+        other.geofenceSideMeters == geofenceSideMeters &&
         other.teamSize == teamSize &&
         other.imageUrl == imageUrl &&
         other.clientAccountId == clientAccountId &&
@@ -355,7 +421,7 @@ class Project {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     name,
     client,
@@ -366,6 +432,9 @@ class Project {
     budget,
     currentCost,
     location,
+    latitude,
+    longitude,
+    geofenceSideMeters,
     teamSize,
     imageUrl,
     clientAccountId,
@@ -376,7 +445,7 @@ class Project {
     measuredAmount,
     measurementCount,
     lastMeasurementAt,
-  );
+  ]);
 
   @override
   String toString() =>
@@ -422,6 +491,13 @@ extension ProjectListExtension on List<Project> {
       'overBudgetCount': overBudget.length,
     };
   }
+}
+
+double? _toNullableDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value.replaceAll(',', '.'));
+  return null;
 }
 
 class ProjectModel {

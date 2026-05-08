@@ -13,6 +13,7 @@ class MaterialRequisitionController extends ChangeNotifier {
   List<MaterialRequisitionModel> _requisitions = [];
   bool _isLoading = false;
   String? _error;
+  bool _initialized = false;
   StreamSubscription<List<MaterialRequisitionModel>>? _sub;
 
   List<MaterialRequisitionModel> get requisitions => _requisitions;
@@ -37,6 +38,9 @@ class MaterialRequisitionController extends ChangeNotifier {
   int get pendingCount => pending.length;
 
   void init() {
+    if (_initialized) return;
+    _initialized = true;
+
     _setLoading(true);
     _sub?.cancel();
     _sub = _service.getRequisitions().listen(
@@ -104,6 +108,7 @@ class MaterialRequisitionController extends ChangeNotifier {
     required Supplier supplier,
     required String createdBy,
     required Map<String, double> itemPrices,
+    String? approvalSector,
   }) async {
     try {
       return await _service.convertToPurchase(
@@ -111,6 +116,7 @@ class MaterialRequisitionController extends ChangeNotifier {
         supplier: supplier,
         createdBy: createdBy,
         itemPrices: itemPrices,
+        approvalSector: approvalSector,
       );
     } catch (e) {
       _error = e.toString();

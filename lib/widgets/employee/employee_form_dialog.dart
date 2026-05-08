@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project_granith/controllers/team_controller.dart';
 import 'package:project_granith/models/employee_model.dart';
+import 'package:project_granith/models/job_role_model.dart';
+import 'package:project_granith/models/sector_model.dart';
+import 'package:project_granith/services/job_role_service.dart';
+import 'package:project_granith/services/sector_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
@@ -9,8 +13,18 @@ import 'package:provider/provider.dart';
 class EmployeeFormDialog extends StatefulWidget {
   /// Passar um [employee] existente coloca o dialog em modo de edição.
   final EmployeeModel? employee;
+  final bool canViewSalary;
+  final JobRoleService jobRoleService;
+  final SectorService sectorService;
 
-  const EmployeeFormDialog({super.key, this.employee});
+  EmployeeFormDialog({
+    super.key,
+    this.employee,
+    this.canViewSalary = true,
+    JobRoleService? jobRoleService,
+    SectorService? sectorService,
+  }) : jobRoleService = jobRoleService ?? JobRoleService(),
+       sectorService = sectorService ?? SectorService();
 
   @override
   State<EmployeeFormDialog> createState() => _EmployeeFormDialogState();
@@ -27,11 +41,14 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   final _cpfCtrl = TextEditingController();
   final _ctpsCtrl = TextEditingController();
   final _jobTitleCtrl = TextEditingController();
-  final _sectorCtrl = TextEditingController();
   final _salaryCtrl = TextEditingController();
   final _educationCtrl = TextEditingController();
   final _coursesCtrl = TextEditingController();
 
+  late final Stream<List<JobRoleModel>> _jobRolesStream;
+  late final Stream<List<SectorModel>> _sectorsStream;
+  String? _selectedJobRoleId;
+  String? _selectedSector;
   EmployeeRole _role = EmployeeRole.funcionario;
   EmployeeStatus _status = EmployeeStatus.ativo;
   DateTime _admissionDate = DateTime.now();
@@ -41,6 +58,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   @override
   void initState() {
     super.initState();
+    _jobRolesStream = widget.jobRoleService.getJobRoles();
+    _sectorsStream = widget.sectorService.getSectors();
     final e = widget.employee;
     if (e != null) {
       _nameCtrl.text = e.name;
@@ -49,8 +68,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
       _cpfCtrl.text = e.cpf;
       _ctpsCtrl.text = e.ctps;
       _jobTitleCtrl.text = e.jobTitle;
-      _sectorCtrl.text = e.sector;
-      _salaryCtrl.text = e.baseSalary.toStringAsFixed(2);
+      _selectedJobRoleId = e.jobRoleId;
+      _selectedSector = e.sector;
+      if (widget.canViewSalary) {
+        _salaryCtrl.text = e.baseSalary.toStringAsFixed(2);
+      }
       _educationCtrl.text = e.educationLevel;
       _coursesCtrl.text = e.courses;
       _role = e.role;
@@ -67,7 +89,6 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     _cpfCtrl.dispose();
     _ctpsCtrl.dispose();
     _jobTitleCtrl.dispose();
-    _sectorCtrl.dispose();
     _salaryCtrl.dispose();
     _educationCtrl.dispose();
     _coursesCtrl.dispose();
@@ -78,11 +99,31 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedJobRoleId == null || _jobTitleCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Selecione um cargo cadastrado.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
+    if (_selectedSector == null || _selectedSector!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Selecione um setor cadastrado.'),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      return;
+    }
     setState(() => _saving = true);
 
     final now = DateTime.now();
     final baseSalary =
-        double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0;
+        widget.canViewSalary
+            ? double.tryParse(_salaryCtrl.text.replaceAll(',', '.')) ?? 0.0
+            : widget.employee?.baseSalary ?? 0.0;
     final existing = widget.employee;
     final employee =
         existing == null
@@ -94,7 +135,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
               cpf: _cpfCtrl.text.trim(),
               ctps: _ctpsCtrl.text.trim(),
               jobTitle: _jobTitleCtrl.text.trim(),
-              sector: _sectorCtrl.text.trim(),
+              jobRoleId: _selectedJobRoleId,
+              sector: _selectedSector!.trim(),
               baseSalary: baseSalary,
               role: _role,
               admissionDate: _admissionDate,
@@ -111,7 +153,8 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
               cpf: _cpfCtrl.text.trim(),
               ctps: _ctpsCtrl.text.trim(),
               jobTitle: _jobTitleCtrl.text.trim(),
-              sector: _sectorCtrl.text.trim(),
+              jobRoleId: _selectedJobRoleId,
+              sector: _selectedSector!.trim(),
               baseSalary: baseSalary,
               role: _role,
               admissionDate: _admissionDate,
@@ -324,23 +367,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Expanded(
-                            child: _buildField(
-                              controller: _jobTitleCtrl,
-                              label: 'Cargo',
-                              hint: 'Ex: Engenheiro Civil',
-                              validator:
-                                  (v) =>
-                                      v!.trim().isEmpty
-                                          ? 'Informe o cargo'
-                                          : null,
-                            ),
-                          ),
+                          Expanded(child: _buildJobRoleField()),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: _buildField(
-                              controller: _sectorCtrl,
-                              label: 'Setor',
+                            child: _buildSectorField(
                               hint: 'Ex: Operacional, Técnico',
                               validator:
                                   (v) =>
@@ -358,7 +388,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                             child: _buildField(
                               controller: _salaryCtrl,
                               label: 'Salário (R\$)',
-                              hint: '0.00',
+                              hint:
+                                  widget.canViewSalary
+                                      ? '0.00'
+                                      : 'Restrito por permissao',
+                              enabled: widget.canViewSalary,
                               keyboardType:
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
@@ -368,16 +402,21 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
                                   RegExp(r'[\d,.]'),
                                 ),
                               ],
-                              validator: (v) {
-                                if (v == null || v.trim().isEmpty) {
-                                  return 'Informe o salário';
-                                }
-                                if (double.tryParse(v.replaceAll(',', '.')) ==
-                                    null) {
-                                  return 'Valor inválido';
-                                }
-                                return null;
-                              },
+                              validator:
+                                  widget.canViewSalary
+                                      ? (v) {
+                                        if (v == null || v.trim().isEmpty) {
+                                          return 'Informe o salário';
+                                        }
+                                        if (double.tryParse(
+                                              v.replaceAll(',', '.'),
+                                            ) ==
+                                            null) {
+                                          return 'Valor inválido';
+                                        }
+                                        return null;
+                                      }
+                                      : null,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -542,9 +581,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     List<TextInputFormatter>? inputFormatters,
     String? Function(String?)? validator,
     int maxLines = 1,
+    bool enabled = true,
   }) {
     return TextFormField(
       controller: controller,
+      enabled: enabled,
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       maxLines: maxLines,
@@ -579,6 +620,274 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
         ),
       ),
     );
+  }
+
+  Widget _buildJobRoleField() {
+    return StreamBuilder<List<JobRoleModel>>(
+      stream: _jobRolesStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _buildJobRoleMessageField('Erro ao carregar cargos');
+        }
+
+        if (!snapshot.hasData) {
+          return _buildJobRoleMessageField('Carregando cargos...');
+        }
+
+        final roles =
+            snapshot.data!.where((role) => role.isActive).toList()..sort(
+              (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
+            );
+        final selectedRole = _resolveSelectedJobRole(roles);
+        final selectedId = selectedRole?.id;
+
+        if (selectedRole != null && _selectedJobRoleId != selectedRole.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() => _applyJobRole(selectedRole));
+          });
+        }
+
+        return KeyedSubtree(
+          key: const ValueKey('employee-job-role-field'),
+          child: DropdownButtonFormField<String>(
+            key: ValueKey(
+              'employee-job-role-${roles.map((role) => role.id).join('|')}-$selectedId',
+            ),
+            initialValue: selectedId,
+            isExpanded: true,
+            dropdownColor: AppColors.surfaceDark,
+            style: const TextStyle(color: Colors.white),
+            decoration: _jobRoleDecoration(),
+            items:
+                roles
+                    .map(
+                      (role) => DropdownMenuItem<String>(
+                        value: role.id,
+                        child: Text(role.title),
+                      ),
+                    )
+                    .toList(),
+            onChanged:
+                roles.isEmpty ? null : (value) => _selectJobRole(value, roles),
+            validator: (value) {
+              if (roles.isEmpty) return 'Cadastre um cargo ativo';
+              if (value == null || value.isEmpty) return 'Selecione o cargo';
+              return null;
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectorField({
+    String? hint,
+    String? Function(String?)? validator,
+  }) {
+    return StreamBuilder<List<SectorModel>>(
+      stream: _sectorsStream,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _buildSectorMessageField('Erro ao carregar setores');
+        }
+
+        if (!snapshot.hasData) {
+          return _buildSectorMessageField('Carregando setores...');
+        }
+
+        final sectors =
+            snapshot.data!.where((sector) => sector.isActive).toList()..sort(
+              (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+            );
+        final selectedSector = _resolveSelectedSector(sectors);
+
+        if (selectedSector != null && _selectedSector != selectedSector.name) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            setState(() => _selectedSector = selectedSector.name);
+          });
+        }
+
+        return KeyedSubtree(
+          key: const ValueKey('employee-sector-field'),
+          child: DropdownButtonFormField<String>(
+            key: ValueKey(
+              'employee-sector-${sectors.map((sector) => sector.name).join('|')}-$selectedSector',
+            ),
+            initialValue: selectedSector?.name,
+            isExpanded: true,
+            dropdownColor: AppColors.surfaceDark,
+            style: const TextStyle(color: Colors.white),
+            decoration: _sectorDecoration(hintText: hint),
+            items:
+                sectors
+                    .map(
+                      (sector) => DropdownMenuItem<String>(
+                        value: sector.name,
+                        child: Text(sector.name),
+                      ),
+                    )
+                    .toList(),
+            onChanged:
+                sectors.isEmpty
+                    ? null
+                    : (value) => setState(() => _selectedSector = value),
+            validator: (value) {
+              if (value != null) {
+                final customError = validator?.call(value);
+                if (customError != null) return customError;
+              }
+              if (sectors.isEmpty) return 'Cadastre um setor ativo';
+              if (value == null || value.isEmpty) return 'Selecione o setor';
+              return null;
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectorMessageField(String message) {
+    return InputDecorator(
+      decoration: _sectorDecoration(),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _sectorDecoration({String? hintText}) {
+    return InputDecoration(
+      labelText: 'Setor',
+      hintText: hintText ?? 'Selecione um setor cadastrado',
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      hintStyle: const TextStyle(color: Colors.white24),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.04),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.accentGold),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    );
+  }
+
+  SectorModel? _resolveSelectedSector(List<SectorModel> sectors) {
+    final selected = _selectedSector?.trim().toLowerCase();
+    if (selected == null || selected.isEmpty) return null;
+    for (final sector in sectors) {
+      if (sector.name.trim().toLowerCase() == selected) return sector;
+    }
+    return null;
+  }
+
+  Widget _buildJobRoleMessageField(String message) {
+    return InputDecorator(
+      decoration: _jobRoleDecoration(),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _jobRoleDecoration() {
+    return InputDecoration(
+      labelText: 'Cargo',
+      hintText: 'Selecione um cargo cadastrado',
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      hintStyle: const TextStyle(color: Colors.white24),
+      filled: true,
+      fillColor: Colors.white.withValues(alpha: 0.04),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Colors.white24),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: AppColors.accentGold),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: Colors.red.shade400),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    );
+  }
+
+  void _selectJobRole(String? roleId, List<JobRoleModel> roles) {
+    final role = _jobRoleById(roles, roleId);
+    if (role == null) return;
+    setState(() => _applyJobRole(role));
+  }
+
+  void _applyJobRole(JobRoleModel role) {
+    _selectedJobRoleId = role.id;
+    _jobTitleCtrl.text = role.title;
+  }
+
+  JobRoleModel? _resolveSelectedJobRole(List<JobRoleModel> roles) {
+    final byId = _jobRoleById(roles, _selectedJobRoleId);
+    if (byId != null) return byId;
+
+    final title = _jobTitleCtrl.text.trim().toLowerCase();
+    if (title.isEmpty) return null;
+    for (final role in roles) {
+      if (role.title.trim().toLowerCase() == title) {
+        return role;
+      }
+    }
+    return null;
+  }
+
+  JobRoleModel? _jobRoleById(List<JobRoleModel> roles, String? id) {
+    if (id == null || id.isEmpty) return null;
+    for (final role in roles) {
+      if (role.id == id) return role;
+    }
+    return null;
   }
 
   Widget _buildDropdown<T>({

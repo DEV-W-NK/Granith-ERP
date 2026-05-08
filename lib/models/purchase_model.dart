@@ -11,11 +11,11 @@ enum PurchaseStatus {
   String get label {
     switch (this) {
       case PurchaseStatus.awaitingApproval:
-        return 'Ag. Aprovação CEO';
+        return 'Ag. aprovacao do setor';
       case PurchaseStatus.pending:
-        return 'Pendente';
+        return 'Aprovada p/ compra';
       case PurchaseStatus.ordered:
-        return 'Pedido Realizado';
+        return 'Compra consolidada';
       case PurchaseStatus.delivered:
         return 'Entregue';
       case PurchaseStatus.cancelled:
@@ -58,13 +58,26 @@ class Purchase {
   final PurchaseStatus status;
   final DateTime purchaseDate;
   final DateTime? deliveryDate;
+  final DateTime? expectedDeliveryDate;
   final String? receivedBy;
 
-  // ── Aprovação CEO ──────────────────────────────────────────────────────────
+  final String? invoiceNumber;
+  final String? invoiceAccessKey;
+  final String? notes;
+
+  final String? approvalSector;
+  final String? quotedBy;
+  final String? quotedByName;
+  final DateTime? quotedAt;
+
   final String? approvedBy;
   final String? approvedByName;
   final DateTime? approvedAt;
   final String? rejectionReason;
+
+  final String? consolidatedBy;
+  final String? consolidatedByName;
+  final DateTime? consolidatedAt;
 
   Purchase({
     required this.id,
@@ -80,13 +93,24 @@ class Purchase {
     this.status = PurchaseStatus.pending,
     required this.purchaseDate,
     this.deliveryDate,
+    this.expectedDeliveryDate,
     this.requisitionId,
     this.financialTransactionId,
     this.receivedBy,
+    this.invoiceNumber,
+    this.invoiceAccessKey,
+    this.notes,
+    this.approvalSector,
+    this.quotedBy,
+    this.quotedByName,
+    this.quotedAt,
     this.approvedBy,
     this.approvedByName,
     this.approvedAt,
     this.rejectionReason,
+    this.consolidatedBy,
+    this.consolidatedByName,
+    this.consolidatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -103,13 +127,24 @@ class Purchase {
       'status': status.index,
       'purchaseDate': DbValue.toPrimitive(purchaseDate),
       'deliveryDate': DbValue.toPrimitive(deliveryDate),
+      'expectedDeliveryDate': DbValue.toPrimitive(expectedDeliveryDate),
       'requisitionId': requisitionId,
       'financialTransactionId': financialTransactionId,
       'receivedBy': receivedBy,
+      'invoiceNumber': invoiceNumber,
+      'invoiceAccessKey': invoiceAccessKey,
+      'notes': notes,
+      'approvalSector': approvalSector,
+      'quotedBy': quotedBy,
+      'quotedByName': quotedByName,
+      'quotedAt': DbValue.toPrimitive(quotedAt),
       'approvedBy': approvedBy,
       'approvedByName': approvedByName,
       'approvedAt': DbValue.toPrimitive(approvedAt),
       'rejectionReason': rejectionReason,
+      'consolidatedBy': consolidatedBy,
+      'consolidatedByName': consolidatedByName,
+      'consolidatedAt': DbValue.toPrimitive(consolidatedAt),
     };
   }
 
@@ -121,20 +156,31 @@ class Purchase {
       supplierId: map['supplierId'] ?? '',
       supplierName: map['supplierName'] ?? 'Fornecedor Desconhecido',
       projectId: map['projectId'] ?? '',
-      projectName: map['projectName'] ?? 'Projeto não informado',
+      projectName: map['projectName'] ?? 'Projeto nao informado',
       deliveryAddress: map['deliveryAddress'] ?? '',
-      quantity: (map['quantity'] ?? 1.0).toDouble(),
+      quantity: (map['quantity'] as num? ?? 1.0).toDouble(),
       totalValue: (map['totalValue'] as num?)?.toDouble() ?? 0.0,
-      status: PurchaseStatus.values[map['status'] ?? 0],
+      status: _parseStatus(map['status']),
       purchaseDate: DbValue.toDateTime(map['purchaseDate']) ?? DateTime.now(),
       deliveryDate: DbValue.toDateTime(map['deliveryDate']),
+      expectedDeliveryDate: DbValue.toDateTime(map['expectedDeliveryDate']),
       requisitionId: map['requisitionId'] as String?,
       financialTransactionId: map['financialTransactionId'] as String?,
       receivedBy: map['receivedBy'] as String?,
+      invoiceNumber: map['invoiceNumber'] as String?,
+      invoiceAccessKey: map['invoiceAccessKey'] as String?,
+      notes: map['notes'] as String?,
+      approvalSector: map['approvalSector'] as String?,
+      quotedBy: map['quotedBy'] as String?,
+      quotedByName: map['quotedByName'] as String?,
+      quotedAt: DbValue.toDateTime(map['quotedAt']),
       approvedBy: map['approvedBy'] as String?,
       approvedByName: map['approvedByName'] as String?,
       approvedAt: DbValue.toDateTime(map['approvedAt']),
       rejectionReason: map['rejectionReason'] as String?,
+      consolidatedBy: map['consolidatedBy'] as String?,
+      consolidatedByName: map['consolidatedByName'] as String?,
+      consolidatedAt: DbValue.toDateTime(map['consolidatedAt']),
     );
   }
 
@@ -152,13 +198,24 @@ class Purchase {
     PurchaseStatus? status,
     DateTime? purchaseDate,
     DateTime? deliveryDate,
+    DateTime? expectedDeliveryDate,
     String? requisitionId,
     String? financialTransactionId,
     String? receivedBy,
+    String? invoiceNumber,
+    String? invoiceAccessKey,
+    String? notes,
+    String? approvalSector,
+    String? quotedBy,
+    String? quotedByName,
+    DateTime? quotedAt,
     String? approvedBy,
     String? approvedByName,
     DateTime? approvedAt,
     String? rejectionReason,
+    String? consolidatedBy,
+    String? consolidatedByName,
+    DateTime? consolidatedAt,
   }) {
     return Purchase(
       id: id ?? this.id,
@@ -174,14 +231,47 @@ class Purchase {
       status: status ?? this.status,
       purchaseDate: purchaseDate ?? this.purchaseDate,
       deliveryDate: deliveryDate ?? this.deliveryDate,
+      expectedDeliveryDate: expectedDeliveryDate ?? this.expectedDeliveryDate,
       requisitionId: requisitionId ?? this.requisitionId,
       financialTransactionId:
           financialTransactionId ?? this.financialTransactionId,
       receivedBy: receivedBy ?? this.receivedBy,
+      invoiceNumber: invoiceNumber ?? this.invoiceNumber,
+      invoiceAccessKey: invoiceAccessKey ?? this.invoiceAccessKey,
+      notes: notes ?? this.notes,
+      approvalSector: approvalSector ?? this.approvalSector,
+      quotedBy: quotedBy ?? this.quotedBy,
+      quotedByName: quotedByName ?? this.quotedByName,
+      quotedAt: quotedAt ?? this.quotedAt,
       approvedBy: approvedBy ?? this.approvedBy,
       approvedByName: approvedByName ?? this.approvedByName,
       approvedAt: approvedAt ?? this.approvedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      consolidatedBy: consolidatedBy ?? this.consolidatedBy,
+      consolidatedByName: consolidatedByName ?? this.consolidatedByName,
+      consolidatedAt: consolidatedAt ?? this.consolidatedAt,
     );
+  }
+
+  static PurchaseStatus _parseStatus(dynamic value) {
+    if (value is int && value >= 0 && value < PurchaseStatus.values.length) {
+      return PurchaseStatus.values[value];
+    }
+
+    if (value is String) {
+      final byName = PurchaseStatus.values.where(
+        (status) => status.name.toLowerCase() == value.toLowerCase(),
+      );
+      if (byName.isNotEmpty) return byName.first;
+
+      final byIndex = int.tryParse(value);
+      if (byIndex != null &&
+          byIndex >= 0 &&
+          byIndex < PurchaseStatus.values.length) {
+        return PurchaseStatus.values[byIndex];
+      }
+    }
+
+    return PurchaseStatus.awaitingApproval;
   }
 }

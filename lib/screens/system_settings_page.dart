@@ -522,7 +522,8 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
     );
 
     try {
-      final success = await DatabaseSeeder().seed();
+      final seeder = DatabaseSeeder();
+      final success = await seeder.seed();
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -530,10 +531,12 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
           content: Text(
             success
                 ? 'Banco populado com sucesso.'
-                : 'Erro ao popular banco. Verifique o console.',
+                : seeder.lastErrorMessage ??
+                    'Erro ao popular banco. Verifique o console.',
           ),
           backgroundColor:
               success ? AppColors.accentGreen : AppColors.accentRed,
+          duration: Duration(seconds: success ? 4 : 10),
         ),
       );
     } catch (error) {

@@ -147,6 +147,59 @@ void main() {
       },
     );
 
+    test('expoe somente contas financeiras originadas por compras', () async {
+      final service = FakeFinancialService();
+      final controller = FinancialController(service: service);
+      final now = DateTime.now();
+
+      controller.init();
+      service.emit([
+        _tx(
+          id: 'purchase-open',
+          type: TransactionType.expense,
+          status: TransactionStatus.pending,
+          category: TransactionCategory.material,
+          origin: TransactionOrigin.purchase,
+          dueDate: now.add(const Duration(days: 2)),
+          amount: 500,
+          projectId: 'p1',
+        ),
+        _tx(
+          id: 'purchase-paid',
+          type: TransactionType.expense,
+          status: TransactionStatus.paid,
+          category: TransactionCategory.material,
+          origin: TransactionOrigin.purchase,
+          dueDate: now.subtract(const Duration(days: 2)),
+          amount: 700,
+          projectId: 'p1',
+        ),
+        _tx(
+          id: 'manual-expense',
+          type: TransactionType.expense,
+          status: TransactionStatus.pending,
+          category: TransactionCategory.administrative,
+          origin: TransactionOrigin.manual,
+          dueDate: now.add(const Duration(days: 3)),
+          amount: 300,
+          projectId: 'p1',
+        ),
+      ]);
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        controller.purchaseTransactions.map((transaction) => transaction.id),
+        ['purchase-open', 'purchase-paid'],
+      );
+      expect(controller.pendingPurchaseTransactions.single.id, 'purchase-open');
+      expect(controller.totalPurchaseTransactions, 1200);
+      expect(controller.totalPendingPurchaseTransactions, 500);
+
+      controller.dispose();
+      await service.dispose();
+    });
+
     test('delegates add update pay cancel and delete operations', () async {
       final service = FakeFinancialService();
       final controller = FinancialController(service: service);
@@ -173,6 +226,29 @@ void main() {
       expect(service.lastMarkedAsPaidId, 'tx-1');
       expect(service.lastCancelledId, 'tx-1');
       expect(service.lastDeletedId, 'tx-1');
+
+      controller.dispose();
+      await service.dispose();
+    });
+
+    test('gera conta a pagar pendente para compra aprovada', () async {
+      final service = FakeFinancialService();
+      final controller = FinancialController(service: service);
+
+      final id = await controller.addTransactionFromPurchase(
+        description: 'Compra de materiais',
+        amount: 1250,
+        projectId: 'project-1',
+        supplierId: 'supplier-1',
+        purchaseId: 'purchase-1',
+        createdBy: 'ceo-1',
+      );
+
+      expect(id, 'generated-financial-id');
+      expect(service.lastAddedTransaction?.status, TransactionStatus.pending);
+      expect(service.lastAddedTransaction?.paymentDate, isNull);
+      expect(service.lastAddedTransaction?.origin, TransactionOrigin.purchase);
+      expect(service.lastAddedTransaction?.referenceId, 'purchase-1');
 
       controller.dispose();
       await service.dispose();

@@ -8,16 +8,19 @@ import 'package:project_granith/screens/benefits_page.dart';
 import 'package:project_granith/screens/budget_types_page.dart';
 import 'package:project_granith/screens/budgets_page.dart';
 import 'package:project_granith/screens/dailyLogsPage.dart';
+import 'package:project_granith/screens/geofencing_page.dart';
 import 'package:project_granith/screens/inventory_page.dart';
 import 'package:project_granith/screens/items_page.dart';
 import 'package:project_granith/screens/material_requisition_page.dart';
 import 'package:project_granith/screens/project_measurements_page.dart';
 import 'package:project_granith/screens/projects_page.dart';
+import 'package:project_granith/screens/purchase_finance_page.dart';
 import 'package:project_granith/screens/purchases_page.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/system_settings_page.dart';
 import 'package:project_granith/screens/suppliers_page.dart';
 import 'package:project_granith/screens/team_page.dart';
+import 'package:project_granith/screens/vehicles_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:project_granith/widgets/navigation/mobile_drawer.dart';
@@ -67,7 +70,10 @@ class _MainLayoutState extends State<MainLayout> {
         const ItemsPage(),
         const PurchasesPage(),
         const InventoryPage(),
+        const VehiclesPage(),
+        const GeofencingPage(),
         const FinancialPage(),
+        const PurchaseFinancePage(),
         const ReportsPage(),
         const AccessManagementPage(),
         const SystemSettingsPage(),
@@ -90,7 +96,10 @@ class _MainLayoutState extends State<MainLayout> {
         'Catalogo de Itens',
         'Compras e Pedidos',
         'Estoque',
+        'Frota e Veiculos',
+        'Geofencing',
         'Financeiro',
+        'Compras no Financeiro',
         'DRE Gerencial',
         'Permissoes e Clientes',
         'Configuracoes',
@@ -113,7 +122,10 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.inventory_2_rounded,
         Icons.shopping_cart_rounded,
         Icons.warehouse_rounded,
+        Icons.directions_car_filled_rounded,
+        Icons.map_rounded,
         Icons.account_balance_rounded,
+        Icons.receipt_long_rounded,
         Icons.bar_chart_rounded,
         Icons.admin_panel_settings_rounded,
         Icons.settings_rounded,
@@ -223,29 +235,50 @@ class _MainLayoutState extends State<MainLayout> {
         NavigationModule(
           index: 14,
           title: pageTitles[14],
-          section: 'Financeiro',
+          section: 'Administrativo',
           icon: pageIcons[14],
-          aliases: 'entradas saidas receitas despesas caixa',
+          aliases: 'frota veiculos carros combustivel consumo abastecimento',
         ),
         NavigationModule(
           index: 15,
           title: pageTitles[15],
-          section: 'Financeiro',
+          section: 'Administrativo',
           icon: pageIcons[15],
-          aliases: 'dre relatorio gerencial resultados',
+          aliases: 'geofencing cercas coordenadas mapa localizacao obra ponto',
         ),
         NavigationModule(
           index: 16,
           title: pageTitles[16],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[16],
-          aliases: 'permissoes clientes acesso usuarios portal',
+          aliases: 'entradas saidas receitas despesas caixa',
         ),
         NavigationModule(
           index: 17,
           title: pageTitles[17],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[17],
+          aliases: 'compras financeiro contas pagar nota fiscal fornecedor',
+        ),
+        NavigationModule(
+          index: 18,
+          title: pageTitles[18],
+          section: 'Financeiro',
+          icon: pageIcons[18],
+          aliases: 'dre relatorio gerencial resultados',
+        ),
+        NavigationModule(
+          index: 19,
+          title: pageTitles[19],
+          section: 'Administrativo',
+          icon: pageIcons[19],
+          aliases: 'permissoes clientes acesso usuarios portal',
+        ),
+        NavigationModule(
+          index: 20,
+          title: pageTitles[20],
+          section: 'Administrativo',
+          icon: pageIcons[20],
           aliases: 'configuracoes ajustes sistema preferencias',
         ),
       ];

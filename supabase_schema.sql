@@ -103,12 +103,23 @@ create table if not exists public.budget_types (
   color text
 );
 
+create table if not exists public.sectors (
+  id text primary key default gen_random_uuid()::text,
+  name text not null unique,
+  description text not null default '',
+  "isActive" boolean not null default true,
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now()
+);
+
+create index if not exists idx_sectors_active_name
+  on public.sectors ("isActive", name);
+
 create table if not exists public.job_roles (
   id text primary key default gen_random_uuid()::text,
   title text not null unique,
   sector text not null default '',
   description text not null default '',
-  "hourlyRate" numeric(14,2) not null default 0,
   requirements text[] not null default '{}',
   "isActive" boolean not null default true,
   "createdAt" timestamptz not null default now()
@@ -138,6 +149,10 @@ create table if not exists public.projects (
   budget numeric(14,2) not null default 0,
   "currentCost" numeric(14,2) not null default 0,
   location text not null default '',
+  latitude numeric(10,7),
+  longitude numeric(10,7),
+  "geofenceSideMeters" numeric(10,2) not null default 120,
+  geofence_side_meters numeric(10,2),
   tags text[] not null default '{}',
   "teamSize" integer not null default 0,
   "imageUrl" text,
@@ -175,6 +190,9 @@ create index if not exists idx_projects_status on public.projects (status);
 create index if not exists idx_projects_client on public.projects (client);
 create index if not exists idx_projects_created_at on public.projects ("createdAt" desc);
 create index if not exists idx_projects_coordinator_id on public.projects ("coordinatorId");
+create index if not exists idx_projects_geofence_coordinates
+  on public.projects (latitude, longitude)
+  where latitude is not null and longitude is not null;
 
 alter table public.projects
   add column if not exists "estimatedProgress" numeric(7,3) not null default 0;
@@ -192,6 +210,14 @@ alter table public.projects
   add column if not exists "lastMeasurementAt" timestamptz;
 alter table public.projects
   add column if not exists last_measurement_at timestamptz;
+alter table public.projects
+  add column if not exists latitude numeric(10,7);
+alter table public.projects
+  add column if not exists longitude numeric(10,7);
+alter table public.projects
+  add column if not exists "geofenceSideMeters" numeric(10,2) not null default 120;
+alter table public.projects
+  add column if not exists geofence_side_meters numeric(10,2);
 
 create table if not exists public.project_measurements (
   id text primary key default gen_random_uuid()::text,
@@ -341,11 +367,22 @@ create table if not exists public.purchases (
   status integer not null default 1,
   "purchaseDate" timestamptz not null default now(),
   "deliveryDate" timestamptz,
+  "expectedDeliveryDate" timestamptz,
   "receivedBy" text,
+  "invoiceNumber" text not null default '',
+  "invoiceAccessKey" text not null default '',
+  notes text not null default '',
+  "approvalSector" text not null default 'Geral',
+  "quotedBy" text,
+  "quotedByName" text,
+  "quotedAt" timestamptz,
   "approvedBy" text,
   "approvedByName" text,
   "approvedAt" timestamptz,
   "rejectionReason" text,
+  "consolidatedBy" text,
+  "consolidatedByName" text,
+  "consolidatedAt" timestamptz,
   constraint purchases_status_check check (status between 0 and 4)
 );
 
@@ -353,6 +390,7 @@ create index if not exists idx_purchases_project_id on public.purchases ("projec
 create index if not exists idx_purchases_supplier_id on public.purchases ("supplierId");
 create index if not exists idx_purchases_status on public.purchases (status);
 create index if not exists idx_purchases_purchase_date on public.purchases ("purchaseDate" desc);
+create index if not exists idx_purchases_approval_sector_status on public.purchases ("approvalSector", status);
 
 create table if not exists public.inventory (
   id text primary key default gen_random_uuid()::text,
@@ -369,6 +407,48 @@ create table if not exists public.inventory (
 
 create index if not exists idx_inventory_name on public.inventory (name);
 create index if not exists idx_inventory_last_purchase on public.inventory ("lastPurchaseId");
+
+create table if not exists public.vehicles (
+  id text primary key default gen_random_uuid()::text,
+  plate text not null unique,
+  brand text not null default '',
+  model text not null default '',
+  version text not null default '',
+  "manufactureYear" integer not null,
+  "modelYear" integer not null,
+  "fuelType" text not null default 'flex',
+  status text not null default 'active',
+  "odometerKm" numeric(14,2) not null default 0,
+  "expectedCityKmPerLiter" numeric(8,2) not null default 0,
+  "expectedHighwayKmPerLiter" numeric(8,2) not null default 0,
+  "tankCapacityLiters" numeric(8,2) not null default 0,
+  "assignedEmployeeId" text references public.employees(id) on delete set null,
+  "assignedEmployeeName" text not null default '',
+  "acquisitionDate" timestamptz,
+  "acquisitionValue" numeric(14,2) not null default 0,
+  "fipeCode" text,
+  "fipeValue" numeric(14,2),
+  "fipeReferenceMonth" text,
+  "lastMeasuredKmPerLiter" numeric(8,2),
+  "lastFuelLogAt" timestamptz,
+  notes text not null default '',
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now(),
+  constraint vehicles_fuel_type_check check (
+    "fuelType" in ('gasoline', 'ethanol', 'flex', 'diesel', 'hybrid', 'electric', 'other')
+  ),
+  constraint vehicles_status_check check (
+    status in ('active', 'maintenance', 'inactive')
+  ),
+  constraint vehicles_years_check check (
+    "manufactureYear" between 1970 and extract(year from now())::integer + 1
+    and "modelYear" between 1970 and extract(year from now())::integer + 1
+  )
+);
+
+create index if not exists idx_vehicles_status on public.vehicles (status);
+create index if not exists idx_vehicles_model_year on public.vehicles ("modelYear" desc);
+create index if not exists idx_vehicles_assigned_employee on public.vehicles ("assignedEmployeeId");
 
 create table if not exists public.inventory_movements (
   id text primary key default gen_random_uuid()::text,
@@ -398,6 +478,7 @@ create table if not exists public.material_requisitions (
   "projectName" text not null default '',
   "requesterName" text not null default '',
   "requesterId" text,
+  "requesterSector" text not null default 'Geral',
   "requestDate" timestamptz not null default now(),
   status text not null default 'pending',
   items jsonb not null default '[]'::jsonb,
@@ -490,6 +571,30 @@ create index if not exists idx_financial_transactions_status
 create index if not exists idx_financial_transactions_type
   on public.financial_transactions (type);
 
+create table if not exists public.vehicle_fuel_logs (
+  id text primary key default gen_random_uuid()::text,
+  "vehicleId" text not null references public.vehicles(id) on delete cascade,
+  "vehiclePlate" text not null default '',
+  "employeeId" text not null default '',
+  "employeeName" text not null default '',
+  liters numeric(10,3) not null default 0,
+  "totalAmount" numeric(14,2) not null default 0,
+  "unitPrice" numeric(10,4) not null default 0,
+  "odometerKm" numeric(14,2) not null default 0,
+  "previousOdometerKm" numeric(14,2),
+  "kmTraveled" numeric(14,2),
+  "kmPerLiter" numeric(8,2),
+  "fuelingDate" timestamptz not null default now(),
+  "financialTransactionId" text references public.financial_transactions(id) on delete set null,
+  "invoiceNumber" text not null default '',
+  notes text not null default '',
+  "createdAt" timestamptz not null default now()
+);
+
+create index if not exists idx_vehicle_fuel_logs_vehicle_id on public.vehicle_fuel_logs ("vehicleId");
+create index if not exists idx_vehicle_fuel_logs_date on public.vehicle_fuel_logs ("fuelingDate" desc);
+create index if not exists idx_vehicle_fuel_logs_financial_transaction on public.vehicle_fuel_logs ("financialTransactionId");
+
 create table if not exists public.benefit_categories (
   id text primary key default gen_random_uuid()::text,
   name text not null unique,
@@ -505,7 +610,8 @@ create table if not exists public.benefits (
   type text not null default 'other',
   "categoryId" text references public.benefit_categories(id) on delete set null,
   "categoryName" text not null default '',
-  "valueMode" text not null default 'fixedMonthly',
+  "valueMode" text not null default 'workedDay',
+  "dailyValue" numeric(14,2) not null default 0,
   "defaultValue" numeric(14,2) not null default 0,
   "reimbursementLimit" numeric(14,2) not null default 0,
   description text not null default '',
@@ -515,8 +621,9 @@ create table if not exists public.benefits (
     type in ('vt', 'vr', 'health', 'dental', 'lifeInsurance', 'other')
   ),
   constraint benefits_value_mode_check check (
-    "valueMode" in ('fixedMonthly', 'reimbursement')
+    "valueMode" in ('workedDay', 'reimbursement')
   ),
+  constraint benefits_daily_value_non_negative check ("dailyValue" >= 0),
   constraint benefits_default_value_non_negative check ("defaultValue" >= 0),
   constraint benefits_reimbursement_limit_non_negative check ("reimbursementLimit" >= 0)
 );
@@ -529,6 +636,7 @@ create table if not exists public.employee_benefits (
   "employeeId" text not null references public.employees(id) on delete cascade,
   "benefitId" text not null references public.benefits(id) on delete cascade,
   "benefitName" text not null default '',
+  "dailyValue" numeric(14,2) not null default 0,
   "monthlyValue" numeric(14,2) not null default 0,
   "startDate" timestamptz not null default now(),
   "endDate" timestamptz,
@@ -643,6 +751,11 @@ create trigger trg_budget_types_updated_at
 before update on public.budget_types
 for each row execute function public.set_updated_at();
 
+drop trigger if exists trg_sectors_updated_at on public.sectors;
+create trigger trg_sectors_updated_at
+before update on public.sectors
+for each row execute function public.set_updated_at();
+
 drop trigger if exists trg_items_updated_at on public.items;
 create trigger trg_items_updated_at
 before update on public.items
@@ -671,6 +784,11 @@ for each row execute function public.set_updated_at();
 drop trigger if exists trg_suppliers_updated_at on public.suppliers;
 create trigger trg_suppliers_updated_at
 before update on public.suppliers
+for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_vehicles_updated_at on public.vehicles;
+create trigger trg_vehicles_updated_at
+before update on public.vehicles
 for each row execute function public.set_updated_at();
 
 drop trigger if exists trg_daily_logs_updated_at on public.daily_logs;

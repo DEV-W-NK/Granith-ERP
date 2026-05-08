@@ -2,7 +2,7 @@ import 'package:project_granith/core/data/db_value.dart';
 
 enum BenefitType { vt, vr, health, dental, lifeInsurance, other }
 
-enum BenefitValueMode { fixedMonthly, reimbursement }
+enum BenefitValueMode { workedDay, reimbursement, fixedMonthly }
 
 class BenefitModel {
   final String id;
@@ -11,7 +11,7 @@ class BenefitModel {
   final String? categoryId;
   final String categoryName;
   final BenefitValueMode valueMode;
-  final double defaultValue;
+  final double dailyValue;
   final double reimbursementLimit;
   final String description;
   final bool isActive;
@@ -23,13 +23,17 @@ class BenefitModel {
     required this.type,
     this.categoryId,
     this.categoryName = '',
-    this.valueMode = BenefitValueMode.fixedMonthly,
-    this.defaultValue = 0,
+    this.valueMode = BenefitValueMode.workedDay,
+    double? dailyValue,
+    @Deprecated('Use dailyValue.') double? defaultValue,
     this.reimbursementLimit = 0,
     this.description = '',
     this.isActive = true,
     required this.createdAt,
-  });
+  }) : dailyValue = dailyValue ?? defaultValue ?? 0;
+
+  @Deprecated('Use dailyValue.')
+  double get defaultValue => dailyValue;
 
   String get typeLabel => switch (type) {
     BenefitType.vt => 'Vale Transporte',
@@ -41,22 +45,27 @@ class BenefitModel {
   };
 
   String get valueModeLabel => switch (valueMode) {
-    BenefitValueMode.fixedMonthly => 'Valor mensal fixo',
+    BenefitValueMode.workedDay => 'Por dia trabalhado',
     BenefitValueMode.reimbursement => 'Reembolso',
+    BenefitValueMode.fixedMonthly => 'Por dia trabalhado',
   };
 
   double get suggestedAssignmentValue =>
       valueMode == BenefitValueMode.reimbursement
           ? reimbursementLimit
-          : defaultValue;
+          : dailyValue;
 
   Map<String, dynamic> toMap() => {
     'name': name,
     'type': type.name,
     'categoryId': categoryId,
     'categoryName': categoryName,
-    'valueMode': valueMode.name,
-    'defaultValue': defaultValue,
+    'valueMode':
+        valueMode == BenefitValueMode.reimbursement
+            ? BenefitValueMode.reimbursement.name
+            : BenefitValueMode.workedDay.name,
+    'dailyValue': dailyValue,
+    'defaultValue': dailyValue,
     'reimbursementLimit': reimbursementLimit,
     'description': description,
     'isActive': isActive,
@@ -73,15 +82,8 @@ class BenefitModel {
         ),
         categoryId: map['categoryId'] as String?,
         categoryName: map['categoryName'] ?? map['category'] ?? '',
-        valueMode: BenefitValueMode.values.firstWhere(
-          (e) => e.name == map['valueMode'],
-          orElse:
-              () =>
-                  map['isReimbursable'] == true
-                      ? BenefitValueMode.reimbursement
-                      : BenefitValueMode.fixedMonthly,
-        ),
-        defaultValue: _toDouble(map['defaultValue']),
+        valueMode: _valueModeFromMap(map),
+        dailyValue: _toDouble(map['dailyValue'] ?? map['defaultValue']),
         reimbursementLimit: _toDouble(map['reimbursementLimit']),
         description: map['description'] ?? '',
         isActive: map['isActive'] ?? true,
@@ -95,7 +97,8 @@ class BenefitModel {
     String? categoryName,
     bool clearCategory = false,
     BenefitValueMode? valueMode,
-    double? defaultValue,
+    double? dailyValue,
+    @Deprecated('Use dailyValue.') double? defaultValue,
     double? reimbursementLimit,
     String? description,
     bool? isActive,
@@ -106,12 +109,21 @@ class BenefitModel {
     categoryId: clearCategory ? null : categoryId ?? this.categoryId,
     categoryName: clearCategory ? '' : categoryName ?? this.categoryName,
     valueMode: valueMode ?? this.valueMode,
-    defaultValue: defaultValue ?? this.defaultValue,
+    dailyValue: dailyValue ?? defaultValue ?? this.dailyValue,
     reimbursementLimit: reimbursementLimit ?? this.reimbursementLimit,
     description: description ?? this.description,
     isActive: isActive ?? this.isActive,
     createdAt: createdAt,
   );
+}
+
+BenefitValueMode _valueModeFromMap(Map<String, dynamic> map) {
+  final raw = map['valueMode']?.toString();
+  if (raw == BenefitValueMode.reimbursement.name ||
+      map['isReimbursable'] == true) {
+    return BenefitValueMode.reimbursement;
+  }
+  return BenefitValueMode.workedDay;
 }
 
 double _toDouble(dynamic value) {

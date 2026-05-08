@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/services/budget_type_service.dart';
 
@@ -33,10 +34,7 @@ class BudgetTypeController extends ChangeNotifier {
     'Todos',
     'Ativos',
     'Inativos',
-    'Material',
-    'Mão de Obra',
-    'Equipamento',
-    'Serviço',
+    ...BudgetTypeConstants.categories,
   ];
 
   // Carregar tipos de orçamento
@@ -176,16 +174,15 @@ class BudgetTypeController extends ChangeNotifier {
 
     // Filtro por categoria/status
     switch (_selectedFilter) {
+      case 'Todos':
+        break;
       case 'Ativos':
         filtered = filtered.where((bt) => bt.isActive).toList();
         break;
       case 'Inativos':
         filtered = filtered.where((bt) => !bt.isActive).toList();
         break;
-      case 'Material':
-      case 'Mão de Obra':
-      case 'Equipamento':
-      case 'Serviço':
+      default:
         filtered =
             filtered.where((bt) => bt.category == _selectedFilter).toList();
         break;

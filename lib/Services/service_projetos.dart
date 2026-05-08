@@ -91,6 +91,10 @@ class ServiceProjetos {
       'budget': project.budget,
       'currentCost': project.currentCost,
       'location': project.location.trim(),
+      'latitude': project.latitude,
+      'longitude': project.longitude,
+      'geofenceSideMeters': project.geofenceSideMeters,
+      'geofence_side_meters': project.geofenceSideMeters,
       'tags': project.tags.map((tag) => tag.trim()).toList(),
       'teamSize': project.teamSize,
       'imageUrl': project.imageUrl,
@@ -128,6 +132,23 @@ class ServiceProjetos {
     } catch (e) {
       throw Exception('Erro ao carregar projetos: $e');
     }
+  }
+
+  Stream<List<Project>> watchProjects({String? clientAccountId}) {
+    final stream = _client.from(_table).stream(primaryKey: ['id']);
+    final orderedStream =
+        clientAccountId != null && clientAccountId.trim().isNotEmpty
+            ? stream
+                .eq('clientAccountId', clientAccountId.trim())
+                .order('createdAt', ascending: false)
+            : stream.order('createdAt', ascending: false);
+
+    return orderedStream.map<List<Project>>((rows) {
+      return rows.map((row) {
+        final data = Map<String, dynamic>.from(row);
+        return Project.fromMap((data['id'] ?? '').toString(), data);
+      }).toList();
+    });
   }
 
   Future<List<Project>> getProjectsByClientAccount(String clientAccountId) {

@@ -38,7 +38,7 @@ class EmployeeBenefitModel {
   final String employeeId;
   final String benefitId;
   final String benefitName; // desnormalizado para exibição rápida
-  final double monthlyValue;
+  final double dailyValue;
   final DateTime startDate;
   final DateTime? endDate;
   final bool isActive;
@@ -49,23 +49,33 @@ class EmployeeBenefitModel {
     required this.employeeId,
     required this.benefitId,
     required this.benefitName,
-    required this.monthlyValue,
+    double? dailyValue,
+    @Deprecated('Use dailyValue.') double? monthlyValue,
     required this.startDate,
     this.endDate,
     this.isActive = true,
     this.history = const [],
-  });
+  }) : dailyValue = dailyValue ?? monthlyValue ?? 0;
+
+  @Deprecated('Use dailyValue.')
+  double get monthlyValue => dailyValue;
 
   double get totalHistoricalCost {
     if (history.isEmpty) return 0;
     return history.fold(0, (sum, e) => sum + e.newValue);
   }
 
+  double costForWorkedDays(int workedDays) {
+    if (workedDays <= 0) return 0;
+    return dailyValue * workedDays;
+  }
+
   Map<String, dynamic> toMap() => {
     'employeeId': employeeId,
     'benefitId': benefitId,
     'benefitName': benefitName,
-    'monthlyValue': monthlyValue,
+    'dailyValue': dailyValue,
+    'monthlyValue': dailyValue,
     'startDate': DbValue.toPrimitive(startDate),
     'endDate': DbValue.toPrimitive(endDate),
     'isActive': isActive,
@@ -80,7 +90,7 @@ class EmployeeBenefitModel {
     employeeId: map['employeeId'] ?? '',
     benefitId: map['benefitId'] ?? '',
     benefitName: map['benefitName'] ?? '',
-    monthlyValue: (map['monthlyValue'] ?? 0.0).toDouble(),
+    dailyValue: _toDouble(map['dailyValue'] ?? map['monthlyValue']),
     startDate: DbValue.toDateTime(map['startDate']) ?? DateTime.now(),
     endDate: DbValue.toDateTime(map['endDate']),
     isActive: map['isActive'] ?? true,
@@ -94,7 +104,8 @@ class EmployeeBenefitModel {
     String? employeeId,
     String? benefitId,
     String? benefitName,
-    double? monthlyValue,
+    double? dailyValue,
+    @Deprecated('Use dailyValue.') double? monthlyValue,
     DateTime? startDate,
     DateTime? endDate,
     bool clearEndDate = false,
@@ -105,10 +116,16 @@ class EmployeeBenefitModel {
     employeeId: employeeId ?? this.employeeId,
     benefitId: benefitId ?? this.benefitId,
     benefitName: benefitName ?? this.benefitName,
-    monthlyValue: monthlyValue ?? this.monthlyValue,
+    dailyValue: dailyValue ?? monthlyValue ?? this.dailyValue,
     startDate: startDate ?? this.startDate,
     endDate: clearEndDate ? null : endDate ?? this.endDate,
     isActive: isActive ?? this.isActive,
     history: history ?? this.history,
   );
+}
+
+double _toDouble(dynamic value) {
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+  return 0;
 }

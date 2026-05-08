@@ -9,6 +9,7 @@ void main() {
         'projectId': 'project-1',
         'projectName': 'Obra Centro',
         'requesterName': 'Joao',
+        'requesterSector': 'Engenharia',
         'requestDate': now.toIso8601String(),
         'status': 'approved',
         'items': [
@@ -27,6 +28,7 @@ void main() {
       expect(requisition.status, RequisitionStatus.approved);
       expect(requisition.itemCount, 2);
       expect(requisition.totalQuantity, 16);
+      expect(requisition.requesterSector, 'Engenharia');
       expect(requisition.purchaseId, 'purchase-1');
       expect(requisition.itemsSummary, 'Cimento e mais 1');
     });
@@ -46,10 +48,12 @@ void main() {
       final approved = requisition.copyWith(
         status: RequisitionStatus.approved,
         approvedByName: 'Maria',
+        requesterSector: 'Obras',
       );
 
       expect(approved.status, RequisitionStatus.approved);
       expect(approved.approvedByName, 'Maria');
+      expect(approved.requesterSector, 'Obras');
       expect(approved.projectName, 'Obra Centro');
     });
   });

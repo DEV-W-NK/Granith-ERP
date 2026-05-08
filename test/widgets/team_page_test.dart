@@ -16,13 +16,14 @@ EmployeeModel _employee({
   required String email,
   required String sector,
   required EmployeeRole role,
+  String jobTitle = 'Supervisor',
 }) {
   return EmployeeModel(
     id: id,
     name: name,
     email: email,
     phone: '11999999999',
-    jobTitle: 'Supervisor',
+    jobTitle: jobTitle,
     sector: sector,
     role: role,
     admissionDate: DateTime(2026, 1, 1),
@@ -91,6 +92,79 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(teamService.lastCreatedTeam?.name, 'Equipe Alfa');
+
+      await authService.dispose();
+      await teamService.disposeControllers();
+      controller.dispose();
+    });
+
+    testWidgets('formulario filtra funcionarios por nome e cargo', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(1200, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final authService = FakeAuthService(
+        currentUserValue: const FakeAuthUser('u1', 'rh@granith.com'),
+        profile: const UserModel(
+          uid: 'u1',
+          email: 'rh@granith.com',
+          role: UserRole.employee,
+        ),
+      );
+      final auth = AuthViewModel(service: authService);
+      final teamService = FakeTeamService(
+        employees: [
+          _employee(
+            id: 'e1',
+            name: 'Ana RH',
+            email: 'rh@granith.com',
+            sector: 'RH',
+            role: EmployeeRole.supervisor,
+            jobTitle: 'Supervisora de RH',
+          ),
+          _employee(
+            id: 'e2',
+            name: 'Bruno Rocha',
+            email: 'bruno@granith.com',
+            sector: 'Obras',
+            role: EmployeeRole.funcionario,
+            jobTitle: 'Pedreiro',
+          ),
+          _employee(
+            id: 'e3',
+            name: 'Carla Lima',
+            email: 'carla@granith.com',
+            sector: 'Engenharia',
+            role: EmployeeRole.coordenador,
+            jobTitle: 'Engenheira Civil',
+          ),
+        ],
+      );
+      final controller = TeamController(service: teamService);
+
+      await tester.pumpWidget(
+        _buildHarness(auth: auth, controller: controller),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Nova equipe').first);
+      await tester.pumpAndSettle();
+
+      final searchField = find.byKey(const ValueKey('team-employee-search'));
+      expect(searchField, findsOneWidget);
+
+      await tester.enterText(searchField, 'bruno');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bruno Rocha'), findsOneWidget);
+      expect(find.text('Carla Lima'), findsNothing);
+
+      await tester.enterText(searchField, 'engenheira');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Carla Lima'), findsOneWidget);
+      expect(find.text('Bruno Rocha'), findsNothing);
 
       await authService.dispose();
       await teamService.disposeControllers();

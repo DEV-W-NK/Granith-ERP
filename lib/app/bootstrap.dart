@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,5 +20,5 @@ Future<void> bootstrap() async {
     ),
   );
 
-  runApp(const GranithApp());
+  runApp(const ProviderScope(child: GranithApp()));
 }

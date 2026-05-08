@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/controllers/auth_controller.dart';
 import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
@@ -45,7 +46,7 @@ Widget _buildHarness({
 }) {
   return MultiProvider(
     providers: [
-      ChangeNotifierProvider<AuthController>.value(value: authController),
+      ChangeNotifierProvider<AuthViewModel>.value(value: authController),
       ChangeNotifierProvider<FinancialController>.value(
         value: financialController,
       ),
@@ -169,6 +170,121 @@ void main() {
         financialService.lastAddedTransaction?.notes,
         'Primeira medicao aprovada',
       );
+
+      projectsController.dispose();
+      financialController.dispose();
+      await financialService.dispose();
+      authController.dispose();
+    });
+
+    testWidgets('exige projeto para despesa de custo de obra', (tester) async {
+      final authController = _TestAuthController(
+        const UserModel(
+          uid: 'user-1',
+          email: 'financeiro@granith.com',
+          displayName: 'Financeiro Granith',
+          role: UserRole.admin,
+        ),
+      );
+      final financialService = FakeFinancialService();
+      final financialController = FinancialController(
+        service: financialService,
+      );
+      final projectsController = ProjectsController(
+        FakeServiceProjetos(projects: [_project()]),
+      );
+      await projectsController.loadProjects();
+
+      await tester.pumpWidget(
+        _buildHarness(
+          authController: authController,
+          financialController: financialController,
+          projectsController: projectsController,
+          child: const TransactionFormDialog(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Compra de aço');
+      await tester.enterText(find.byType(TextFormField).at(1), '1800');
+
+      await tester.ensureVisible(find.text('Outro'));
+      await tester.tap(find.text('Outro'), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text('Material').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await tester.ensureVisible(find.text('REGISTRAR'));
+      await tester.tap(find.text('REGISTRAR'), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.textContaining('Selecione o projeto'), findsOneWidget);
+      expect(financialService.lastAddedTransaction, isNull);
+
+      projectsController.dispose();
+      financialController.dispose();
+      await financialService.dispose();
+      authController.dispose();
+    });
+
+    testWidgets('registra despesa administrativa sem projeto', (tester) async {
+      final authController = _TestAuthController(
+        const UserModel(
+          uid: 'user-1',
+          email: 'financeiro@granith.com',
+          displayName: 'Financeiro Granith',
+          role: UserRole.admin,
+        ),
+      );
+      final financialService = FakeFinancialService();
+      final financialController = FinancialController(
+        service: financialService,
+      );
+      final projectsController = ProjectsController(
+        FakeServiceProjetos(projects: [_project()]),
+      );
+      await projectsController.loadProjects();
+
+      await tester.pumpWidget(
+        _buildHarness(
+          authController: authController,
+          financialController: financialController,
+          projectsController: projectsController,
+          child: const TransactionFormDialog(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Conta de luz');
+      await tester.enterText(find.byType(TextFormField).at(1), '430');
+
+      await tester.ensureVisible(find.text('Outro'));
+      await tester.tap(find.text('Outro'), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.text('Administrativo').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      await tester.ensureVisible(find.text('REGISTRAR'));
+      await tester.tap(find.text('REGISTRAR'), warnIfMissed: false);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        financialService.lastAddedTransaction?.description,
+        'Conta de luz',
+      );
+      expect(
+        financialService.lastAddedTransaction?.category,
+        TransactionCategory.administrative,
+      );
+      expect(financialService.lastAddedTransaction?.projectId, isNull);
 
       projectsController.dispose();
       financialController.dispose();

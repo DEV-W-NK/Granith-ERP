@@ -95,6 +95,7 @@ class FakeMaterialRequisitionService extends MaterialRequisitionService {
     required Supplier supplier,
     required String createdBy,
     required Map<String, double> itemPrices,
+    String? approvalSector,
   }) async {
     if (convertError != null) {
       throw convertError!;
@@ -105,6 +106,7 @@ class FakeMaterialRequisitionService extends MaterialRequisitionService {
       'supplier': supplier,
       'createdBy': createdBy,
       'itemPrices': itemPrices,
+      'approvalSector': approvalSector,
     };
     return List<String>.from(nextPurchaseIds);
   }

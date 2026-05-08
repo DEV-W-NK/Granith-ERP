@@ -739,7 +739,7 @@ class _TeamMembersDialogState extends State<_TeamMembersDialog> {
   }
 }
 
-class _EmployeePicker extends StatelessWidget {
+class _EmployeePicker extends StatefulWidget {
   final List<EmployeeModel> employees;
   final Set<String> selectedIds;
   final String? leaderId;
@@ -755,19 +755,56 @@ class _EmployeePicker extends StatelessWidget {
   });
 
   @override
+  State<_EmployeePicker> createState() => _EmployeePickerState();
+}
+
+class _EmployeePickerState extends State<_EmployeePicker> {
+  final _searchCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(_handleSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.removeListener(_handleSearchChanged);
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _handleSearchChanged() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final selectedEmployees =
-        employees
-            .where((employee) => selectedIds.contains(employee.id))
+        widget.employees
+            .where((employee) => widget.selectedIds.contains(employee.id))
             .toList();
-    final sortedEmployees = [...employees]
+    final sortedEmployees = [...widget.employees]
       ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final query = _searchCtrl.text.trim().toLowerCase();
+    final filteredEmployees =
+        query.isEmpty
+            ? sortedEmployees
+            : sortedEmployees
+                .where((employee) => _matchesEmployeeSearch(employee, query))
+                .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         DropdownButtonFormField<String?>(
-          initialValue: selectedIds.contains(leaderId) ? leaderId : null,
+          key: ValueKey(
+            'leader-${widget.leaderId ?? 'none'}-${selectedEmployees.map((e) => e.id).join('|')}',
+          ),
+          initialValue:
+              widget.selectedIds.contains(widget.leaderId)
+                  ? widget.leaderId
+                  : null,
           decoration: const InputDecoration(labelText: 'Lider da equipe'),
           dropdownColor: AppColors.surfaceDark,
           items: [
@@ -782,29 +819,64 @@ class _EmployeePicker extends StatelessWidget {
               ),
             ),
           ],
-          onChanged: onLeaderChanged,
+          onChanged: widget.onLeaderChanged,
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Membros',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Membros',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (widget.employees.isNotEmpty)
+              _StatusBadge(
+                label:
+                    '${widget.selectedIds.length}/${widget.employees.length} selecionados',
+                color: AppColors.accentBlue,
+              ),
+          ],
         ),
         const SizedBox(height: 8),
-        if (employees.isEmpty)
+        if (widget.employees.isNotEmpty) ...[
+          TextField(
+            key: const ValueKey('team-employee-search'),
+            controller: _searchCtrl,
+            decoration: InputDecoration(
+              labelText: 'Buscar funcionario',
+              hintText: 'Nome ou cargo',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon:
+                  query.isEmpty
+                      ? null
+                      : IconButton(
+                        tooltip: 'Limpar busca',
+                        onPressed: _searchCtrl.clear,
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        if (widget.employees.isEmpty)
           const Text(
             'Cadastre colaboradores ativos antes de montar equipes.',
             style: TextStyle(color: AppColors.textMuted),
           )
+        else if (filteredEmployees.isEmpty)
+          _EmptyEmployeeSearchState(query: _searchCtrl.text.trim())
         else
-          ...sortedEmployees.map((employee) {
-            final selected = selectedIds.contains(employee.id);
+          ...filteredEmployees.map((employee) {
+            final selected = widget.selectedIds.contains(employee.id);
             return CheckboxListTile(
               value: selected,
-              onChanged: (value) => onToggle(employee.id, value ?? false),
+              onChanged:
+                  (value) => widget.onToggle(employee.id, value ?? false),
               contentPadding: EdgeInsets.zero,
               controlAffinity: ListTileControlAffinity.leading,
               title: Text(
@@ -816,7 +888,7 @@ class _EmployeePicker extends StatelessWidget {
                 style: const TextStyle(color: AppColors.textMuted),
               ),
               secondary:
-                  leaderId == employee.id
+                  widget.leaderId == employee.id
                       ? const Icon(
                         Icons.workspace_premium_rounded,
                         color: AppColors.accentGold,
@@ -825,6 +897,41 @@ class _EmployeePicker extends StatelessWidget {
             );
           }),
       ],
+    );
+  }
+}
+
+class _EmptyEmployeeSearchState extends StatelessWidget {
+  final String query;
+
+  const _EmptyEmployeeSearchState({required this.query});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundDark,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.borderColor),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.search_off_rounded,
+            color: AppColors.textMuted,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Nenhum funcionario encontrado para "$query".',
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1221,6 +1328,17 @@ EmployeeModel? _employeeById(List<EmployeeModel> employees, String? id) {
   }
   return null;
 }
+
+bool _matchesEmployeeSearch(EmployeeModel employee, String query) {
+  final searchable = [
+    employee.name,
+    employee.jobTitle,
+    employee.role.label,
+  ].map(_normalizeSearch).join(' ');
+  return searchable.contains(_normalizeSearch(query));
+}
+
+String _normalizeSearch(String value) => value.trim().toLowerCase();
 
 bool _canManageTeams(AuthViewModel auth, EmployeeModel? employee) {
   if (auth.isAdminUser ||

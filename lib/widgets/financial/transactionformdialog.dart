@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
-import 'package:project_granith/controllers/auth_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
@@ -33,6 +33,12 @@ class TransactionFormDialog extends StatefulWidget {
 }
 
 class _TransactionFormDialogState extends State<TransactionFormDialog> {
+  static const _projectBudgetCategories = {
+    TransactionCategory.material,
+    TransactionCategory.labor,
+    TransactionCategory.equipment,
+  };
+
   final _formKey = GlobalKey<FormState>();
 
   late TransactionType _type;
@@ -51,6 +57,20 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   bool _isSaving = false;
 
   bool get _isEditing => widget.initial != null;
+
+  bool get _isProjectBudgetCategory =>
+      _type == TransactionType.expense &&
+      _projectBudgetCategories.contains(_category);
+
+  String get _allocationHelperText {
+    if (_isProjectBudgetCategory) {
+      return 'Custos de obra entram no projeto/orçamento. Gastos internos ficam como Administrativo.';
+    }
+    if (_type == TransactionType.expense) {
+      return 'Sem projeto = gasto operacional da empresa.';
+    }
+    return 'Opcional para receitas sem obra vinculada.';
+  }
 
   @override
   void initState() {
@@ -424,7 +444,14 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
       isExpanded: true,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white, fontSize: 14),
-      decoration: _decoration('Projeto (opcional)', Icons.folder_outlined),
+      decoration: _decoration(
+        'Projeto / orçamento',
+        Icons.account_tree_outlined,
+      ).copyWith(
+        helperText: _allocationHelperText,
+        helperMaxLines: 2,
+        helperStyle: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+      ),
       items: [
         const DropdownMenuItem(
           value: null,
@@ -435,6 +462,11 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
         ),
       ],
       onChanged: (v) => setState(() => _selectedProjectId = v),
+      validator:
+          (v) =>
+              _isProjectBudgetCategory && v == null
+                  ? 'Selecione o projeto/orçamento ou use Administrativo.'
+                  : null,
     );
   }
 
@@ -526,10 +558,9 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
     setState(() => _isSaving = true);
 
     try {
-      // AuthController.user retorna UserModel? — usamos user.id
-      final authCtrl = context.read<AuthController>();
+      final auth = _maybeReadAuth(context);
       final createdBy =
-          widget.initial?.createdBy ?? authCtrl.user?.uid ?? 'unknown';
+          widget.initial?.createdBy ?? auth?.user?.uid ?? 'unknown';
 
       final amount = double.parse(_amountCtrl.text.trim().replaceAll(',', '.'));
 
@@ -639,4 +670,12 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
     TransactionOrigin.materialUsage => 'Consumo material',
     TransactionOrigin.budget => 'Orçamento / Medição',
   };
+}
+
+AuthViewModel? _maybeReadAuth(BuildContext context) {
+  try {
+    return context.read<AuthViewModel>();
+  } on ProviderNotFoundException {
+    return null;
+  }
 }

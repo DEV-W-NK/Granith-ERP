@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/services/client_account_service.dart';
+import 'package:project_granith/services/maps_geocoding_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/services/team_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -19,6 +20,7 @@ class ProjectFormDialog extends StatefulWidget {
   final ServiceProjetos? projectService;
   final ClientAccountService? clientAccountService;
   final TeamService? teamService;
+  final MapsGeocodingService? geocodingService;
 
   const ProjectFormDialog({
     super.key,
@@ -27,6 +29,7 @@ class ProjectFormDialog extends StatefulWidget {
     this.projectService,
     this.clientAccountService,
     this.teamService,
+    this.geocodingService,
   });
 
   @override
@@ -42,6 +45,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   late TextEditingController _clientController;
   late TextEditingController _descriptionController;
   late TextEditingController _locationController;
+  late TextEditingController _latitudeController;
+  late TextEditingController _longitudeController;
+  late TextEditingController _geofenceSideController;
   late TextEditingController _budgetController;
   late TextEditingController _currentCostController;
   late TextEditingController _teamSizeController;
@@ -53,6 +59,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   late final ServiceProjetos _service;
   late final ClientAccountService _clientAccountService;
   late final TeamService _teamService;
+  late final MapsGeocodingService _geocodingService;
   StreamSubscription<List<EmployeeModel>>? _employeesSubscription;
 
   ProjectStatus _selectedStatus = ProjectStatus.planning;
@@ -64,6 +71,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   String? _selectedClientAccountId;
   String? _selectedCoordinatorId;
   bool _isLoadingCoordinators = true;
+  bool _isGeocoding = false;
+  String? _geocodedAddress;
 
   // Estados de controle melhorados
   bool _isSaving = false;
@@ -87,6 +96,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     _clientAccountService =
         widget.clientAccountService ?? ClientAccountService();
     _teamService = widget.teamService ?? TeamService();
+    _geocodingService = widget.geocodingService ?? MapsGeocodingService();
     _initializeControllers();
     _initializeProjectData();
     _initializeAnimations();
@@ -118,6 +128,15 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
     _locationController = TextEditingController(
       text: widget.project?.location ?? '',
+    );
+    _latitudeController = TextEditingController(
+      text: widget.project?.latitude?.toStringAsFixed(6) ?? '',
+    );
+    _longitudeController = TextEditingController(
+      text: widget.project?.longitude?.toStringAsFixed(6) ?? '',
+    );
+    _geofenceSideController = TextEditingController(
+      text: (widget.project?.geofenceSideMeters ?? 120).toStringAsFixed(0),
     );
     _budgetController = TextEditingController(
       text: widget.project?.budget.toString() ?? '',
@@ -205,9 +224,15 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     _clientController.dispose();
     _descriptionController.dispose();
     _locationController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    _geofenceSideController.dispose();
     _budgetController.dispose();
     _currentCostController.dispose();
     _teamSizeController.dispose();
+    if (widget.geocodingService == null) {
+      _geocodingService.dispose();
+    }
     super.dispose();
   }
 
@@ -566,12 +591,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           const SizedBox(height: 16),
           _buildCoordinatorDropdown(),
           const SizedBox(height: 16),
-          _buildEnhancedTextField(
-            controller: _locationController,
-            label: 'Localização',
-            hint: 'Endereço da obra',
-            icon: Icons.location_on_outlined,
-          ),
+          _buildLocationGeofenceSection(),
           const SizedBox(height: 16),
           _buildEnhancedDateFields(),
           const SizedBox(height: 16),
@@ -626,6 +646,167 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLocationGeofenceSection() {
+    final hasPoint =
+        _latitudeController.text.trim().isNotEmpty &&
+        _longitudeController.text.trim().isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark.withOpacity(0.22),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.borderColor.withOpacity(0.55)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on_outlined,
+                color: AppColors.accentGold,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Localizacao da obra',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              if (hasPoint)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentGold.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(
+                      color: AppColors.accentGold.withOpacity(0.28),
+                    ),
+                  ),
+                  child: const Text(
+                    'Ponto gerado',
+                    style: TextStyle(
+                      color: AppColors.accentGold,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildEnhancedTextField(
+            controller: _locationController,
+            label: 'Endereco da obra',
+            hint: 'Rua, numero, bairro, cidade',
+            icon: Icons.home_work_outlined,
+            required: true,
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed:
+                  _canInteract() && !_isGeocoding ? _geocodeLocation : null,
+              icon:
+                  _isGeocoding
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.manage_search_rounded, size: 18),
+              label: Text(
+                _isGeocoding
+                    ? 'Buscando ponto...'
+                    : 'Converter endereco em ponto',
+              ),
+            ),
+          ),
+          if (_geocodedAddress != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _geocodedAddress!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 460;
+              final fields = [
+                _buildEnhancedTextField(
+                  controller: _latitudeController,
+                  label: 'Latitude',
+                  hint: '-23.550520',
+                  icon: Icons.south_america_rounded,
+                  required: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                ),
+                _buildEnhancedTextField(
+                  controller: _longitudeController,
+                  label: 'Longitude',
+                  hint: '-46.633308',
+                  icon: Icons.explore_outlined,
+                  required: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                ),
+                _buildEnhancedTextField(
+                  controller: _geofenceSideController,
+                  label: 'Lado da cerca (m)',
+                  hint: '120',
+                  icon: Icons.straighten_rounded,
+                  required: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                ),
+              ];
+
+              if (compact) {
+                return Column(
+                  children: [
+                    for (var i = 0; i < fields.length; i++) ...[
+                      fields[i],
+                      if (i < fields.length - 1) const SizedBox(height: 10),
+                    ],
+                  ],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var i = 0; i < fields.length; i++) ...[
+                    Expanded(child: fields[i]),
+                    if (i < fields.length - 1) const SizedBox(width: 10),
+                  ],
+                ],
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -1377,6 +1558,19 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             'Coordenador',
             _selectedCoordinatorName ?? 'Nao informado',
           ),
+          _buildSummaryItem(
+            'Local',
+            _locationController.text.isNotEmpty
+                ? _locationController.text
+                : 'Nao informado',
+          ),
+          if (_latitudeController.text.isNotEmpty &&
+              _longitudeController.text.isNotEmpty)
+            _buildSummaryItem(
+              'Cerca',
+              '${_latitudeController.text}, ${_longitudeController.text} '
+                  '(${_geofenceSideController.text} m)',
+            ),
           if (_budgetController.text.isNotEmpty)
             _buildSummaryItem('Orçamento', 'R\$ ${_budgetController.text}'),
           if (_tags.isNotEmpty) _buildSummaryItem('Tags', _tags.join(', ')),
@@ -1469,6 +1663,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   onPressed: () {
                     if (_currentPage == 0 &&
                         !_formKey.currentState!.validate()) {
+                      return;
+                    }
+                    if (_currentPage == 1 && !_validateProjectLocation()) {
                       return;
                     }
                     _pageController.nextPage(
@@ -1741,6 +1938,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
     // Add null check for form state
     if (_formKey.currentState?.validate() == false) return;
+    if (!_validateProjectLocation()) return;
 
     _lastSaveAttempt = DateTime.now();
 
@@ -1806,6 +2004,9 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       budget: _parseDouble(_budgetController.text),
       currentCost: _parseDouble(_currentCostController.text),
       location: _locationController.text.trim(),
+      latitude: _parseNullableDouble(_latitudeController.text),
+      longitude: _parseNullableDouble(_longitudeController.text),
+      geofenceSideMeters: _parseDouble(_geofenceSideController.text),
       tags: List.from(_tags),
       teamSize: _parseInt(_teamSizeController.text),
       imageUrl: imageUrl,
@@ -1860,8 +2061,68 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     return '${now.millisecondsSinceEpoch}_${now.microsecond}';
   }
 
+  Future<void> _geocodeLocation() async {
+    final address = _locationController.text.trim();
+    if (address.isEmpty) {
+      _showErrorMessage('Informe o endereco da obra antes de buscar o ponto.');
+      return;
+    }
+
+    setState(() => _isGeocoding = true);
+    try {
+      final result = await _geocodingService.geocodeAddress(address);
+      if (!mounted) return;
+      if (result == null) {
+        _showErrorMessage('Nenhum ponto encontrado para este endereco.');
+        return;
+      }
+
+      setState(() {
+        _locationController.text =
+            result.formattedAddress.isEmpty ? address : result.formattedAddress;
+        _latitudeController.text = result.latitude.toStringAsFixed(6);
+        _longitudeController.text = result.longitude.toStringAsFixed(6);
+        _geocodedAddress = result.formattedAddress;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _showErrorMessage('Erro ao buscar coordenada: $e');
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
+    }
+  }
+
+  bool _validateProjectLocation() {
+    final address = _locationController.text.trim();
+    final latitude = _parseNullableDouble(_latitudeController.text);
+    final longitude = _parseNullableDouble(_longitudeController.text);
+    final side = _parseNullableDouble(_geofenceSideController.text);
+
+    if (address.isEmpty) {
+      _showErrorMessage('Informe o endereco da obra.');
+      return false;
+    }
+    if (latitude == null || latitude < -90 || latitude > 90) {
+      _showErrorMessage('Informe uma latitude valida para a obra.');
+      return false;
+    }
+    if (longitude == null || longitude < -180 || longitude > 180) {
+      _showErrorMessage('Informe uma longitude valida para a obra.');
+      return false;
+    }
+    if (side == null || side <= 0) {
+      _showErrorMessage('Informe o tamanho da cerca em metros.');
+      return false;
+    }
+    return true;
+  }
+
   double _parseDouble(String value) {
     return double.tryParse(value.replaceAll(',', '.')) ?? 0.0;
+  }
+
+  double? _parseNullableDouble(String value) {
+    return double.tryParse(value.trim().replaceAll(',', '.'));
   }
 
   int _parseInt(String value) {

@@ -21,8 +21,8 @@ void main() {
 
       expect(other.type, BenefitType.other);
       expect(other.typeLabel, 'Outro');
-      expect(other.valueMode, BenefitValueMode.fixedMonthly);
-      expect(other.defaultValue, 0);
+      expect(other.valueMode, BenefitValueMode.workedDay);
+      expect(other.dailyValue, 0);
       expect(other.reimbursementLimit, 0);
     });
 
@@ -33,8 +33,8 @@ void main() {
         type: BenefitType.vr,
         categoryId: 'cat-1',
         categoryName: 'Vales',
-        valueMode: BenefitValueMode.fixedMonthly,
-        defaultValue: 450,
+        valueMode: BenefitValueMode.workedDay,
+        dailyValue: 31.50,
         description: 'Inicial',
         createdAt: DateTime(2026, 5, 3),
       );
@@ -43,7 +43,7 @@ void main() {
         categoryId: 'cat-2',
         categoryName: 'Alimentacao',
         valueMode: BenefitValueMode.reimbursement,
-        defaultValue: 0,
+        dailyValue: 0,
         reimbursementLimit: 320,
         description: 'Atualizado',
         isActive: false,
@@ -58,6 +58,7 @@ void main() {
       expect(updated.toMap()['type'], 'vr');
       expect(updated.toMap()['categoryId'], 'cat-2');
       expect(updated.toMap()['valueMode'], 'reimbursement');
+      expect(updated.toMap()['dailyValue'], 0);
       expect(updated.toMap()['defaultValue'], 0);
       expect(updated.toMap()['reimbursementLimit'], 320);
     });
@@ -83,6 +84,7 @@ void main() {
         'name': 'Reembolso combustivel',
         'type': 'other',
         'valueMode': 'reimbursement',
+        'dailyValue': '0',
         'defaultValue': '0',
         'reimbursementLimit': '750.50',
         'createdAt': '2026-05-03T00:00:00.000Z',
@@ -99,6 +101,19 @@ void main() {
       }, 'b4');
 
       expect(legacy.valueMode, BenefitValueMode.reimbursement);
+    });
+
+    test('fromMap trata fixedMonthly legado como beneficio diario', () {
+      final legacy = BenefitModel.fromMap({
+        'name': 'VR legado',
+        'type': 'vr',
+        'valueMode': 'fixedMonthly',
+        'defaultValue': '33.25',
+      }, 'b5');
+
+      expect(legacy.valueMode, BenefitValueMode.workedDay);
+      expect(legacy.dailyValue, 33.25);
+      expect(legacy.valueModeLabel, 'Por dia trabalhado');
     });
   });
 }

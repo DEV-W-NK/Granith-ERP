@@ -102,15 +102,22 @@ class MaterialRequisitionService {
     required Supplier supplier,
     required String createdBy,
     required Map<String, double> itemPrices,
+    String? approvalSector,
   }) async {
-    if (requisition.status != RequisitionStatus.approved) {
+    if (requisition.status != RequisitionStatus.pending &&
+        requisition.status != RequisitionStatus.approved) {
       throw Exception(
-        'A requisicao precisa estar aprovada para gerar uma compra.',
+        'A requisicao precisa estar pendente ou aprovada para gerar o orcamento de compra.',
       );
     }
 
     final purchaseService = PurchaseService();
     final purchaseIds = <String>[];
+    final now = DateTime.now();
+    final sector =
+        approvalSector?.trim().isNotEmpty == true
+            ? approvalSector!.trim()
+            : requisition.requesterSector;
 
     for (final item in requisition.items) {
       final price = itemPrices[item.itemName] ?? 0.0;
@@ -126,8 +133,11 @@ class MaterialRequisitionService {
         quantity: item.quantity,
         totalValue: price,
         status: PurchaseStatus.awaitingApproval,
-        purchaseDate: DateTime.now(),
+        purchaseDate: now,
         requisitionId: requisition.id,
+        approvalSector: sector,
+        quotedBy: createdBy,
+        quotedAt: now,
       );
 
       purchaseIds.add(await purchaseService.addPurchase(purchase));

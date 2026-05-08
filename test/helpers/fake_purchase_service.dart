@@ -16,12 +16,21 @@ class FakePurchaseService extends PurchaseService {
   String? lastUpdatedStatusId;
   PurchaseStatus? lastUpdatedStatus;
 
+  Purchase? lastConsolidatedPurchase;
+  String? lastConsolidatedBy;
+  String? lastConsolidatedByName;
+  String? lastInvoiceNumber;
+  String? lastInvoiceAccessKey;
+  DateTime? lastExpectedDeliveryDate;
+  String? lastConsolidationNotes;
+
   Purchase? lastConfirmedDeliveryPurchase;
   String? lastReceivedBy;
 
   Object? approveError;
   Object? rejectError;
   Object? updateStatusError;
+  Object? consolidateError;
   Object? confirmDeliveryError;
 
   @override
@@ -64,6 +73,29 @@ class FakePurchaseService extends PurchaseService {
 
     lastUpdatedStatusId = id;
     lastUpdatedStatus = status;
+  }
+
+  @override
+  Future<void> consolidatePurchase({
+    required Purchase purchase,
+    required String consolidatedBy,
+    required String consolidatedByName,
+    required String invoiceNumber,
+    String invoiceAccessKey = '',
+    DateTime? expectedDeliveryDate,
+    String notes = '',
+  }) async {
+    if (consolidateError != null) {
+      throw consolidateError!;
+    }
+
+    lastConsolidatedPurchase = purchase;
+    lastConsolidatedBy = consolidatedBy;
+    lastConsolidatedByName = consolidatedByName;
+    lastInvoiceNumber = invoiceNumber;
+    lastInvoiceAccessKey = invoiceAccessKey;
+    lastExpectedDeliveryDate = expectedDeliveryDate;
+    lastConsolidationNotes = notes;
   }
 
   @override
