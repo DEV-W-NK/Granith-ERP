@@ -19,6 +19,7 @@ $allowedKeys = @(
   "GOOGLE_OAUTH_WEB_CLIENT_ID",
   "GOOGLE_OAUTH_ANDROID_CLIENT_ID",
   "GOOGLE_OAUTH_IOS_CLIENT_ID",
+  "GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID",
   "GOOGLE_OAUTH_CLIENT_SECRET",
   "GOOGLE_OAUTH_REDIRECT_URL"
 )
@@ -27,7 +28,10 @@ $dartDefineKeys = @(
   "SUPABASE_PUBLISHABLE_KEY",
   "GEMINI_API_KEY",
   "GEMINI_MODEL",
-  "GOOGLE_MAPS_API_KEY"
+  "GOOGLE_MAPS_API_KEY",
+  "GOOGLE_OAUTH_WEB_CLIENT_ID",
+  "GOOGLE_OAUTH_ANDROID_CLIENT_ID",
+  "GOOGLE_OAUTH_IOS_CLIENT_ID"
 )
 $values = @{}
 
@@ -69,8 +73,36 @@ window.GRANITH_ENV = {
 };
 "@
 
+function ConvertTo-ReversedIosClientId {
+  param([string]$ClientId)
+
+  if ([string]::IsNullOrWhiteSpace($ClientId)) {
+    return ""
+  }
+
+  $suffix = ".apps.googleusercontent.com"
+  if ($ClientId.EndsWith($suffix)) {
+    return "com.googleusercontent.apps." + $ClientId.Substring(0, $ClientId.Length - $suffix.Length)
+  }
+
+  return ""
+}
+
 $iosSecretsPath = Join-Path $root "ios\Flutter\Secrets.xcconfig"
-Set-Content -LiteralPath $iosSecretsPath -Encoding UTF8 -Value "GOOGLE_MAPS_API_KEY=$mapsKey"
+$oauthWebClientId = if ($values.ContainsKey("GOOGLE_OAUTH_WEB_CLIENT_ID")) { $values["GOOGLE_OAUTH_WEB_CLIENT_ID"] } else { "" }
+$oauthIosClientId = if ($values.ContainsKey("GOOGLE_OAUTH_IOS_CLIENT_ID")) { $values["GOOGLE_OAUTH_IOS_CLIENT_ID"] } else { "" }
+$oauthIosReversedClientId =
+  if ($values.ContainsKey("GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID") -and -not [string]::IsNullOrWhiteSpace($values["GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID"])) {
+    $values["GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID"]
+  } else {
+    ConvertTo-ReversedIosClientId $oauthIosClientId
+  }
+Set-Content -LiteralPath $iosSecretsPath -Encoding UTF8 -Value @"
+GOOGLE_MAPS_API_KEY=$mapsKey
+GOOGLE_OAUTH_WEB_CLIENT_ID=$oauthWebClientId
+GOOGLE_OAUTH_IOS_CLIENT_ID=$oauthIosClientId
+GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID=$oauthIosReversedClientId
+"@
 
 $dartDefines = @()
 foreach ($key in $dartDefineKeys) {
@@ -82,7 +114,8 @@ foreach ($key in $dartDefineKeys) {
 $setupGroups = @(
   @{ Name = "Gemini"; Keys = @("GEMINI_API_KEY") },
   @{ Name = "Google Maps"; Keys = @("GOOGLE_MAPS_API_KEY") },
-  @{ Name = "Google OAuth"; Keys = @("GOOGLE_OAUTH_WEB_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET") }
+  @{ Name = "Google OAuth Supabase"; Keys = @("GOOGLE_OAUTH_WEB_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET") },
+  @{ Name = "Google Sign-In iOS"; Keys = @("GOOGLE_OAUTH_IOS_CLIENT_ID") }
 )
 foreach ($group in $setupGroups) {
   $missing = @()

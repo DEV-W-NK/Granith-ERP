@@ -1,310 +1,366 @@
 # Granith ERP
 
-Granith ERP e uma plataforma de gestao empresarial para construtoras, obras e contratos. O objetivo do projeto e concentrar em um unico sistema as rotinas operacionais, financeiras e administrativas da empresa: projetos, orcamentos de obra, requisicoes, compras, estoque, financeiro, recursos humanos, frota, geofencing, clientes, permissoes e indicadores gerenciais.
+**ERP moderno para construtoras, obras e operacoes que precisam sair da planilha e operar com rastreabilidade, controle financeiro e visao gerencial.**
 
-O sistema foi desenhado para uso principal em ambiente web desktop, com suporte responsivo para mobile e tablet. A experiencia mobile completa deve evoluir em conjunto com o aplicativo operacional de campo, principalmente para diario de obra, ponto, geofencing, lancamento de combustivel e registros executados fora do escritorio.
+O Granith ERP e uma plataforma de gestao empresarial criada para centralizar a rotina completa de uma empresa de obras: projetos, orcamentos, medicoes, diario de obra, requisicoes, compras, estoque, financeiro, recursos humanos, frota, geofencing, clientes, permissoes, portal do cliente, relatorios e assistentes de IA.
 
-O Granith Mobile deve funcionar como o braco operacional do ERP. Ele nao deve tentar replicar toda a complexidade administrativa do sistema web; sua funcao e servir como ferramenta diaria dos colaboradores para registrar ponto, consultar beneficios, acompanhar dados individuais, lancar informacoes de campo e alimentar o ERP com dados operacionais confiaveis.
+Mais do que um conjunto de cadastros, o sistema foi desenhado para conectar as areas da empresa. Uma requisicao pode virar compra, a compra pode alimentar estoque e financeiro, a obra concentra custo realizado, o DRE consolida resultado e o gestor enxerga o impacto operacional sem depender de informacoes espalhadas.
 
-## Visao Tecnica
+## Resumo executivo
 
-O Granith ERP utiliza Flutter como camada de interface e Supabase como backend principal. A aplicacao consome dados em tempo real quando necessario, centraliza regras de negocio em services/controllers e mantem os modulos conectados por referencias de dominio, como `projectId`, `requisitionId`, `purchaseId`, `financialTransactionId` e `referenceId`.
-
-Stack principal:
-
-| Camada | Tecnologia |
+| Ponto | Estado atual |
 | --- | --- |
-| Interface | Flutter |
-| Plataformas | Web, Android, iOS |
-| Backend | Supabase Postgres + PostgREST |
-| Autenticacao | Supabase Auth |
-| Arquivos | Supabase Storage |
-| Tempo real | Supabase Realtime |
-| Estado | Riverpod na orquestracao do app e Provider/ChangeNotifier em modulos legados durante migracao |
-| Graficos | fl_chart |
-| Mapas | Google Maps |
-| Banco local de apoio | Modelos Dart e controllers de dominio |
+| Produto | MVP avancado em estagio beta operacional |
+| Plataforma principal | Flutter Web com suporte responsivo para desktop, tablet e mobile |
+| Backend | Supabase com Postgres, Auth, Storage, Realtime, migrations e Edge Functions |
+| Modulos de negocio | 27 areas de navegacao ja estruturadas no ERP |
+| Banco de dados | 26 migrations Supabase versionadas |
+| Qualidade | 132 arquivos de teste entre models, services, controllers, viewmodels e widgets |
+| Integracoes | OAuth Google, Google Maps/geocoding, Supabase e assistentes Gemini em desenvolvimento |
+| Uso ideal hoje | Demonstracao comercial, validacao com usuarios, piloto controlado e evolucao para producao |
 
-## Ambiente Local De Desenvolvimento
+O projeto ja passou da fase de prototipo. Ele possui arquitetura real, banco versionado, telas implementadas, testes, regras de permissao, portal do cliente, integracoes externas e uma linha clara de evolucao para mobile operacional e uso em producao.
 
-As chaves de desenvolvimento devem ficar em `.env.local`, que e ignorado pelo Git. Use `.env.example` como base:
+## O quao completo ele e?
 
-```powershell
-Copy-Item .env.example .env.local
-notepad .env.local
-.\scripts\run_dev.ps1 -Device chrome
-```
+O Granith ERP esta em um ponto forte para apresentacao comercial: ja mostra o fluxo completo de uma construtora, com modulos integrados e profundidade suficiente para demonstrar valor real. O posicionamento mais honesto e vendavel hoje e:
 
-O script `scripts/run_dev.ps1` carrega as variaveis abaixo, repassa para o Flutter por `--dart-define`, gera `web/env.js` localmente para o carregamento do Google Maps no navegador e gera `ios/Flutter/Secrets.xcconfig` para builds iOS locais:
-
-| Variavel | Uso |
+| Cenario | Situacao |
 | --- | --- |
-| `SUPABASE_URL` | URL do projeto Supabase |
-| `SUPABASE_PUBLISHABLE_KEY` | chave publica/anon do Supabase |
-| `GEMINI_API_KEY` | chave Gemini usada somente em desenvolvimento |
-| `GEMINI_MODEL` | modelo Gemini, hoje `gemini-2.5-flash` |
-| `GOOGLE_MAPS_API_KEY` | chave Google Maps usada em geocoding e mapas |
-| `GOOGLE_OAUTH_WEB_CLIENT_ID` | Client ID web do OAuth Google para configurar no Supabase |
-| `GOOGLE_OAUTH_ANDROID_CLIENT_ID` | Client ID Android do OAuth Google |
-| `GOOGLE_OAUTH_IOS_CLIENT_ID` | Client ID iOS do OAuth Google |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | client secret web, somente local e painel Supabase |
-| `GOOGLE_OAUTH_REDIRECT_URL` | URL local de retorno autorizada no Google/Supabase |
+| Demo para cliente, parceiro ou investidor | Pronto para demonstrar a visao do produto e seus principais fluxos |
+| Piloto interno ou com cliente controlado | Viavel, desde que acompanhado de validacao operacional e ajustes de seguranca |
+| Uso administrativo real em ambiente fechado | Bem encaminhado, principalmente para validar processos e dados |
+| Producao publica ampla | Requer hardening final de seguranca, release mobile/Android e revisao de infraestrutura |
 
-Tambem existe uma configuracao de exemplo em `.vscode/launch.json`, mas o fluxo recomendado para web/iOS e usar o script acima porque ele cria `web/env.js` e `ios/Flutter/Secrets.xcconfig` sem versionar segredo.
+Em termos praticos, o sistema ja cobre a maior parte do ciclo operacional e administrativo. O que falta nao e "criar o ERP do zero", mas finalizar polimento, seguranca de producao, regras finas por perfil, DRE definitivo, mobile de campo e alguns fluxos avancados.
 
-Para configurar Gemini, Maps e OAuth na mesma passada:
+## Diferenciais
 
-1. Preencha `.env.local` com `GEMINI_API_KEY`, `GOOGLE_MAPS_API_KEY`, `GOOGLE_OAUTH_WEB_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET`.
-2. Rode `.\scripts\run_dev.ps1 -CheckOnly` para validar quais chaves foram encontradas sem abrir o Flutter.
-3. Configure no Supabase: Authentication > Providers > Google, usando o `GOOGLE_OAUTH_WEB_CLIENT_ID` e o `GOOGLE_OAUTH_CLIENT_SECRET`.
-4. Configure no Google Cloud as URLs autorizadas. Em desenvolvimento web, inclua a origem do Flutter, por exemplo `http://localhost:61886`, e a callback do Supabase indicada no painel do provedor Google.
-5. Rode `.\scripts\run_dev.ps1 -Device chrome` para iniciar o ERP com Supabase, Gemini e Maps carregados do mesmo `.env.local`.
+- **Obra como centro de controle:** projetos concentram orcamentos, medicoes, equipes, diarios, requisicoes, compras, custos e indicadores.
+- **Fluxo ponta a ponta:** orcamento aprovado, obra, requisicao, compra, estoque, financeiro e relatorios conversam entre si.
+- **Rastreabilidade financeira:** transacoes podem carregar origem e referencia, permitindo saber se um valor veio de compra, obra, medicao, lancamento manual ou custo operacional.
+- **Permissoes por responsabilidade:** o ERP separa acesso interno, administrativo e cliente, com base em papeis e permissoes.
+- **Portal do cliente:** clientes podem acessar informacoes da propria conta/projeto sem entrar na area interna da empresa.
+- **Base pronta para mobile de campo:** diario de obra, geofencing, ponto, beneficios e registros operacionais ja fazem parte da estrategia do produto.
+- **Assistentes de IA por area:** IA operacional, RH, comercial, suprimentos e administrativa, com contexto de negocio e trilha para evoluir com seguranca no backend.
+- **Arquitetura escalavel:** Flutter no front, Supabase no backend, migrations versionadas, services por dominio e testes cobrindo pontos importantes.
 
-Nao envie as chaves de Maps/OAuth pelo chat. Edite o `.env.local` diretamente na maquina ou defina variaveis de ambiente do usuario; o script usa variaveis do sistema quando uma chave nao existir no arquivo.
+## Modulos do ERP
 
-Exemplo para definir fora do arquivo:
+### Painel e gestao executiva
 
-```powershell
-[Environment]::SetEnvironmentVariable("GOOGLE_MAPS_API_KEY", "sua-chave", "User")
-[Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_WEB_CLIENT_ID", "seu-client-id", "User")
-[Environment]::SetEnvironmentVariable("GOOGLE_OAUTH_CLIENT_SECRET", "seu-client-secret", "User")
-```
+O painel inicial organiza a visao geral da operacao, indicadores recentes e atalhos para os principais fluxos. A proposta e entregar para a diretoria uma leitura rapida do estado da empresa, sem depender de relatorios manuais.
 
-Importante: as variaveis OAuth sao lidas pelo script apenas como checklist local. O client secret nao e enviado por `--dart-define`, nao entra no Flutter e deve ser configurado no painel do Supabase.
+**Estado:** implementado como entrada principal do ERP, com evolucao prevista para consolidar indicadores executivos mais profundos.
 
-Para builds Android, use JDK 21. O `flutter doctor -v` deve apontar para o JBR do Android Studio ou outro JDK 21. Se o terminal usar Java 25 via `JAVA_HOME`, configure o Flutter com:
+### Projetos e obras
 
-```powershell
-flutter config --jdk-dir="D:\Desenvolvimento\Android Studio\jbr"
-```
+Projetos sao o eixo central do Granith ERP. Cada obra pode guardar cliente, descricao, status, periodo, orcamento, custo atual, progresso, localizacao, tags, equipe, medicoes e relacoes com compras, diarios e financeiro.
 
-## Autenticacao OAuth Google
+**Estado:** modulo implementado e integrado a orcamentos, medicoes, portal do cliente, requisicoes e indicadores de custo.
 
-O login com Google usa Supabase Auth. Para funcionar em desenvolvimento e producao, o provedor Google deve estar habilitado no painel do Supabase, com Client ID e Client Secret configurados.
+### Medicoes de obra
 
-URLs de retorno esperadas:
+As medicoes acompanham progresso fisico e financeiro da obra, com sequencia, valores, descontos, percentual medido, acumulado e saldo contratual.
 
-- ERP web: origem atual da aplicacao, por exemplo `http://localhost:<porta>` em desenvolvimento e o dominio final em producao.
-- Granith Mobile: `granithmobile://login-callback/`.
+**Estado:** funcional e conectado ao ciclo de obra e financeiro gerencial.
 
-Quando a conta Google tiver o mesmo e-mail de um usuario administrativo ja cadastrado em `users`, o ERP preserva o papel e as permissoes desse perfil pelo fallback de e-mail. Isso evita criar um usuario comum separado apenas porque o `auth.uid()` do Google e diferente do ID semeado no ERP.
+### Diario de obra
 
-## Falhas De Seguranca Conhecidas Em Desenvolvimento
+O diario de obra registra rotina de campo, evidencias, responsaveis e historico operacional. Ele e uma base importante para controle de execucao, auditoria e comunicacao com cliente.
 
-Atencao: o uso atual de chaves pelo cliente Flutter e aceito somente para desenvolvimento. Antes de producao, isso precisa ser corrigido.
+**Estado:** implementado com fluxo de assinatura e regras de visibilidade em evolucao.
 
-- `GEMINI_API_KEY`: nao deve ficar no Flutter Web, app mobile, `.vscode`, `web/env.js`, `--dart-define` de build publico ou qualquer bundle entregue ao usuario. Qualquer pessoa pode extrair a chave do navegador/aplicativo. A correcao obrigatoria e mover chamadas Gemini para backend seguro, preferencialmente Supabase Edge Function ou outro proxy proprio, com autenticacao, rate limit, auditoria, controle de escopo por usuario e bloqueio de operacoes de escrita pela IA.
-- `GOOGLE_MAPS_API_KEY`: chave de Maps em navegador/mobile tambem fica exposta. Enquanto estiver no cliente, ela deve ser restrita no Google Cloud por HTTP referrer, package name, SHA-1/SHA-256 e APIs permitidas. Para operacoes sensiveis ou com custo alto, usar backend/proxy e limitar cotas.
-- OAuth Google: o `Client Secret` do OAuth fica somente no painel do Supabase/Google Cloud. O `.env.local` pode ser usado apenas como checklist temporario de desenvolvimento, nunca versionado e nunca enviado ao Flutter. Nao colocar client secret no README, `.vscode`, codigo ou build publico. Revisar URLs de callback, dominios autorizados e chaves por ambiente antes de publicar.
-- Supabase: `SUPABASE_PUBLISHABLE_KEY` e publica por natureza, mas so e segura com RLS forte. Nunca usar `service_role` no app cliente.
-- Arquivos locais com segredo: `.env.local`, `web/env.js` e `ios/Flutter/Secrets.xcconfig` sao ignorados pelo Git. Se uma chave real for colada em arquivo versionado por acidente, considerar a chave comprometida e rotacionar no provedor.
+### Orcamentos comerciais
 
-## Granith Mobile
+O modulo de orcamentos trata propostas e orcamentos de obra, com tipos de orcamento, cliente, projeto, itens, valor total, status, datas e possibilidade de vinculacao com a obra.
 
-O mobile deve ser simples, rapido e orientado ao uso diario. O foco nao e gestao completa da empresa, mas sim coleta e consulta de dados individuais e operacionais.
+**Estado:** implementado e conectado ao ciclo comercial e ao projeto.
 
-Principais funcoes esperadas:
+### Requisicoes de materiais e servicos
 
-| Area | Funcao |
-| --- | --- |
-| Ponto | Registrar entrada, saida e permanencia vinculada a obra, empresa ou atividade autorizada |
-| Geofencing | Validar presenca fisica em obras quando o cargo exigir deslocamento |
-| Beneficios | Permitir que o colaborador consulte beneficios ativos e informacoes individuais |
-| Desempenho individual | Exibir dados pessoais de produtividade, registros e historico autorizado |
-| Diario de obra | Permitir registros objetivos de campo quando aplicavel |
-| Combustivel | Lancar abastecimentos, quilometragem e notas fiscais no futuro modulo de frota |
+Requisicoes representam demandas internas da obra ou setor. Elas ajudam a transformar pedidos soltos em um fluxo controlado de aprovacao, compra, entrega e custo.
 
-Nem todo trabalho produtivo acontece dentro da cerca de uma obra. Gerencia, diretoria, coordenacao, engenharia e funcoes administrativas podem estar em cartorio, reunioes, escritorio, fornecedores ou trabalhando em projetos dentro da empresa. Para esses casos, o mobile deve permitir lancamento controlado de horas por atividade ou projeto, sem exigir presenca fisica na obra.
+**Estado:** implementado, com evolucao para cotacoes de fornecedores e aprovacao por responsabilidade/setor.
 
-Regras esperadas para horas fora da obra:
+### Compras e pedidos
 
-- O lancamento deve exigir motivo, projeto/obra vinculada e periodo trabalhado.
-- Perfis operacionais comuns continuam sujeitos a geofence quando o trabalho for presencial na obra.
-- Perfis de gerencia, diretoria, coordenacao e engenharia podem apontar horas produtivas fora da cerca quando houver permissao.
-- Horas lancadas fora da cerca devem ficar rastreaveis para aprovacao, auditoria e custo de mao de obra por obra.
-- O ERP deve diferenciar hora validada por geofence, hora lancada manualmente e hora administrativa sem vinculo direto com obra.
+Compras consolidam fornecedor, item, valores, prazos, notas e status. O modulo separa o trabalho de suprimentos da visao financeira ampla, mantendo rastreabilidade para contas a pagar.
 
-## Arquitetura
+**Estado:** implementado e integrado a fornecedores, itens, requisicoes, estoque e financeiro de compras.
 
-A estrutura do projeto separa telas, widgets, models, controllers, services e regras auxiliares. O padrao atual prioriza componentes reutilizaveis por modulo e services responsaveis por persistencia no Supabase.
+### Coletas, entregas e logistica
 
-Principais responsabilidades:
+O ERP ja possui base para rotas de entrega/coleta, paradas, fornecedores, obras e acompanhamento logistico ligado a compras.
 
-| Pasta | Responsabilidade |
-| --- | --- |
-| `lib/screens` | Entrada visual das paginas do ERP |
-| `lib/widgets` | Componentes de UI organizados por modulo |
-| `lib/models` | Entidades de dominio e serializacao |
-| `lib/controllers` | Estado e regras de tela |
-| `lib/services` e `lib/Services` | Integracao com Supabase e servicos externos |
-| `lib/app` | Bootstrap, providers e injecao de dependencias |
-| `lib/constants` | Codigos, permissoes e constantes de dominio |
-| `lib/utils` | Utilitarios, seeder e funcoes de apoio |
-| `supabase/migrations` | Evolucao do schema do banco |
-| `test` | Testes unitarios e de widgets |
+**Estado:** modulo em evolucao, ja estruturado para crescer junto com frota, motoristas e controle de entregas.
 
-## Modulos Do ERP
+### Estoque e catalogo de itens
 
-### Projetos e Obras
+O catalogo padroniza materiais, insumos e unidades. O estoque registra saldos e movimentacoes, permitindo controlar entrada, saida, ajuste, transferencia e consumo vinculado a obra.
 
-Projetos representam o centro operacional do ERP. Eles conectam orcamentos aprovados, custos realizados, compras, diario de obra, equipes, geofencing, financeiro e indicadores de execucao.
+**Estado:** implementado, com testes e integracao aos fluxos de compras e movimentacao.
 
-Cada obra deve concentrar informacoes como status, progresso, valores previstos, custos atuais, localizacao, cerca operacional e historico de movimentacoes relacionadas.
+### Fornecedores
 
-### Orcamentos de Obra
+Cadastro de fornecedores com dados comerciais e suporte a consulta de CNPJ, apoiando compras, cotacoes e financeiro.
 
-Orcamento de obra e o orcamento comercial e contratual do projeto. Ele define escopo, valores, itens previstos, custos estimados, margem e base de comparacao entre previsto e realizado.
-
-Esse modulo nao deve ser confundido com orcamento de compra. O orcamento de obra pertence ao ciclo comercial e ao planejamento do projeto; a compra pertence ao ciclo operacional.
-
-### Requisicoes e Compras
-
-Requisicoes representam demandas internas de materiais ou servicos. O fluxo correto e:
-
-1. O funcionario ou setor solicita o item.
-2. Compras monta o orcamento de compra com fornecedor, valor, prazo e observacoes.
-3. A coordenacao do setor solicitante aprova ou recusa.
-4. Compras consolida a compra com nota fiscal, previsao de entrega e dados finais.
-5. O financeiro recebe uma conta a pagar originada por compra.
-
-Compras nao deve acessar todo o financeiro. O vinculo com financeiro acontece por uma transacao com origem de compra, mantendo rastreabilidade sem expor movimentacoes financeiras gerais.
+**Estado:** implementado.
 
 ### Financeiro
 
-O financeiro concentra entradas, saidas, contas a pagar, contas a receber, transacoes manuais e transacoes originadas por outros modulos.
+O financeiro centraliza receitas, despesas, contas, transacoes manuais e registros originados por outros modulos. A arquitetura usa origem e referencia para preservar contexto do lancamento.
 
-As transacoes financeiras usam origem e referencia para rastrear de onde vieram. Exemplos:
+**Estado:** implementado, com area especifica para compras no financeiro. O DRE gerencial existe e esta no roadmap de refinamento para consolidacao definitiva.
 
-| Origem | Uso |
-| --- | --- |
-| `manual` | Lancamentos administrativos ou operacionais diretos |
-| `purchase` | Contas a pagar geradas por compras |
-| `budget` | Movimentos vinculados a orcamentos |
-| `laborCost` | Custos de mao de obra |
-| `materialUsage` | Consumo de materiais |
+### DRE gerencial e relatorios
 
-O DRE deve consolidar essas informacoes para leitura gerencial, separando receitas, custos diretos, despesas operacionais e resultado.
+Relatorios e DRE ajudam a transformar dados operacionais em leitura de resultado, separando receitas, custos diretos, despesas operacionais e desempenho.
 
-### Estoque e Catalogo de Itens
-
-O catalogo de itens padroniza materiais e insumos usados por compras, requisicoes, estoque e orcamentos. O estoque registra entradas, saidas, ajustes e movimentacoes de materiais.
-
-Esse modulo deve sustentar decisoes como: comprar, consumir saldo existente, transferir ou ajustar inventario.
+**Estado:** modulo existente, com prioridade declarada para ajuste fino do DRE e confiabilidade dos calculos.
 
 ### Recursos Humanos
 
-O RH gerencia colaboradores, cargos, setores, beneficios, salarios, equipes e informacoes funcionais. O acesso a dados sensiveis, como salario, deve ser controlado por permissao especifica.
+O RH gerencia colaboradores, cargos, setores, beneficios, historico salarial, equipes e dados funcionais. Informacoes sensiveis podem ser protegidas por permissoes especificas.
 
-O modulo tambem deve se conectar futuramente ao custo real de mao de obra por obra, especialmente quando combinado com ponto mobile e geofencing.
+**Estado:** implementado, com base pronta para conectar custo real de mao de obra por obra.
 
-### Frota
+### Beneficios
 
-O modulo de frota deve controlar cadastro de veiculos, modelo, ano, placa, responsavel, status, abastecimentos, consumo real, custos e historico de uso.
+Controle de beneficios, categorias, vinculos com colaboradores e informacoes individuais.
 
-Esses dados permitem comparar consumo esperado com consumo real e avaliar se um veiculo antigo ainda vale a pena para a empresa.
+**Estado:** implementado e preparado para uso no futuro aplicativo operacional.
 
-### Motoristas, Rotas e Fretes Internos
+### Equipes
 
-O controle de motoristas e fretes internos deve ser tratado como uma evolucao futura da frota. A ideia e permitir que motoristas recebam ou confirmem entregas e coletas vinculadas a obras, fornecedores e materiais.
+Equipes permitem associar colaboradores, liderancas e estrutura de trabalho aos projetos e rotinas de campo.
 
-Entregas acontecem nas obras. Coletas acontecem em fornecedores. O sistema deve registrar a conclusao da entrega ou coleta, quilometragem rodada, veiculo utilizado, motorista responsavel e, quando possivel, sugerir rotas menores para reduzir custo e tempo.
+**Estado:** implementado.
 
-Essa frente deve se conectar a compras, estoque, obras e frota, mas nao faz parte do escopo imediato do mobile inicial.
+### Frota e veiculos
+
+Controle de veiculos, dados de cadastro, responsavel, status e base para abastecimento, consumo, custos e historico de uso.
+
+**Estado:** implementado como modulo administrativo, com evolucao natural para abastecimentos, motoristas e fretes internos.
 
 ### Geofencing
 
-O geofencing deve associar obras a areas geograficas validas. A ideia operacional e permitir que registros de campo, ponto e presenca sejam vinculados a obra correta.
+Geofencing associa obras a areas geograficas validas. Isso permite validar presenca fisica, registros de campo e futuramente horas produtivas por obra.
 
-A cerca deve ser usada como base para metricas de permanencia, custo de mao de obra, produtividade e divergencias entre planejamento e execucao.
+**Estado:** implementado com Google Maps/geocoding e base para o mobile de campo.
 
-### Clientes e Permissoes
+### Permissoes, usuarios e clientes
 
-O ERP possui controle de usuarios, clientes, papeis e permissoes. A tela de permissoes deve usar nomes legiveis para usuario final, mantendo codigos internos apenas como referencia tecnica.
+O ERP possui gestao de usuarios, papeis, permissoes, clientes e acesso ao portal. A proposta e separar claramente colaborador interno, administrador e cliente.
 
-Permissoes criticas devem separar acesso por responsabilidade. Exemplos: compras pode ver suas contas originadas por compra, mas nao deve ver todo o financeiro; RH pode gerenciar colaboradores sem necessariamente ver salarios, salvo permissao especifica.
+**Estado:** implementado, com refinamento continuo das permissoes no banco e na interface.
 
-### Portal do Cliente e Visualizacao 3D
+### Portal do cliente
 
-O portal do cliente deve evoluir para apresentar documentos, andamento da obra e arquivos tecnicos de forma acessivel. Para plantas e modelos 3D, o ERP deve preservar o arquivo original de engenharia, mas entregar ao cliente uma visualizacao otimizada para navegador ou app.
+Clientes podem acessar uma area propria para acompanhar projetos e informacoes autorizadas. O sistema tambem possui configuracoes para controlar visibilidade de orcamentos, valores e custos.
 
-A direcao tecnica recomendada e converter arquivos CAD/BIM no backend para um formato de visualizacao, em vez de tentar ler DWG diretamente no Flutter. Para visualizacao simples, o formato ideal tende a ser `glTF/GLB`. Para fidelidade tecnica de CAD/BIM, camadas, propriedades e medicoes, o caminho mais robusto e usar um servico especializado de conversao e viewer, como Autodesk Platform Services.
+**Estado:** implementado e conectado ao modelo de clientes/projetos, com evolucao prevista para documentos e visualizacao tecnica.
 
-## Fluxo Operacional Principal
+### Assistentes de IA
+
+O produto ja possui areas de IA separadas por contexto: operacional, recursos humanos, comercial, suprimentos e administrativo. A ideia e que cada assistente ajude o usuario a interpretar dados e tomar decisoes dentro da area permitida.
+
+**Estado:** funcional em desenvolvimento. Para producao, a chamada da IA deve migrar para backend seguro, com rate limit, auditoria, controle de custo e escopo por usuario.
+
+### Configuracoes e assinatura
+
+O sistema inclui configuracoes gerais, controle de workspace, uso da plataforma e base para billing/assinatura.
+
+**Estado:** implementado como infraestrutura administrativa do ERP.
+
+## Fluxo operacional principal
 
 ```text
-Orcamento de obra aprovado
+Orcamento comercial aprovado
         |
         v
 Projeto / Obra
         |
         v
+Medicoes, diario, equipes e geofencing
+        |
+        v
 Requisicao de material ou servico
         |
         v
-Orcamento de compra feito por Compras
+Cotacao / compra com fornecedor
         |
         v
-Aprovacao da coordenacao responsavel
+Entrega, estoque ou consumo direto na obra
         |
         v
-Compra consolidada com NF e prazo
+Conta a pagar / transacao financeira
         |
         v
-Conta a pagar no Financeiro
-        |
-        v
-Entrega, estoque, custo realizado e indicadores
+DRE, relatorios e indicadores gerenciais
 ```
 
-## Regras De Dominio Importantes
+## Arquitetura tecnica
 
-- Orcamento de obra e diferente de orcamento de compra.
-- Compras gera contas a pagar, mas nao precisa acessar todo o financeiro.
-- Gastos administrativos, como energia, higiene, escritorio e operacao da empresa, devem ser classificados como despesas operacionais, nao como orcamento de obra.
-- Custos vinculados a obra devem carregar `projectId` sempre que forem parte do custo realizado daquele projeto.
-- Transacoes financeiras precisam preservar origem e referencia para auditoria.
-- Permissoes devem ser legiveis para o usuario, mas tecnicamente rastreaveis por codigos internos.
-- Dados sensiveis, como salarios, exigem permissao explicita.
-
-## Dados e Integridade
-
-O banco do ERP deve ser tratado como a fonte real da empresa. Por isso, os modulos precisam manter rastreabilidade entre registros e evitar lancamentos isolados sem contexto.
-
-Exemplos de rastreabilidade esperada:
-
-| Registro | Deve apontar para |
+| Camada | Tecnologia / abordagem |
 | --- | --- |
-| Compra | Requisicao, projeto, fornecedor e financeiro |
-| Conta a pagar de compra | Compra, fornecedor e projeto quando aplicavel |
-| Abastecimento | Veiculo, funcionario, nota fiscal e financeiro |
-| Diario de obra | Projeto, equipe, responsavel e periodo |
-| Ponto por geofence | Funcionario, obra, horario e cerca |
-| Custo de mao de obra | Funcionario, periodo, obra e origem do apontamento |
+| Interface | Flutter |
+| Plataformas | Web, Android, iOS, Windows, Linux e macOS pela base Flutter |
+| Backend | Supabase Postgres + PostgREST |
+| Autenticacao | Supabase Auth e OAuth Google |
+| Arquivos | Supabase Storage |
+| Tempo real | Supabase Realtime quando aplicavel |
+| Estado | Provider/ChangeNotifier em modulos legados e Riverpod na orquestracao mais recente |
+| Mapas | Google Maps e geocoding |
+| Graficos | fl_chart |
+| IA | Gemini em desenvolvimento, com roadmap para proxy seguro no backend |
+| Banco | Schema versionado por migrations Supabase |
+| Testes | `flutter_test` com cobertura de models, services, controllers, viewmodels e widgets |
 
-## Qualidade e Testes
+### Estrutura do repositorio
 
-O projeto possui testes unitarios e testes de widgets para validar models, controllers, services e fluxos principais. A evolucao tecnica deve manter testes nos pontos de maior risco: financeiro, compras, requisicoes, permissoes, RH, frota e integracoes com Supabase.
+| Pasta | Responsabilidade |
+| --- | --- |
+| `lib/screens` | Paginas principais do ERP |
+| `lib/widgets` | Componentes e views por modulo |
+| `lib/models` | Entidades de dominio e serializacao |
+| `lib/controllers` | Estado e regras de tela |
+| `lib/ViewModels` e `lib/features` | ViewModels e modulos em migracao para arquitetura mais organizada |
+| `lib/services` | Integracao com Supabase e servicos externos |
+| `lib/app` | Bootstrap, providers, roteamento e injecao de dependencias |
+| `lib/constants` | Permissoes, tokens visuais e constantes de dominio |
+| `supabase/migrations` | Evolucao versionada do banco |
+| `supabase/functions` | Edge Functions |
+| `test` | Testes automatizados |
+| `docs` | Auditorias, modelo de dados e documentacao tecnica |
 
-As entregas devem ser acompanhadas por analise estatica, testes direcionados, validacao dos fluxos criticos, revisao de permissoes por perfil e conferencia das regras de RLS no Supabase.
+## Seguranca e governanca
 
-## O Que Precisamos Fazer Agora
+O Granith ERP ja possui uma base importante de seguranca:
 
-1. **Integrar IA aos modulos do ERP para apoiar tomada de decisao**
+- Autenticacao com Supabase Auth.
+- Separacao entre usuario interno, administrador e cliente.
+- Modelo de permissoes por codigo.
+- Migrations com baseline de RLS e policies.
+- GraphQL desabilitado no Supabase.
+- Uso de Edge Function para sincronizacao de estatisticas com validacao de JWT.
+- Arquivos sensiveis como `.env.local`, `web/env.js` e `ios/Flutter/Secrets.xcconfig` ignorados pelo Git.
+- Auditorias tecnicas documentadas em `docs/`.
 
-   A IA deve trabalhar com contexto real do banco de dados da empresa, mas com acesso limitado por modulo e por permissao. Alem das assistencias especificas por area, deve existir um agente dedicado ao CEO, capaz de resumir o estado da empresa com metricas de orcamentos de obras fechadas, compras realizadas, desempenho operacional, indicadores financeiros, riscos e pontos de atencao.
+Antes de producao publica ampla, os pontos mais importantes sao:
 
-2. **Criar o modulo de tempo gasto por obra dentro da cerca**
+- Mover chamadas Gemini para backend seguro.
+- Revisar buckets privados e URLs assinadas para imagens/documentos sensiveis.
+- Refinar RLS por permissao e operacao em todos os modulos criticos.
+- Configurar assinatura Android de release e identificadores reais do app.
+- Adicionar headers de seguranca no hosting web.
+- Validar cenarios com usuarios reais: admin, financeiro, comprador, RH, colaborador e cliente.
 
-   Essa frente depende do mobile. O objetivo e medir quanto tempo cada funcionario permaneceu dentro da cerca de uma obra. Exemplo: funcionarios X, Y e Z passaram determinada quantidade de horas na obra A. Com isso, o ERP deve calcular o total de mao de obra alocado, identificar desvios e mostrar quanto custa para a empresa manter a equipe naquela obra. Tambem deve existir lancamento controlado de horas fora da cerca para gerencia, diretoria, coordenacao, engenharia e funcoes autorizadas que trabalham para a obra sem estar fisicamente nela.
+Esse cuidado nao diminui o produto. Pelo contrario: mostra que o ERP esta sendo tratado como sistema empresarial real, com responsabilidade sobre dados financeiros, operacionais e pessoais.
 
-3. **Melhorar a identidade visual do projeto**
+## Granith Mobile
 
-   A interface atual esta funcional, mas precisa evoluir visualmente. A paleta deve ser mais coerente, pois o contraste entre dourado e azul de fim de tarde nao esta entregando a melhor leitura visual. A meta e elevar a identidade do ERP ao seu apice, com cores, hierarquia, componentes e acabamento visual mais consistentes.
+O mobile e o braco operacional do ERP. Ele nao precisa replicar toda a administracao do sistema web; o foco e coletar dados de campo e dar ao colaborador acesso rapido ao que ele precisa no dia a dia.
 
-4. **Fazer o DRE voltar a funcionar corretamente**
+Funcoes previstas para o mobile:
 
-   O DRE precisa voltar a consolidar os dados financeiros de forma confiavel. Ele deve ler corretamente receitas, custos diretos, despesas operacionais, compras, gastos vinculados a obras e resultado, entregando uma visao gerencial clara sobre o desempenho da empresa.
+| Area | Funcao |
+| --- | --- |
+| Ponto | Entrada, saida e permanencia vinculada a obra, empresa ou atividade autorizada |
+| Geofencing | Validacao de presenca fisica em obras |
+| Beneficios | Consulta individual de beneficios |
+| Diario de obra | Registro objetivo de campo |
+| Frota | Lancamentos futuros de combustivel, quilometragem e notas |
+| Produtividade | Historico autorizado de registros individuais |
 
-5. **Estudar visualizacao 3D de plantas no portal do cliente**
+O ERP tambem considera que nem todo trabalho produtivo acontece dentro de uma cerca. Gerencia, diretoria, coordenacao, engenharia e administrativo podem registrar horas por atividade/projeto com justificativa e aprovacao, mantendo rastreabilidade de custo.
 
-   Essa frente e experimental. O objetivo e permitir que o cliente visualize plantas e modelos 3D vinculados a obra pelo portal. A abordagem recomendada e manter o arquivo tecnico original, como DWG ou equivalente, armazenado com seguranca, e gerar uma versao otimizada para visualizacao, como GLB/glTF ou um derivado de viewer CAD/BIM. Unity deve ser considerado somente se a experiencia exigir navegacao imersiva, simulacao, walkthrough ou interacoes avancadas; para simples visualizacao tecnica, um viewer web/Flutter tende a ser mais leve e sustentavel.
+## Como rodar localmente
+
+As chaves de desenvolvimento devem ficar em `.env.local`, que e ignorado pelo Git. Use `.env.example` como base.
+
+```powershell
+Copy-Item .env.example .env.local
+notepad .env.local
+.\scripts\run_dev.ps1 -CheckOnly
+.\scripts\run_dev.ps1 -Device chrome
+```
+
+O script `scripts/run_dev.ps1` carrega variaveis do `.env.local`, repassa para o Flutter por `--dart-define`, gera `web/env.js` localmente para o Google Maps no navegador e gera `ios/Flutter/Secrets.xcconfig` para builds iOS locais.
+
+### Variaveis principais
+
+| Variavel | Uso |
+| --- | --- |
+| `SUPABASE_URL` | URL do projeto Supabase |
+| `SUPABASE_PUBLISHABLE_KEY` | Chave publica/anon do Supabase |
+| `GEMINI_API_KEY` | Chave Gemini usada em desenvolvimento |
+| `GEMINI_MODEL` | Modelo Gemini configurado |
+| `GOOGLE_MAPS_API_KEY` | Chave Google Maps |
+| `GOOGLE_OAUTH_WEB_CLIENT_ID` | Client ID web do OAuth Google |
+| `GOOGLE_OAUTH_ANDROID_CLIENT_ID` | Client ID Android |
+| `GOOGLE_OAUTH_IOS_CLIENT_ID` | Client ID iOS |
+| `GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID` | URL scheme iOS do Google Sign-In |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Client secret web, apenas local/Supabase |
+| `GOOGLE_OAUTH_REDIRECT_URL` | URL local de retorno web |
+
+Nao versionar segredos. O `SUPABASE_PUBLISHABLE_KEY` e publico por natureza, mas deve ser usado sempre com RLS forte. Nunca usar `service_role` no cliente Flutter.
+
+### Credenciais e secrets
+
+Use estes arquivos locais, ambos ignorados pelo Git:
+
+```powershell
+Copy-Item .env.example .env.local
+Copy-Item supabase/.env.example supabase/.env.local
+```
+
+- `.env.local`: variaveis usadas pelo cliente Flutter em desenvolvimento. O script `scripts/run_dev.ps1` carrega apenas as chaves seguras para `--dart-define`.
+- `supabase/.env.local`: secrets das Edge Functions, como `SUPABASE_SERVICE_ROLE_KEY`, `GRANITH_MANAGEMENT_API_TOKEN`, `GRANITH_PUSH_DISPATCH_TOKEN` e credenciais Firebase Admin.
+
+Para conferir se estao ignorados:
+
+```powershell
+git check-ignore .env.local
+git check-ignore supabase/.env.local
+git check-ignore web/env.js
+git check-ignore ios/Flutter/Secrets.xcconfig
+```
+
+Nao use `--dart-define-from-file=.env.local` se o arquivo tiver client secret ou service role. Isso pode embutir segredo no bundle Flutter. Prefira `scripts/run_dev.ps1`.
+
+Para builds Android, use JDK 21. Se necessario:
+
+```powershell
+flutter config --jdk-dir="D:\Desenvolvimento\Android Studio\jbr"
+```
+
+## Testes e validacao
+
+Comandos recomendados durante evolucao:
+
+```powershell
+flutter test
+dart analyze
+```
+
+A base de testes cobre modelos, services, controllers, viewmodels e widgets de modulos como projetos, orcamentos, compras, estoque, financeiro, RH, portal do cliente, permissoes, veiculos e relatorios.
+
+## Roadmap de evolucao
+
+Prioridades mais importantes para transformar o beta operacional em produto pronto para producao:
+
+1. Finalizar hardening de seguranca para producao.
+2. Fazer o DRE consolidar dados financeiros com alta confiabilidade.
+3. Migrar IA para backend seguro com auditoria, permissao e controle de custo.
+4. Evoluir mobile de campo para ponto, geofencing, diario e beneficios.
+5. Amarrar custo real de mao de obra por obra.
+6. Refinar logistica de compras, entregas, motoristas e frota.
+7. Evoluir portal do cliente com documentos, andamento e visualizacao tecnica.
+8. Polir identidade visual, responsividade e experiencia de uso para demonstracao comercial.
+
+## Posicionamento
+
+O Granith ERP e uma base real de produto, nao apenas uma ideia. Ele ja tem amplitude de ERP, profundidade nos modulos principais e arquitetura suficiente para crescer com seguranca.
+
+O melhor discurso comercial hoje e: **um ERP vertical para construtoras em beta avancado, pronto para demonstracao e piloto, com fluxo ponta a ponta ja implementado e roadmap claro para producao.**

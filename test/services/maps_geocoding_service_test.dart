@@ -6,10 +6,15 @@ import 'package:http/http.dart' as http;
 import 'package:project_granith/services/maps_geocoding_service.dart';
 
 void main() {
+  const fakeGoogleMapsApiKey = String.fromEnvironment(
+    'TEST_GOOGLE_MAPS_API_KEY',
+    defaultValue: 'unit-test-placeholder-key',
+  );
+
   group('MapsGeocodingService', () {
     test('converte resposta do Google em coordenada da obra', () async {
       final service = MapsGeocodingService(
-        apiKey: 'test-key',
+        apiKey: fakeGoogleMapsApiKey,
         client: _FakeHttpClient(
           http.Response(
             json.encode({
@@ -39,7 +44,7 @@ void main() {
 
     test('retorna null quando endereco nao tem resultado', () async {
       final service = MapsGeocodingService(
-        apiKey: 'test-key',
+        apiKey: fakeGoogleMapsApiKey,
         client: _FakeHttpClient(
           http.Response(json.encode({'status': 'ZERO_RESULTS'}), 200),
         ),

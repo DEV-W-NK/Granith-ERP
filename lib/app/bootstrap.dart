@@ -16,7 +16,7 @@ Future<void> bootstrap() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.publishableKey,
     authOptions: const FlutterAuthClientOptions(
-      authFlowType: AuthFlowType.implicit,
+      authFlowType: AuthFlowType.pkce,
     ),
   );
 

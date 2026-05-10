@@ -1,9 +1,89 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/services/auth_service.dart';
 
 void main() {
+  group('AuthService OAuth redirect', () {
+    test('usa a origem atual no web', () {
+      final redirectTo = resolveAuthRedirectTo(
+        isWeb: true,
+        targetPlatform: TargetPlatform.android,
+        webBaseUri: Uri.parse('http://localhost:61886/login?foo=bar'),
+      );
+
+      expect(redirectTo, 'http://localhost:61886');
+    });
+
+    test('usa deep link proprio no Android e iOS', () {
+      expect(
+        resolveAuthRedirectTo(
+          isWeb: false,
+          targetPlatform: TargetPlatform.android,
+        ),
+        mobileOAuthRedirectTo,
+      );
+      expect(
+        resolveAuthRedirectTo(isWeb: false, targetPlatform: TargetPlatform.iOS),
+        mobileOAuthRedirectTo,
+      );
+    });
+
+    test('nao usa localhost implicito em plataformas desktop', () {
+      expect(
+        resolveAuthRedirectTo(
+          isWeb: false,
+          targetPlatform: TargetPlatform.windows,
+        ),
+        isNull,
+      );
+    });
+
+    test('usa Google Sign-In nativo somente em Android e iOS', () {
+      expect(
+        shouldUseNativeGoogleSignIn(
+          isWeb: false,
+          targetPlatform: TargetPlatform.android,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldUseNativeGoogleSignIn(
+          isWeb: false,
+          targetPlatform: TargetPlatform.iOS,
+        ),
+        isTrue,
+      );
+      expect(
+        shouldUseNativeGoogleSignIn(
+          isWeb: true,
+          targetPlatform: TargetPlatform.android,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldUseNativeGoogleSignIn(
+          isWeb: false,
+          targetPlatform: TargetPlatform.windows,
+        ),
+        isFalse,
+      );
+    });
+
+    test('mapeia erro de configuracao do Google Sign-In nativo', () {
+      final message = mapGoogleSignInError(
+        const GoogleSignInException(
+          code: GoogleSignInExceptionCode.clientConfigurationError,
+        ),
+      );
+
+      expect(message, contains('Google Sign-In nativo'));
+      expect(message, contains('SHA-1/SHA-256'));
+    });
+  });
+
   group('AuthService profile payloads', () {
     test('insert payload creates only non-privileged client profile', () {
       final payload = buildAuthUserProfileInsertPayload(

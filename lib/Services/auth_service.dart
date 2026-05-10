@@ -1,7 +1,14 @@
 import 'package:flutter/foundation.dart'
-    show debugPrint, kIsWeb, visibleForTesting;
+    show
+        TargetPlatform,
+        debugPrint,
+        defaultTargetPlatform,
+        kIsWeb,
+        visibleForTesting;
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:project_granith/core/config/google_oauth_config.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
@@ -10,9 +17,14 @@ import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/auth_service_contract.dart';
 
+@visibleForTesting
+const String mobileOAuthRedirectTo = 'granithmobile://login-callback/';
+
 class AuthService implements AuthServiceContract {
   SupabaseClient get _client => AppSupabase.client;
   final ClientAccountService _clientAccountService = ClientAccountService();
+  static Future<void>? _googleSignInInitFuture;
+  static bool _nativeGoogleSignInInitialized = false;
 
   @override
   User? get currentUser => _client.auth.currentUser;
@@ -55,10 +67,22 @@ class AuthService implements AuthServiceContract {
 
   @override
   Future<void> signInWithGoogle() async {
+    final targetPlatform = defaultTargetPlatform;
+    if (shouldUseNativeGoogleSignIn(
+      isWeb: kIsWeb,
+      targetPlatform: targetPlatform,
+    )) {
+      await _signInWithNativeGoogle(targetPlatform);
+      return;
+    }
+
     try {
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: kIsWeb ? Uri.base.origin : null,
+        redirectTo: resolveAuthRedirectTo(
+          isWeb: kIsWeb,
+          targetPlatform: targetPlatform,
+        ),
       );
     } on AuthException catch (error) {
       throw AppAuthException(
@@ -74,6 +98,80 @@ class AuthService implements AuthServiceContract {
         message: 'Nao foi possivel autenticar com Google.',
       );
     }
+  }
+
+  Future<void> _signInWithNativeGoogle(TargetPlatform targetPlatform) async {
+    await _ensureNativeGoogleSignInInitialized(targetPlatform);
+
+    try {
+      if (!GoogleSignIn.instance.supportsAuthenticate()) {
+        throw const AppAuthException(
+          code: 'google_native_unsupported',
+          message:
+              'O login nativo do Google nao esta disponivel nesta plataforma.',
+        );
+      }
+
+      final account = await GoogleSignIn.instance.authenticate();
+      final idToken = account.authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw const AppAuthException(
+          code: 'google_missing_id_token',
+          message:
+              'O Google nao retornou o token de identidade necessario para entrar.',
+        );
+      }
+
+      await _client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+      );
+    } on AppAuthException {
+      rethrow;
+    } on GoogleSignInException catch (error) {
+      throw AppAuthException(
+        code: error.code.name,
+        message: mapGoogleSignInError(error),
+      );
+    } on AuthException catch (error) {
+      throw AppAuthException(
+        code: error.code ?? 'google_id_token_failed',
+        message: _mapGoogleIdTokenAuthError(error),
+      );
+    } catch (_) {
+      throw const AppAuthException(
+        code: 'google_native_sign_in_failed',
+        message: 'Nao foi possivel autenticar com Google no app.',
+      );
+    }
+  }
+
+  Future<void> _ensureNativeGoogleSignInInitialized(
+    TargetPlatform targetPlatform,
+  ) {
+    if (!GoogleOAuthConfig.hasServerClientId) {
+      throw const AppAuthException(
+        code: 'missing_google_web_client_id',
+        message:
+            'GOOGLE_OAUTH_WEB_CLIENT_ID nao esta configurado para o login nativo do Google.',
+      );
+    }
+
+    if (targetPlatform == TargetPlatform.iOS &&
+        GoogleOAuthConfig.iosClientId.isEmpty) {
+      throw const AppAuthException(
+        code: 'missing_google_ios_client_id',
+        message:
+            'GOOGLE_OAUTH_IOS_CLIENT_ID nao esta configurado para o login nativo do Google no iOS.',
+      );
+    }
+
+    _googleSignInInitFuture ??= GoogleSignIn.instance.initialize(
+      clientId: GoogleOAuthConfig.nativeClientIdFor(targetPlatform),
+      serverClientId: GoogleOAuthConfig.webClientId,
+    );
+    _nativeGoogleSignInInitialized = true;
+    return _googleSignInInitFuture!;
   }
 
   @override
@@ -124,7 +222,10 @@ class AuthService implements AuthServiceContract {
       await _client.auth.signInWithOtp(
         email: normalizedEmail,
         shouldCreateUser: shouldCreateUser,
-        emailRedirectTo: kIsWeb ? Uri.base.origin : null,
+        emailRedirectTo: resolveAuthRedirectTo(
+          isWeb: kIsWeb,
+          targetPlatform: defaultTargetPlatform,
+        ),
       );
     } on AuthException catch (error) {
       throw AppAuthException(
@@ -333,7 +434,30 @@ class AuthService implements AuthServiceContract {
 
   @override
   Future<void> signOut() async {
+    if (_nativeGoogleSignInInitialized) {
+      try {
+        await GoogleSignIn.instance.signOut();
+      } catch (error) {
+        debugPrint('Erro ao encerrar sessao Google nativa: $error');
+      }
+    }
+
     await _client.auth.signOut();
+  }
+
+  String _mapGoogleIdTokenAuthError(AuthException error) {
+    final message = error.message.toLowerCase();
+    if (message.contains('audience') ||
+        message.contains('id_token') ||
+        message.contains('id token') ||
+        message.contains('invalid')) {
+      return 'O token do Google nao foi aceito pelo Supabase. Confira se o Client ID web esta configurado no app e no provedor Google do Supabase.';
+    }
+
+    return _mapAuthError(
+      error,
+      fallbackMessage: 'Nao foi possivel validar o login do Google.',
+    );
   }
 
   String _mapAuthError(AuthException error, {required String fallbackMessage}) {
@@ -354,6 +478,54 @@ class AuthService implements AuthServiceContract {
       default:
         return error.message.isNotEmpty ? error.message : fallbackMessage;
     }
+  }
+}
+
+@visibleForTesting
+bool shouldUseNativeGoogleSignIn({
+  required bool isWeb,
+  required TargetPlatform targetPlatform,
+}) {
+  if (isWeb) {
+    return false;
+  }
+
+  return switch (targetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => true,
+    _ => false,
+  };
+}
+
+@visibleForTesting
+String? resolveAuthRedirectTo({
+  required bool isWeb,
+  required TargetPlatform targetPlatform,
+  Uri? webBaseUri,
+}) {
+  if (isWeb) {
+    return (webBaseUri ?? Uri.base).origin;
+  }
+
+  return switch (targetPlatform) {
+    TargetPlatform.android || TargetPlatform.iOS => mobileOAuthRedirectTo,
+    _ => null,
+  };
+}
+
+@visibleForTesting
+String mapGoogleSignInError(GoogleSignInException error) {
+  switch (error.code) {
+    case GoogleSignInExceptionCode.canceled:
+      return 'Login com Google cancelado.';
+    case GoogleSignInExceptionCode.clientConfigurationError:
+    case GoogleSignInExceptionCode.providerConfigurationError:
+      return 'Google Sign-In nativo nao esta configurado corretamente. Confira package name, Bundle ID, SHA-1/SHA-256 e Client IDs no Google Cloud.';
+    case GoogleSignInExceptionCode.uiUnavailable:
+      return 'O Google nao conseguiu abrir a tela de login neste dispositivo.';
+    default:
+      return error.description?.trim().isNotEmpty == true
+          ? error.description!
+          : 'Nao foi possivel abrir o login do Google.';
   }
 }
 
