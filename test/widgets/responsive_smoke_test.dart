@@ -40,47 +40,47 @@ class _FakeHomeViewModel extends HomeViewModel {
   @override
   List<StatItem> get stats => [
     StatItem(
-      label: 'RECEITA DO MES COM LABEL EXTENSO',
-      value: 'R\$ 123.456.789,00',
-      delta: '+18% comparado ao periodo anterior',
+      label: 'ULTIMO CONTRATADO COM LABEL EXTENSO',
+      value: 'Ana Carolina do Nascimento',
+      delta: 'Entrou hoje no time operacional',
       deltaUp: true,
       accent: AppColors.green,
-      icon: Icons.trending_up_rounded,
+      icon: Icons.person_add_alt_1_rounded,
     ),
     StatItem(
-      label: 'DESPESAS OPERACIONAIS',
-      value: 'R\$ 98.765.432,00',
-      delta: '-5% no ciclo atual',
-      deltaUp: false,
-      accent: AppColors.red,
-      icon: Icons.trending_down_rounded,
-    ),
-    StatItem(
-      label: 'SALDO CONSOLIDADO',
-      value: 'R\$ 24.691.357,00',
-      delta: '+12% acumulado',
+      label: 'ULTIMA OBRA FECHADA',
+      value: 'Residencial Alto da Serra',
+      delta: 'Concluida nesta semana',
       deltaUp: true,
       accent: AppColors.gold,
-      icon: Icons.account_balance_wallet_rounded,
+      icon: Icons.task_alt_rounded,
     ),
     StatItem(
-      label: 'CLIENTES ATIVOS',
-      value: '128',
-      delta: '+24 novos clientes',
+      label: 'EQUIPE EM CAMPO HOJE',
+      value: '128 pessoas',
+      delta: 'Diarios em andamento',
       deltaUp: true,
       accent: AppColors.blue,
-      icon: Icons.people_outline_rounded,
+      icon: Icons.engineering_rounded,
+    ),
+    StatItem(
+      label: 'RELATORIOS LIBERADOS',
+      value: '24 assinados',
+      delta: 'Visiveis no portal do cliente',
+      deltaUp: true,
+      accent: AppColors.auraCyan,
+      icon: Icons.verified_rounded,
     ),
   ];
 
   @override
   List<ActivityItem> get recentActivities => [
     ActivityItem(
-      icon: Icons.arrow_downward_rounded,
+      icon: Icons.emoji_events_rounded,
       iconColor: AppColors.green,
-      title: 'Pagamento recebido de contrato com descricao muito longa',
+      title: 'Obra fechada com descricao muito longa',
       subtitle: 'Projeto Residencial Alto da Serra - Etapa de acabamento',
-      value: 'R\$ 1.250.000,00',
+      value: 'Hoje',
       time: 'Hoje',
       isPositive: true,
     ),
@@ -96,7 +96,7 @@ Future<SystemSettingsViewModel> _settingsViewModel() async {
       settings: const SystemSettings(
         dashboardGreetingTitle: 'Panorama operacional de hoje',
         dashboardGreetingSubtitle:
-            'Execucao, financeiro, clientes e equipe em uma visao consolidada',
+            'Equipe, obras e entregas em uma visao consolidada',
         aiAssistantPreviewEnabled: true,
       ),
     ),

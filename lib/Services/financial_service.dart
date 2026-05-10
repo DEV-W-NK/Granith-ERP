@@ -69,6 +69,25 @@ class FinancialService {
     );
   }
 
+  Future<List<FinancialTransactionModel>> getTransactions({
+    DateTime? from,
+    DateTime? to,
+  }) async {
+    dynamic query = AppSupabase.client
+        .from(_table)
+        .select(SupabaseSelects.financialTransaction);
+
+    if (from != null) {
+      query = query.gte('dueDate', DbValue.toPrimitive(from));
+    }
+    if (to != null) {
+      query = query.lte('dueDate', DbValue.toPrimitive(to));
+    }
+
+    final response = await query.order('dueDate', ascending: false);
+    return _rowsToTransactions(response as List);
+  }
+
   Future<FinancialTransactionModel?> getById(String id) async {
     final row =
         await AppSupabase.client

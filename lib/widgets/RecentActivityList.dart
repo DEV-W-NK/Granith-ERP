@@ -28,7 +28,7 @@ class RecentActivityList extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(child: AppCardTitle('Atividade recente')),
+              const Expanded(child: AppCardTitle('Marcos recentes')),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
@@ -112,7 +112,7 @@ class RecentActivityList extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
                 style: TextStyle(
-                  color: item.isPositive ? AppColors.green : AppColors.red,
+                  color: item.isPositive ? item.iconColor : AppColors.accentRed,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),

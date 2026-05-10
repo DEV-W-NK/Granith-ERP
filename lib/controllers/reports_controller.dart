@@ -15,6 +15,12 @@ class ReportsController extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  String? _error;
+  String? get error => _error;
+
+  DreExecutiveReport? _dreReport;
+  DreExecutiveReport? get dreReport => _dreReport;
+
   DateTime? periodFrom;
   DateTime? periodTo;
 
@@ -44,6 +50,23 @@ class ReportsController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadDreReport() async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      _dreReport = await fetchDreExecutiveReport();
+    } catch (e) {
+      debugPrint('[ReportsController] Erro ao carregar DRE: $e');
+      _dreReport = DreExecutiveReport.empty;
+      _error = 'Nao foi possivel carregar o DRE gerencial.';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<List<Map<String, dynamic>>> generateReport(String reportType) async {
     _isLoading = true;
     notifyListeners();
@@ -69,6 +92,363 @@ class ReportsController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<DreExecutiveReport> fetchDreExecutiveReport() async {
+    final transactionsFuture = _fetchTransactions();
+    final projectsFuture = _fetchProjects();
+    final employeesFuture = _fetchEmployees();
+    final inventoryFuture = _fetchInventoryRows();
+    final purchasesFuture = _fetchPurchases();
+    final measurementsFuture = _fetchProjectMeasurements();
+    final dailyLogsFuture = _fetchDailyLogRows();
+
+    final results = await Future.wait<dynamic>([
+      transactionsFuture,
+      projectsFuture,
+      employeesFuture,
+      inventoryFuture,
+      purchasesFuture,
+      measurementsFuture,
+      dailyLogsFuture,
+    ]);
+
+    return buildDreExecutiveReportFromData(
+      transactions: results[0] as List<FinancialTransactionModel>,
+      projects: results[1] as List<Map<String, dynamic>>,
+      employees: results[2] as List<Map<String, dynamic>>,
+      inventory: results[3] as List<Map<String, dynamic>>,
+      purchases: results[4] as List<Map<String, dynamic>>,
+      measurements: results[5] as List<Map<String, dynamic>>,
+      dailyLogs: results[6] as List<Map<String, dynamic>>,
+      periodFrom: periodFrom,
+      periodTo: periodTo,
+    );
+  }
+
+  static DreExecutiveReport buildDreExecutiveReportFromData({
+    required List<FinancialTransactionModel> transactions,
+    List<Map<String, dynamic>> projects = const [],
+    List<Map<String, dynamic>> employees = const [],
+    List<Map<String, dynamic>> inventory = const [],
+    List<Map<String, dynamic>> purchases = const [],
+    List<Map<String, dynamic>> measurements = const [],
+    List<Map<String, dynamic>> dailyLogs = const [],
+    DateTime? periodFrom,
+    DateTime? periodTo,
+  }) {
+    final periodTransactions =
+        transactions.where((transaction) {
+          if (transaction.status == TransactionStatus.cancelled) return false;
+          return _isDateInPeriod(transaction.dueDate, periodFrom, periodTo);
+        }).toList();
+
+    final paidTransactions =
+        periodTransactions
+            .where(
+              (transaction) => transaction.status == TransactionStatus.paid,
+            )
+            .toList();
+    final paidExpenses =
+        paidTransactions
+            .where((transaction) => transaction.type == TransactionType.expense)
+            .toList();
+
+    final grossRevenue = _sumTransactions(
+      paidTransactions,
+      (transaction) => transaction.type == TransactionType.income,
+    );
+    final taxDeductions = _sumTransactions(
+      paidExpenses,
+      (transaction) => transaction.category == TransactionCategory.tax,
+    );
+    final netRevenue = grossRevenue - taxDeductions;
+
+    bool isDirectProjectCost(FinancialTransactionModel transaction) {
+      if (!_hasProject(transaction)) return false;
+      return switch (transaction.category) {
+        TransactionCategory.material ||
+        TransactionCategory.labor ||
+        TransactionCategory.equipment ||
+        TransactionCategory.measurement ||
+        TransactionCategory.other => true,
+        TransactionCategory.administrative || TransactionCategory.tax => false,
+      };
+    }
+
+    final projectMaterialCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isDirectProjectCost(transaction) &&
+          transaction.category == TransactionCategory.material,
+    );
+    final laborCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isDirectProjectCost(transaction) &&
+          transaction.category == TransactionCategory.labor,
+    );
+    final equipmentCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isDirectProjectCost(transaction) &&
+          transaction.category == TransactionCategory.equipment,
+    );
+    final directCosts = _sumTransactions(paidExpenses, isDirectProjectCost);
+    final otherProjectCosts =
+        directCosts - projectMaterialCosts - laborCosts - equipmentCosts;
+
+    bool isOperationalExpense(FinancialTransactionModel transaction) {
+      return transaction.category != TransactionCategory.tax &&
+          !isDirectProjectCost(transaction);
+    }
+
+    final operationalExpenses = _sumTransactions(
+      paidExpenses,
+      isOperationalExpense,
+    );
+    final operationalMaterialCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isOperationalExpense(transaction) &&
+          transaction.category == TransactionCategory.material,
+    );
+    final operationalLaborCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isOperationalExpense(transaction) &&
+          transaction.category == TransactionCategory.labor,
+    );
+    final operationalEquipmentCosts = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isOperationalExpense(transaction) &&
+          transaction.category == TransactionCategory.equipment,
+    );
+    final administrativeExpenses = _sumTransactions(
+      paidExpenses,
+      (transaction) =>
+          isOperationalExpense(transaction) &&
+          transaction.category == TransactionCategory.administrative,
+    );
+    final otherOperationalExpenses =
+        operationalExpenses -
+        operationalMaterialCosts -
+        operationalLaborCosts -
+        operationalEquipmentCosts -
+        administrativeExpenses;
+
+    final grossProfit = netRevenue - directCosts;
+    final operatingResult = grossProfit - operationalExpenses;
+    final paidExpenseTotal = _sumTransactions(paidExpenses, (_) => true);
+
+    final pendingIncome = _sumTransactions(
+      periodTransactions,
+      (transaction) =>
+          transaction.type == TransactionType.income &&
+          transaction.status != TransactionStatus.paid,
+    );
+    final pendingExpense = _sumTransactions(
+      periodTransactions,
+      (transaction) =>
+          transaction.type == TransactionType.expense &&
+          transaction.status != TransactionStatus.paid,
+    );
+    final now = DateTime.now();
+    final overdueExpense = _sumTransactions(
+      periodTransactions,
+      (transaction) =>
+          transaction.type == TransactionType.expense &&
+          (transaction.status == TransactionStatus.overdue ||
+              (transaction.status == TransactionStatus.pending &&
+                  transaction.dueDate.isBefore(now))),
+    );
+
+    final expensesByCategory = <String, double>{};
+    final expensesByOrigin = <String, double>{};
+    for (final transaction in paidExpenses) {
+      expensesByCategory[transaction.category.name] =
+          (expensesByCategory[transaction.category.name] ?? 0) +
+          transaction.amount;
+      expensesByOrigin[transaction.origin.name] =
+          (expensesByOrigin[transaction.origin.name] ?? 0) + transaction.amount;
+    }
+
+    final materialCosts = projectMaterialCosts + operationalMaterialCosts;
+    final context = _buildCompanyContext(
+      projects: projects,
+      employees: employees,
+      inventory: inventory,
+      purchases: purchases,
+      measurements: measurements,
+      dailyLogs: dailyLogs,
+      periodFrom: periodFrom,
+      periodTo: periodTo,
+    );
+
+    final lines = <DreLine>[
+      DreLine(
+        concept: 'Receita bruta',
+        value: grossRevenue,
+        type: DreLineType.header,
+        detail: 'Entradas financeiras pagas no periodo',
+        referenceValue: grossRevenue,
+      ),
+      DreLine(
+        concept: '(-) Impostos e taxas',
+        value: -taxDeductions,
+        detail: 'Deducoes classificadas como impostos/taxas',
+        referenceValue: grossRevenue,
+      ),
+      DreLine(
+        concept: '(=) Receita liquida',
+        value: netRevenue,
+        type: DreLineType.subtotal,
+        referenceValue: grossRevenue,
+      ),
+      DreLine(
+        concept: 'Custos diretos de obra',
+        value: -directCosts,
+        type: DreLineType.header,
+        detail: 'Custos pagos vinculados a projetos',
+        referenceValue: netRevenue,
+      ),
+      DreLine(
+        concept: 'Materiais aplicados em obras',
+        value: -projectMaterialCosts,
+        detail: 'Compras/consumo com projeto vinculado',
+        referenceValue: netRevenue,
+      ),
+      DreLine(
+        concept: 'Mao de obra direta',
+        value: -laborCosts,
+        referenceValue: netRevenue,
+      ),
+      DreLine(
+        concept: 'Equipamentos de obra',
+        value: -equipmentCosts,
+        referenceValue: netRevenue,
+      ),
+      if (otherProjectCosts > 0.01)
+        DreLine(
+          concept: 'Outros custos de obra',
+          value: -otherProjectCosts,
+          referenceValue: netRevenue,
+        ),
+      DreLine(
+        concept: '(=) Lucro bruto',
+        value: grossProfit,
+        type: DreLineType.subtotal,
+        referenceValue: netRevenue,
+      ),
+      DreLine(
+        concept: 'Despesas operacionais',
+        value: -operationalExpenses,
+        type: DreLineType.header,
+        detail: 'Gastos da empresa fora do custo direto da obra',
+        referenceValue: netRevenue,
+      ),
+      DreLine(
+        concept: 'Administrativo e estrutura',
+        value: -administrativeExpenses,
+        referenceValue: netRevenue,
+      ),
+      if (operationalMaterialCosts > 0.01)
+        DreLine(
+          concept: 'Materiais operacionais sem obra',
+          value: -operationalMaterialCosts,
+          referenceValue: netRevenue,
+        ),
+      if (operationalLaborCosts > 0.01)
+        DreLine(
+          concept: 'Mao de obra operacional sem obra',
+          value: -operationalLaborCosts,
+          referenceValue: netRevenue,
+        ),
+      if (operationalEquipmentCosts > 0.01)
+        DreLine(
+          concept: 'Equipamentos operacionais sem obra',
+          value: -operationalEquipmentCosts,
+          referenceValue: netRevenue,
+        ),
+      if (otherOperationalExpenses > 0.01)
+        DreLine(
+          concept: 'Outras despesas operacionais',
+          value: -otherOperationalExpenses,
+          referenceValue: netRevenue,
+        ),
+      DreLine(
+        concept: '(=) Resultado operacional',
+        value: operatingResult,
+        type: DreLineType.result,
+        detail: 'Resultado antes de itens financeiros e nao recorrentes',
+        referenceValue: netRevenue,
+      ),
+    ];
+
+    final report = DreExecutiveReport(
+      periodFrom: periodFrom,
+      periodTo: periodTo,
+      grossRevenue: grossRevenue,
+      taxDeductions: taxDeductions,
+      netRevenue: netRevenue,
+      materialCosts: materialCosts,
+      projectMaterialCosts: projectMaterialCosts,
+      operationalMaterialCosts: operationalMaterialCosts,
+      laborCosts: laborCosts,
+      operationalLaborCosts: operationalLaborCosts,
+      equipmentCosts: equipmentCosts,
+      operationalEquipmentCosts: operationalEquipmentCosts,
+      otherProjectCosts: otherProjectCosts,
+      directCosts: directCosts,
+      grossProfit: grossProfit,
+      administrativeExpenses: administrativeExpenses,
+      otherOperationalExpenses: otherOperationalExpenses,
+      operationalExpenses: operationalExpenses,
+      operatingResult: operatingResult,
+      pendingIncome: pendingIncome,
+      pendingExpense: pendingExpense,
+      overdueExpense: overdueExpense,
+      paidExpenseTotal: paidExpenseTotal,
+      expensesByCategory: expensesByCategory,
+      expensesByOrigin: expensesByOrigin,
+      lines: lines,
+      executiveInsights: const [],
+      managementActions: const [],
+      companyContext: context,
+    );
+
+    return DreExecutiveReport(
+      periodFrom: report.periodFrom,
+      periodTo: report.periodTo,
+      grossRevenue: report.grossRevenue,
+      taxDeductions: report.taxDeductions,
+      netRevenue: report.netRevenue,
+      materialCosts: report.materialCosts,
+      projectMaterialCosts: report.projectMaterialCosts,
+      operationalMaterialCosts: report.operationalMaterialCosts,
+      laborCosts: report.laborCosts,
+      operationalLaborCosts: report.operationalLaborCosts,
+      equipmentCosts: report.equipmentCosts,
+      operationalEquipmentCosts: report.operationalEquipmentCosts,
+      otherProjectCosts: report.otherProjectCosts,
+      directCosts: report.directCosts,
+      grossProfit: report.grossProfit,
+      administrativeExpenses: report.administrativeExpenses,
+      otherOperationalExpenses: report.otherOperationalExpenses,
+      operationalExpenses: report.operationalExpenses,
+      operatingResult: report.operatingResult,
+      pendingIncome: report.pendingIncome,
+      pendingExpense: report.pendingExpense,
+      overdueExpense: report.overdueExpense,
+      paidExpenseTotal: report.paidExpenseTotal,
+      expensesByCategory: report.expensesByCategory,
+      expensesByOrigin: report.expensesByOrigin,
+      lines: report.lines,
+      executiveInsights: _buildExecutiveInsights(report),
+      managementActions: _buildManagementActions(report),
+      companyContext: report.companyContext,
+    );
   }
 
   Future<List<MonthlyChartData>> fetchMonthlyData() async {
@@ -141,48 +521,8 @@ class ReportsController extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> _buildDRE() async {
-    final transactions = await _fetchTransactions();
-    final totalIncome = _sum(
-      transactions,
-      type: TransactionType.income,
-      status: TransactionStatus.paid,
-    );
-
-    final byCategory = <TransactionCategory, double>{};
-    for (final t in transactions) {
-      if (t.type == TransactionType.expense &&
-          t.status == TransactionStatus.paid) {
-        byCategory[t.category] = (byCategory[t.category] ?? 0) + t.amount;
-      }
-    }
-
-    final material = byCategory[TransactionCategory.material] ?? 0;
-    final labor = byCategory[TransactionCategory.labor] ?? 0;
-    final equipment = byCategory[TransactionCategory.equipment] ?? 0;
-    final admin = byCategory[TransactionCategory.administrative] ?? 0;
-    final tax = byCategory[TransactionCategory.tax] ?? 0;
-    final other = byCategory[TransactionCategory.other] ?? 0;
-    final measurement = byCategory[TransactionCategory.measurement] ?? 0;
-
-    final directCosts = material + labor + equipment;
-    final netRevenue = totalIncome - tax;
-    final grossProfit = netRevenue - directCosts;
-    final result = grossProfit - admin - other;
-
-    return [
-      _header('Receita Bruta', totalIncome),
-      if (measurement > 0) _line('  Medicoes / Faturamento', measurement),
-      if (tax > 0) _line('(-) Impostos e Taxas', -tax),
-      _result('(=) Receita Liquida', netRevenue),
-      _header('Custos Diretos', -directCosts, negative: true),
-      if (material > 0) _line('  (-) Materiais', -material),
-      if (labor > 0) _line('  (-) Mao de Obra', -labor),
-      if (equipment > 0) _line('  (-) Equipamentos', -equipment),
-      _result('(=) Lucro Bruto', grossProfit),
-      if (admin > 0) _line('(-) Despesas Administrativas', -admin),
-      if (other > 0) _line('(-) Outras Despesas', -other),
-      _result('(=) Resultado Operacional', result, highlight: true),
-    ];
+    final report = await fetchDreExecutiveReport();
+    return report.lines.map((line) => line.toMap()).toList();
   }
 
   Future<List<Map<String, dynamic>>> _buildCostsByProject() async {
@@ -209,7 +549,7 @@ class ReportsController extends ChangeNotifier {
     for (final project in projects) {
       final cost = costMap[project['id']] ?? 0.0;
       final income = incomeMap[project['id']] ?? 0.0;
-      final budget = (project['budget'] as num?)?.toDouble() ?? 0.0;
+      final budget = _toDouble(project['budget']);
       final percent =
           budget > 0 ? (cost / budget * 100).clamp(0.0, 999.0) : 0.0;
 
@@ -280,15 +620,11 @@ class ReportsController extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> _buildInventoryPosition() async {
-    final response = await AppSupabase.client
-        .from('inventory')
-        .select(SupabaseSelects.inventoryReport)
-        .order('name');
+    final rows = await _fetchInventoryRows();
 
-    return (response as List).map((row) {
-      final data = Map<String, dynamic>.from(row as Map);
-      final quantity = (data['quantity'] as num? ?? 0).toDouble();
-      final minQuantity = (data['minQuantity'] as num? ?? 0).toDouble();
+    return rows.map((data) {
+      final quantity = _toDouble(data['quantity']);
+      final minQuantity = _toDouble(data['minQuantity']);
       return {
         'concept': data['name'] ?? '',
         'value': quantity,
@@ -301,22 +637,10 @@ class ReportsController extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> _buildDailyLogSummary() async {
-    dynamic query = AppSupabase.client
-        .from('daily_logs')
-        .select(SupabaseSelects.dailyLogReport);
-
-    if (periodFrom != null) {
-      query = query.gte('date', DbValue.toPrimitive(periodFrom!));
-    }
-    if (periodTo != null) {
-      query = query.lte('date', DbValue.toPrimitive(periodTo!));
-    }
-
-    final response = await query.order('date', ascending: false).limit(100);
+    final response = await _fetchDailyLogRows();
     final projectMap = <String, ({int logs, int workers})>{};
 
-    for (final row in response as List) {
-      final data = Map<String, dynamic>.from(row as Map);
+    for (final data in response) {
       final projectName = data['projectName'] as String? ?? 'Projeto';
       final manpower = Map<String, dynamic>.from(data['manpower'] ?? {});
       final workers = manpower.values.fold<int>(
@@ -344,80 +668,339 @@ class ReportsController extends ChangeNotifier {
   Future<List<FinancialTransactionModel>> _fetchTransactions({
     DateTime? from,
     DateTime? to,
-  }) async {
-    final f = from ?? periodFrom;
-    final t = to ?? periodTo;
-    dynamic query = AppSupabase.client
-        .from('financial_transactions')
-        .select(SupabaseSelects.financialTransaction);
-
-    if (f != null) {
-      query = query.gte('dueDate', DbValue.toPrimitive(f));
-    }
-    if (t != null) {
-      query = query.lte('dueDate', DbValue.toPrimitive(t));
-    }
-
-    final response = await query;
-    return (response as List).map((row) {
-      final data = Map<String, dynamic>.from(row as Map);
-      return FinancialTransactionModel.fromMap(
-        data,
-        data['id'] as String? ?? '',
-      );
-    }).toList();
+  }) {
+    return _financialService.getTransactions(
+      from: from ?? periodFrom,
+      to: to ?? periodTo,
+    );
   }
 
   Future<List<Map<String, dynamic>>> _fetchProjects() async {
     final response = await AppSupabase.client
         .from('projects')
-        .select(SupabaseSelects.projectReport);
+        .select(
+          'id,name,client,status,budget,currentCost,estimatedProgress,'
+          'estimated_progress,measuredAmount,measured_amount,'
+          'measurementCount,measurement_count,lastMeasurementAt,'
+          'last_measurement_at,endDate',
+        );
     return (response as List)
         .map((row) => Map<String, dynamic>.from(row as Map))
         .toList();
   }
 
-  double _sum(
-    List<FinancialTransactionModel> transactions, {
-    required TransactionType type,
-    required TransactionStatus status,
+  Future<List<Map<String, dynamic>>> _fetchEmployees() async {
+    final response = await AppSupabase.client
+        .from('employees')
+        .select('id,status,baseSalary');
+    return (response as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchInventoryRows() async {
+    final response = await AppSupabase.client
+        .from('inventory')
+        .select(SupabaseSelects.inventoryReport)
+        .order('name');
+    return (response as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchPurchases() async {
+    dynamic query = AppSupabase.client
+        .from('purchases')
+        .select('id,status,totalValue,purchaseDate,expectedDeliveryDate');
+
+    if (periodFrom != null) {
+      query = query.gte('purchaseDate', DbValue.toPrimitive(periodFrom!));
+    }
+    if (periodTo != null) {
+      query = query.lte('purchaseDate', DbValue.toPrimitive(periodTo!));
+    }
+
+    final response = await query;
+    return (response as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchProjectMeasurements() async {
+    dynamic query = AppSupabase.client
+        .from('project_measurements')
+        .select(
+          'id,status,netAmount,net_amount,measurementDate,measurement_date,'
+          'projectId,project_id',
+        );
+
+    if (periodFrom != null) {
+      query = query.gte('measurementDate', DbValue.toPrimitive(periodFrom!));
+    }
+    if (periodTo != null) {
+      query = query.lte('measurementDate', DbValue.toPrimitive(periodTo!));
+    }
+
+    final response = await query;
+    return (response as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchDailyLogRows() async {
+    dynamic query = AppSupabase.client
+        .from('daily_logs')
+        .select(SupabaseSelects.dailyLogReport);
+
+    if (periodFrom != null) {
+      query = query.gte('date', DbValue.toPrimitive(periodFrom!));
+    }
+    if (periodTo != null) {
+      query = query.lte('date', DbValue.toPrimitive(periodTo!));
+    }
+
+    final response = await query.order('date', ascending: false).limit(100);
+    return (response as List)
+        .map((row) => Map<String, dynamic>.from(row as Map))
+        .toList();
+  }
+
+  static DreCompanyContext _buildCompanyContext({
+    required List<Map<String, dynamic>> projects,
+    required List<Map<String, dynamic>> employees,
+    required List<Map<String, dynamic>> inventory,
+    required List<Map<String, dynamic>> purchases,
+    required List<Map<String, dynamic>> measurements,
+    required List<Map<String, dynamic>> dailyLogs,
+    DateTime? periodFrom,
+    DateTime? periodTo,
   }) {
+    final activeProjects =
+        projects.where((project) => project['status'] != 'completed').toList();
+    final projectBudgetTotal = projects.fold<double>(
+      0,
+      (sum, project) => sum + _toDouble(project['budget']),
+    );
+    final projectCurrentCostTotal = projects.fold<double>(
+      0,
+      (sum, project) => sum + _toDouble(project['currentCost']),
+    );
+    final projectMeasuredTotal = projects.fold<double>(
+      0,
+      (sum, project) =>
+          sum +
+          _toDouble(project['measuredAmount'] ?? project['measured_amount']),
+    );
+    final overBudgetProjects =
+        projects.where((project) {
+          final budget = _toDouble(project['budget']);
+          return budget > 0 && _toDouble(project['currentCost']) > budget;
+        }).length;
+
+    final activeEmployees =
+        employees.where((employee) => employee['status'] == 'ativo').toList();
+    final monthlyPayrollBase = activeEmployees.fold<double>(
+      0,
+      (sum, employee) => sum + _toDouble(employee['baseSalary']),
+    );
+
+    final criticalInventoryItems =
+        inventory.where((item) {
+          final minQuantity = _toDouble(item['minQuantity']);
+          if (minQuantity <= 0) return false;
+          return _toDouble(item['quantity']) <= minQuantity;
+        }).length;
+
+    final openPurchases =
+        purchases.where((purchase) {
+          final rawStatus = purchase['status'];
+          final status =
+              rawStatus is int ? rawStatus : int.tryParse('$rawStatus') ?? 0;
+          return status >= 0 && status < 3;
+        }).toList();
+    final openPurchaseValue = openPurchases.fold<double>(
+      0,
+      (sum, purchase) => sum + _toDouble(purchase['totalValue']),
+    );
+
+    final periodMeasurements =
+        measurements.where((measurement) {
+          final date = DbValue.toDateTime(
+            measurement['measurementDate'] ?? measurement['measurement_date'],
+          );
+          if (date == null) return true;
+          return _isDateInPeriod(date, periodFrom, periodTo);
+        }).toList();
+    final measurementsInPeriod = periodMeasurements.fold<double>(
+      0,
+      (sum, measurement) =>
+          sum +
+          _toDouble(measurement['netAmount'] ?? measurement['net_amount']),
+    );
+    final measurementsReceivable = periodMeasurements
+        .where((measurement) => measurement['status'] == 'approved')
+        .fold<double>(
+          0,
+          (sum, measurement) =>
+              sum +
+              _toDouble(measurement['netAmount'] ?? measurement['net_amount']),
+        );
+
+    return DreCompanyContext(
+      projectCount: projects.length,
+      activeProjectCount: activeProjects.length,
+      overBudgetProjectCount: overBudgetProjects,
+      projectBudgetTotal: projectBudgetTotal,
+      projectCurrentCostTotal: projectCurrentCostTotal,
+      projectMeasuredTotal: projectMeasuredTotal,
+      activeEmployeeCount: activeEmployees.length,
+      monthlyPayrollBase: monthlyPayrollBase,
+      inventoryItemCount: inventory.length,
+      criticalInventoryItemCount: criticalInventoryItems,
+      dailyLogCount: dailyLogs.length,
+      openPurchaseCount: openPurchases.length,
+      openPurchaseValue: openPurchaseValue,
+      measurementsInPeriod: measurementsInPeriod,
+      measurementsReceivable: measurementsReceivable,
+    );
+  }
+
+  static List<String> _buildExecutiveInsights(DreExecutiveReport report) {
+    final insights = <String>[];
+
+    if (!report.hasData) {
+      return [
+        'Ainda nao ha dados suficientes para uma leitura financeira executiva.',
+      ];
+    }
+
+    if (report.netRevenue <= 0 && report.paidExpenseTotal > 0) {
+      insights.add(
+        'O periodo tem despesas registradas sem receita paga equivalente; a prioridade e faturamento/cobranca.',
+      );
+    } else if (report.operatingResult >= 0) {
+      insights.add(
+        'A empresa esta gerando resultado operacional positivo com margem de ${_formatPercent(report.operatingMargin)}.',
+      );
+    } else {
+      insights.add(
+        'A operacao ficou negativa no periodo; cada R\$ 1,00 de receita liquida nao cobriu custos e estrutura.',
+      );
+    }
+
+    if (report.directCostRatio > 0.70) {
+      insights.add(
+        'Custos diretos consomem ${_formatPercent(report.directCostRatio)} da receita liquida; ha pouco espaco para estrutura e lucro.',
+      );
+    }
+
+    if (report.materialRatio > 0.45) {
+      insights.add(
+        'Materiais representam ${_formatPercent(report.materialRatio)} da receita liquida; compras e perdas em obra devem ser revisadas.',
+      );
+    }
+
+    if (report.operationalExpenseRatio > 0.25) {
+      insights.add(
+        'Despesas operacionais estao em ${_formatPercent(report.operationalExpenseRatio)} da receita liquida; a estrutura pesa no resultado.',
+      );
+    }
+
+    if (report.pendingExpense > report.pendingIncome &&
+        report.pendingExpense > 0) {
+      insights.add(
+        'Contas a pagar em aberto superam contas a receber; o caixa futuro precisa de cobranca ativa ou renegociacao.',
+      );
+    }
+
+    if (report.overdueExpense > 0) {
+      insights.add(
+        'Existem despesas vencidas no periodo, elevando risco de fornecedores, juros e ruptura operacional.',
+      );
+    }
+
+    if (report.companyContext.overBudgetProjectCount > 0) {
+      insights.add(
+        '${report.companyContext.overBudgetProjectCount} obra(s) aparecem acima do orcamento cadastrado.',
+      );
+    }
+
+    return insights;
+  }
+
+  static List<String> _buildManagementActions(DreExecutiveReport report) {
+    final actions = <String>[];
+
+    if (report.materialRatio > 0.35) {
+      actions.add(
+        'Negociar curva ABC de materiais e comparar compra prevista, compra real e consumo por obra.',
+      );
+    }
+
+    if (report.operationalExpenseRatio > 0.20) {
+      actions.add(
+        'Separar despesas fixas, cortar recorrencias sem dono e definir teto mensal de OPEX.',
+      );
+    }
+
+    if (report.pendingIncome > 0 ||
+        report.companyContext.measurementsReceivable > 0) {
+      actions.add(
+        'Priorizar cobranca de medicoes aprovadas e contas a receber antes de novas compras nao essenciais.',
+      );
+    }
+
+    if (report.companyContext.overBudgetProjectCount > 0) {
+      actions.add(
+        'Revisar obras acima do orcamento com foco em aditivos, retrabalho e compras emergenciais.',
+      );
+    }
+
+    if (report.operationalMaterialCosts > 0) {
+      actions.add(
+        'Classificar materiais sem projeto como estoque, consumo interno ou custo de obra para evitar distorcao no DRE.',
+      );
+    }
+
+    if (actions.isEmpty) {
+      actions.add(
+        'Manter disciplina de lancamento por projeto, origem e categoria para preservar a leitura gerencial.',
+      );
+    }
+
+    return actions;
+  }
+
+  static double _sumTransactions(
+    Iterable<FinancialTransactionModel> transactions,
+    bool Function(FinancialTransactionModel transaction) test,
+  ) {
     return transactions
-        .where(
-          (transaction) =>
-              transaction.type == type && transaction.status == status,
-        )
+        .where(test)
         .fold(0.0, (sum, transaction) => sum + transaction.amount);
   }
 
-  Map<String, dynamic> _header(
-    String concept,
-    double value, {
-    bool negative = false,
-  }) {
-    return {
-      'concept': concept,
-      'value': value,
-      'isHeader': true,
-      'negative': negative,
-    };
+  static bool _hasProject(FinancialTransactionModel transaction) {
+    return transaction.projectId != null && transaction.projectId!.isNotEmpty;
   }
 
-  Map<String, dynamic> _line(String concept, double value) {
-    return {'concept': concept, 'value': value, 'isHeader': false};
+  static bool _isDateInPeriod(DateTime date, DateTime? from, DateTime? to) {
+    if (from != null && date.isBefore(from)) return false;
+    if (to != null && date.isAfter(to)) return false;
+    return true;
   }
 
-  Map<String, dynamic> _result(
-    String concept,
-    double value, {
-    bool highlight = false,
-  }) {
-    return {
-      'concept': concept,
-      'value': value,
-      'isResult': true,
-      'highlight': highlight,
-    };
+  static double _toDouble(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value.replaceAll(',', '.')) ?? 0;
+    }
+    return 0;
+  }
+
+  static String _formatPercent(double value) {
+    return '${(value * 100).toStringAsFixed(1)}%';
   }
 
   String _monthName(int month) {

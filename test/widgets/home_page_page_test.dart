@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/ViewModels/SystemSettingsViewModel.dart';
 import 'package:project_granith/widgets/QuickActionsGrid.dart';
-import 'package:project_granith/widgets/TransparencyBanner.dart';
 import 'package:project_granith/widgets/home/home_page_page_widgets.dart';
 import 'package:provider/provider.dart';
 
@@ -51,7 +50,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1200));
 
-    expect(find.byType(TransparencyBanner), findsOneWidget);
+    expect(find.textContaining('Pulso positivo'), findsNothing);
     expect(find.byType(QuickActionsGrid), findsOneWidget);
   });
 }

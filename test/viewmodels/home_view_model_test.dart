@@ -40,14 +40,29 @@ void main() {
             },
           ],
           'employees': [
-            {'status': 'active'},
-            {'status': 'ativo'},
-            {'status': 'inactive'},
+            {
+              'name': 'Ana Costa',
+              'status': 'active',
+              'admissionDate': DateTime(2026, 5, 1),
+            },
+            {
+              'name': 'Bruno Lima',
+              'status': 'ativo',
+              'admissionDate': DateTime(2026, 4, 10),
+            },
+            {'name': 'Inativo', 'status': 'inactive'},
           ],
           'daily_logs': [
             {
               'date': DateTime(2026, 5, 3, 9),
               'manpower': {'pedreiros': 3, 'serventes': 2},
+            },
+            {
+              'date': DateTime(2026, 5, 2, 16),
+              'projectName': 'Obra Finalizada',
+              'status': 'signed',
+              'signedAt': DateTime(2026, 5, 2, 18),
+              'manpower': {'equipe': 4},
             },
           ],
           'material_requisitions': [
@@ -75,6 +90,14 @@ void main() {
                   'currentCost': 12000.0,
                   'endDate': DateTime(2026, 5, 10),
                 },
+                {
+                  'id': 'project-2',
+                  'name': 'Obra Finalizada',
+                  'status': 'completed',
+                  'budget': 20000.0,
+                  'currentCost': 18000.0,
+                  'endDate': DateTime(2026, 5, 2),
+                },
               ],
           recentActivitiesLoader:
               () async => [
@@ -95,23 +118,14 @@ void main() {
         expect(viewModel.projects, hasLength(1));
         expect(viewModel.projects.single.isOverBudget, isTrue);
         expect(viewModel.stats, hasLength(4));
-        expect(viewModel.stats.first.value, 'R\$ 10000');
-        expect(viewModel.stats[1].value, 'R\$ 2000');
-        expect(viewModel.stats[3].value, '1');
-        expect(viewModel.monthlyMini, hasLength(6));
-        expect(viewModel.monthlyMini.last.label, 'Mai');
-        expect(viewModel.monthlyMini.last.income, 10000);
-        expect(viewModel.monthlyMini.last.expense, 8500);
+        expect(viewModel.stats.first.value, 'Ana Costa');
+        expect(viewModel.stats[1].value, 'Obra Finalizada');
+        expect(viewModel.stats[2].value, '5 pessoas');
+        expect(viewModel.stats[3].value, '1 assinado');
         expect(viewModel.recentActivities.single.title, 'Recebimento obra');
         expect(
           viewModel.alerts.any(
-            (alert) => alert.message.contains('estourou orcamento'),
-          ),
-          isTrue,
-        );
-        expect(
-          viewModel.alerts.any(
-            (alert) => alert.message.contains('fatura vencida'),
+            (alert) => alert.message.contains('Ultima obra fechada'),
           ),
           isTrue,
         );
@@ -154,7 +168,10 @@ void main() {
         expect(viewModel.isLoading, isFalse);
         expect(viewModel.error, isNull);
         expect(viewModel.recentActivities, hasLength(1));
-        expect(viewModel.recentActivities.single.title, 'Pagamento recebido');
+        expect(
+          viewModel.recentActivities.single.title,
+          'Dia pronto para bons avancos',
+        );
         expect(viewModel.alerts, isEmpty);
       },
     );
@@ -165,7 +182,7 @@ void main() {
         final viewModel = HomeViewModel(
           nowProvider: () => DateTime(2026, 5, 3, 12),
           listLoader: (table, {columns = '*'}) async {
-            if (table == 'financial_transactions') {
+            if (table == 'material_requisitions') {
               throw Exception('offline');
             }
             return const [];
@@ -177,7 +194,7 @@ void main() {
         await viewModel.loadDashboardData();
 
         expect(viewModel.isLoading, isFalse);
-        expect(viewModel.error, contains('financeiro'));
+        expect(viewModel.error, contains('requisicoes'));
         expect(viewModel.stats, hasLength(4));
         expect(viewModel.recentActivities, hasLength(1));
       },

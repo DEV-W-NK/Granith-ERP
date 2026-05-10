@@ -7,7 +7,9 @@ class FakeDailyLogService extends DailyLogService {
 
   List<DailyLogModel> nextLogs = <DailyLogModel>[];
   Object? recentLogsError;
+  Object? signLogError;
   DailyLogModel? lastSavedLog;
+  DailyLogModel? lastSignedLog;
 
   @override
   Future<void> saveLog(DailyLogModel log) async {
@@ -20,5 +22,25 @@ class FakeDailyLogService extends DailyLogService {
       throw recentLogsError!;
     }
     return List<DailyLogModel>.from(nextLogs);
+  }
+
+  @override
+  Future<void> signLogAsCurrentCoordinator(DailyLogModel log) async {
+    if (signLogError != null) {
+      throw signLogError!;
+    }
+    lastSignedLog = log;
+  }
+
+  @override
+  Future<List<DailyLogModel>> getSignedLogsForProjects(
+    Iterable<String> projectIds, {
+    int limit = 100,
+  }) async {
+    final ids = projectIds.toSet();
+    return nextLogs
+        .where((log) => ids.contains(log.projectId) && log.isSigned)
+        .take(limit)
+        .toList();
   }
 }

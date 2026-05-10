@@ -17,6 +17,17 @@ class SubscriptionDashboard extends StatefulWidget {
 }
 
 class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
+  final TextEditingController _aiInputPriceController = TextEditingController();
+  final TextEditingController _aiOutputPriceController =
+      TextEditingController();
+
+  @override
+  void dispose() {
+    _aiInputPriceController.dispose();
+    _aiOutputPriceController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +45,9 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
         auth.hasPermission('billing.manage') ||
         auth.hasPermission('infra.sync_usage') ||
         auth.hasPermission('settings.manage');
+    final canManageAiPricing =
+        auth.hasPermission('ai.pricing.manage') ||
+        auth.hasPermission('ai.dev.monitor');
 
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
@@ -66,6 +80,12 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
                     ),
                     const SizedBox(height: 24),
                     _buildSummaryGrid(controller.currentUsage!),
+                    const SizedBox(height: 24),
+                    _buildAiUsageCard(
+                      controller,
+                      canManagePricing: canManageAiPricing,
+                      updatedBy: auth.user?.email,
+                    ),
                     const SizedBox(height: 24),
                     _buildUsageTimeline(controller.currentUsage!),
                     const SizedBox(height: 24),
@@ -292,6 +312,183 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
                           '${_formatDateLabel(entry.key)}: ${_formatCompactNumber(entry.value)}',
                     );
                   }).toList(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiUsageCard(
+    SubscriptionController controller, {
+    required bool canManagePricing,
+    required String? updatedBy,
+  }) {
+    final usage = controller.aiUsageSummary;
+    final pricing = controller.aiPricingConfig;
+    _aiInputPriceController.text =
+        pricing?.inputPerMillionUsd.toStringAsFixed(4) ?? '';
+    _aiOutputPriceController.text =
+        pricing?.outputPerMillionUsd.toStringAsFixed(4) ?? '';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        gradient: AppColors.cardGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.62),
+        ),
+        boxShadow: AppColors.glowShadows(),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Consumo de IA',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Controle de chamadas Gemini, tokens usados e custo estimado por preco manual.',
+            style: TextStyle(color: AppColors.textSecondary, height: 1.45),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: [
+              _MetricCard(
+                title: 'Chamadas IA',
+                value: _formatCompactNumber(usage.requests),
+                subtitle: 'respostas geradas',
+                color: AppColors.accentBlue,
+              ),
+              _MetricCard(
+                title: 'Tokens totais',
+                value: _formatCompactNumber(usage.totalTokens),
+                subtitle: 'entrada e saida',
+                color: AppColors.auraCyan,
+              ),
+              _MetricCard(
+                title: 'Custo estimado',
+                value: 'US\$ ${usage.estimatedCostUsd.toStringAsFixed(4)}',
+                subtitle:
+                    pricing == null ? 'preco nao configurado' : pricing.model,
+                color: AppColors.accentGold,
+              ),
+            ],
+          ),
+          if (usage.requestsByArea.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children:
+                  usage.requestsByArea.entries.map((entry) {
+                    return _InfoPill(
+                      icon: Icons.auto_awesome_rounded,
+                      label: '${entry.key.title}: ${entry.value}',
+                    );
+                  }).toList(),
+            ),
+          ],
+          if (canManagePricing) ...[
+            const SizedBox(height: 18),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < ResponsiveLayout.compact;
+                final fields = [
+                  TextField(
+                    controller: _aiInputPriceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'US\$ entrada / 1M tokens',
+                    ),
+                  ),
+                  TextField(
+                    controller: _aiOutputPriceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'US\$ saida / 1M tokens',
+                    ),
+                  ),
+                ];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    compact
+                        ? Column(
+                          children:
+                              fields
+                                  .map(
+                                    (field) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
+                                      child: field,
+                                    ),
+                                  )
+                                  .toList(),
+                        )
+                        : Row(
+                          children: [
+                            Expanded(child: fields[0]),
+                            const SizedBox(width: 12),
+                            Expanded(child: fields[1]),
+                          ],
+                        ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        final success = await controller.saveAiPricing(
+                          model: pricing?.model ?? 'gemini-2.5-flash',
+                          inputPerMillionUsd:
+                              double.tryParse(
+                                _aiInputPriceController.text.replaceAll(
+                                  ',',
+                                  '.',
+                                ),
+                              ) ??
+                              0,
+                          outputPerMillionUsd:
+                              double.tryParse(
+                                _aiOutputPriceController.text.replaceAll(
+                                  ',',
+                                  '.',
+                                ),
+                              ) ??
+                              0,
+                          updatedBy: updatedBy,
+                        );
+                        if (!mounted) return;
+                        messenger.showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              controller.feedbackMessage ??
+                                  (success
+                                      ? 'Preco atualizado.'
+                                      : 'Falha ao salvar preco.'),
+                            ),
+                            backgroundColor:
+                                success
+                                    ? AppColors.accentBlue
+                                    : AppColors.accentRed,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.price_change_rounded),
+                      label: const Text('Salvar preco manual'),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ],

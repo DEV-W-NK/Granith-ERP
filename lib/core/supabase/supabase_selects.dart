@@ -16,7 +16,10 @@ class SupabaseSelects {
       'compact_navigation,support_email,support_phone,'
       'client_portal_welcome_message,client_portal_show_budgets,'
       'client_portal_show_budget_values,client_portal_show_current_costs,'
-      'updated_at';
+      'time_clock_enabled,time_clock_geofence_required,'
+      'time_clock_store_rejected_attempts,'
+      'time_clock_inpi_registration_number,time_clock_employer_name,'
+      'time_clock_employer_document,time_clock_timezone,updated_at';
 
   static const String usageStats =
       'id,tenantId,projectRef,totalReads,totalWrites,totalApiRequests,'
@@ -33,7 +36,7 @@ class SupabaseSelects {
       'id,description,amount,type,status,dueDate,paymentDate,createdAt';
 
   static const String projectDashboard =
-      'id,name,status,budget,currentCost,endDate';
+      'id,name,status,budget,currentCost,startDate,endDate';
 
   static const String projectReport = 'id,name,budget';
 

@@ -138,6 +138,23 @@ class _AccessManagementPageState extends State<AccessManagementPage>
       description: 'Permite consultar consumo e dados de assinatura.',
     ),
     _PermissionOption(
+      code: PermissionCodes.aiUsageRead,
+      label: 'Ver consumo de IA',
+      description: 'Permite acompanhar tokens, chamadas e custo estimado.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.aiPricingManage,
+      label: 'Configurar preco da IA',
+      description:
+          'Permite ajustar preco manual por milhao de tokens para estimativas.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.aiMonitor,
+      label: 'Auditar historico de IA',
+      description:
+          'Permite consultar conversas de IA de usuarios para monitoramento autorizado.',
+    ),
+    _PermissionOption(
       code: 'mobile.hierarchy.manage',
       label: 'Gerenciar hierarquia mobile',
       description: 'Permite configurar niveis de acesso do app mobile.',
@@ -151,6 +168,29 @@ class _AccessManagementPageState extends State<AccessManagementPage>
       code: 'mobile.daily_logs.write',
       label: 'Lancar diario no app',
       description: 'Permite registrar diario de obra pelo mobile.',
+    ),
+    _PermissionOption(
+      code: 'mobile.work_hours.manual',
+      label: 'Apontar horas fora da cerca',
+      description:
+          'Permite registrar horas produtivas no app sem presenca fisica na obra.',
+    ),
+    _PermissionOption(
+      code: 'mobile.fuel_logs.write',
+      label: 'Lancar combustivel no app',
+      description:
+          'Permite registrar abastecimentos, hodometro e nota fiscal pelo mobile.',
+    ),
+    _PermissionOption(
+      code: 'time_clock.read',
+      label: 'Consultar ponto',
+      description: 'Permite consultar registros brutos e relatorios de ponto.',
+    ),
+    _PermissionOption(
+      code: 'time_clock.manage',
+      label: 'Gerenciar ponto',
+      description:
+          'Permite configurar o modulo REP-P e tratar inconsistencias de jornada.',
     ),
     _PermissionOption(
       code: 'mobile.team.manage',

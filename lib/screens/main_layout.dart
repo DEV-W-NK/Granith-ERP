@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
+import 'package:project_granith/models/ai_assistant_models.dart';
 import 'package:project_granith/screens/access_management_page.dart';
+import 'package:project_granith/screens/ai_assistant_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/HrPage.dart';
 import 'package:project_granith/screens/benefits_page.dart';
@@ -15,6 +17,7 @@ import 'package:project_granith/screens/material_requisition_page.dart';
 import 'package:project_granith/screens/project_measurements_page.dart';
 import 'package:project_granith/screens/projects_page.dart';
 import 'package:project_granith/screens/purchase_finance_page.dart';
+import 'package:project_granith/screens/purchase_logistics_page.dart';
 import 'package:project_granith/screens/purchases_page.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/system_settings_page.dart';
@@ -34,6 +37,7 @@ class MainLayout extends StatefulWidget {
   final List<String>? pageTitlesOverride;
   final List<IconData>? pageIconsOverride;
   final List<NavigationModule>? navigationModulesOverride;
+  final int initialIndex;
 
   const MainLayout({
     super.key,
@@ -41,6 +45,7 @@ class MainLayout extends StatefulWidget {
     this.pageTitlesOverride,
     this.pageIconsOverride,
     this.navigationModulesOverride,
+    this.initialIndex = 0,
   });
 
   @override
@@ -50,8 +55,14 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   static const double _desktopBreakpoint = 1100;
 
-  int selectedIndex = 0;
+  late int selectedIndex;
   bool _isSidebarExpanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedIndex = widget.initialIndex;
+  }
 
   late final List<Widget> pages =
       widget.pagesOverride ??
@@ -69,6 +80,7 @@ class _MainLayoutState extends State<MainLayout> {
         const SuppliersPage(),
         const ItemsPage(),
         const PurchasesPage(),
+        const PurchaseLogisticsPage(),
         const InventoryPage(),
         const VehiclesPage(),
         const GeofencingPage(),
@@ -76,6 +88,11 @@ class _MainLayoutState extends State<MainLayout> {
         const PurchaseFinancePage(),
         const ReportsPage(),
         const AccessManagementPage(),
+        const AiAssistantPage(area: AiAssistantArea.operational),
+        const AiAssistantPage(area: AiAssistantArea.humanResources),
+        const AiAssistantPage(area: AiAssistantArea.commercial),
+        const AiAssistantPage(area: AiAssistantArea.supplies),
+        const AiAssistantPage(area: AiAssistantArea.administrative),
         const SystemSettingsPage(),
       ];
 
@@ -95,6 +112,7 @@ class _MainLayoutState extends State<MainLayout> {
         'Fornecedores',
         'Catalogo de Itens',
         'Compras e Pedidos',
+        'Coletas e Entregas',
         'Estoque',
         'Frota e Veiculos',
         'Geofencing',
@@ -102,6 +120,11 @@ class _MainLayoutState extends State<MainLayout> {
         'Compras no Financeiro',
         'DRE Gerencial',
         'Permissoes e Clientes',
+        'IA Operacional',
+        'IA Recursos Humanos',
+        'IA Comercial',
+        'IA Suprimentos',
+        'IA Administrativa',
         'Configuracoes',
       ];
 
@@ -121,6 +144,7 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.store_rounded,
         Icons.inventory_2_rounded,
         Icons.shopping_cart_rounded,
+        Icons.route_rounded,
         Icons.warehouse_rounded,
         Icons.directions_car_filled_rounded,
         Icons.map_rounded,
@@ -128,6 +152,11 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.receipt_long_rounded,
         Icons.bar_chart_rounded,
         Icons.admin_panel_settings_rounded,
+        Icons.engineering_rounded,
+        Icons.badge_rounded,
+        Icons.handshake_rounded,
+        Icons.inventory_2_rounded,
+        Icons.account_tree_rounded,
         Icons.settings_rounded,
       ];
 
@@ -230,55 +259,97 @@ class _MainLayoutState extends State<MainLayout> {
           title: pageTitles[13],
           section: 'Suprimentos',
           icon: pageIcons[13],
-          aliases: 'estoque almoxarifado inventario',
+          aliases: 'rotas entregas coletas motorista km compras',
         ),
         NavigationModule(
           index: 14,
           title: pageTitles[14],
-          section: 'Administrativo',
+          section: 'Suprimentos',
           icon: pageIcons[14],
-          aliases: 'frota veiculos carros combustivel consumo abastecimento',
+          aliases: 'estoque almoxarifado inventario',
         ),
         NavigationModule(
           index: 15,
           title: pageTitles[15],
           section: 'Administrativo',
           icon: pageIcons[15],
-          aliases: 'geofencing cercas coordenadas mapa localizacao obra ponto',
+          aliases: 'frota veiculos carros combustivel consumo abastecimento',
         ),
         NavigationModule(
           index: 16,
           title: pageTitles[16],
-          section: 'Financeiro',
+          section: 'Administrativo',
           icon: pageIcons[16],
-          aliases: 'entradas saidas receitas despesas caixa',
+          aliases: 'geofencing cercas coordenadas mapa localizacao obra ponto',
         ),
         NavigationModule(
           index: 17,
           title: pageTitles[17],
           section: 'Financeiro',
           icon: pageIcons[17],
-          aliases: 'compras financeiro contas pagar nota fiscal fornecedor',
+          aliases: 'entradas saidas receitas despesas caixa',
         ),
         NavigationModule(
           index: 18,
           title: pageTitles[18],
           section: 'Financeiro',
           icon: pageIcons[18],
-          aliases: 'dre relatorio gerencial resultados',
+          aliases: 'compras financeiro contas pagar nota fiscal fornecedor',
         ),
         NavigationModule(
           index: 19,
           title: pageTitles[19],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[19],
-          aliases: 'permissoes clientes acesso usuarios portal',
+          aliases: 'dre relatorio gerencial resultados',
         ),
         NavigationModule(
           index: 20,
           title: pageTitles[20],
           section: 'Administrativo',
           icon: pageIcons[20],
+          aliases: 'permissoes clientes acesso usuarios portal',
+        ),
+        NavigationModule(
+          index: 21,
+          title: pageTitles[21],
+          section: 'I.A',
+          icon: pageIcons[21],
+          aliases: 'ia operacional obras campo diarios medicoes',
+        ),
+        NavigationModule(
+          index: 22,
+          title: pageTitles[22],
+          section: 'I.A',
+          icon: pageIcons[22],
+          aliases: 'ia rh recursos humanos pessoas equipe beneficios',
+        ),
+        NavigationModule(
+          index: 23,
+          title: pageTitles[23],
+          section: 'I.A',
+          icon: pageIcons[23],
+          aliases: 'ia comercial orcamentos clientes propostas',
+        ),
+        NavigationModule(
+          index: 24,
+          title: pageTitles[24],
+          section: 'I.A',
+          icon: pageIcons[24],
+          aliases: 'ia suprimentos compras fornecedores estoque',
+        ),
+        NavigationModule(
+          index: 25,
+          title: pageTitles[25],
+          section: 'I.A',
+          icon: pageIcons[25],
+          aliases: 'ia administrativa configuracoes acessos uso plataforma',
+        ),
+        NavigationModule(
+          index: 26,
+          title: pageTitles[26],
+          section: 'Administrativo',
+          icon: pageIcons[26],
           aliases: 'configuracoes ajustes sistema preferencias',
         ),
       ];
@@ -312,35 +383,23 @@ class _MainLayoutState extends State<MainLayout> {
                   Expanded(
                     child: Padding(
                       padding: EdgeInsets.all(desktopPadding),
-                      child: Column(
-                        children: [
-                          _buildDesktopTopBar(workspaceName),
-                          const SizedBox(height: 14),
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                contentRadius,
-                              ),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.pageSurfaceGradient,
-                                  borderRadius: BorderRadius.circular(
-                                    contentRadius,
-                                  ),
-                                  border: Border.all(
-                                    color: AppColors.borderColor.withValues(
-                                      alpha: 0.72,
-                                    ),
-                                  ),
-                                  boxShadow: AppColors.glowShadows(),
-                                ),
-                                child: GranithPageBackground(
-                                  child: pages[selectedIndex],
-                                ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(contentRadius),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: AppColors.pageSurfaceGradient,
+                            borderRadius: BorderRadius.circular(contentRadius),
+                            border: Border.all(
+                              color: AppColors.borderColor.withValues(
+                                alpha: 0.72,
                               ),
                             ),
+                            boxShadow: AppColors.glowShadows(),
                           ),
-                        ],
+                          child: GranithPageBackground(
+                            child: pages[selectedIndex],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -410,122 +469,6 @@ class _MainLayoutState extends State<MainLayout> {
     setState(() => selectedIndex = index);
   }
 
-  Widget _buildDesktopTopBar(String workspaceName) {
-    final currentModule = _navigationModules.firstWhere(
-      (module) => module.index == selectedIndex,
-      orElse: () => _navigationModules.first,
-    );
-    final currentTitle =
-        selectedIndex == 0 ? workspaceName : pageTitles[selectedIndex];
-    final currentSection = currentModule.section;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-      decoration: BoxDecoration(
-        gradient: AppColors.pageSurfaceGradient,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-        boxShadow: AppColors.glowShadows(AppColors.accentBlue),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final leading = Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.accentBlue.withValues(alpha: 0.22),
-                      AppColors.auraCyan.withValues(alpha: 0.08),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: AppColors.accentBlue.withValues(alpha: 0.32),
-                  ),
-                ),
-                child: Icon(
-                  pageIcons[selectedIndex],
-                  color: AppColors.accentBlue,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      currentTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      currentSection,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-
-          final logoutButton = IconButton(
-            tooltip: 'Sair',
-            onPressed: _confirmAndLogout,
-            icon: const Icon(
-              Icons.logout_rounded,
-              color: AppColors.textPrimary,
-            ),
-          );
-
-          return Row(
-            children: [
-              Expanded(child: leading),
-              const SizedBox(width: 10),
-              if (constraints.maxWidth >= 720) ...[
-                _TopBarPill(
-                  icon: Icons.layers_rounded,
-                  label: currentSection,
-                  color: AppColors.accentGold,
-                ),
-                const SizedBox(width: 8),
-                _TopBarPill(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'ERP ativo',
-                  color: AppColors.auraCyan,
-                ),
-                const SizedBox(width: 8),
-              ],
-              logoutButton,
-            ],
-          );
-        },
-      ),
-    );
-  }
-
   Future<void> _confirmAndLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -567,49 +510,5 @@ class _MainLayoutState extends State<MainLayout> {
     }
 
     await context.read<AuthViewModel>().logout();
-  }
-}
-
-class _TopBarPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _TopBarPill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 170),
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 15),
-          const SizedBox(width: 7),
-          Flexible(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

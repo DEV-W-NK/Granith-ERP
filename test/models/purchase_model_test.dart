@@ -13,6 +13,9 @@ void main() {
         'projectId': 'project-1',
         'projectName': 'Obra Torre',
         'deliveryAddress': 'Campinas',
+        'fulfillmentType': 'pickup',
+        'pickupAddress': 'CD Fornecedor A',
+        'routeId': 'route-1',
         'quantity': 3,
         'totalValue': 1800,
         'status': PurchaseStatus.delivered.index,
@@ -30,6 +33,9 @@ void main() {
 
       expect(purchase.id, 'purchase-1');
       expect(purchase.status, PurchaseStatus.delivered);
+      expect(purchase.fulfillmentType, PurchaseFulfillmentType.pickup);
+      expect(purchase.pickupAddress, 'CD Fornecedor A');
+      expect(purchase.routeId, 'route-1');
       expect(purchase.totalValue, 1800);
       expect(purchase.requisitionId, 'req-1');
       expect(purchase.financialTransactionId, 'tx-1');
@@ -55,11 +61,17 @@ void main() {
 
       final updated = original.copyWith(
         status: PurchaseStatus.ordered,
+        fulfillmentType: PurchaseFulfillmentType.pickup,
+        pickupAddress: 'Loja B',
+        routeId: 'route-2',
         quantity: 50,
         invoiceNumber: 'NF-456',
       );
 
       expect(updated.status, PurchaseStatus.ordered);
+      expect(updated.fulfillmentType, PurchaseFulfillmentType.pickup);
+      expect(updated.pickupAddress, 'Loja B');
+      expect(updated.routeId, 'route-2');
       expect(updated.quantity, 50);
       expect(updated.invoiceNumber, 'NF-456');
       expect(updated.itemName, 'Tijolo');

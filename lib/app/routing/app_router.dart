@@ -20,6 +20,60 @@ class AppRouter {
           const MainLayout(),
           allow: _canAccessInternalApp,
         );
+      case '/projects':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 1),
+          allow: _canAccessInternalApp,
+        );
+      case '/daily-logs':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 3),
+          allow: _canAccessInternalApp,
+        );
+      case '/requisitions':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 4),
+          allow: _canAccessInternalApp,
+        );
+      case '/hr':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 5),
+          allow: _canAccessInternalApp,
+        );
+      case '/ai/operational':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 21),
+          allow: _canAccessInternalApp,
+        );
+      case '/ai/hr':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 22),
+          allow: _canAccessInternalApp,
+        );
+      case '/ai/commercial':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 23),
+          allow: _canAccessInternalApp,
+        );
+      case '/ai/supplies':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 24),
+          allow: _canAccessInternalApp,
+        );
+      case '/ai/administrative':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 25),
+          allow: _canAccessInternalApp,
+        );
       case '/subscription':
         return _guardedRoute(
           settings,

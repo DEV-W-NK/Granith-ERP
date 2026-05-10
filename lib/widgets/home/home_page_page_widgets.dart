@@ -10,7 +10,6 @@ import 'package:project_granith/utils/responsive_layout.dart';
 // Note: Ajustamos os caminhos dos imports para refletir a estrutura do seu projeto
 import 'package:project_granith/widgets/QuickActionsGrid.dart';
 import 'package:project_granith/widgets/RecentActivityList.dart';
-import 'package:project_granith/widgets/TransparencyBanner.dart';
 import 'package:project_granith/widgets/animations/home_header.dart';
 import 'package:project_granith/widgets/home_page/stats_grid.dart';
 
@@ -78,9 +77,6 @@ class _HomePageState extends State<HomePage>
 
                     const SizedBox(height: 18),
                     StatsGrid(isDesktop: isDesktop, stats: viewModel.stats),
-
-                    const SizedBox(height: 14),
-                    const TransparencyBanner(),
 
                     const SizedBox(height: 14),
                     if (isDesktop)

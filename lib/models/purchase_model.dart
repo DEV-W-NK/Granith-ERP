@@ -39,6 +39,38 @@ enum PurchaseStatus {
   }
 }
 
+enum PurchaseFulfillmentType {
+  delivery,
+  pickup;
+
+  String get label {
+    switch (this) {
+      case PurchaseFulfillmentType.delivery:
+        return 'Entrega do fornecedor';
+      case PurchaseFulfillmentType.pickup:
+        return 'Coleta interna';
+    }
+  }
+
+  String get routeLabel {
+    switch (this) {
+      case PurchaseFulfillmentType.delivery:
+        return 'Entrega';
+      case PurchaseFulfillmentType.pickup:
+        return 'Coleta';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case PurchaseFulfillmentType.delivery:
+        return Icons.local_shipping_outlined;
+      case PurchaseFulfillmentType.pickup:
+        return Icons.store_mall_directory_outlined;
+    }
+  }
+}
+
 class Purchase {
   final String id;
 
@@ -53,6 +85,9 @@ class Purchase {
   final String? financialTransactionId;
 
   final String deliveryAddress;
+  final PurchaseFulfillmentType fulfillmentType;
+  final String pickupAddress;
+  final String? routeId;
   final double quantity;
   final double totalValue;
   final PurchaseStatus status;
@@ -88,6 +123,9 @@ class Purchase {
     required this.projectId,
     required this.projectName,
     required this.deliveryAddress,
+    this.fulfillmentType = PurchaseFulfillmentType.delivery,
+    this.pickupAddress = '',
+    this.routeId,
     this.quantity = 1.0,
     required this.totalValue,
     this.status = PurchaseStatus.pending,
@@ -122,6 +160,9 @@ class Purchase {
       'projectId': projectId,
       'projectName': projectName,
       'deliveryAddress': deliveryAddress,
+      'fulfillmentType': fulfillmentType.name,
+      'pickupAddress': pickupAddress,
+      'routeId': routeId,
       'quantity': quantity,
       'totalValue': totalValue,
       'status': status.index,
@@ -158,6 +199,9 @@ class Purchase {
       projectId: map['projectId'] ?? '',
       projectName: map['projectName'] ?? 'Projeto nao informado',
       deliveryAddress: map['deliveryAddress'] ?? '',
+      fulfillmentType: _parseFulfillmentType(map['fulfillmentType']),
+      pickupAddress: map['pickupAddress'] as String? ?? '',
+      routeId: map['routeId'] as String?,
       quantity: (map['quantity'] as num? ?? 1.0).toDouble(),
       totalValue: (map['totalValue'] as num?)?.toDouble() ?? 0.0,
       status: _parseStatus(map['status']),
@@ -193,6 +237,9 @@ class Purchase {
     String? projectId,
     String? projectName,
     String? deliveryAddress,
+    PurchaseFulfillmentType? fulfillmentType,
+    String? pickupAddress,
+    String? routeId,
     double? quantity,
     double? totalValue,
     PurchaseStatus? status,
@@ -226,6 +273,9 @@ class Purchase {
       projectId: projectId ?? this.projectId,
       projectName: projectName ?? this.projectName,
       deliveryAddress: deliveryAddress ?? this.deliveryAddress,
+      fulfillmentType: fulfillmentType ?? this.fulfillmentType,
+      pickupAddress: pickupAddress ?? this.pickupAddress,
+      routeId: routeId ?? this.routeId,
       quantity: quantity ?? this.quantity,
       totalValue: totalValue ?? this.totalValue,
       status: status ?? this.status,
@@ -273,5 +323,16 @@ class Purchase {
     }
 
     return PurchaseStatus.awaitingApproval;
+  }
+
+  static PurchaseFulfillmentType _parseFulfillmentType(dynamic value) {
+    if (value is PurchaseFulfillmentType) return value;
+    if (value is String) {
+      return PurchaseFulfillmentType.values.firstWhere(
+        (type) => type.name.toLowerCase() == value.toLowerCase(),
+        orElse: () => PurchaseFulfillmentType.delivery,
+      );
+    }
+    return PurchaseFulfillmentType.delivery;
   }
 }

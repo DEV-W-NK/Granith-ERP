@@ -469,15 +469,8 @@ class _DiarioTabState extends State<_DiarioTab> {
                                       _signingLogIds.add(log.id);
                                     });
                                     try {
-                                      await _dailyLogService.signLog(
-                                        log,
-                                        signedByCoordinatorId:
-                                            widget.project.coordinatorId ??
-                                            log.coordinatorId,
-                                        signedByCoordinatorName:
-                                            widget.project.coordinatorName ??
-                                            log.coordinatorName,
-                                      );
+                                      await _dailyLogService
+                                          .signLogAsCurrentCoordinator(log);
                                       if (!context.mounted) return;
                                       ScaffoldMessenger.of(
                                         context,

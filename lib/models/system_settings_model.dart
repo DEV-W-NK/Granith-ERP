@@ -12,15 +12,21 @@ class SystemSettings {
   final bool clientPortalShowBudgets;
   final bool clientPortalShowBudgetValues;
   final bool clientPortalShowCurrentCosts;
+  final bool timeClockEnabled;
+  final bool timeClockGeofenceRequired;
+  final bool timeClockStoreRejectedAttempts;
+  final String timeClockInpiRegistrationNumber;
+  final String timeClockEmployerName;
+  final String timeClockEmployerDocument;
+  final String timeClockTimezone;
   final DateTime? updatedAt;
 
   const SystemSettings({
     this.id = 'default',
     this.workspaceName = 'GRANITH',
     this.workspaceTagline = 'ERP Dusk Console',
-    this.dashboardGreetingTitle = 'Ola, Gestor',
-    this.dashboardGreetingSubtitle =
-        'Aqui esta o panorama atual das suas obras.',
+    this.dashboardGreetingTitle = 'Panorama do dia',
+    this.dashboardGreetingSubtitle = 'Equipe, obras e entregas em destaque.',
     this.aiAssistantPreviewEnabled = true,
     this.compactNavigation = false,
     this.supportEmail = '',
@@ -30,6 +36,13 @@ class SystemSettings {
     this.clientPortalShowBudgets = true,
     this.clientPortalShowBudgetValues = true,
     this.clientPortalShowCurrentCosts = true,
+    this.timeClockEnabled = true,
+    this.timeClockGeofenceRequired = true,
+    this.timeClockStoreRejectedAttempts = true,
+    this.timeClockInpiRegistrationNumber = '',
+    this.timeClockEmployerName = '',
+    this.timeClockEmployerDocument = '',
+    this.timeClockTimezone = 'America/Sao_Paulo',
     this.updatedAt,
   });
 
@@ -63,12 +76,12 @@ class SystemSettings {
       dashboardGreetingTitle:
           (map['dashboard_greeting_title'] ??
                   map['dashboardGreetingTitle'] ??
-                  'Ola, Gestor')
+                  'Panorama do dia')
               .toString(),
       dashboardGreetingSubtitle:
           (map['dashboard_greeting_subtitle'] ??
                   map['dashboardGreetingSubtitle'] ??
-                  'Aqui esta o panorama atual das suas obras.')
+                  'Equipe, obras e entregas em destaque.')
               .toString(),
       aiAssistantPreviewEnabled: readBool(
         'ai_assistant_preview_enabled',
@@ -96,6 +109,22 @@ class SystemSettings {
         'client_portal_show_current_costs',
         fallback: true,
       ),
+      timeClockEnabled: readBool('time_clock_enabled', fallback: true),
+      timeClockGeofenceRequired: readBool(
+        'time_clock_geofence_required',
+        fallback: true,
+      ),
+      timeClockStoreRejectedAttempts: readBool(
+        'time_clock_store_rejected_attempts',
+        fallback: true,
+      ),
+      timeClockInpiRegistrationNumber:
+          (map['time_clock_inpi_registration_number'] ?? '').toString(),
+      timeClockEmployerName: (map['time_clock_employer_name'] ?? '').toString(),
+      timeClockEmployerDocument:
+          (map['time_clock_employer_document'] ?? '').toString(),
+      timeClockTimezone:
+          (map['time_clock_timezone'] ?? 'America/Sao_Paulo').toString(),
       updatedAt: parseDate(map['updated_at']),
     );
   }
@@ -114,6 +143,13 @@ class SystemSettings {
     bool? clientPortalShowBudgets,
     bool? clientPortalShowBudgetValues,
     bool? clientPortalShowCurrentCosts,
+    bool? timeClockEnabled,
+    bool? timeClockGeofenceRequired,
+    bool? timeClockStoreRejectedAttempts,
+    String? timeClockInpiRegistrationNumber,
+    String? timeClockEmployerName,
+    String? timeClockEmployerDocument,
+    String? timeClockTimezone,
     DateTime? updatedAt,
   }) {
     return SystemSettings(
@@ -137,6 +173,19 @@ class SystemSettings {
           clientPortalShowBudgetValues ?? this.clientPortalShowBudgetValues,
       clientPortalShowCurrentCosts:
           clientPortalShowCurrentCosts ?? this.clientPortalShowCurrentCosts,
+      timeClockEnabled: timeClockEnabled ?? this.timeClockEnabled,
+      timeClockGeofenceRequired:
+          timeClockGeofenceRequired ?? this.timeClockGeofenceRequired,
+      timeClockStoreRejectedAttempts:
+          timeClockStoreRejectedAttempts ?? this.timeClockStoreRejectedAttempts,
+      timeClockInpiRegistrationNumber:
+          timeClockInpiRegistrationNumber ??
+          this.timeClockInpiRegistrationNumber,
+      timeClockEmployerName:
+          timeClockEmployerName ?? this.timeClockEmployerName,
+      timeClockEmployerDocument:
+          timeClockEmployerDocument ?? this.timeClockEmployerDocument,
+      timeClockTimezone: timeClockTimezone ?? this.timeClockTimezone,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
@@ -156,6 +205,17 @@ class SystemSettings {
       'client_portal_show_budgets': clientPortalShowBudgets,
       'client_portal_show_budget_values': clientPortalShowBudgetValues,
       'client_portal_show_current_costs': clientPortalShowCurrentCosts,
+      'time_clock_enabled': timeClockEnabled,
+      'time_clock_geofence_required': timeClockGeofenceRequired,
+      'time_clock_store_rejected_attempts': timeClockStoreRejectedAttempts,
+      'time_clock_inpi_registration_number':
+          timeClockInpiRegistrationNumber.trim(),
+      'time_clock_employer_name': timeClockEmployerName.trim(),
+      'time_clock_employer_document': timeClockEmployerDocument.trim(),
+      'time_clock_timezone':
+          timeClockTimezone.trim().isEmpty
+              ? 'America/Sao_Paulo'
+              : timeClockTimezone.trim(),
     };
   }
 }

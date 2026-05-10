@@ -23,18 +23,30 @@ class AuthService implements AuthServiceContract {
   @override
   Future<UserModel?> fetchUserData(String uid) async {
     try {
-      final data =
+      final dataById =
           await _client
               .from('users')
               .select(SupabaseSelects.userProfile)
               .eq('id', uid)
               .maybeSingle();
 
-      if (data == null) {
-        return null;
+      final profileById =
+          dataById == null
+              ? null
+              : UserModel.fromMap(Map<String, dynamic>.from(dataById), uid);
+
+      final authUser = currentUser;
+      final authEmail = authUser?.email?.trim().toLowerCase() ?? '';
+      if (authUser?.id != uid || authEmail.isEmpty) {
+        return profileById;
       }
 
-      return UserModel.fromMap(Map<String, dynamic>.from(data), uid);
+      final profileByEmail = await _fetchUserDataByEmail(authEmail);
+      if (profileByEmail?.role == UserRole.admin) {
+        return profileByEmail;
+      }
+
+      return profileById ?? profileByEmail;
     } catch (error) {
       debugPrint('Erro ao buscar dados do utilizador no Supabase: $error');
       return null;
@@ -205,7 +217,9 @@ class AuthService implements AuthServiceContract {
         user.userMetadata?['name']?.toString() ??
         user.email;
     final photoUrl = user.userMetadata?['avatar_url']?.toString();
-    final existingProfile = await fetchUserData(user.id);
+    final existingProfile =
+        await fetchUserData(user.id) ??
+        await _fetchUserDataByEmail(normalizedEmail);
     final hasEmployeeRecord = await _hasEmployeeRecord(normalizedEmail);
     final linkedAccounts = await _clientAccountService
         .getClientAccountsByOwnerEmail(normalizedEmail);
@@ -244,7 +258,7 @@ class AuthService implements AuthServiceContract {
               primaryClientAccount: primaryClientAccount,
             ),
           )
-          .eq('id', user.id);
+          .eq('id', existingProfile.uid);
     }
 
     if (primaryClientAccount != null) {
@@ -268,6 +282,29 @@ class AuthService implements AuthServiceContract {
         .limit(1);
 
     return (response as List).isNotEmpty;
+  }
+
+  Future<UserModel?> _fetchUserDataByEmail(String email) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (normalizedEmail.isEmpty) {
+      return null;
+    }
+
+    final data =
+        await _client
+            .from('users')
+            .select(SupabaseSelects.userProfile)
+            .ilike('email', normalizedEmail)
+            .order('role')
+            .limit(1)
+            .maybeSingle();
+
+    if (data == null) {
+      return null;
+    }
+
+    final map = Map<String, dynamic>.from(data);
+    return UserModel.fromMap(map, (map['id'] ?? '').toString());
   }
 
   UserRole _resolveRole({

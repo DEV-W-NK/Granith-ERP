@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/client_portal/presentation/viewmodels/client_projects_portal_view_model.dart';
+import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
@@ -122,6 +123,10 @@ class _ClientProjectsPortalViewState extends State<_ClientProjectsPortalView> {
                                           ),
                                           child: _ClientProjectProgressCard(
                                             project: project,
+                                            signedLogs: viewModel
+                                                .signedLogsForProject(
+                                                  project.id,
+                                                ),
                                           ),
                                         ),
                                       )
@@ -314,15 +319,25 @@ class _ProjectsSummaryStrip extends StatelessWidget {
           subtitle: 'media geral de progresso',
           color: AppColors.auraCyan,
         ),
+        _SummaryCard(
+          title: 'Diarios liberados',
+          value: viewModel.totalSignedDailyLogs.toString(),
+          subtitle: 'relatorios assinados',
+          color: AppColors.accentGreen,
+        ),
       ],
     );
   }
 }
 
 class _ClientProjectProgressCard extends StatelessWidget {
-  const _ClientProjectProgressCard({required this.project});
+  const _ClientProjectProgressCard({
+    required this.project,
+    required this.signedLogs,
+  });
 
   final Project project;
+  final List<DailyLogModel> signedLogs;
 
   @override
   Widget build(BuildContext context) {
@@ -459,6 +474,91 @@ class _ClientProjectProgressCard extends StatelessWidget {
                         : 'Dentro do cronograma',
               ),
             ],
+          ),
+          if (signedLogs.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _ClientDailyLogsPreview(logs: signedLogs),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientDailyLogsPreview extends StatelessWidget {
+  const _ClientDailyLogsPreview({required this.logs});
+
+  final List<DailyLogModel> logs;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleLogs = logs.take(3).toList();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.46),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.accentGreen.withValues(alpha: 0.24),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.verified_rounded,
+                color: AppColors.accentGreen,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Diarios assinados (${logs.length})',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...visibleLogs.map(
+            (log) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    dateFormat.format(log.date),
+                    style: const TextStyle(
+                      color: AppColors.accentGreen,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      log.activitiesDescription.trim().isEmpty
+                          ? 'Relatorio liberado para consulta.'
+                          : log.activitiesDescription,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

@@ -6,8 +6,10 @@ class FakeDailyLogController extends DailyLogController {
   FakeDailyLogController() : super(service: FakeDailyLogService());
 
   bool loadLogsCalled = false;
+  bool signLogCalled = false;
   bool nextLoadingState = false;
   List<DailyLogModel> nextLogs = <DailyLogModel>[];
+  Object? signLogError;
 
   @override
   bool get isLoading => nextLoadingState;
@@ -18,6 +20,24 @@ class FakeDailyLogController extends DailyLogController {
   @override
   Future<void> loadLogs() async {
     loadLogsCalled = true;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> signLog(DailyLogModel log) async {
+    signLogCalled = true;
+    if (signLogError != null) {
+      throw signLogError!;
+    }
+    nextLogs =
+        nextLogs
+            .map(
+              (item) =>
+                  item.id == log.id
+                      ? log.copyWith(status: LogStatus.signed)
+                      : item,
+            )
+            .toList();
     notifyListeners();
   }
 

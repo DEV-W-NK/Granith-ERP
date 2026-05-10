@@ -41,6 +41,15 @@ void main() {
 
       expect(find.text('Central de Configuracoes'), findsOneWidget);
       expect(find.text('Granith Base'), findsWidgets);
+      expect(find.textContaining('Pulso positivo'), findsOneWidget);
+      expect(find.text('Uso da plataforma'), findsOneWidget);
+      expect(find.text('Ferramentas de desenvolvimento'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('Ferramentas de desenvolvimento'));
+      await tester.pump();
+      await tester.tap(find.text('Ferramentas de desenvolvimento'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Executar seeder'), findsOneWidget);
       expect(find.text('Somente debug'), findsOneWidget);
 

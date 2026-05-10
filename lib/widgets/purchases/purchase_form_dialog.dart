@@ -37,8 +37,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   Project? _selectedProject;
 
   final _addressCtrl = TextEditingController();
+  final _pickupAddressCtrl = TextEditingController();
   final _valueCtrl = TextEditingController();
   final _quantityCtrl = TextEditingController(text: '1');
+  PurchaseFulfillmentType _fulfillmentType = PurchaseFulfillmentType.delivery;
 
   // Status disponíveis para seleção manual —
   // delivered e cancelled são controlados por ações dedicadas,
@@ -61,6 +63,8 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     if (widget.purchase != null) {
       final p = widget.purchase!;
       _addressCtrl.text = p.deliveryAddress;
+      _pickupAddressCtrl.text = p.pickupAddress;
+      _fulfillmentType = p.fulfillmentType;
       _valueCtrl.text = p.totalValue.toStringAsFixed(2);
       _quantityCtrl.text = p.quantity.toStringAsFixed(
         p.quantity % 1 == 0 ? 0 : 2,
@@ -129,6 +133,7 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   void dispose() {
     _animCtrl.dispose();
     _addressCtrl.dispose();
+    _pickupAddressCtrl.dispose();
     _valueCtrl.dispose();
     _quantityCtrl.dispose();
     super.dispose();
@@ -198,12 +203,27 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
                                   _supplierDropdown(),
                                   const SizedBox(height: 20),
 
+                                  _label('Como esta compra sera atendida?'),
+                                  _fulfillmentSelector(),
+                                  const SizedBox(height: 20),
+
                                   // Quantidade + Valor
                                   _buildQuantityValueFields(isCompact),
                                   const SizedBox(height: 20),
 
-                                  // Endereço
-                                  _label('Endereço de entrega'),
+                                  // Endereco
+                                  _label(
+                                    _fulfillmentType ==
+                                            PurchaseFulfillmentType.pickup
+                                        ? 'Coleta e destino da compra'
+                                        : 'Endereco de entrega',
+                                  ),
+                                  if (_fulfillmentType ==
+                                      PurchaseFulfillmentType.pickup) ...[
+                                    _label('Onde o motorista deve coletar?'),
+                                    _pickupAddressField(),
+                                    const SizedBox(height: 20),
+                                  ],
                                   _addressField(),
                                   const SizedBox(height: 20),
 
@@ -364,6 +384,44 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     );
   }
 
+  Widget _fulfillmentSelector() {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children:
+          PurchaseFulfillmentType.values.map((type) {
+            final selected = _fulfillmentType == type;
+            return ChoiceChip(
+              selected: selected,
+              avatar: Icon(
+                type.icon,
+                size: 17,
+                color:
+                    selected ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+              label: Text(type.label),
+              labelStyle: TextStyle(
+                color:
+                    selected ? AppColors.primaryDark : AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+              selectedColor: AppColors.accentGold,
+              backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.82),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+                side: BorderSide(
+                  color:
+                      selected
+                          ? AppColors.accentGold
+                          : AppColors.borderColor.withValues(alpha: 0.72),
+                ),
+              ),
+              onSelected: (_) => setState(() => _fulfillmentType = type),
+            );
+          }).toList(),
+    );
+  }
+
   Widget _quantityField() {
     return TextFormField(
       controller: _quantityCtrl,
@@ -402,8 +460,31 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
     return TextFormField(
       controller: _addressCtrl,
       style: const TextStyle(color: AppColors.textPrimary),
-      decoration: _dec('Endereço de entrega', Icons.location_on_outlined),
-      validator: (v) => v?.isEmpty == true ? 'Informe o endereço' : null,
+      decoration: _dec(
+        _fulfillmentType == PurchaseFulfillmentType.pickup
+            ? 'Destino final da compra'
+            : 'Endereco de entrega',
+        Icons.location_on_outlined,
+      ),
+      validator: (v) => v?.isEmpty == true ? 'Informe o endereco' : null,
+    );
+  }
+
+  Widget _pickupAddressField() {
+    return TextFormField(
+      controller: _pickupAddressCtrl,
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: _dec(
+        'Fornecedor, loja, CD ou endereco da coleta',
+        Icons.store_mall_directory_outlined,
+      ),
+      validator: (v) {
+        if (_fulfillmentType == PurchaseFulfillmentType.pickup &&
+            (v == null || v.trim().isEmpty)) {
+          return 'Informe onde sera feita a coleta';
+        }
+        return null;
+      },
     );
   }
 
@@ -505,11 +586,35 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
       projectId: _selectedProject!.id,
       projectName: _selectedProject!.name,
       deliveryAddress: _addressCtrl.text.trim(),
+      fulfillmentType: _fulfillmentType,
+      pickupAddress:
+          _fulfillmentType == PurchaseFulfillmentType.pickup
+              ? _pickupAddressCtrl.text.trim()
+              : '',
+      routeId: widget.purchase?.routeId,
       totalValue: value,
       quantity: qty,
       status: _status,
       purchaseDate: widget.purchase?.purchaseDate ?? DateTime.now(),
+      deliveryDate: widget.purchase?.deliveryDate,
+      expectedDeliveryDate: widget.purchase?.expectedDeliveryDate,
       requisitionId: widget.purchase?.requisitionId,
+      financialTransactionId: widget.purchase?.financialTransactionId,
+      receivedBy: widget.purchase?.receivedBy,
+      invoiceNumber: widget.purchase?.invoiceNumber,
+      invoiceAccessKey: widget.purchase?.invoiceAccessKey,
+      notes: widget.purchase?.notes,
+      approvalSector: widget.purchase?.approvalSector,
+      quotedBy: widget.purchase?.quotedBy,
+      quotedByName: widget.purchase?.quotedByName,
+      quotedAt: widget.purchase?.quotedAt,
+      approvedBy: widget.purchase?.approvedBy,
+      approvedByName: widget.purchase?.approvedByName,
+      approvedAt: widget.purchase?.approvedAt,
+      rejectionReason: widget.purchase?.rejectionReason,
+      consolidatedBy: widget.purchase?.consolidatedBy,
+      consolidatedByName: widget.purchase?.consolidatedByName,
+      consolidatedAt: widget.purchase?.consolidatedAt,
     );
 
     Navigator.pop(context, purchase);

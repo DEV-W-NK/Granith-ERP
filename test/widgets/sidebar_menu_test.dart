@@ -41,6 +41,34 @@ Widget _buildHarness({
               icon: Icons.business_rounded,
               aliases: 'obras contratos',
             ),
+            NavigationModule(
+              index: 17,
+              title: 'Financeiro',
+              section: 'Financeiro',
+              icon: Icons.account_balance_rounded,
+              aliases: 'financeiro caixa',
+            ),
+            NavigationModule(
+              index: 18,
+              title: 'Compras no Financeiro',
+              section: 'Financeiro',
+              icon: Icons.receipt_long_rounded,
+              aliases: 'compras pagar',
+            ),
+            NavigationModule(
+              index: 19,
+              title: 'DRE Gerencial',
+              section: 'Financeiro',
+              icon: Icons.bar_chart_rounded,
+              aliases: 'dre resultados',
+            ),
+            NavigationModule(
+              index: 20,
+              title: 'Permissoes e Clientes',
+              section: 'Administrativo',
+              icon: Icons.admin_panel_settings_rounded,
+              aliases: 'acessos usuarios',
+            ),
           ],
           isExpanded: isExpanded,
           onItemSelected: onItemSelected,
@@ -90,6 +118,11 @@ void main() {
 
       expect(find.text('GRANITH'), findsOneWidget);
       expect(find.text('Projetos'), findsOneWidget);
+      expect(find.text('Entradas e Saidas'), findsOneWidget);
+      expect(find.text('Compras a Pagar'), findsOneWidget);
+      expect(find.text('DRE'), findsOneWidget);
+      expect(find.text('Permissoes'), findsNothing);
+      expect(find.text('Acessos'), findsOneWidget);
       expect(find.text('gestor@granith.com'), findsOneWidget);
 
       await tester.tap(find.text('Projetos'));

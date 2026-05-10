@@ -4,7 +4,6 @@ import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/QuickActionsGrid.dart';
 import 'package:project_granith/widgets/RecentActivityList.dart';
-import 'package:project_granith/widgets/TransparencyBanner.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/animations/home_header.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
@@ -76,11 +75,6 @@ class _HomePageViewState extends State<HomePageView>
                       isDesktop: isDesktop,
                       stats: viewModel.stats,
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  const GranithReveal(
-                    delay: Duration(milliseconds: 220),
-                    child: TransparencyBanner(),
                   ),
                   const SizedBox(height: 14),
                   if (isDesktop)

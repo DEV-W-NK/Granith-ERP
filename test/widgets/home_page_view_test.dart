@@ -43,7 +43,7 @@ void main() {
         service: FakeSystemSettingsService(
           settings: const SystemSettings(
             dashboardGreetingTitle: 'Panorama do dia',
-            dashboardGreetingSubtitle: 'Execucao, financeiro e clientes',
+            dashboardGreetingSubtitle: 'Equipe, obras e entregas em destaque',
             aiAssistantPreviewEnabled: true,
           ),
         ),
@@ -89,45 +89,45 @@ void main() {
           loading: false,
           items: [
             StatItem(
-              label: 'RECEITA DO MES',
-              value: 'R\$ 120k',
-              delta: '+18%',
+              label: 'ULTIMO CONTRATADO',
+              value: 'Ana Costa',
+              delta: 'Entrou hoje',
               deltaUp: true,
               accent: AppColors.green,
-              icon: Icons.trending_up_rounded,
+              icon: Icons.person_add_alt_1_rounded,
             ),
             StatItem(
-              label: 'DESPESAS DO MES',
-              value: 'R\$ 72k',
-              delta: '-5%',
-              deltaUp: false,
-              accent: AppColors.red,
-              icon: Icons.trending_down_rounded,
-            ),
-            StatItem(
-              label: 'SALDO ATUAL',
-              value: 'R\$ 48k',
-              delta: '+12%',
+              label: 'ULTIMA OBRA FECHADA',
+              value: 'Obra Centro',
+              delta: 'Concluida hoje',
               deltaUp: true,
               accent: AppColors.gold,
-              icon: Icons.account_balance_wallet_rounded,
+              icon: Icons.task_alt_rounded,
             ),
             StatItem(
-              label: 'CLIENTES ATIVOS',
-              value: '6',
-              delta: '+2',
+              label: 'EQUIPE EM CAMPO HOJE',
+              value: '8 pessoas',
+              delta: 'Diarios em ordem',
               deltaUp: true,
               accent: AppColors.blue,
-              icon: Icons.people_outline_rounded,
+              icon: Icons.engineering_rounded,
+            ),
+            StatItem(
+              label: 'RELATORIOS LIBERADOS',
+              value: '3 assinados',
+              delta: 'Ultimo hoje',
+              deltaUp: true,
+              accent: AppColors.auraCyan,
+              icon: Icons.verified_rounded,
             ),
           ],
           activities: [
             ActivityItem(
-              icon: Icons.arrow_downward_rounded,
+              icon: Icons.emoji_events_rounded,
               iconColor: AppColors.green,
-              title: 'Pagamento recebido',
+              title: 'Obra fechada com sucesso',
               subtitle: 'Contrato Torre Norte',
-              value: 'paid',
+              value: 'Hoje',
               time: 'Hoje',
               isPositive: true,
             ),
@@ -151,10 +151,14 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
 
         expect(find.text('Panorama do dia'), findsOneWidget);
-        expect(find.text('Execucao, financeiro e clientes'), findsOneWidget);
-        expect(find.text('RECEITA DO MES'), findsOneWidget);
-        expect(find.text('Pagamento recebido'), findsOneWidget);
-        expect(find.textContaining('Transpar'), findsOneWidget);
+        expect(
+          find.text('Equipe, obras e entregas em destaque'),
+          findsOneWidget,
+        );
+        expect(find.text('ULTIMO CONTRATADO'), findsOneWidget);
+        expect(find.text('Obra fechada com sucesso'), findsOneWidget);
+        expect(find.textContaining('Pulso positivo'), findsNothing);
+        expect(find.text('Uso da plataforma'), findsNothing);
         expect(homeViewModel.loadCalls, 1);
       },
     );

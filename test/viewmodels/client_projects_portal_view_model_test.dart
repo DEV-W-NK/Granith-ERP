@@ -2,10 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/client_portal/presentation/viewmodels/client_projects_portal_view_model.dart';
 import 'package:project_granith/models/client_account_model.dart';
+import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/models/user_model.dart';
 
 import '../helpers/fake_auth_service.dart';
+import '../helpers/fake_daily_log_service.dart';
 import '../helpers/fake_project_service.dart';
 
 Future<void> _flushQueue() async {
@@ -88,6 +90,70 @@ void main() {
         await authService.dispose();
       },
     );
+
+    test('load agrupa diarios assinados por projeto', () async {
+      final authService = FakeAuthService(
+        currentUserValue: const FakeAuthUser('u1', 'cliente@granith.com'),
+        profile: const UserModel(
+          uid: 'u1',
+          email: 'cliente@granith.com',
+          role: UserRole.client,
+        ),
+        ownedAccounts: [
+          ClientAccount.empty().copyWith(
+            id: 'client-1',
+            name: 'Cliente Atlas',
+            ownerEmail: 'cliente@granith.com',
+            portalAccessStatus: ClientPortalAccessStatus.active,
+          ),
+        ],
+      );
+      final auth = AuthViewModel(service: authService);
+      await _flushQueue();
+
+      final dailyLogService =
+          FakeDailyLogService()
+            ..nextLogs = [
+              DailyLogModel(
+                id: 'log-1',
+                projectId: 'p-1',
+                projectName: 'Obra Alfa',
+                date: DateTime(2026, 5, 3),
+                activitiesDescription: 'Avanco estrutural',
+                createdByUserId: 'u1',
+                status: LogStatus.signed,
+              ),
+            ];
+
+      final viewModel = ClientProjectsPortalViewModel(
+        projectService: FakeProjectService(
+          initialProjects: [
+            Project(
+              id: 'p-1',
+              name: 'Obra Alfa',
+              client: 'Cliente Atlas',
+              description: '',
+              status: ProjectStatus.inProgress,
+              startDate: DateTime(2026),
+              budget: 100000,
+              currentCost: 10000,
+              location: 'SP',
+              tags: const [],
+              teamSize: 3,
+              clientAccountId: 'client-1',
+            ),
+          ],
+        ),
+        dailyLogService: dailyLogService,
+      );
+
+      await viewModel.load(auth);
+
+      expect(viewModel.totalSignedDailyLogs, 1);
+      expect(viewModel.signedLogsForProject('p-1'), hasLength(1));
+
+      await authService.dispose();
+    });
 
     test('load sem conta vinculada retorna vazio sem erro', () async {
       final authService = FakeAuthService(

@@ -37,6 +37,8 @@ node_modules/
 .env.*
 *.local
 supabase_usage.env
+web/env.js
+ios/Flutter/Secrets.xcconfig
 supabase/.temp/
 supabase/.env
 supabase/.env.*

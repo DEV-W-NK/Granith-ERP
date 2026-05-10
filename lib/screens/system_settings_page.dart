@@ -6,6 +6,7 @@ import 'package:project_granith/screens/subscription_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/utils/seeder.dart';
+import 'package:project_granith/widgets/TransparencyBanner.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
@@ -29,12 +30,23 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
   final TextEditingController _supportPhoneController = TextEditingController();
   final TextEditingController _clientPortalWelcomeController =
       TextEditingController();
+  final TextEditingController _timeClockInpiController =
+      TextEditingController();
+  final TextEditingController _timeClockEmployerNameController =
+      TextEditingController();
+  final TextEditingController _timeClockEmployerDocumentController =
+      TextEditingController();
+  final TextEditingController _timeClockTimezoneController =
+      TextEditingController();
 
   bool _aiAssistantPreviewEnabled = true;
   bool _compactNavigation = false;
   bool _clientPortalShowBudgets = true;
   bool _clientPortalShowBudgetValues = true;
   bool _clientPortalShowCurrentCosts = true;
+  bool _timeClockEnabled = true;
+  bool _timeClockGeofenceRequired = true;
+  bool _timeClockStoreRejectedAttempts = true;
   bool _isSeeding = false;
 
   String _boundSnapshot = '';
@@ -48,6 +60,10 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
     _supportEmailController.dispose();
     _supportPhoneController.dispose();
     _clientPortalWelcomeController.dispose();
+    _timeClockInpiController.dispose();
+    _timeClockEmployerNameController.dispose();
+    _timeClockEmployerDocumentController.dispose();
+    _timeClockTimezoneController.dispose();
     super.dispose();
   }
 
@@ -65,6 +81,13 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
       settings.clientPortalShowBudgets,
       settings.clientPortalShowBudgetValues,
       settings.clientPortalShowCurrentCosts,
+      settings.timeClockEnabled,
+      settings.timeClockGeofenceRequired,
+      settings.timeClockStoreRejectedAttempts,
+      settings.timeClockInpiRegistrationNumber,
+      settings.timeClockEmployerName,
+      settings.timeClockEmployerDocument,
+      settings.timeClockTimezone,
     ].join('|');
 
     if (_boundSnapshot == snapshot) {
@@ -84,6 +107,14 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
     _clientPortalShowBudgets = settings.clientPortalShowBudgets;
     _clientPortalShowBudgetValues = settings.clientPortalShowBudgetValues;
     _clientPortalShowCurrentCosts = settings.clientPortalShowCurrentCosts;
+    _timeClockEnabled = settings.timeClockEnabled;
+    _timeClockGeofenceRequired = settings.timeClockGeofenceRequired;
+    _timeClockStoreRejectedAttempts = settings.timeClockStoreRejectedAttempts;
+    _timeClockInpiController.text = settings.timeClockInpiRegistrationNumber;
+    _timeClockEmployerNameController.text = settings.timeClockEmployerName;
+    _timeClockEmployerDocumentController.text =
+        settings.timeClockEmployerDocument;
+    _timeClockTimezoneController.text = settings.timeClockTimezone;
   }
 
   Future<void> _save(SystemSettingsViewModel viewModel) async {
@@ -100,6 +131,13 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
       clientPortalShowBudgets: _clientPortalShowBudgets,
       clientPortalShowBudgetValues: _clientPortalShowBudgetValues,
       clientPortalShowCurrentCosts: _clientPortalShowCurrentCosts,
+      timeClockEnabled: _timeClockEnabled,
+      timeClockGeofenceRequired: _timeClockGeofenceRequired,
+      timeClockStoreRejectedAttempts: _timeClockStoreRejectedAttempts,
+      timeClockInpiRegistrationNumber: _timeClockInpiController.text,
+      timeClockEmployerName: _timeClockEmployerNameController.text,
+      timeClockEmployerDocument: _timeClockEmployerDocumentController.text,
+      timeClockTimezone: _timeClockTimezoneController.text,
     );
 
     final success = await viewModel.save(next);
@@ -148,12 +186,18 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                     child: _buildPostureStrip(settings),
                   ),
                   const SizedBox(height: 18),
+                  const GranithReveal(
+                    delay: Duration(milliseconds: 145),
+                    child: TransparencyBanner(),
+                  ),
+                  const SizedBox(height: 18),
                   GranithReveal(
                     delay: const Duration(milliseconds: 180),
                     child: _ConfigSectionCard(
                       title: 'Identidade do Workspace',
-                      subtitle:
-                          'Define como o Granith se apresenta no login, menu lateral e dashboards.',
+                      subtitle: 'Nome e assinatura visual do ERP.',
+                      icon: Icons.business_rounded,
+                      initiallyExpanded: true,
                       child: Column(
                         children: [
                           TextField(
@@ -178,8 +222,9 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                     delay: const Duration(milliseconds: 240),
                     child: _ConfigSectionCard(
                       title: 'Dashboard Executivo',
-                      subtitle:
-                          'Ajusta a linguagem do painel principal e ativa experiencias de produto em destaque.',
+                      subtitle: 'Texto de entrada e densidade da interface.',
+                      icon: Icons.dashboard_customize_rounded,
+                      initiallyExpanded: true,
                       child: Column(
                         children: [
                           TextField(
@@ -205,7 +250,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textPrimary),
                             ),
                             subtitle: const Text(
-                              'Mantem o atalho visual de copilot no topo do dashboard como experimento guiado.',
+                              'Atalho visual no topo do dashboard.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged: (value) {
@@ -223,7 +268,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textPrimary),
                             ),
                             subtitle: const Text(
-                              'Reduz a largura da navegacao lateral para ambientes operacionais com foco em conteudo.',
+                              'Mais espaco para o conteudo.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged: (value) {
@@ -238,9 +283,112 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                   GranithReveal(
                     delay: const Duration(milliseconds: 300),
                     child: _ConfigSectionCard(
+                      title: 'Ponto REP-P',
+                      subtitle: 'Regras do ponto mobile.',
+                      icon: Icons.fingerprint_rounded,
+                      child: Column(
+                        children: [
+                          SwitchListTile.adaptive(
+                            value: _timeClockEnabled,
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Modulo de ponto ativo',
+                              style: TextStyle(color: AppColors.textPrimary),
+                            ),
+                            subtitle: const Text(
+                              'Controla novas batidas no mobile.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                            onChanged: (value) {
+                              setState(() => _timeClockEnabled = value);
+                            },
+                          ),
+                          const SizedBox(height: 6),
+                          SwitchListTile.adaptive(
+                            value: _timeClockGeofenceRequired,
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Exigir cerca da obra',
+                              style: TextStyle(color: AppColors.textPrimary),
+                            ),
+                            subtitle: const Text(
+                              'Valida presenca na geofence.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                            onChanged:
+                                _timeClockEnabled
+                                    ? (value) {
+                                      setState(
+                                        () =>
+                                            _timeClockGeofenceRequired = value,
+                                      );
+                                    }
+                                    : null,
+                          ),
+                          const SizedBox(height: 6),
+                          SwitchListTile.adaptive(
+                            value: _timeClockStoreRejectedAttempts,
+                            contentPadding: EdgeInsets.zero,
+                            title: const Text(
+                              'Guardar tentativas fora da regra',
+                              style: TextStyle(color: AppColors.textPrimary),
+                            ),
+                            subtitle: const Text(
+                              'Mantem auditoria das recusas.',
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                            onChanged:
+                                _timeClockEnabled
+                                    ? (value) {
+                                      setState(
+                                        () =>
+                                            _timeClockStoreRejectedAttempts =
+                                                value,
+                                      );
+                                    }
+                                    : null,
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _timeClockInpiController,
+                            decoration: const InputDecoration(
+                              labelText: 'Registro INPI do REP-P',
+                              hintText: 'Preencher quando registrado',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _timeClockEmployerNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Razao social empregadora',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _timeClockEmployerDocumentController,
+                            decoration: const InputDecoration(
+                              labelText: 'CNPJ/CPF empregador',
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _timeClockTimezoneController,
+                            decoration: const InputDecoration(
+                              labelText: 'Fuso horario fiscal',
+                              hintText: 'America/Sao_Paulo',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 360),
+                    child: _ConfigSectionCard(
                       title: 'Portal do Cliente',
-                      subtitle:
-                          'Controla quanto de transparencia operacional e comercial o cliente enxerga no portal.',
+                      subtitle: 'O que o cliente pode enxergar.',
+                      icon: Icons.groups_rounded,
                       child: Column(
                         children: [
                           TextField(
@@ -259,7 +407,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textPrimary),
                             ),
                             subtitle: const Text(
-                              'Mostra ao cliente a trilha comercial com propostas aprovadas, pendentes e historico vinculado.',
+                              'Mostra a trilha comercial.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged: (value) {
@@ -275,7 +423,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textPrimary),
                             ),
                             subtitle: const Text(
-                              'Permite um portal mais transparente para clientes de relacionamento premium ou contratos abertos.',
+                              'Abre valores ao cliente.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged:
@@ -298,7 +446,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               style: TextStyle(color: AppColors.textPrimary),
                             ),
                             subtitle: const Text(
-                              'Ideal para clientes com contrato por custo real, medicao aberta ou governanca ampliada.',
+                              'Para contratos com maior transparencia.',
                               style: TextStyle(color: AppColors.textSecondary),
                             ),
                             onChanged: (value) {
@@ -313,16 +461,16 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                   ),
                   const SizedBox(height: 18),
                   GranithReveal(
-                    delay: const Duration(milliseconds: 360),
+                    delay: const Duration(milliseconds: 420),
                     child: _ConfigSectionCard(
-                      title: 'Custos e Infra Supabase',
-                      subtitle:
-                          'Centraliza a leitura de consumo observado do backend e prepara o terreno para um monitoramento financeiro mais maduro.',
+                      title: 'Uso da Plataforma',
+                      subtitle: 'Consumo e observabilidade do Supabase.',
+                      icon: Icons.monitor_heart_outlined,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'O Granith agora possui um centro de observabilidade para o Supabase. Ele e ideal para enxergar operacoes, storage rastreado e o nivel de maturidade da telemetria interna antes de integrar billing oficial.',
+                            'Acompanhe operacoes, storage e maturidade da telemetria interna.',
                             style: TextStyle(
                               color: AppColors.textSecondary,
                               height: 1.5,
@@ -343,7 +491,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                               ),
                               _SettingsHintChip(
                                 icon: Icons.attach_money_rounded,
-                                label: 'Leitura de governanca',
+                                label: 'Governanca',
                               ),
                             ],
                           ),
@@ -359,9 +507,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                                 );
                               },
                               icon: const Icon(Icons.monitor_heart_outlined),
-                              label: const Text(
-                                'Abrir centro de custos do Supabase',
-                              ),
+                              label: const Text('Abrir relatorio'),
                             ),
                           ),
                         ],
@@ -380,8 +526,8 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                     delay: const Duration(milliseconds: 420),
                     child: _ConfigSectionCard(
                       title: 'Relacionamento e Suporte',
-                      subtitle:
-                          'Dados usados para orientar o cliente dentro do portal e reduzir ruido operacional.',
+                      subtitle: 'Contato exibido no portal.',
+                      icon: Icons.support_agent_rounded,
                       child: Column(
                         children: [
                           TextField(
@@ -394,7 +540,7 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                           TextField(
                             controller: _supportPhoneController,
                             decoration: const InputDecoration(
-                              labelText: 'Telefone/WhatsApp de suporte',
+                              labelText: 'Telefone/WhatsApp',
                             ),
                           ),
                         ],
@@ -402,31 +548,6 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton.icon(
-                      onPressed:
-                          viewModel.isSaving ? null : () => _save(viewModel),
-                      icon:
-                          viewModel.isSaving
-                              ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                              : const Icon(Icons.save_outlined),
-                      label: Text(
-                        viewModel.isSaving
-                            ? 'Salvando...'
-                            : 'Salvar configuracoes',
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -439,8 +560,8 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
   Widget _buildDeveloperToolsSection() {
     return _ConfigSectionCard(
       title: 'Ferramentas de desenvolvimento',
-      subtitle:
-          'Disponivel apenas em debug para preparar uma base demonstrativa local.',
+      subtitle: 'Base demonstrativa local.',
+      icon: Icons.bug_report_outlined,
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
@@ -555,66 +676,36 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
   }
 
   Widget _buildHeader(SystemSettingsViewModel viewModel) {
+    final compact = MediaQuery.sizeOf(context).width < ResponsiveLayout.compact;
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.accentBlue.withValues(alpha: 0.18),
-            AppColors.surfaceDark.withValues(alpha: 0.84),
-            AppColors.accentGold.withValues(alpha: 0.10),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.22)),
-        boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+        color: AppColors.surfaceDark.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentBlue.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: AppColors.accentBlue.withValues(alpha: 0.24),
-                    ),
-                  ),
-                  child: const Text(
-                    'Central de Configuracoes',
-                    style: TextStyle(
-                      color: AppColors.accentBlue,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      letterSpacing: 0.7,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
                 Text(
-                  'Ajuste o comportamento do Granith como produto, nao so como tela.',
+                  'Central de Configuracoes',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 Text(
-                  'Aqui entram as decisoes que mudam a percepcao do ERP: identidade do workspace, transparencia do portal do cliente, densidade da interface e linguagem do painel executivo.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  'Ajustes essenciais do workspace, dashboard e portal.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
-                    height: 1.55,
                   ),
                 ),
                 if (viewModel.errorMessage != null) ...[
@@ -625,6 +716,28 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                   ),
                 ],
               ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          ElevatedButton.icon(
+            onPressed: viewModel.isSaving ? null : () => _save(viewModel),
+            icon:
+                viewModel.isSaving
+                    ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(Colors.white),
+                      ),
+                    )
+                    : const Icon(Icons.save_outlined),
+            label: Text(
+              viewModel.isSaving
+                  ? 'Salvando...'
+                  : compact
+                  ? 'Salvar'
+                  : 'Salvar configuracoes',
             ),
           ),
         ],
@@ -669,48 +782,71 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
 class _ConfigSectionCard extends StatelessWidget {
   final String title;
   final String subtitle;
+  final IconData? icon;
+  final bool initiallyExpanded;
   final Widget child;
 
   const _ConfigSectionCard({
     required this.title,
     required this.subtitle,
+    this.icon,
+    this.initiallyExpanded = false,
     required this.child,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.62),
+    final sectionIcon = icon ?? Icons.tune_rounded;
+
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.surfaceDark.withValues(alpha: 0.36),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppColors.borderColor.withValues(alpha: 0.48),
+          ),
         ),
-        boxShadow: AppColors.glowShadows(),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          maintainState: true,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          iconColor: AppColors.textSecondary,
+          collapsedIconColor: AppColors.textMuted,
+          leading: Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: AppColors.accentBlue.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: AppColors.accentBlue.withValues(alpha: 0.18),
+              ),
+            ),
+            child: Icon(sectionIcon, color: AppColors.accentBlue, size: 18),
+          ),
+          title: Text(
             title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
+          subtitle: Text(
             subtitle,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textMuted),
           ),
-          const SizedBox(height: 18),
-          child,
-        ],
+          children: [child],
+        ),
       ),
     );
   }
@@ -733,49 +869,59 @@ class _SettingsPostureTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
 
-    return Container(
-      constraints:
-          width < ResponsiveLayout.compact
-              ? const BoxConstraints()
-              : const BoxConstraints(minWidth: 220),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.58),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: accent.withValues(alpha: 0.22)),
-        boxShadow: AppColors.auraShadows(accent),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+    return Tooltip(
+      message: subtitle,
+      child: Container(
+        constraints:
+            width < ResponsiveLayout.compact
+                ? const BoxConstraints()
+                : const BoxConstraints(minWidth: 190),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accent.withValues(alpha: 0.18)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+            const SizedBox(width: 10),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              height: 1.45,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -790,22 +936,23 @@ class _SettingsHintChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.04),
+        color: Colors.white.withValues(alpha: 0.035),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.accentBlue),
-          const SizedBox(width: 8),
+          Icon(icon, size: 15, color: AppColors.accentBlue),
+          const SizedBox(width: 7),
           Text(
             label,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],

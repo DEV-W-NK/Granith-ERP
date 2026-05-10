@@ -128,14 +128,18 @@ class HomeViewModel extends ChangeNotifier {
   String? get error => _error;
 
   int _activeProjects = 0;
-  double _overdueAmount = 0;
-  int _overdueCount = 0;
-  double _currentMonthMargin = 0;
   int _activeEmployees = 0;
   int _fieldToday = 0;
   int _pendingDailyLogs = 0;
   int _talentsPending = 0;
   int _openRequisitions = 0;
+  String _latestHireName = '';
+  DateTime? _latestHireDate;
+  String _latestClosedProjectName = '';
+  DateTime? _latestClosedProjectDate;
+  String _latestSignedDailyLogProject = '';
+  DateTime? _latestSignedDailyLogDate;
+  int _signedDailyLogs = 0;
 
   int get activeEmployees => _activeEmployees;
   int get fieldToday => _fieldToday;
@@ -146,8 +150,7 @@ class HomeViewModel extends ChangeNotifier {
   List<HomeAlert> _alerts = [];
   List<HomeAlert> get alerts => _alerts;
 
-  List<MonthlyMini> _monthlyMini = [];
-  List<MonthlyMini> get monthlyMini => _monthlyMini;
+  List<MonthlyMini> get monthlyMini => const <MonthlyMini>[];
 
   List<StatItem> _stats = [];
   List<StatItem> get stats => _stats;
@@ -164,16 +167,17 @@ class HomeViewModel extends ChangeNotifier {
 
     await Future.wait([
       _runSection('projetos', _loadProjects, failures),
-      _runSection('financeiro', _loadFinancial, failures),
       _runSection('rh', _loadHr, failures),
       _runSection('requisicoes', _loadRequisitions, failures),
       _runSection('talentos', _loadTalents, failures),
-      _runSection('grafico_mensal', _loadMonthlyMini, failures),
       _runSection('atividades', _loadRecentActivities, failures),
     ]);
 
     _buildAlerts();
     _buildStats();
+    if (_recentActivities.isEmpty) {
+      _buildMilestoneRecentActivities();
+    }
     if (_recentActivities.isEmpty) {
       _buildFallbackRecentActivities();
     }
@@ -227,45 +231,59 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   void _buildStats() {
-    final monthExpense = _overdueAmount > 0 ? _overdueAmount : 61200.0;
-    final monthIncome =
-        _monthlyMini.isNotEmpty
-            ? _monthlyMini.last.income
-            : (_overdueAmount > 0 ? _overdueAmount * 4 : 84500.0);
-    final balance = monthIncome - monthExpense;
-
     _stats = [
       StatItem(
-        label: 'RECEITA DO MES',
-        value: 'R\$ ${monthIncome.toStringAsFixed(0)}',
-        delta: '+${_currentMonthMargin.toStringAsFixed(1)}%',
-        deltaUp: _currentMonthMargin >= 0,
-        accent: AppColors.green,
-        icon: Icons.trending_up_rounded,
-      ),
-      StatItem(
-        label: 'DESPESAS DO MES',
-        value: 'R\$ ${monthExpense.toStringAsFixed(0)}',
-        delta: _overdueCount > 0 ? '+$_overdueCount venc.' : '+4.1%',
-        deltaUp: false,
-        accent: AppColors.red,
-        icon: Icons.trending_down_rounded,
-      ),
-      StatItem(
-        label: 'SALDO ATUAL',
-        value: 'R\$ ${balance.toStringAsFixed(0)}',
-        delta: '${_currentMonthMargin.toStringAsFixed(1)}%',
-        deltaUp: _currentMonthMargin >= 0,
-        accent: AppColors.gold,
-        icon: Icons.account_balance_wallet_rounded,
-      ),
-      StatItem(
-        label: 'CLIENTES ATIVOS',
-        value: _activeProjects.toString(),
-        delta: '+${_openRequisitions.toString()}',
+        label: 'ULTIMO CONTRATADO',
+        value: _latestHireName.isNotEmpty ? _latestHireName : 'Equipe estavel',
+        delta:
+            _latestHireDate == null
+                ? 'Sem admissoes recentes'
+                : 'Entrou ${_relativeLabel(_latestHireDate).toLowerCase()}',
         deltaUp: true,
-        accent: AppColors.blue,
-        icon: Icons.people_outline_rounded,
+        accent: AppColors.accentGreen,
+        icon: Icons.person_add_alt_1_rounded,
+      ),
+      StatItem(
+        label: 'ULTIMA OBRA FECHADA',
+        value:
+            _latestClosedProjectName.isNotEmpty
+                ? _latestClosedProjectName
+                : 'Em andamento',
+        delta:
+            _latestClosedProjectDate == null
+                ? 'Proximas entregas em execucao'
+                : 'Concluida ${_relativeLabel(_latestClosedProjectDate).toLowerCase()}',
+        deltaUp: true,
+        accent: AppColors.accentGold,
+        icon: Icons.task_alt_rounded,
+      ),
+      StatItem(
+        label: 'EQUIPE EM CAMPO HOJE',
+        value:
+            _fieldToday > 0
+                ? '$_fieldToday pessoa${_fieldToday == 1 ? '' : 's'}'
+                : 'Aguardando diario',
+        delta:
+            _pendingDailyLogs > 0
+                ? '$_pendingDailyLogs diario${_pendingDailyLogs == 1 ? '' : 's'} para completar'
+                : 'Diarios do dia em ordem',
+        deltaUp: true,
+        accent: AppColors.accentBlue,
+        icon: Icons.engineering_rounded,
+      ),
+      StatItem(
+        label: 'RELATORIOS LIBERADOS',
+        value:
+            _signedDailyLogs > 0
+                ? '$_signedDailyLogs assinado${_signedDailyLogs == 1 ? '' : 's'}'
+                : 'Nenhum ainda',
+        delta:
+            _latestSignedDailyLogDate == null
+                ? 'Aguardando assinaturas'
+                : 'Ultimo ${_relativeLabel(_latestSignedDailyLogDate).toLowerCase()}',
+        deltaUp: true,
+        accent: AppColors.auraCyan,
+        icon: Icons.verified_rounded,
       ),
     ];
   }
@@ -273,15 +291,78 @@ class HomeViewModel extends ChangeNotifier {
   void _buildFallbackRecentActivities() {
     _recentActivities = [
       ActivityItem(
-        icon: Icons.arrow_downward_rounded,
-        iconColor: AppColors.green,
-        title: 'Pagamento recebido',
-        subtitle: 'Sem movimentacoes recentes carregadas',
+        icon: Icons.auto_awesome_rounded,
+        iconColor: AppColors.accentGold,
+        title: 'Dia pronto para bons avancos',
+        subtitle: 'Sem marcos recentes carregados agora',
         value: '',
         time: 'Agora',
         isPositive: true,
       ),
     ];
+  }
+
+  void _buildMilestoneRecentActivities() {
+    final items = <ActivityItem>[];
+
+    if (_latestHireName.isNotEmpty) {
+      items.add(
+        ActivityItem(
+          icon: Icons.person_add_alt_1_rounded,
+          iconColor: AppColors.accentGreen,
+          title: 'Novo colaborador no time',
+          subtitle: _latestHireName,
+          value: _relativeLabel(_latestHireDate),
+          time: _relativeLabel(_latestHireDate),
+          isPositive: true,
+        ),
+      );
+    }
+
+    if (_latestClosedProjectName.isNotEmpty) {
+      items.add(
+        ActivityItem(
+          icon: Icons.emoji_events_rounded,
+          iconColor: AppColors.accentGold,
+          title: 'Obra fechada com sucesso',
+          subtitle: _latestClosedProjectName,
+          value: _relativeLabel(_latestClosedProjectDate),
+          time: _relativeLabel(_latestClosedProjectDate),
+          isPositive: true,
+        ),
+      );
+    }
+
+    if (_latestSignedDailyLogProject.isNotEmpty) {
+      items.add(
+        ActivityItem(
+          icon: Icons.verified_rounded,
+          iconColor: AppColors.auraCyan,
+          title: 'Relatorio liberado ao cliente',
+          subtitle: _latestSignedDailyLogProject,
+          value: _relativeLabel(_latestSignedDailyLogDate),
+          time: _relativeLabel(_latestSignedDailyLogDate),
+          isPositive: true,
+        ),
+      );
+    }
+
+    if (_openRequisitions > 0) {
+      items.add(
+        ActivityItem(
+          icon: Icons.inventory_2_rounded,
+          iconColor: AppColors.accentBlue,
+          title: 'Suprimentos em movimento',
+          subtitle:
+              '$_openRequisitions requisic${_openRequisitions == 1 ? 'ao' : 'oes'} em andamento',
+          value: 'Compras',
+          time: 'Agora',
+          isPositive: true,
+        ),
+      );
+    }
+
+    _recentActivities = items.take(4).toList();
   }
 
   Future<void> _loadProjects() async {
@@ -291,17 +372,50 @@ class HomeViewModel extends ChangeNotifier {
             : ((await AppSupabase.client
                         .from('projects')
                         .select(SupabaseSelects.projectDashboard)
-                        .inFilter('status', ['inProgress', 'planning'])
-                        .order('currentCost', ascending: false)
-                        .limit(6))
+                        .inFilter('status', [
+                          'inProgress',
+                          'planning',
+                          'completed',
+                        ])
+                        .order('endDate', ascending: false)
+                        .limit(10))
                     as List)
                 .map((row) => Map<String, dynamic>.from(row as Map))
                 .toList();
 
-    _activeProjects = rows.length;
+    final activeRows =
+        rows.where((row) {
+          final status = row['status']?.toString();
+          return status == 'inProgress' || status == 'planning';
+        }).toList();
+    final completedRows =
+        rows.where((row) => row['status']?.toString() == 'completed').toList()
+          ..sort((a, b) {
+            final aDate =
+                DbValue.toDateTime(a['endDate']) ??
+                DbValue.toDateTime(a['startDate']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate =
+                DbValue.toDateTime(b['endDate']) ??
+                DbValue.toDateTime(b['startDate']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
+
+    _activeProjects = activeRows.length;
+    if (completedRows.isNotEmpty) {
+      final latest = completedRows.first;
+      _latestClosedProjectName = (latest['name'] ?? '').toString();
+      _latestClosedProjectDate =
+          DbValue.toDateTime(latest['endDate']) ??
+          DbValue.toDateTime(latest['startDate']);
+    } else {
+      _latestClosedProjectName = '';
+      _latestClosedProjectDate = null;
+    }
 
     _projects =
-        rows
+        activeRows
             .map(
               (d) => ProjectProgress(
                 id: (d['id'] ?? '').toString(),
@@ -315,77 +429,46 @@ class HomeViewModel extends ChangeNotifier {
             .toList();
   }
 
-  Future<void> _loadFinancial() async {
-    final now = _nowProvider();
-    final today = DateTime(now.year, now.month, now.day);
-
-    final overdueRows = await _selectList(
-      'financial_transactions',
-      columns: SupabaseSelects.financialDashboard,
-    );
-
-    final overdue =
-        overdueRows.where((row) {
-          final type = row['type']?.toString();
-          final status = row['status']?.toString();
-          final dueDate = DbValue.toDateTime(row['dueDate']);
-
-          return type == 'expense' &&
-              status == 'pending' &&
-              dueDate != null &&
-              !dueDate.isAfter(today);
-        }).toList();
-
-    _overdueCount = overdue.length;
-    _overdueAmount = overdue.fold(
-      0.0,
-      (sum, row) => sum + ((row['amount'] as num?)?.toDouble() ?? 0),
-    );
-
-    final monthStart = DateTime(now.year, now.month, 1);
-    final monthEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-
-    double income = 0;
-    double expense = 0;
-
-    for (final row in overdueRows) {
-      final status = row['status']?.toString();
-      final dueDate = DbValue.toDateTime(row['dueDate']);
-      final amount = (row['amount'] as num?)?.toDouble() ?? 0;
-
-      if (status != 'paid' || dueDate == null) {
-        continue;
-      }
-
-      if (dueDate.isBefore(monthStart) || dueDate.isAfter(monthEnd)) {
-        continue;
-      }
-
-      if (row['type'] == 'income') {
-        income += amount;
-      } else if (row['type'] == 'expense') {
-        expense += amount;
-      }
-    }
-
-    _currentMonthMargin = income > 0 ? ((income - expense) / income * 100) : 0;
-  }
-
   Future<void> _loadHr() async {
     final now = _nowProvider();
     final todayStart = DateTime(now.year, now.month, now.day);
     final todayEnd = todayStart.add(const Duration(hours: 23, minutes: 59));
 
-    final employeeRows = await _selectList('employees', columns: 'id,status');
-    _activeEmployees =
+    final employeeRows = await _selectList(
+      'employees',
+      columns: 'id,name,status,admissionDate,createdAt',
+    );
+    final activeEmployees =
         employeeRows.where((row) {
-          final status = row['status']?.toString().toLowerCase();
-          return status == 'active' || status == 'ativo';
-        }).length;
+            final status = row['status']?.toString().toLowerCase();
+            return status == 'active' || status == 'ativo';
+          }).toList()
+          ..sort((a, b) {
+            final aDate =
+                DbValue.toDateTime(a['admissionDate']) ??
+                DbValue.toDateTime(a['createdAt']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate =
+                DbValue.toDateTime(b['admissionDate']) ??
+                DbValue.toDateTime(b['createdAt']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
+    _activeEmployees = activeEmployees.length;
+    if (activeEmployees.isNotEmpty) {
+      final latest = activeEmployees.first;
+      _latestHireName = (latest['name'] ?? '').toString().trim();
+      _latestHireDate =
+          DbValue.toDateTime(latest['admissionDate']) ??
+          DbValue.toDateTime(latest['createdAt']);
+    } else {
+      _latestHireName = '';
+      _latestHireDate = null;
+    }
 
     final logRows = await _selectList(
       'daily_logs',
-      columns: 'id,date,manpower',
+      columns: 'id,date,manpower,status,signedAt,projectName',
     );
     final todayLogs =
         logRows.where((row) {
@@ -396,6 +479,36 @@ class HomeViewModel extends ChangeNotifier {
         }).toList();
 
     _pendingDailyLogs = (_activeProjects - todayLogs.length).clamp(0, 99);
+    final signedLogs =
+        logRows.where((row) {
+            final status = row['status']?.toString();
+            final signedAt = DbValue.toDateTime(row['signedAt']);
+            return status == 'signed' || signedAt != null;
+          }).toList()
+          ..sort((a, b) {
+            final aDate =
+                DbValue.toDateTime(a['signedAt']) ??
+                DbValue.toDateTime(a['date']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final bDate =
+                DbValue.toDateTime(b['signedAt']) ??
+                DbValue.toDateTime(b['date']) ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return bDate.compareTo(aDate);
+          });
+
+    _signedDailyLogs = signedLogs.length;
+    if (signedLogs.isNotEmpty) {
+      final latest = signedLogs.first;
+      _latestSignedDailyLogProject =
+          (latest['projectName'] ?? 'Diario de obra').toString();
+      _latestSignedDailyLogDate =
+          DbValue.toDateTime(latest['signedAt']) ??
+          DbValue.toDateTime(latest['date']);
+    } else {
+      _latestSignedDailyLogProject = '';
+      _latestSignedDailyLogDate = null;
+    }
 
     _fieldToday = todayLogs.fold(0, (sum, row) {
       final manpower = row['manpower'];
@@ -442,70 +555,14 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> _loadMonthlyMini() async {
-    final now = _nowProvider();
-    final from = DateTime(now.year, now.month - 5, 1);
-    final to = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-
-    final rows = await _selectList(
-      'financial_transactions',
-      columns: SupabaseSelects.financialDashboard,
-    );
-    final grouped = <String, ({double income, double expense})>{};
-
-    for (final row in rows) {
-      if (row['status']?.toString() != 'paid') {
-        continue;
-      }
-
-      final dueDate = DbValue.toDateTime(row['dueDate']);
-      if (dueDate == null || dueDate.isBefore(from) || dueDate.isAfter(to)) {
-        continue;
-      }
-
-      final key = '${dueDate.year}-${dueDate.month.toString().padLeft(2, '0')}';
-      final amount = (row['amount'] as num?)?.toDouble() ?? 0;
-      final current = grouped[key] ?? (income: 0.0, expense: 0.0);
-
-      if (row['type'] == 'income') {
-        grouped[key] = (
-          income: current.income + amount,
-          expense: current.expense,
-        );
-      } else {
-        grouped[key] = (
-          income: current.income,
-          expense: current.expense + amount,
-        );
-      }
+  Future<void> _loadRecentActivities() async {
+    if (_recentActivitiesLoader == null) {
+      _recentActivities = [];
+      return;
     }
 
-    _monthlyMini = List.generate(6, (i) {
-      final month = DateTime(now.year, now.month - 5 + i, 1);
-      final key = '${month.year}-${month.month.toString().padLeft(2, '0')}';
-      final entry = grouped[key] ?? (income: 0.0, expense: 0.0);
-
-      return MonthlyMini(
-        label: _monthName(month.month),
-        income: entry.income,
-        expense: entry.expense,
-      );
-    });
-  }
-
-  Future<void> _loadRecentActivities() async {
     try {
-      final rows =
-          _recentActivitiesLoader != null
-              ? await _recentActivitiesLoader()
-              : ((await AppSupabase.client
-                          .from('financial_transactions')
-                          .select(SupabaseSelects.financialDashboard)
-                          .order('createdAt', ascending: false)
-                          .limit(4))
-                      as List)
-                  .map((row) => Map<String, dynamic>.from(row as Map))
-                  .toList();
+      final rows = await _recentActivitiesLoader();
 
       _recentActivities =
           rows
@@ -522,24 +579,29 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   ActivityItem _mapRecentActivity(Map<String, dynamic> row) {
-    final type = row['type']?.toString() ?? 'expense';
+    final type = row['type']?.toString() ?? 'milestone';
     final status = row['status']?.toString() ?? '';
-    final amount = (row['amount'] as num?)?.toDouble() ?? 0;
     final date =
         DbValue.toDateTime(row['paymentDate']) ??
         DbValue.toDateTime(row['dueDate']) ??
         DbValue.toDateTime(row['createdAt']);
-    final isPositive = type == 'income';
+    final isPositive = type != 'issue';
 
     return ActivityItem(
       icon:
-          isPositive
-              ? Icons.arrow_downward_rounded
-              : Icons.arrow_upward_rounded,
-      iconColor: isPositive ? AppColors.green : AppColors.red,
-      title: (row['description'] ?? 'Movimentacao financeira').toString(),
-      subtitle: '${isPositive ? '+' : '-'} ${_compact(amount)}',
-      value: status,
+          type == 'employee'
+              ? Icons.person_add_alt_1_rounded
+              : type == 'project'
+              ? Icons.task_alt_rounded
+              : type == 'daily_log'
+              ? Icons.verified_rounded
+              : Icons.auto_awesome_rounded,
+      iconColor: isPositive ? AppColors.accentGreen : AppColors.accentRed,
+      title: (row['description'] ?? 'Marco registrado').toString(),
+      subtitle:
+          (row['subtitle'] ?? row['projectName'] ?? 'Atualizacao do time')
+              .toString(),
+      value: status.isEmpty ? _relativeLabel(date) : status,
       time: _relativeLabel(date),
       isPositive: isPositive,
     );
@@ -548,24 +610,12 @@ class HomeViewModel extends ChangeNotifier {
   void _buildAlerts() {
     _alerts = [];
 
-    for (final p in _projects.where((p) => p.isOverBudget)) {
-      final excesso = p.currentCost - p.budget;
+    if (_latestClosedProjectName.isNotEmpty) {
       _alerts.add(
         HomeAlert(
-          message: '${p.name} estourou orcamento em ${_compact(excesso)}',
-          subtitle: 'Financeiro · Projetos',
-          type: HomeAlertType.critical,
-        ),
-      );
-    }
-
-    if (_overdueCount > 0) {
-      _alerts.add(
-        HomeAlert(
-          message:
-              '$_overdueCount fatura${_overdueCount > 1 ? 's' : ''} vencida${_overdueCount > 1 ? 's' : ''} (${_compact(_overdueAmount)})',
-          subtitle: 'Financeiro',
-          type: HomeAlertType.critical,
+          message: 'Ultima obra fechada: $_latestClosedProjectName',
+          subtitle: 'Comercial / Operacional',
+          type: HomeAlertType.hint,
         ),
       );
     }
@@ -592,52 +642,27 @@ class HomeViewModel extends ChangeNotifier {
       );
     }
 
-    if (_talentsPending > 0) {
+    if (_signedDailyLogs > 0) {
       _alerts.add(
         HomeAlert(
           message:
-              '$_talentsPending curriculo${_talentsPending > 1 ? 's' : ''} aguardando triagem',
-          subtitle: 'RH · Talentos',
+              '$_signedDailyLogs relatorio${_signedDailyLogs > 1 ? 's' : ''} liberado${_signedDailyLogs > 1 ? 's' : ''} ao cliente',
+          subtitle: 'Diario de Obras',
           type: HomeAlertType.info,
         ),
       );
     }
 
-    if (_currentMonthMargin > 0 && _currentMonthMargin < 28) {
+    if (_talentsPending > 0) {
       _alerts.add(
         HomeAlert(
           message:
-              'Margem do mes ${_currentMonthMargin.toStringAsFixed(1)}% abaixo da meta de 28%',
-          subtitle: 'Financeiro',
-          type: HomeAlertType.warning,
+              '$_talentsPending curriculo${_talentsPending > 1 ? 's' : ''} aguardando triagem',
+          subtitle: 'RH / Talentos',
+          type: HomeAlertType.info,
         ),
       );
     }
-  }
-
-  static String _compact(double v) {
-    if (v.abs() >= 1000000) return 'R\$ ${(v / 1000000).toStringAsFixed(1)}M';
-    if (v.abs() >= 1000) return 'R\$ ${(v / 1000).toStringAsFixed(0)}k';
-    return 'R\$ ${v.toStringAsFixed(0)}';
-  }
-
-  static String _monthName(int m) {
-    const n = [
-      '',
-      'Jan',
-      'Fev',
-      'Mar',
-      'Abr',
-      'Mai',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Set',
-      'Out',
-      'Nov',
-      'Dez',
-    ];
-    return n[m];
   }
 
   static String _relativeLabel(DateTime? date) {

@@ -19,16 +19,33 @@ class DailyLogController extends ChangeNotifier {
   List<DailyLogModel> _logs = [];
   List<DailyLogModel> get logs => _logs;
 
-  Future<void> loadLogs() async {
-    _isLoading = true;
+  void _setLoading(bool value) {
+    if (_isLoading == value) return;
+    _isLoading = value;
     notifyListeners();
+  }
+
+  Future<void> loadLogs() async {
+    _setLoading(true);
     try {
-      _logs = await _service.getRecentLogs();
+      _logs = await _service.getRecentLogs(limit: 200);
     } catch (e) {
       debugPrint('Erro ao carregar logs: $e');
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      _setLoading(false);
+    }
+  }
+
+  Future<void> signLog(DailyLogModel log) async {
+    _setLoading(true);
+    try {
+      await _service.signLogAsCurrentCoordinator(log);
+      await loadLogs();
+    } catch (e) {
+      debugPrint('Erro ao assinar diario: $e');
+      rethrow;
+    } finally {
+      _setLoading(false);
     }
   }
 

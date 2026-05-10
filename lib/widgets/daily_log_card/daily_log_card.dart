@@ -1,31 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
-import 'package:project_granith/themes/app_theme.dart';
-// Este import é vital para que o DailyLogCard reconheça a classe de destino
 import 'package:project_granith/screens/daily_log_details_page.dart';
+import 'package:project_granith/themes/app_theme.dart';
 
 class DailyLogCard extends StatelessWidget {
   final DailyLogModel log;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSign;
+  final bool isSigning;
 
-  const DailyLogCard({super.key, required this.log});
+  const DailyLogCard({
+    super.key,
+    required this.log,
+    this.onEdit,
+    this.onSign,
+    this.isSigning = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final signatureColor = _signatureColor(log);
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.5),
-        ),
+        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // A navegação só funcionará se a classe no arquivo importado
-            // se chamar exatamente DailyLogDetailsPage.
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -34,27 +40,33 @@ class DailyLogCard extends StatelessWidget {
             );
           },
           child: Padding(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      log.projectName,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        log.projectName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 10),
+                    _SignatureBadge(log: log),
+                    const SizedBox(width: 8),
                     const Icon(Icons.chevron_right, color: AppColors.textMuted),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  log.activitiesDescription, // Campo correto da model
+                  log.activitiesDescription,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -63,42 +75,174 @@ class DailyLogCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
-                      size: 14,
-                      color: AppColors.textMuted,
+                    _MetaPill(
+                      icon: Icons.calendar_today_outlined,
+                      label:
+                          '${log.date.day}/${log.date.month}/${log.date.year}',
                     ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${log.date.day}/${log.date.month}/${log.date.year}',
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
+                    _MetaPill(
+                      icon: Icons.wb_sunny_outlined,
+                      label: log.weatherMorning.name,
+                    ),
+                    if (log.coordinatorName?.trim().isNotEmpty == true)
+                      _MetaPill(
+                        icon: Icons.engineering_outlined,
+                        label: log.coordinatorName!,
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Icon(
-                      Icons.wb_sunny_outlined,
-                      size: 14,
-                      color: AppColors.textMuted,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      log.weatherMorning.name,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 12,
+                    if (log.isSigned)
+                      _MetaPill(
+                        icon: Icons.lock_rounded,
+                        label: 'Bloqueado para edicao',
+                        color: signatureColor,
                       ),
-                    ),
                   ],
                 ),
+                if (onEdit != null || onSign != null) ...[
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      if (onEdit != null)
+                        OutlinedButton.icon(
+                          onPressed: onEdit,
+                          icon: const Icon(Icons.edit_note_rounded, size: 18),
+                          label: const Text('Editar'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: BorderSide(
+                              color: AppColors.borderColor.withValues(
+                                alpha: 0.7,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (onSign != null)
+                        FilledButton.icon(
+                          onPressed: isSigning ? null : onSign,
+                          icon:
+                              isSigning
+                                  ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  )
+                                  : const Icon(Icons.draw_rounded, size: 18),
+                          label: Text(
+                            isSigning ? 'Assinando...' : 'Assinar relatorio',
+                          ),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accentGold,
+                            foregroundColor: AppColors.primaryDark,
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+                if (log.isPendingSignature) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Pendente de assinatura do coordenador responsavel.',
+                    style: TextStyle(
+                      color: signatureColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Color _signatureColor(DailyLogModel log) {
+    if (log.isSigned) return AppColors.accentGreen;
+    if (log.isPendingSignature) return AppColors.accentGold;
+    return AppColors.textMuted;
+  }
+}
+
+class _SignatureBadge extends StatelessWidget {
+  const _SignatureBadge({required this.log});
+
+  final DailyLogModel log;
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        log.isSigned
+            ? AppColors.accentGreen
+            : log.isPendingSignature
+            ? AppColors.accentGold
+            : AppColors.textMuted;
+    final label =
+        log.isSigned
+            ? 'Assinado'
+            : log.isPendingSignature
+            ? 'Pendente'
+            : 'Sem assinatura';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  const _MetaPill({
+    required this.icon,
+    required this.label,
+    this.color = AppColors.textMuted,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final emphasized = color != AppColors.textMuted;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: TextStyle(
+            color: emphasized ? color : AppColors.textMuted,
+            fontSize: 12,
+            fontWeight: emphasized ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

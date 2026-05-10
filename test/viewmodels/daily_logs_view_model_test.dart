@@ -45,5 +45,26 @@ void main() {
       expect(viewModel.logs, hasLength(1));
       expect(viewModel.getAiInsight(), contains('Analise de IA'));
     });
+
+    testWidgets('assina diario usando controller', (tester) async {
+      final controller = FakeDailyLogController();
+      final viewModel = DailyLogsViewModel(controller);
+      final log = DailyLogModel(
+        id: 'log-1',
+        projectId: 'project-1',
+        projectName: 'Obra Alfa',
+        date: DateTime(2026, 5, 3),
+        activitiesDescription: 'Concretagem',
+        createdByUserId: 'user-1',
+        status: LogStatus.pendingSignature,
+        coordinatorId: 'employee-1',
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+      await viewModel.signLog(log);
+
+      expect(controller.signLogCalled, isTrue);
+    });
   });
 }

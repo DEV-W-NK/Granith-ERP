@@ -4,6 +4,9 @@ abstract final class PermissionCodes {
   static const purchasesConsolidate = 'purchases.consolidate';
   static const purchaseFinanceRead = 'purchase_finance.read';
   static const purchaseFinanceWrite = 'purchase_finance.write';
+  static const aiMonitor = 'ai.monitor';
+  static const aiUsageRead = 'ai.usage.read';
+  static const aiPricingManage = 'ai.pricing.manage';
 
   static bool canViewPeopleSalary({
     required bool isAdmin,

@@ -1,14 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/models/client_account_model.dart';
+import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/daily_log_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 
 class ClientProjectsPortalViewModel extends ChangeNotifier {
-  ClientProjectsPortalViewModel({ServiceProjetos? projectService})
-    : _projectService = projectService ?? ServiceProjetos();
+  ClientProjectsPortalViewModel({
+    ServiceProjetos? projectService,
+    DailyLogService? dailyLogService,
+  }) : _projectService = projectService ?? ServiceProjetos(),
+       _dailyLogService = dailyLogService ?? DailyLogService();
 
   final ServiceProjetos _projectService;
+  final DailyLogService _dailyLogService;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -16,12 +22,16 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
   String _lastLoadSignature = '';
   List<ClientAccount> _accounts = <ClientAccount>[];
   List<Project> _projects = <Project>[];
+  Map<String, List<DailyLogModel>> _signedLogsByProjectId =
+      <String, List<DailyLogModel>>{};
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   List<ClientAccount> get accounts => _accounts;
   List<Project> get projects => _projects;
   String? get selectedAccountId => _selectedAccountId;
+  Map<String, List<DailyLogModel>> get signedLogsByProjectId =>
+      _signedLogsByProjectId;
 
   ClientAccount? get activeAccount {
     if (_accounts.isEmpty) {
@@ -39,6 +49,10 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       _projects.where((project) => project.isInProgress).length;
   int get completedProjects =>
       _projects.where((project) => project.isCompleted).length;
+  int get totalSignedDailyLogs => _signedLogsByProjectId.values.fold<int>(
+    0,
+    (total, logs) => total + logs.length,
+  );
 
   double get averageProgress {
     if (_projects.isEmpty) {
@@ -73,6 +87,7 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
 
     if (_selectedAccountId == null) {
       _projects = <Project>[];
+      _signedLogsByProjectId = <String, List<DailyLogModel>>{};
       _isLoading = false;
       notifyListeners();
       return;
@@ -91,13 +106,38 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
         }
         return right.startDate.compareTo(left.startDate);
       });
+      await _loadSignedDailyLogs();
     } catch (error) {
       _projects = <Project>[];
+      _signedLogsByProjectId = <String, List<DailyLogModel>>{};
       _errorMessage = 'Nao foi possivel carregar os projetos do cliente.';
       debugPrint('[ClientProjectsPortalViewModel] $error');
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  List<DailyLogModel> signedLogsForProject(String projectId) {
+    return _signedLogsByProjectId[projectId] ?? const <DailyLogModel>[];
+  }
+
+  Future<void> _loadSignedDailyLogs() async {
+    try {
+      final logs = await _dailyLogService.getSignedLogsForProjects(
+        _projects.map((project) => project.id),
+        limit: 200,
+      );
+      final grouped = <String, List<DailyLogModel>>{};
+      for (final log in logs) {
+        grouped.putIfAbsent(log.projectId, () => <DailyLogModel>[]).add(log);
+      }
+      _signedLogsByProjectId = grouped;
+    } catch (error) {
+      _signedLogsByProjectId = <String, List<DailyLogModel>>{};
+      debugPrint(
+        '[ClientProjectsPortalViewModel] Falha ao carregar diarios assinados: $error',
+      );
     }
   }
 

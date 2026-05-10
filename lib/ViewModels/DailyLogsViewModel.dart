@@ -24,6 +24,8 @@ class DailyLogsViewModel extends ChangeNotifier {
 
   void refreshLogs() => _controller.loadLogs();
 
+  Future<void> signLog(DailyLogModel log) => _controller.signLog(log);
+
   String getAiInsight() {
     return 'Analise de IA: o clima chuvoso impactou 20% da produtividade esta semana.';
   }

@@ -3,10 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class MapsGeocodingService {
-  static const _defaultApiKey = String.fromEnvironment(
-    'GOOGLE_MAPS_API_KEY',
-    defaultValue: 'GOOGLE_MAPS_API_KEY_REMOVED',
-  );
+  static const _defaultApiKey = String.fromEnvironment('GOOGLE_MAPS_API_KEY');
   static const _baseUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
   static const _timeout = Duration(seconds: 18);
 
@@ -20,6 +17,11 @@ class MapsGeocodingService {
   Future<MapsGeocodingResult?> geocodeAddress(String address) async {
     final cleanAddress = address.trim();
     if (cleanAddress.isEmpty) return null;
+    if (_apiKey.trim().isEmpty) {
+      throw MapsGeocodingException(
+        'GOOGLE_MAPS_API_KEY nao configurada. Informe a chave via --dart-define.',
+      );
+    }
 
     final uri = Uri.parse(_baseUrl).replace(
       queryParameters: {

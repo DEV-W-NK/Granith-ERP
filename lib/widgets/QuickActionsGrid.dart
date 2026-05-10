@@ -15,28 +15,28 @@ class QuickActionsGrid extends StatelessWidget {
           final compact = constraints.maxWidth < 360;
           final actions = [
             _QuickActionData(
-              icon: Icons.add_rounded,
-              label: 'Nova receita',
-              color: AppColors.green,
-              route: '/nova-receita',
+              icon: Icons.business_rounded,
+              label: 'Obras',
+              color: AppColors.accentGold,
+              route: '/projects',
             ),
             _QuickActionData(
-              icon: Icons.remove_rounded,
-              label: 'Nova despesa',
-              color: AppColors.red,
-              route: '/nova-despesa',
+              icon: Icons.menu_book_rounded,
+              label: 'Diarios',
+              color: AppColors.auraCyan,
+              route: '/daily-logs',
             ),
             _QuickActionData(
-              icon: Icons.bar_chart_rounded,
-              label: 'Ver DRE',
-              color: AppColors.gold,
-              route: '/reports',
+              icon: Icons.assignment_turned_in_rounded,
+              label: 'Requisicoes',
+              color: AppColors.accentBlue,
+              route: '/requisitions',
             ),
             _QuickActionData(
-              icon: Icons.people_outline_rounded,
-              label: 'Clientes',
-              color: AppColors.blue,
-              route: '/clientes',
+              icon: Icons.badge_rounded,
+              label: 'Equipe',
+              color: AppColors.accentGreen,
+              route: '/hr',
             ),
           ];
           final gap =

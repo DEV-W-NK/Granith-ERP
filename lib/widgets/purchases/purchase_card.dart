@@ -90,6 +90,21 @@ class PurchaseCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 _Meta(icon: Icons.store_outlined, label: p.supplierName),
+                _Meta(
+                  icon: p.fulfillmentType.icon,
+                  label: p.fulfillmentType.label,
+                  color:
+                      p.fulfillmentType == PurchaseFulfillmentType.pickup
+                          ? AppColors.accentGold
+                          : Colors.lightBlueAccent,
+                ),
+                if (p.fulfillmentType == PurchaseFulfillmentType.pickup &&
+                    p.pickupAddress.trim().isNotEmpty)
+                  _Meta(
+                    icon: Icons.place_outlined,
+                    label: 'Coleta: ${p.pickupAddress.trim()}',
+                    color: AppColors.accentGold,
+                  ),
                 _Meta(icon: Icons.folder_outlined, label: p.projectName),
                 _Meta(
                   icon: Icons.domain_outlined,
@@ -122,6 +137,12 @@ class PurchaseCard extends StatelessWidget {
                     icon: Icons.local_shipping_outlined,
                     label: 'Entregue ${dateFormat.format(p.deliveryDate!)}',
                     color: Colors.greenAccent,
+                  ),
+                if (p.routeId?.trim().isNotEmpty == true)
+                  const _Meta(
+                    icon: Icons.route_outlined,
+                    label: 'Em rota',
+                    color: Colors.tealAccent,
                   ),
               ],
             ),

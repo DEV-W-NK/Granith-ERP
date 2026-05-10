@@ -269,6 +269,8 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
       false; // Controle local de loading para evitar conflito com provider
 
   // Animação de Entrada
+  bool get _isSignedLog => widget.log?.isSigned ?? false;
+
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
 
@@ -356,6 +358,16 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
   }
 
   Future<void> _saveLog() async {
+    if (_isSignedLog) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Diario assinado nao pode ser editado.'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate() || _selectedProjectId == null) {
       // Se estiver na primeira página e falhar validação, avisa
       if (_currentPage == 0 && _selectedProjectId == null) {
@@ -444,6 +456,13 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
     final inset = size.width < 420 ? 8.0 : (isDesktop ? 40.0 : 16.0);
     final dialogWidth = (size.width - inset * 2).clamp(300.0, 800.0);
 
+    if (_isSignedLog) {
+      return _buildSignedLogLockedDialog(
+        inset: inset,
+        dialogWidth: dialogWidth.toDouble(),
+      );
+    }
+
     return SlideTransition(
       position: _slideAnimation,
       child: Dialog(
@@ -488,6 +507,96 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
                 ),
               ),
               _buildEnhancedActions(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignedLogLockedDialog({
+    required double inset,
+    required double dialogWidth,
+  }) {
+    final signedAt = widget.log?.signedAt;
+    final signedAtLabel =
+        signedAt != null
+            ? DateFormat('dd/MM/yyyy HH:mm').format(signedAt)
+            : 'assinatura registrada';
+    final signer =
+        widget.log?.signedByCoordinatorName ??
+        widget.log?.coordinatorName ??
+        'coordenador da obra';
+
+    return SlideTransition(
+      position: _slideAnimation,
+      child: Dialog(
+        elevation: 20,
+        shadowColor: Colors.black.withValues(alpha: 0.5),
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(inset),
+        child: Container(
+          width: dialogWidth,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceDark,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.accentGreen.withValues(alpha: 0.34),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: AppColors.accentGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: AppColors.accentGreen,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Diario assinado',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Este relatorio foi assinado por $signer em $signedAtLabel e nao pode mais ser editado.',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.lock_rounded),
+                  label: const Text('Entendi'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.accentGreen,
+                    foregroundColor: AppColors.primaryDark,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

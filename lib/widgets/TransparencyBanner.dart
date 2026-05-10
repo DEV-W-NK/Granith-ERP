@@ -16,7 +16,7 @@ class TransparencyBanner extends StatelessWidget {
             colors: [
               AppColors.accentBlue.withValues(alpha: 0.15),
               AppColors.surfaceDark.withValues(alpha: 0.88),
-              AppColors.accentGold.withValues(alpha: 0.12),
+              AppColors.accentGreen.withValues(alpha: 0.12),
             ],
           ),
           borderRadius: BorderRadius.circular(18),
@@ -39,7 +39,7 @@ class TransparencyBanner extends StatelessWidget {
                 boxShadow: AppColors.auraShadows(AppColors.accentGold),
               ),
               child: const Icon(
-                Icons.receipt_long_rounded,
+                Icons.auto_awesome_rounded,
                 color: AppColors.gold,
                 size: 18,
               ),
@@ -50,7 +50,7 @@ class TransparencyBanner extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Transparencia & Custos',
+                    'Pulso positivo da operacao',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -61,7 +61,7 @@ class TransparencyBanner extends StatelessWidget {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Detalhamento de recursos e fatura estimada',
+                    'Marcos recentes para reconhecer equipe, obras e entregas',
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: AppColors.tx3, fontSize: 11),
@@ -70,10 +70,36 @@ class TransparencyBanner extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.gold,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+              decoration: BoxDecoration(
+                color: AppColors.accentGreen.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: AppColors.accentGreen.withValues(alpha: 0.24),
+                ),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.monitor_heart_outlined,
+                    color: AppColors.accentGreen,
+                    size: 15,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Uso da plataforma',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.accentGreen,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

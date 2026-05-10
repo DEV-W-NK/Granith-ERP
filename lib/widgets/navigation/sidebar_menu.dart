@@ -191,7 +191,7 @@ class SidebarMenu extends StatelessWidget {
   Widget _buildHeader(String workspaceName, String tagline, bool isCompact) {
     if (!isExpanded) {
       return Container(
-        height: 108,
+        height: 110,
         padding: const EdgeInsets.fromLTRB(10, 12, 10, 10),
         decoration: BoxDecoration(
           border: Border(
@@ -581,12 +581,14 @@ class SidebarMenu extends StatelessWidget {
         return 'Catalogo de Itens';
       case 12:
         return 'Compras';
-      case 16:
-        return 'Entradas e Saidas';
       case 17:
+        return 'Entradas e Saidas';
+      case 18:
         return 'Compras a Pagar';
       case 19:
-        return 'Permissoes';
+        return 'DRE';
+      case 20:
+        return 'Acessos';
       default:
         return module.title;
     }
