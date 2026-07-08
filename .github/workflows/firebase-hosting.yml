@@ -20,11 +20,13 @@ concurrency:
 
 env:
   FIREBASE_PROJECT_ID: granith-skyforge
+  FLUTTER_CHANNEL: stable
 
 jobs:
-  build:
+  web:
     name: Validate, build and deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -33,7 +35,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
 
       - name: Install dependencies
@@ -44,6 +46,28 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Validate deploy secrets
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          GOOGLE_OAUTH_WEB_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_WEB_CLIENT_ID }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
+        run: |
+          missing=()
+          [ -z "${SUPABASE_URL}" ] && missing+=("SUPABASE_URL")
+          [ -z "${SUPABASE_PUBLISHABLE_KEY}" ] && missing+=("SUPABASE_PUBLISHABLE_KEY")
+          [ -z "${GOOGLE_MAPS_API_KEY}" ] && missing+=("GOOGLE_MAPS_API_KEY")
+          [ -z "${GOOGLE_OAUTH_WEB_CLIENT_ID}" ] && missing+=("GOOGLE_OAUTH_WEB_CLIENT_ID")
+          [ -z "${FIREBASE_SERVICE_ACCOUNT}" ] && missing+=("FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE")
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing GitHub Actions secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
 
       - name: Generate web runtime environment
         shell: bash
@@ -67,6 +91,16 @@ jobs:
             --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY_VALUE" \
             --dart-define=GOOGLE_MAPS_API_KEY="${GOOGLE_MAPS_API_KEY:-}" \
             --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID="${GOOGLE_OAUTH_WEB_CLIENT_ID:-}"
+
+      - name: Deploy preview to Firebase Hosting
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}
+          channelId: pr-${{ github.event.pull_request.number }}
+          expires: 7d
 
       - name: Deploy to Firebase Hosting
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

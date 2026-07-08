@@ -337,7 +337,7 @@ Comportamento:
 
 | Evento | Acao |
 | --- | --- |
-| Pull request para `main` | Roda `flutter pub get`, `flutter analyze`, `flutter test` e `flutter build web` |
+| Pull request para `main` | Roda `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build web` e publica preview no Firebase quando o PR vem do proprio repositorio |
 | Push na `main` | Roda validacao/build e publica no Firebase Hosting live |
 | `workflow_dispatch` | Permite disparar deploy manual pelo GitHub Actions |
 
@@ -358,6 +358,8 @@ GitHub > Repository > Settings > Secrets and variables > Actions
 ```
 
 `FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE` deve conter o JSON completo da service account do Firebase. Ele pode ser gerado pelo Firebase Console em `Project settings > Service accounts`, ou pelo assistente `firebase init hosting:github`.
+
+O deploy live falha cedo se algum secret obrigatorio nao estiver configurado. Em pull requests vindos de forks, o workflow valida e builda o app, mas nao publica preview porque o GitHub nao libera secrets para forks por padrao.
 
 Nao coloque no GitHub Actions:
 
