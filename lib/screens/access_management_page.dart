@@ -2793,23 +2793,26 @@ class _ClientAccountDialogState extends State<_ClientAccountDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SwitchListTile.adaptive(
-                        value: _provisionAccessOnSave,
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text(
-                          'Enviar convite do portal ao salvar',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w700,
+                      Material(
+                        color: Colors.transparent,
+                        child: SwitchListTile.adaptive(
+                          value: _provisionAccessOnSave,
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text(
+                            'Enviar convite do portal ao salvar',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
+                          subtitle: const Text(
+                            'O sistema envia o convite para o e-mail informado. Quando o cliente usar o link, ele define a senha e volta para o login do Granith.',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                          onChanged: (value) {
+                            setState(() => _provisionAccessOnSave = value);
+                          },
                         ),
-                        subtitle: const Text(
-                          'O sistema envia o convite para o e-mail informado. Quando o cliente usar o link, ele define a senha e volta para o login do Granith.',
-                          style: TextStyle(color: AppColors.textSecondary),
-                        ),
-                        onChanged: (value) {
-                          setState(() => _provisionAccessOnSave = value);
-                        },
                       ),
                       if (isEditing) ...[
                         const SizedBox(height: 8),
