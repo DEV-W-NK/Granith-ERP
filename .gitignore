@@ -12,6 +12,10 @@
 .swiftpm/
 migrate_working_dir/
 node_modules/
+.agents/
+.codex/
+coverage/
+flutter_*.png
 
 # IntelliJ related
 *.iml
@@ -33,6 +37,7 @@ node_modules/
 .pub-cache/
 .pub/
 /build/
+android/.kotlin/
 .env
 .env.*
 *.local
