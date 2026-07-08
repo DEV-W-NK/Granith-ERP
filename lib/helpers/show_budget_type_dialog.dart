@@ -4,7 +4,7 @@ import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/controllers/budget_type_controller.dart';
-import 'package:project_granith/widgets/Budget_Type/budget_type_form_dialog.dart';
+import 'package:project_granith/widgets/budget_type/budget_type_form_dialog.dart';
 import 'package:provider/provider.dart';
 
 // Mostrar dialog de formulário

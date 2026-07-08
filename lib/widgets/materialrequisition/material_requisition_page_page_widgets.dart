@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:project_granith/models/requisition_quote_model.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/models/supplier_model.dart';
-import 'package:project_granith/viewmodels/materialrequisitionviewmodel.dart';
+import 'package:project_granith/ViewModels/MaterialRequisitionViewModel.dart';
 import 'package:project_granith/models/requisition_model.dart';
 import 'package:project_granith/services/requisition_quote_service.dart';
 import 'package:project_granith/services/supplier_service.dart';

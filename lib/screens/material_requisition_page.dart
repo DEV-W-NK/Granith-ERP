@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/controllers/material_requisition_controller.dart';
-import 'package:project_granith/viewmodels/materialrequisitionviewmodel.dart';
+import 'package:project_granith/ViewModels/MaterialRequisitionViewModel.dart';
 import 'package:project_granith/widgets/materialrequisition/material_requisition_page_page_widgets.dart';
 
 class MaterialRequisitionPage extends StatelessWidget {

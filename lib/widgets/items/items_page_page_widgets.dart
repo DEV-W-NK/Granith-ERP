@@ -8,7 +8,7 @@ import 'package:project_granith/models/item_model.dart';
 import 'package:project_granith/services/item_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
-import 'package:project_granith/viewmodels/itemsviewmodel.dart';
+import 'package:project_granith/ViewModels/ItemsViewModel.dart';
 import 'package:project_granith/widgets/items/item_form_dialog.dart';
 
 class ItemsPageView extends StatelessWidget {

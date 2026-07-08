@@ -7,8 +7,8 @@ import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
-import 'package:project_granith/widgets/Budget_Type/budget_type_card.dart';
-import 'package:project_granith/widgets/Budget_Type/budget_type_form_dialog.dart';
+import 'package:project_granith/widgets/budget_type/budget_type_card.dart';
+import 'package:project_granith/widgets/budget_type/budget_type_form_dialog.dart';
 
 class BudgetTypesPageView extends StatelessWidget {
   final BudgetTypeController? controller;

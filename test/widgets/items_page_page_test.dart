@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:project_granith/models/item_model.dart';
-import 'package:project_granith/viewmodels/itemsviewmodel.dart';
+import 'package:project_granith/ViewModels/ItemsViewModel.dart';
 import 'package:project_granith/widgets/items/items_page_page_widgets.dart';
 
 import '../helpers/fake_item_service.dart';
