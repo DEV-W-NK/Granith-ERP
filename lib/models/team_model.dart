@@ -1,6 +1,8 @@
 import 'package:project_granith/core/data/db_value.dart';
 
 class TeamModel {
+  static const Object _unset = Object();
+
   final String id;
   final String name; // Ex: "Equipe Alfa"
   final String
@@ -57,8 +59,8 @@ class TeamModel {
     String? name,
     String? description,
     List<String>? memberIds,
-    String? leaderId,
-    String? projectId,
+    Object? leaderId = _unset,
+    Object? projectId = _unset,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -68,8 +70,10 @@ class TeamModel {
       name: name ?? this.name,
       description: description ?? this.description,
       memberIds: memberIds ?? this.memberIds,
-      leaderId: leaderId ?? this.leaderId,
-      projectId: projectId ?? this.projectId,
+      leaderId:
+          identical(leaderId, _unset) ? this.leaderId : leaderId as String?,
+      projectId:
+          identical(projectId, _unset) ? this.projectId : projectId as String?,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

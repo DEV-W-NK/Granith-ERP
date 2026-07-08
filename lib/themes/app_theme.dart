@@ -34,124 +34,272 @@ class GranithPageTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 class AppColors {
-  static const Color primaryDark = Color(0xFF09111F);
-  static const Color secondaryDark = Color(0xFF101B30);
-  static const Color surfaceDark = Color(0xFF17243A);
-  static const Color backgroundDark = Color(0xFF0B1220);
-  static const Color backgroundMid = Color(0xFF111C31);
-  static const Color surfaceElevated = Color(0xFF20304C);
+  static const Color primaryDark = Color(0xFF070A0C);
+  static const Color secondaryDark = Color(0xFF0D1214);
+  static const Color surfaceDark = Color(0xFF141B1E);
+  static const Color backgroundDark = Color(0xFF050708);
+  static const Color backgroundMid = Color(0xFF0E1517);
+  static const Color surfaceElevated = Color(0xFF1D272A);
 
-  static const Color accentGold = Color(0xFFD4AF37);
-  static const Color accentBlue = Color(0xFF6EA8FF);
-  static const Color accentGreen = Color(0xFF27AE60);
-  static const Color accentRed = Color(0xFFE74C3C);
+  static const Color accentGold = Color(0xFFE3B84A);
+  static const Color accentBlue = Color(0xFF41D9BE);
+  static const Color accentGreen = Color(0xFF35D486);
+  static const Color accentRed = Color(0xFFFF6B6B);
 
-  static const Color duskBlue = Color(0xFF5C8DFF);
-  static const Color auraBlue = Color(0xFF7AB8FF);
-  static const Color auraCyan = Color(0xFF57E3D0);
+  static const Color duskBlue = Color(0xFF6CA8FF);
+  static const Color auraBlue = Color(0xFF67D6FF);
+  static const Color auraCyan = Color(0xFF2DE6D0);
 
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFFB9C7E1);
-  static const Color textMuted = Color(0xFF74829D);
+  static const Color textPrimary = Color(0xFFF4F7F6);
+  static const Color textSecondary = Color(0xFFBAC7C4);
+  static const Color textMuted = Color(0xFF7C8B89);
 
-  static const Color borderColor = Color(0xFF29415F);
-  static const Color dividerColor = Color(0xFF1E2A42);
+  static const Color borderColor = Color(0xFF2A3A3D);
+  static const Color dividerColor = Color(0xFF1A2528);
 
-  static const Color accentGoldSubtle = Color(0x26D4AF37);
-  static const Color accentGoldMedium = Color(0x4DD4AF37);
-  static const Color accentGoldFaint = Color(0x1AD4AF37);
-  static const Color accentBlueSubtle = Color(0x264A90E2);
-  static const Color accentBlueFaint = Color(0x1A4A90E2);
-  static const Color accentRedSubtle = Color(0x33E74C3C);
-  static const Color surfaceDarkSubtle = Color(0x802D2D2D);
-  static const Color surfaceDarkFaint = Color(0x4D2D2D2D);
-  static const Color borderSubtle = Color(0x4D3D3D3D);
-  static const Color borderFaint = Color(0x333D3D3D);
-  static const Color textMutedSubtle = Color(0xCC6C6C6C);
-  static const Color textMutedFaint = Color(0x996C6C6C);
-  static const Color textMutedGhost = Color(0x1A6C6C6C);
+  static const Color accentGoldSubtle = Color(0x26E3B84A);
+  static const Color accentGoldMedium = Color(0x4DE3B84A);
+  static const Color accentGoldFaint = Color(0x1AE3B84A);
+  static const Color accentBlueSubtle = Color(0x2641D9BE);
+  static const Color accentBlueFaint = Color(0x1A41D9BE);
+  static const Color accentRedSubtle = Color(0x33FF6B6B);
+  static const Color surfaceDarkSubtle = Color(0x80141B1E);
+  static const Color surfaceDarkFaint = Color(0x4D141B1E);
+  static const Color borderSubtle = Color(0x4D2A3A3D);
+  static const Color borderFaint = Color(0x332A3A3D);
+  static const Color textMutedSubtle = Color(0xCC7C8B89);
+  static const Color textMutedFaint = Color(0x997C8B89);
+  static const Color textMutedGhost = Color(0x1A7C8B89);
   static const Color blackScrim10 = Color(0x1A000000);
   static const Color blackScrim15 = Color(0x26000000);
   static const Color blackScrim8 = Color(0x14000000);
 
-  static const Color bg = Color(0xFF0F1117);
-  static const Color s1 = Color(0xFF161B27);
-  static const Color s2 = Color(0xFF1C2333);
-  static const Color s3 = Color(0xFF222A3D);
+  static const Color bg = Color(0xFF050708);
+  static const Color s1 = Color(0xFF141B1E);
+  static const Color s2 = Color(0xFF1A2326);
+  static const Color s3 = Color(0xFF223033);
   static const Color border = Color(0x12FFFFFF);
   static const Color border2 = Color(0x1FFFFFFF);
-  static const Color gold = Color(0xFFC9A84C);
-  static const Color gold2 = Color(0xFFE8C56A);
-  static const Color goldDim = Color(0x22C9A84C);
-  static const Color tx = Color(0xFFE8EAF0);
-  static const Color tx2 = Color(0xFF8B93A8);
-  static const Color tx3 = Color(0xFF5A6178);
-  static const Color green = Color(0xFF3ECF8E);
-  static const Color greenDim = Color(0x1A3ECF8E);
-  static const Color red = Color(0xFFF87171);
-  static const Color redDim = Color(0x1AF87171);
-  static const Color orange = Color(0xFFFB923C);
-  static const Color blue = Color(0xFF60A5FA);
-  static const Color purple = Color(0xFFA78BFA);
+  static const Color gold = Color(0xFFE3B84A);
+  static const Color gold2 = Color(0xFFFFD782);
+  static const Color goldDim = Color(0x22E3B84A);
+  static const Color tx = Color(0xFFF4F7F6);
+  static const Color tx2 = Color(0xFFBAC7C4);
+  static const Color tx3 = Color(0xFF7C8B89);
+  static const Color green = Color(0xFF35D486);
+  static const Color greenDim = Color(0x1A35D486);
+  static const Color red = Color(0xFFFF6B6B);
+  static const Color redDim = Color(0x1AFF6B6B);
+  static const Color orange = Color(0xFFFFA657);
+  static const Color blue = Color(0xFF67D6FF);
+  static const Color purple = Color(0xFFC39BFF);
 
   static const LinearGradient appBackgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF101C33),
-      Color(0xFF0A101D),
-      Color(0xFF111827),
-      Color(0xFF18213A),
+      Color(0xFF050708),
+      Color(0xFF0E1412),
+      Color(0xFF071313),
+      Color(0xFF15130E),
     ],
-    stops: [0.0, 0.32, 0.72, 1.0],
+    stops: [0.0, 0.34, 0.72, 1.0],
   );
 
   static const LinearGradient pageSurfaceGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xDE20304C), Color(0xC4142238), Color(0xDE0F1829)],
+    colors: [Color(0xF01D272A), Color(0xE50E1517), Color(0xEE161710)],
   );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xF022314E), Color(0xE8152339), Color(0xF0101A2D)],
+    colors: [Color(0xF21E292C), Color(0xE812191B), Color(0xF0181A14)],
   );
 
   static List<BoxShadow> glowShadows([Color glowColor = accentBlue]) => [
     BoxShadow(
-      color: Colors.black.withValues(alpha: 0.24),
-      blurRadius: 28,
-      offset: const Offset(0, 16),
+      color: Colors.black.withValues(alpha: 0.34),
+      blurRadius: 30,
+      offset: const Offset(0, 18),
     ),
     BoxShadow(
-      color: glowColor.withValues(alpha: 0.10),
-      blurRadius: 32,
-      spreadRadius: -8,
-      offset: const Offset(0, 10),
+      color: glowColor.withValues(alpha: 0.08),
+      blurRadius: 34,
+      spreadRadius: -10,
+      offset: const Offset(0, 14),
     ),
   ];
 
   static List<BoxShadow> auraShadows([Color glowColor = accentGold]) => [
     BoxShadow(
-      color: glowColor.withValues(alpha: 0.14),
-      blurRadius: 38,
-      spreadRadius: -10,
+      color: glowColor.withValues(alpha: 0.12),
+      blurRadius: 36,
+      spreadRadius: -12,
       offset: const Offset(0, 14),
     ),
   ];
 }
 
+class AppDecorations {
+  static BoxDecoration cardSurface({
+    Color? accent,
+    bool emphasized = false,
+    bool elevated = true,
+    double radius = 16,
+  }) {
+    final resolvedAccent = accent ?? AppColors.accentBlue;
+    final borderColor = accent ?? AppColors.borderColor;
+
+    return BoxDecoration(
+      gradient: AppColors.cardGradient,
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(
+        color: borderColor.withValues(alpha: accent == null ? 0.62 : 0.34),
+      ),
+      boxShadow:
+          elevated
+              ? [
+                BoxShadow(
+                  color: Colors.black.withValues(
+                    alpha: emphasized ? 0.38 : 0.30,
+                  ),
+                  blurRadius: emphasized ? 34 : 24,
+                  offset: Offset(0, emphasized ? 18 : 12),
+                ),
+                BoxShadow(
+                  color: resolvedAccent.withValues(
+                    alpha: emphasized ? 0.12 : 0.08,
+                  ),
+                  blurRadius: emphasized ? 38 : 28,
+                  spreadRadius: -12,
+                  offset: const Offset(0, 12),
+                ),
+              ]
+              : null,
+    );
+  }
+
+  static BoxDecoration statCardSurface(Color accent, {double radius = 16}) =>
+      BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            accent.withValues(alpha: 0.14),
+            AppColors.surfaceElevated.withValues(alpha: 0.80),
+            AppColors.backgroundMid.withValues(alpha: 0.92),
+          ],
+          stops: const [0.0, 0.42, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: accent.withValues(alpha: 0.34)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.28),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
+          ),
+          BoxShadow(
+            color: accent.withValues(alpha: 0.10),
+            blurRadius: 30,
+            spreadRadius: -12,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      );
+
+  static BoxDecoration cardInnerSurface({Color? accent, double radius = 12}) =>
+      BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.46),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(
+          color: (accent ?? AppColors.borderColor).withValues(
+            alpha: accent == null ? 0.48 : 0.24,
+          ),
+        ),
+      );
+
+  static BoxDecoration dialogSurface({Color? glowColor}) => BoxDecoration(
+    gradient: AppColors.cardGradient,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
+    boxShadow: AppColors.glowShadows(glowColor ?? AppColors.accentBlue),
+  );
+
+  static BoxDecoration dialogHeader({Color? accent}) => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        AppColors.surfaceElevated.withValues(alpha: 0.98),
+        AppColors.backgroundMid.withValues(alpha: 0.96),
+      ],
+    ),
+    border: Border(
+      bottom: BorderSide(
+        color: (accent ?? AppColors.accentBlue).withValues(alpha: 0.22),
+      ),
+    ),
+  );
+
+  static BoxDecoration formPanel({Color? borderColor}) => BoxDecoration(
+    color: AppColors.surfaceDark.withValues(alpha: 0.58),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(
+      color: (borderColor ?? AppColors.borderColor).withValues(alpha: 0.42),
+    ),
+  );
+
+  static BoxDecoration formHintPanel({Color color = AppColors.accentBlue}) =>
+      BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      );
+
+  static BoxDecoration iconTile(Color color) => BoxDecoration(
+    color: color.withValues(alpha: 0.12),
+    borderRadius: BorderRadius.circular(10),
+    border: Border.all(color: color.withValues(alpha: 0.30)),
+    boxShadow: AppColors.auraShadows(color),
+  );
+}
+
 class AppTheme {
   static ThemeData get darkTheme {
-    const colorScheme = ColorScheme.dark(
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.accentBlue,
+      brightness: Brightness.dark,
+    ).copyWith(
       primary: AppColors.accentBlue,
       secondary: AppColors.accentGold,
-      surface: Colors.transparent,
+      tertiary: AppColors.accentGreen,
+      primaryContainer: const Color(0xFF0E3D39),
+      secondaryContainer: const Color(0xFF3D3010),
+      tertiaryContainer: const Color(0xFF113A29),
+      surface: AppColors.backgroundMid,
+      surfaceDim: AppColors.backgroundDark,
+      surfaceBright: AppColors.surfaceElevated,
+      surfaceContainerLowest: AppColors.primaryDark,
+      surfaceContainerLow: AppColors.secondaryDark,
+      surfaceContainer: AppColors.surfaceDark,
+      surfaceContainerHigh: AppColors.surfaceElevated,
+      surfaceContainerHighest: AppColors.s3,
       error: AppColors.accentRed,
-      onPrimary: AppColors.textPrimary,
+      outline: AppColors.borderColor,
+      outlineVariant: AppColors.dividerColor,
+      shadow: Colors.black,
+      scrim: Colors.black,
+      surfaceTint: Colors.transparent,
+      inverseSurface: AppColors.textPrimary,
+      inversePrimary: AppColors.primaryDark,
+      onPrimary: AppColors.primaryDark,
       onSecondary: AppColors.primaryDark,
+      onTertiary: AppColors.primaryDark,
       onSurface: AppColors.textPrimary,
+      onSurfaceVariant: AppColors.textSecondary,
       onError: AppColors.textPrimary,
     );
 
@@ -164,9 +312,12 @@ class AppTheme {
       cardColor: Colors.transparent,
       dividerColor: AppColors.dividerColor,
       colorScheme: colorScheme,
+      focusColor: AppColors.accentBlue.withValues(alpha: 0.16),
+      hoverColor: AppColors.accentBlue.withValues(alpha: 0.08),
+      highlightColor: AppColors.accentBlue.withValues(alpha: 0.12),
       splashFactory: InkSparkle.splashFactory,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.primaryDark.withValues(alpha: 0.38),
+        backgroundColor: AppColors.primaryDark.withValues(alpha: 0.58),
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
         centerTitle: false,
@@ -182,14 +333,14 @@ class AppTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accentBlue,
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: AppColors.primaryDark,
           disabledBackgroundColor: AppColors.surfaceElevated.withValues(
             alpha: 0.52,
           ),
           disabledForegroundColor: AppColors.textMuted,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           elevation: 0,
           shadowColor: Colors.transparent,
@@ -198,24 +349,26 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.accentBlue,
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: AppColors.primaryDark,
           disabledBackgroundColor: AppColors.surfaceElevated.withValues(
             alpha: 0.52,
           ),
           disabledForegroundColor: AppColors.textMuted,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.textPrimary,
-          side: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.8)),
+          side: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.82),
+          ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -242,13 +395,13 @@ class AppTheme {
         textStyle: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
         menuStyle: MenuStyle(
           backgroundColor: WidgetStatePropertyAll(
-            AppColors.surfaceElevated.withValues(alpha: 0.98),
+            AppColors.surfaceDark.withValues(alpha: 0.98),
           ),
           surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
           elevation: const WidgetStatePropertyAll(0),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
               side: BorderSide(
                 color: AppColors.borderColor.withValues(alpha: 0.75),
               ),
@@ -260,13 +413,13 @@ class AppTheme {
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
+          fillColor: AppColors.surfaceElevated.withValues(alpha: 0.54),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
               color: AppColors.borderColor.withValues(alpha: 0.8),
             ),
@@ -276,9 +429,15 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: Colors.transparent,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
-          side: const BorderSide(color: AppColors.borderColor, width: 1),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.62),
+            width: 1,
+          ),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -298,11 +457,11 @@ class AppTheme {
         thickness: const WidgetStatePropertyAll(6),
       ),
       popupMenuTheme: PopupMenuThemeData(
-        color: AppColors.surfaceElevated.withValues(alpha: 0.96),
+        color: AppColors.surfaceDark.withValues(alpha: 0.98),
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           side: BorderSide(
             color: AppColors.borderColor.withValues(alpha: 0.75),
           ),
@@ -362,7 +521,7 @@ class AppTheme {
         }),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.78),
+        backgroundColor: AppColors.surfaceElevated.withValues(alpha: 0.58),
         selectedColor: AppColors.accentBlue.withValues(alpha: 0.18),
         disabledColor: AppColors.surfaceElevated.withValues(alpha: 0.35),
         deleteIconColor: AppColors.textMuted,
@@ -408,61 +567,65 @@ class AppTheme {
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.92),
+        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.98),
         surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        alignment: Alignment.center,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.85),
+            color: AppColors.borderColor.withValues(alpha: 0.72),
           ),
         ),
         titleTextStyle: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 18,
+          fontSize: 19,
           fontWeight: FontWeight.w800,
+          height: 1.2,
         ),
         contentTextStyle: const TextStyle(
           color: AppColors.textSecondary,
           fontSize: 14,
-          height: 1.45,
+          height: 1.42,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
-        hoverColor: AppColors.accentBlue.withValues(alpha: 0.05),
+        fillColor: AppColors.surfaceElevated.withValues(alpha: 0.52),
+        hoverColor: AppColors.accentBlue.withValues(alpha: 0.07),
         prefixIconColor: AppColors.textMuted,
         suffixIconColor: AppColors.textMuted,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: 16,
+          vertical: 15,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.8),
+            color: AppColors.borderColor.withValues(alpha: 0.72),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.8),
+            color: AppColors.borderColor.withValues(alpha: 0.72),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.accentRed, width: 1.2),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.accentRed, width: 1.4),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(
             color: AppColors.borderColor.withValues(alpha: 0.35),
           ),
@@ -478,14 +641,63 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.accentBlue,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: AppColors.primaryDark,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       ),
       dividerTheme: DividerThemeData(
         color: AppColors.borderColor.withValues(alpha: 0.42),
         space: 1,
         thickness: 1,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.98),
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: AppColors.surfaceDark.withValues(alpha: 0.98),
+        modalBarrierColor: Colors.black.withValues(alpha: 0.62),
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        ),
+      ),
+      expansionTileTheme: ExpansionTileThemeData(
+        backgroundColor: AppColors.surfaceDark.withValues(alpha: 0.42),
+        collapsedBackgroundColor: Colors.transparent,
+        iconColor: AppColors.accentBlue,
+        collapsedIconColor: AppColors.textMuted,
+        textColor: AppColors.textPrimary,
+        collapsedTextColor: AppColors.textSecondary,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        collapsedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      dataTableTheme: DataTableThemeData(
+        headingTextStyle: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+        ),
+        dataTextStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 13,
+        ),
+        headingRowColor: WidgetStatePropertyAll(
+          AppColors.surfaceElevated.withValues(alpha: 0.36),
+        ),
+        dividerThickness: 1,
+        decoration: AppDecorations.formPanel(),
+      ),
+      menuButtonTheme: MenuButtonThemeData(
+        style: ButtonStyle(
+          foregroundColor: const WidgetStatePropertyAll(AppColors.textPrimary),
+          overlayColor: WidgetStatePropertyAll(
+            AppColors.accentBlue.withValues(alpha: 0.08),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        ),
       ),
       tooltipTheme: TooltipThemeData(
         waitDuration: const Duration(milliseconds: 450),
@@ -513,11 +725,11 @@ class AppTheme {
       datePickerTheme: DatePickerThemeData(
         backgroundColor: AppColors.surfaceDark,
         surfaceTintColor: Colors.transparent,
-        headerBackgroundColor: AppColors.surfaceElevated,
+        headerBackgroundColor: AppColors.surfaceElevated.withValues(alpha: 0.9),
         headerForegroundColor: AppColors.textPrimary,
         dayForegroundColor: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return AppColors.textPrimary;
+            return AppColors.primaryDark;
           }
           if (states.contains(WidgetState.disabled)) return AppColors.textMuted;
           return AppColors.textSecondary;
@@ -532,27 +744,83 @@ class AppTheme {
           AppColors.accentGold,
         ),
         todayBorder: const BorderSide(color: AppColors.accentGold),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.72),
+          ),
+        ),
       ),
       textTheme: const TextTheme(
         headlineLarge: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
+          height: 1.12,
         ),
         headlineMedium: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 24,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
+          height: 1.16,
+        ),
+        headlineSmall: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 21,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
         ),
         titleLarge: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
         ),
-        bodyLarge: TextStyle(color: AppColors.textPrimary, fontSize: 16),
-        bodyMedium: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-        bodySmall: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        titleMedium: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          height: 1.28,
+        ),
+        titleSmall: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          height: 1.28,
+        ),
+        labelLarge: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          height: 1.2,
+        ),
+        labelMedium: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
+        labelSmall: TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
+        bodyLarge: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 16,
+          height: 1.46,
+        ),
+        bodyMedium: TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 14,
+          height: 1.42,
+        ),
+        bodySmall: TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 12,
+          height: 1.35,
+        ),
       ),
     ).copyWith(
       pageTransitionsTheme: const PageTransitionsTheme(

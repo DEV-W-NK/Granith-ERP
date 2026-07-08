@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:project_granith/ViewModels/LoginViewModel.dart';
 import 'package:project_granith/controllers/logincontroller.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/animations/animation_background.dart';
@@ -47,7 +48,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 900;
 
-    return ChangeNotifierProvider(
+    return ChangeNotifierProvider<LoginViewModel>(
       create: (_) => LoginController(),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -111,7 +112,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                         color: AppColors.accentBlue,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.7,
+                        letterSpacing: 0,
                       ),
                     ),
                   ),

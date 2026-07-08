@@ -28,13 +28,7 @@ class EmployeeCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.76),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.54),
-        ),
-      ),
+      decoration: AppDecorations.cardSurface(accent: roleColor),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final footerGap =
@@ -49,6 +43,7 @@ class EmployeeCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     backgroundColor: roleColor.withValues(alpha: 0.18),
+                    foregroundColor: roleColor,
                     child: Text(
                       employee.initials,
                       style: TextStyle(

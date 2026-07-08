@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
@@ -8,9 +11,30 @@ import 'package:project_granith/services/financial_service.dart';
 
 class ReportsController extends ChangeNotifier {
   final FinancialService _financialService;
+  final AppDataRefreshBus _refreshBus;
+  StreamSubscription<AppDataRefreshEvent>? _refreshSubscription;
+  Timer? _refreshDebounce;
+  bool _isDisposed = false;
 
-  ReportsController({FinancialService? financialService})
-    : _financialService = financialService ?? FinancialService();
+  ReportsController({
+    FinancialService? financialService,
+    AppDataRefreshBus? refreshBus,
+    bool autoRefresh = true,
+  }) : _financialService = financialService ?? FinancialService(),
+       _refreshBus = refreshBus ?? AppDataRefreshBus.instance {
+    if (autoRefresh) {
+      _refreshSubscription = _refreshBus.listen(const [
+        AppDataRefreshBus.dailyLogs,
+        AppDataRefreshBus.employees,
+        AppDataRefreshBus.financialTransactions,
+        AppDataRefreshBus.inventory,
+        AppDataRefreshBus.inventoryMovements,
+        AppDataRefreshBus.projectMeasurements,
+        AppDataRefreshBus.projects,
+        AppDataRefreshBus.purchases,
+      ], (_) => _scheduleDreRefresh());
+    }
+  }
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -50,8 +74,11 @@ class ReportsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadDreReport() async {
-    _isLoading = true;
+  Future<void> loadDreReport({bool showLoader = true}) async {
+    if (!showLoader && _isLoading) return;
+    if (showLoader) {
+      _isLoading = true;
+    }
     _error = null;
     notifyListeners();
 
@@ -62,9 +89,20 @@ class ReportsController extends ChangeNotifier {
       _dreReport = DreExecutiveReport.empty;
       _error = 'Nao foi possivel carregar o DRE gerencial.';
     } finally {
-      _isLoading = false;
+      if (showLoader) {
+        _isLoading = false;
+      }
       notifyListeners();
     }
+  }
+
+  void _scheduleDreRefresh() {
+    if (_isDisposed || _dreReport == null) return;
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (_isDisposed || _dreReport == null) return;
+      unawaited(loadDreReport(showLoader: false));
+    });
   }
 
   Future<List<Map<String, dynamic>>> generateReport(String reportType) async {
@@ -1020,5 +1058,13 @@ class ReportsController extends ChangeNotifier {
       'Dez',
     ];
     return names[month];
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _refreshDebounce?.cancel();
+    _refreshSubscription?.cancel();
+    super.dispose();
   }
 }

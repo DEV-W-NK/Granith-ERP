@@ -13,6 +13,9 @@ void main() {
         'role': 'client',
         'client_account_id': 'client-1',
         'client_account_name': 'Construtora Atlas',
+        'username': 'cliente.portal',
+        'internal_login_email': 'cliente.portal@internal.granith.local',
+        'auth_provider': 'internal',
       }, 'user-1');
 
       expect(user.uid, 'user-1');
@@ -23,6 +26,10 @@ void main() {
       expect(user.role, UserRole.client);
       expect(user.clientAccountId, 'client-1');
       expect(user.clientAccountName, 'Construtora Atlas');
+      expect(user.username, 'cliente.portal');
+      expect(user.internalLoginEmail, 'cliente.portal@internal.granith.local');
+      expect(user.authProvider, 'internal');
+      expect(user.isInternalCredential, isTrue);
       expect(user.isClient, isTrue);
       expect(user.isEmployee, isFalse);
     });
@@ -35,6 +42,9 @@ void main() {
         role: UserRole.admin,
         clientAccountId: 'client-99',
         clientAccountName: 'Conta Premium',
+        username: 'admin.local',
+        internalLoginEmail: 'admin.local@internal.granith.local',
+        authProvider: 'internal',
       );
 
       final map = user.toMap();
@@ -44,6 +54,12 @@ void main() {
       expect(map['client_account_id'], 'client-99');
       expect(map['clientAccountName'], 'Conta Premium');
       expect(map['client_account_name'], 'Conta Premium');
+      expect(map['username'], 'admin.local');
+      expect(map['login_username'], 'admin.local');
+      expect(map['internalLoginEmail'], 'admin.local@internal.granith.local');
+      expect(map['internal_login_email'], 'admin.local@internal.granith.local');
+      expect(map['authProvider'], 'internal');
+      expect(map['auth_provider'], 'internal');
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 
@@ -114,6 +115,10 @@ class ProjectBudgetService {
         .from(_projectsTable)
         .update({'currentCost': totalPaid})
         .eq('id', projectId);
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.projects],
+      source: 'ProjectBudgetService',
+    );
   }
 
   Future<List<ProjectBudgetSnapshot>> getMultipleProjectBudgets(

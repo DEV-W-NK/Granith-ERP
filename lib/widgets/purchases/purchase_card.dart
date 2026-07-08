@@ -8,6 +8,7 @@ import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/purchase_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class PurchaseCard extends StatelessWidget {
   final Purchase purchase;
@@ -31,24 +32,22 @@ class PurchaseCard extends StatelessWidget {
     final isAwaiting = p.status == PurchaseStatus.awaitingApproval;
     final hasFinancialLink = p.financialTransactionId != null;
     final canApprove = _canApproveSectorBudget(context, p);
+    final statusAccent =
+        isAwaiting
+            ? Colors.purpleAccent
+            : isDelivered
+            ? AppColors.accentGreen
+            : isCancelled
+            ? AppColors.accentRed
+            : AppColors.accentBlue;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color:
-                isAwaiting
-                    ? Colors.purpleAccent.withValues(alpha: 0.3)
-                    : isDelivered
-                    ? Colors.green.withValues(alpha: 0.2)
-                    : isCancelled
-                    ? Colors.red.withValues(alpha: 0.1)
-                    : Colors.white.withValues(alpha: 0.05),
-          ),
+        decoration: AppDecorations.cardSurface(
+          accent: statusAccent,
+          emphasized: isAwaiting,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -925,20 +924,11 @@ class _ConsolidationDialogState extends State<_ConsolidationDialog> {
     required String label,
     required IconData icon,
   }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textMuted),
-      prefixIcon: Icon(icon, color: AppColors.accentGold, size: 18),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.04),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentGold),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return granithInputDecoration(
+      label: label,
+      hint: '',
+      icon: icon,
+      accentColor: AppColors.accentGold,
     );
   }
 

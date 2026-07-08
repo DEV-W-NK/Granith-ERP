@@ -8,6 +8,8 @@ class FakeAccessManagementService extends AccessManagementService {
   final List<UserModel> _users;
   Object? getUsersError;
   UserModel? lastUpdatedUser;
+  UserModel? lastCreatedInternalUser;
+  UserModel? lastPasswordResetUser;
 
   @override
   Future<List<UserModel>> getUsers() async {
@@ -26,5 +28,40 @@ class FakeAccessManagementService extends AccessManagementService {
     } else {
       _users.add(user);
     }
+  }
+
+  @override
+  Future<UserModel> createInternalUser({
+    required String username,
+    required String password,
+    required String displayName,
+    required UserRole role,
+    required List<String> permissions,
+    String? employeeId,
+    String? employeeName,
+  }) async {
+    final user = UserModel(
+      uid: 'internal-$username',
+      email: '$username@internal.granith.local',
+      displayName: displayName,
+      role: role,
+      permissions: permissions,
+      username: username,
+      internalLoginEmail: '$username@internal.granith.local',
+      authProvider: 'internal',
+      employeeId: employeeId,
+      employeeName: employeeName,
+    );
+    lastCreatedInternalUser = user;
+    _users.add(user);
+    return user;
+  }
+
+  @override
+  Future<void> resetInternalUserPassword({
+    required UserModel user,
+    required String password,
+  }) async {
+    lastPasswordResetUser = user;
   }
 }

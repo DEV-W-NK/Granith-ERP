@@ -326,7 +326,7 @@ class _DrawerSectionTitle extends StatelessWidget {
           color: AppColors.textMuted,
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          letterSpacing: 1.1,
+          letterSpacing: 0,
         ),
       ),
     );

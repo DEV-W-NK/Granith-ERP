@@ -104,11 +104,54 @@ void main() {
 
       await pumpPage(tester, controller: controller);
 
-      expect(find.textContaining('Gest'), findsOneWidget);
-      expect(find.text('Saldo em caixa'), findsOneWidget);
-      expect(find.text('Receitas recebidas'), findsOneWidget);
+      expect(find.text('Entradas e Saidas'), findsOneWidget);
+      expect(find.text('Todas (2)'), findsOneWidget);
+      expect(find.text('Entradas (1)'), findsOneWidget);
+      expect(find.text('Saidas (1)'), findsOneWidget);
       expect(find.text('Recebimento contrato'), findsOneWidget);
       expect(find.text('Compra de concreto'), findsOneWidget);
+    });
+
+    testWidgets('filtra movimentacoes pela busca local', (tester) async {
+      final service = FakeFinancialService();
+      addTearDown(service.dispose);
+
+      final controller = FinancialController(service: service)..init();
+      service.emit([
+        FinancialTransactionModel(
+          id: 'tx-income',
+          description: 'Recebimento contrato',
+          amount: 15000,
+          type: TransactionType.income,
+          status: TransactionStatus.paid,
+          origin: TransactionOrigin.manual,
+          category: TransactionCategory.measurement,
+          dueDate: DateTime(2026, 5, 3),
+          paymentDate: DateTime(2026, 5, 3),
+          createdBy: 'admin',
+          createdAt: DateTime(2026, 5, 3),
+        ),
+        FinancialTransactionModel(
+          id: 'tx-expense',
+          description: 'Compra de concreto',
+          amount: 5000,
+          type: TransactionType.expense,
+          status: TransactionStatus.pending,
+          origin: TransactionOrigin.purchase,
+          category: TransactionCategory.material,
+          dueDate: DateTime(2026, 5, 10),
+          createdBy: 'admin',
+          createdAt: DateTime(2026, 5, 3),
+        ),
+      ]);
+
+      await pumpPage(tester, controller: controller);
+      await tester.enterText(find.byType(TextField), 'concreto');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Todas (1)'), findsOneWidget);
+      expect(find.text('Compra de concreto'), findsOneWidget);
+      expect(find.text('Recebimento contrato'), findsNothing);
     });
 
     testWidgets('renderiza estado vazio e FAB no mobile', (tester) async {
@@ -155,7 +198,7 @@ void main() {
         find.textContaining('permissao para acessar o financeiro geral'),
         findsOneWidget,
       );
-      expect(find.textContaining('Gest'), findsNothing);
+      expect(find.text('Entradas e Saidas'), findsNothing);
     });
   });
 }

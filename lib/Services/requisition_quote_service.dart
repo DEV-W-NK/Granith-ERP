@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/requisition_quote_model.dart';
@@ -39,12 +40,15 @@ class RequisitionQuoteService {
             .insert(payload)
             .select('id')
             .single();
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyQuotesChanged();
+    return id;
   }
 
   Future<void> updateQuote(RequisitionSupplierQuote quote) async {
     final payload = DbValue.normalizeMap(quote.toMap())..remove('id');
     await AppSupabase.client.from(_table).update(payload).eq('id', quote.id);
+    _notifyQuotesChanged();
   }
 
   Future<void> selectQuote(String requisitionId, String quoteId) async {
@@ -64,6 +68,7 @@ class RequisitionQuoteService {
           'status': RequisitionQuoteStatus.selected.name,
         })
         .eq('id', quoteId);
+    _notifyQuotesChanged();
   }
 
   List<RequisitionSupplierQuote> _rowsToQuotes(List<dynamic> rows) {
@@ -77,5 +82,15 @@ class RequisitionQuoteService {
             .toList();
     quotes.sort((a, b) => a.negotiatedTotal.compareTo(b.negotiatedTotal));
     return quotes;
+  }
+
+  void _notifyQuotesChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [
+        AppDataRefreshBus.requisitionQuotes,
+        AppDataRefreshBus.materialRequisitions,
+      ],
+      source: 'RequisitionQuoteService',
+    );
   }
 }

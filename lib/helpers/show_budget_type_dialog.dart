@@ -190,14 +190,21 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
     final size = MediaQuery.sizeOf(context);
     final inset = size.width < 420 ? 8.0 : 24.0;
     final dialogWidth = (size.width - inset * 2).clamp(300.0, 500.0);
+    final glowColor =
+        budgetType.color != null
+            ? Color(int.parse(budgetType.color!))
+            : BudgetTypeConstants.categoryColors[budgetType.category] ??
+                AppColors.accentGold;
 
     return Dialog(
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: dialogWidth.toDouble(),
         constraints: BoxConstraints(maxHeight: size.height * 0.86),
+        decoration: AppDecorations.dialogSurface(glowColor: glowColor),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -231,17 +238,7 @@ class _BudgetTypeDetailsDialog extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withOpacity(0.2), AppColors.primaryDark],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
+      decoration: AppDecorations.dialogHeader(accent: color),
       child: Row(
         children: [
           Container(

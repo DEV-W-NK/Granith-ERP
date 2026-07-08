@@ -43,23 +43,52 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(controller.loadCount, 1);
-    expect(find.text('DRE Gerencial'), findsNothing);
+    expect(find.text('DRE Gerencial'), findsOneWidget);
     expect(find.text('Resultado operacional'), findsWidgets);
     expect(find.text('Demonstrativo de resultado'), findsOneWidget);
+    expect(find.text('Ponte de margem'), findsOneWidget);
     expect(find.text('Leitura para o CEO'), findsOneWidget);
-    expect(find.text('Contexto geral'), findsOneWidget);
+    expect(find.text('Contexto geral da empresa'), findsOneWidget);
     expect(find.text('Gastos por natureza'), findsOneWidget);
-    expect(find.text('ver detalhes'), findsWidgets);
-    expect(find.byType(RefreshIndicator), findsNothing);
-
-    expect(find.textContaining('Cobertura de contas'), findsNothing);
-    await tester.tap(find.text('Contexto geral'));
-    await tester.pump(const Duration(milliseconds: 220));
+    expect(find.text('ver detalhes'), findsNothing);
+    expect(find.byType(RefreshIndicator), findsOneWidget);
     expect(find.text('Compras abertas'), findsOneWidget);
-
-    await tester.tap(find.text('Perspectiva de caixa'));
-    await tester.pump(const Duration(milliseconds: 220));
     expect(find.textContaining('Cobertura de contas'), findsOneWidget);
+  });
+
+  testWidgets('ReportsPageView mantem layout estavel em viewports comuns', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    for (final size in const [
+      Size(390, 844),
+      Size(1280, 720),
+      Size(1920, 1080),
+    ]) {
+      await tester.binding.setSurfaceSize(size);
+      final controller = _TestReportsController(_sampleReport());
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<ReportsController>.value(
+          value: controller,
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const ReportsPageView(),
+          ),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('DRE Gerencial'), findsOneWidget);
+      expect(find.text('Ponte de margem'), findsOneWidget);
+      expect(find.byType(RefreshIndicator), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 }
 

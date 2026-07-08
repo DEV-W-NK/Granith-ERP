@@ -8,6 +8,7 @@ import 'package:project_granith/services/job_role_service.dart';
 import 'package:project_granith/services/sector_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:provider/provider.dart';
 
 class EmployeeFormDialog extends StatefulWidget {
@@ -223,12 +224,16 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
     final dialogWidth = (size.width - inset * 2).clamp(300.0, 620.0);
 
     return Dialog(
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: dialogWidth.toDouble(),
         constraints: BoxConstraints(maxHeight: size.height * 0.9),
+        decoration: AppDecorations.dialogSurface(
+          glowColor: AppColors.accentGold,
+        ),
+        clipBehavior: Clip.antiAlias,
         padding: padding,
         child: Form(
           key: _formKey,
@@ -591,33 +596,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
       maxLines: maxLines,
       style: const TextStyle(color: Colors.white),
       validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        hintStyle: const TextStyle(color: Colors.white24),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accentGold),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.red.shade400),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.red.shade400),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+      decoration: granithInputDecoration(
+        label: label,
+        hint: hint ?? '',
+        accentColor: AppColors.accentGold,
       ),
     );
   }
@@ -771,30 +753,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   }
 
   InputDecoration _sectorDecoration({String? hintText}) {
-    return InputDecoration(
-      labelText: 'Setor',
-      hintText: hintText ?? 'Selecione um setor cadastrado',
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      hintStyle: const TextStyle(color: Colors.white24),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.04),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white24),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentGold),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.red.shade400),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.red.shade400),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    return granithInputDecoration(
+      label: 'Setor',
+      hint: hintText ?? 'Selecione um setor cadastrado',
+      icon: Icons.business_rounded,
+      accentColor: AppColors.accentGold,
     );
   }
 
@@ -830,30 +793,11 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
   }
 
   InputDecoration _jobRoleDecoration() {
-    return InputDecoration(
-      labelText: 'Cargo',
-      hintText: 'Selecione um cargo cadastrado',
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      hintStyle: const TextStyle(color: Colors.white24),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.04),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white24),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentGold),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.red.shade400),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.red.shade400),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    return granithInputDecoration(
+      label: 'Cargo',
+      hint: 'Selecione um cargo cadastrado',
+      icon: Icons.work_outline_rounded,
+      accentColor: AppColors.accentGold,
     );
   }
 
@@ -901,23 +845,10 @@ class _EmployeeFormDialogState extends State<EmployeeFormDialog> {
       initialValue: value,
       dropdownColor: AppColors.surfaceDark,
       style: const TextStyle(color: Colors.white),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: const TextStyle(color: AppColors.textSecondary),
-        filled: true,
-        fillColor: Colors.white.withValues(alpha: 0.04),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.white24),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: AppColors.accentGold),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
+      decoration: granithInputDecoration(
+        label: label,
+        hint: '',
+        accentColor: AppColors.accentGold,
       ),
       items:
           items
@@ -954,24 +885,11 @@ class _DatePickerField extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: AppColors.textSecondary),
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.04),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.white24),
-          ),
-          suffixIcon: const Icon(
-            Icons.calendar_today_rounded,
-            color: Colors.white38,
-            size: 18,
-          ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 14,
-          ),
+        decoration: granithInputDecoration(
+          label: label,
+          hint: '',
+          icon: Icons.calendar_today_rounded,
+          accentColor: AppColors.accentGold,
         ),
         child: Text(formatted, style: const TextStyle(color: Colors.white)),
       ),
@@ -993,7 +911,7 @@ class _SectionLabel extends StatelessWidget {
         color: Colors.white38,
         fontSize: 11,
         fontWeight: FontWeight.w700,
-        letterSpacing: 1.2,
+        letterSpacing: 0,
       ),
     );
   }

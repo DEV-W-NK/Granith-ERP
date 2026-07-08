@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/client_portal/presentation/viewmodels/client_projects_portal_view_model.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
+import 'package:project_granith/models/project_measurement_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
@@ -127,6 +128,10 @@ class _ClientProjectsPortalViewState extends State<_ClientProjectsPortalView> {
                                                 .signedLogsForProject(
                                                   project.id,
                                                 ),
+                                            approvedMeasurements: viewModel
+                                                .approvedMeasurementsForProject(
+                                                  project.id,
+                                                ),
                                           ),
                                         ),
                                       )
@@ -205,7 +210,7 @@ class _ClientProjectsHero extends StatelessWidget {
                     color: AppColors.accentBlue,
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
-                    letterSpacing: 0.7,
+                    letterSpacing: 0,
                   ),
                 ),
               ),
@@ -325,6 +330,12 @@ class _ProjectsSummaryStrip extends StatelessWidget {
           subtitle: 'relatorios assinados',
           color: AppColors.accentGreen,
         ),
+        _SummaryCard(
+          title: 'Medicoes aprovadas',
+          value: viewModel.totalApprovedMeasurements.toString(),
+          subtitle: 'liberadas para consulta',
+          color: AppColors.auraCyan,
+        ),
       ],
     );
   }
@@ -334,10 +345,12 @@ class _ClientProjectProgressCard extends StatelessWidget {
   const _ClientProjectProgressCard({
     required this.project,
     required this.signedLogs,
+    required this.approvedMeasurements,
   });
 
   final Project project;
   final List<DailyLogModel> signedLogs;
+  final List<ProjectMeasurement> approvedMeasurements;
 
   @override
   Widget build(BuildContext context) {
@@ -347,11 +360,10 @@ class _ClientProjectProgressCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: project.status.color.withValues(alpha: 0.24)),
-        boxShadow: AppColors.glowShadows(project.status.color),
+      decoration: AppDecorations.cardSurface(
+        accent: project.status.color,
+        emphasized: true,
+        radius: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,36 +461,249 @@ class _ClientProjectProgressCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _ProjectMetaCard(
-                label: 'Inicio',
-                value: dateFormat.format(project.startDate),
-              ),
-              _ProjectMetaCard(
-                label: 'Previsao',
-                value:
-                    project.endDate != null
-                        ? dateFormat.format(project.endDate!)
-                        : 'Sem data definida',
-              ),
-              _ProjectMetaCard(
-                label: 'Situacao',
-                value:
-                    project.isOverdue
-                        ? 'Prazo em atraso'
-                        : project.isCompleted
-                        ? 'Projeto concluido'
-                        : 'Dentro do cronograma',
-              ),
-            ],
+          _ClientProjectDetailsSection(
+            project: project,
+            dateFormat: dateFormat,
           ),
+          if (approvedMeasurements.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _ClientMeasurementsPreview(measurements: approvedMeasurements),
+          ],
           if (signedLogs.isNotEmpty) ...[
             const SizedBox(height: 18),
             _ClientDailyLogsPreview(logs: signedLogs),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ClientProjectDetailsSection extends StatelessWidget {
+  const _ClientProjectDetailsSection({
+    required this.project,
+    required this.dateFormat,
+  });
+
+  final Project project;
+  final DateFormat dateFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = <_ProjectDetail>[
+      _ProjectDetail(
+        label: 'Cliente',
+        value: project.client.trim().isEmpty ? '-' : project.client,
+      ),
+      _ProjectDetail(
+        label: 'Inicio',
+        value: dateFormat.format(project.startDate),
+      ),
+      _ProjectDetail(
+        label: 'Previsao',
+        value:
+            project.endDate != null
+                ? dateFormat.format(project.endDate!)
+                : 'Sem data definida',
+      ),
+      _ProjectDetail(
+        label: 'Situacao',
+        value:
+            project.isOverdue
+                ? 'Prazo em atraso'
+                : project.isCompleted
+                ? 'Projeto concluido'
+                : 'Dentro do cronograma',
+      ),
+      _ProjectDetail(label: 'Equipe', value: '${project.teamSize} pessoas'),
+      if (project.lastMeasurementAt != null)
+        _ProjectDetail(
+          label: 'Ultima medicao',
+          value: dateFormat.format(project.lastMeasurementAt!),
+        ),
+      if (project.measurementCount > 0)
+        _ProjectDetail(
+          label: 'Medicoes registradas',
+          value: project.measurementCount.toString(),
+        ),
+      if (project.tags.isNotEmpty)
+        _ProjectDetail(label: 'Tags', value: project.tags.join(', ')),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentBlue,
+        radius: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _PortalSectionTitle(
+            icon: Icons.apartment_rounded,
+            title: 'Detalhes da obra',
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children:
+                details
+                    .map(
+                      (detail) => _ProjectMetaCard(
+                        label: detail.label,
+                        value: detail.value,
+                      ),
+                    )
+                    .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProjectDetail {
+  final String label;
+  final String value;
+
+  const _ProjectDetail({required this.label, required this.value});
+}
+
+class _ClientMeasurementsPreview extends StatelessWidget {
+  const _ClientMeasurementsPreview({required this.measurements});
+
+  final List<ProjectMeasurement> measurements;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleMeasurements = measurements.take(4).toList();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final totalNet = measurements.fold<double>(
+      0,
+      (total, measurement) => total + measurement.netAmount,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.auraCyan,
+        radius: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PortalSectionTitle(
+            icon: Icons.verified_outlined,
+            title: 'Medicoes aprovadas (${measurements.length})',
+            trailing: currency.format(totalNet),
+          ),
+          const SizedBox(height: 12),
+          ...visibleMeasurements.map(
+            (measurement) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _MeasurementLine(
+                measurement: measurement,
+                dateFormat: dateFormat,
+                currency: currency,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MeasurementLine extends StatelessWidget {
+  const _MeasurementLine({
+    required this.measurement,
+    required this.dateFormat,
+    required this.currency,
+  });
+
+  final ProjectMeasurement measurement;
+  final DateFormat dateFormat;
+  final NumberFormat currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: AppDecorations.cardInnerSurface(radius: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: AppDecorations.iconTile(measurement.status.color),
+            child: Text(
+              measurement.sequence.toString().padLeft(2, '0'),
+              style: TextStyle(
+                color: measurement.status.color,
+                fontWeight: FontWeight.w900,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      measurement.title.trim().isEmpty
+                          ? '${measurement.sequence}a medicao'
+                          : measurement.title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    _ClientInfoPill(
+                      icon: Icons.event_available_outlined,
+                      label: dateFormat.format(measurement.measurementDate),
+                    ),
+                    _ClientInfoPill(
+                      icon: Icons.timeline_rounded,
+                      label:
+                          '${measurement.clampedAccumulatedPercentage.toStringAsFixed(1)}% acumulado',
+                    ),
+                  ],
+                ),
+                if (measurement.notes.trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    measurement.notes.trim(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            currency.format(measurement.netAmount),
+            style: const TextStyle(
+              color: AppColors.auraCyan,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
         ],
       ),
     );
@@ -498,34 +723,16 @@ class _ClientDailyLogsPreview extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.46),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.accentGreen.withValues(alpha: 0.24),
-        ),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentGreen,
+        radius: 14,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.verified_rounded,
-                color: AppColors.accentGreen,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Diarios assinados (${logs.length})',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
+          _PortalSectionTitle(
+            icon: Icons.description_outlined,
+            title: 'Relatorios liberados (${logs.length})',
           ),
           const SizedBox(height: 12),
           ...visibleLogs.map(
@@ -566,6 +773,51 @@ class _ClientDailyLogsPreview extends StatelessWidget {
   }
 }
 
+class _PortalSectionTitle extends StatelessWidget {
+  const _PortalSectionTitle({
+    required this.icon,
+    required this.title,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.textPrimary, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 12),
+          Text(
+            trailing!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.auraCyan,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ProjectMetaCard extends StatelessWidget {
   const _ProjectMetaCard({required this.label, required this.value});
 
@@ -579,13 +831,7 @@ class _ProjectMetaCard extends StatelessWidget {
     return Container(
       width: width < ResponsiveLayout.compact ? double.infinity : 190,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.46),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.55),
-        ),
-      ),
+      decoration: AppDecorations.cardInnerSurface(radius: 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -629,12 +875,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       width: width < ResponsiveLayout.compact ? double.infinity : 230,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-        boxShadow: AppColors.glowShadows(color),
-      ),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -679,10 +920,10 @@ class _PortalMessageCard extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
+      decoration: AppDecorations.cardSurface(
+        accent: color,
+        elevated: false,
+        radius: 18,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
@@ -64,7 +65,9 @@ class ClientAccountService {
               .single();
     }
 
-    return ClientAccount.fromMap(Map<String, dynamic>.from(response));
+    final saved = ClientAccount.fromMap(Map<String, dynamic>.from(response));
+    _notifyClientAccountsChanged();
+    return saved;
   }
 
   Future<ClientAccount> updateClientPortalSession({
@@ -92,7 +95,16 @@ class ClientAccountService {
             .select(SupabaseSelects.clientAccount)
             .single();
 
-    return ClientAccount.fromMap(Map<String, dynamic>.from(response));
+    final updated = ClientAccount.fromMap(Map<String, dynamic>.from(response));
+    _notifyClientAccountsChanged();
+    return updated;
+  }
+
+  void _notifyClientAccountsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.clientAccounts],
+      source: 'ClientAccountService',
+    );
   }
 }
 

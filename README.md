@@ -329,6 +329,74 @@ git check-ignore ios/Flutter/Secrets.xcconfig
 
 Nao use `--dart-define-from-file=.env.local` se o arquivo tiver client secret ou service role. Isso pode embutir segredo no bundle Flutter. Prefira `scripts/run_dev.ps1`.
 
+## CI/CD e Firebase Hosting
+
+O projeto possui workflow GitHub Actions em `.github/workflows/firebase-hosting.yml`.
+
+Comportamento:
+
+| Evento | Acao |
+| --- | --- |
+| Pull request para `main` | Roda `flutter pub get`, `flutter analyze`, `flutter test` e `flutter build web` |
+| Push na `main` | Roda validacao/build e publica no Firebase Hosting live |
+| `workflow_dispatch` | Permite disparar deploy manual pelo GitHub Actions |
+
+Secrets necessarios no GitHub:
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+GOOGLE_MAPS_API_KEY
+GOOGLE_OAUTH_WEB_CLIENT_ID
+FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE
+```
+
+Configure em:
+
+```text
+GitHub > Repository > Settings > Secrets and variables > Actions
+```
+
+`FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE` deve conter o JSON completo da service account do Firebase. Ele pode ser gerado pelo Firebase Console em `Project settings > Service accounts`, ou pelo assistente `firebase init hosting:github`.
+
+Nao coloque no GitHub Actions:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_OAUTH_CLIENT_SECRET
+GEMINI_API_KEY
+```
+
+Essas chaves nao devem ir para Flutter Web. Se a IA precisar funcionar em producao, ela deve passar por Edge Function/backend seguro.
+
+### Convite do portal do cliente
+
+Atualmente o envio de convite para clientes usa o provedor padrao de e-mail do Supabase Auth, sem SMTP proprio configurado. Isso e suficiente para desenvolvimento, validacao e piloto controlado, mas o remetente pode aparecer como Supabase/Auth e ha limites baixos de envio do provedor padrao. Na pratica, para convites em volume, esse limite pode travar a operacao; a migracao para SMTP proprio deve ser feita antes de uma abertura comercial maior do portal.
+
+O ERP envia o convite do portal pelo fluxo de Magic Link (`signInWithOtp`). Por isso, se quiser melhorar a aparencia do e-mail sem configurar SMTP agora, atualize no painel do Supabase:
+
+```text
+Authentication > Emails > Magic Link
+```
+
+Use como assunto:
+
+```text
+Seu acesso ao Portal do Cliente Granith
+```
+
+E cole o HTML versionado em:
+
+```text
+supabase/templates/client_portal_magic_link.html
+```
+
+Essa configuracao melhora o texto, layout e experiencia do primeiro acesso, mas nao troca o remetente. Para remover o remetente padrao do Supabase no futuro, sera necessario configurar SMTP proprio em `Authentication > SMTP Settings`, preferencialmente com dominio proprio e DNS validado com SPF, DKIM e DMARC.
+
+Quando o portal comecar a enviar convites para muitos clientes no mesmo dia, configurar SMTP proprio passa a ser prioridade operacional. Provedores recomendados: Resend, Brevo, SendGrid, Postmark ou AWS SES. O remetente ideal deve usar dominio proprio, por exemplo `portal@seudominio.com.br`.
+
+Mais detalhes operacionais estao em `docs/client_portal_email_setup.md`.
+
 Para builds Android, use JDK 21. Se necessario:
 
 ```powershell

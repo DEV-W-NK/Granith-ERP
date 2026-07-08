@@ -9,6 +9,7 @@ import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HEADER
@@ -138,195 +139,208 @@ class MaterialRequisitionCard extends StatelessWidget {
     final statusColor = r.status.color;
 
     return Card(
-      color: AppColors.surfaceDark,
+      color: Colors.transparent,
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      clipBehavior: Clip.antiAlias,
       margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color:
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        decoration: AppDecorations.cardSurface(
+          accent:
               r.priority == 'Alta' && r.status == RequisitionStatus.pending
-                  ? Colors.redAccent.withValues(alpha: 0.3)
-                  : Colors.white.withValues(alpha: 0.05),
+                  ? AppColors.accentRed
+                  : statusColor,
+          emphasized: r.priority == 'Alta',
         ),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          leading: CircleAvatar(
-            backgroundColor: statusColor.withValues(alpha: 0.12),
-            child: Icon(r.status.icon, color: statusColor, size: 20),
-          ),
-          title: Text(
-            r.projectName,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 8,
             ),
-          ),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Text(
-                'Solicitante: ${r.requesterName}',
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 13,
-                ),
+            leading: CircleAvatar(
+              backgroundColor: statusColor.withValues(alpha: 0.12),
+              child: Icon(r.status.icon, color: statusColor, size: 20),
+            ),
+            title: Text(
+              r.projectName,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
-              Text(
-                dateFormat.format(r.requestDate),
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          trailing: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: statusColor.withValues(alpha: 0.3)),
-                ),
-                child: Text(
-                  r.status.label,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  'Solicitante: ${r.requesterName}',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              if (r.priority == 'Alta')
-                const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      color: Colors.redAccent,
-                      size: 12,
-                    ),
-                    SizedBox(width: 3),
-                    Text(
-                      'Alta prioridade',
-                      style: TextStyle(color: Colors.redAccent, fontSize: 10),
-                    ),
-                  ],
+                Text(
+                  dateFormat.format(r.requestDate),
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
-            ],
-          ),
-
-          // ── Conteúdo expandido ──
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.2),
-                border: const Border(top: BorderSide(color: Colors.white10)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Itens
-                  const Text(
-                    'Itens solicitados:',
+              ],
+            ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Status badge
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: statusColor.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    r.status.label,
                     style: TextStyle(
-                      color: AppColors.accentGold,
+                      color: statusColor,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
-                      fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  ...r.items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: const BoxDecoration(
-                              color: Colors.white54,
-                              shape: BoxShape.circle,
+                ),
+                const SizedBox(height: 4),
+                if (r.priority == 'Alta')
+                  const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.redAccent,
+                        size: 12,
+                      ),
+                      SizedBox(width: 3),
+                      Text(
+                        'Alta prioridade',
+                        style: TextStyle(color: Colors.redAccent, fontSize: 10),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+
+            // ── Conteúdo expandido ──
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.2),
+                  border: const Border(top: BorderSide(color: Colors.white10)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Itens
+                    const Text(
+                      'Itens solicitados:',
+                      style: TextStyle(
+                        color: AppColors.accentGold,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...r.items.map(
+                      (item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Colors.white54,
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              item.itemName,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                item.itemName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
                               style: const TextStyle(
                                 color: Colors.white,
+                                fontWeight: FontWeight.bold,
                                 fontSize: 13,
                               ),
                             ),
-                          ),
-                          Text(
-                            '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                          if (item.observation != null) ...[
-                            const SizedBox(width: 8),
-                            Tooltip(
-                              message: item.observation!,
-                              child: const Icon(
-                                Icons.info_outline,
-                                size: 14,
-                                color: AppColors.textMuted,
+                            if (item.observation != null) ...[
+                              const SizedBox(width: 8),
+                              Tooltip(
+                                message: item.observation!,
+                                child: const Icon(
+                                  Icons.info_outline,
+                                  size: 14,
+                                  color: AppColors.textMuted,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
+                        ),
+                      ),
+                    ),
+
+                    // Quem aprovou / rejeitou
+                    if (r.approvedByName != null) ...[
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white10),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Icon(r.status.icon, size: 13, color: statusColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${r.status == RequisitionStatus.rejected ? "Rejeitado" : "Aprovado"} por ${r.approvedByName}',
+                            style: TextStyle(color: statusColor, fontSize: 11),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
-
-                  // Quem aprovou / rejeitou
-                  if (r.approvedByName != null) ...[
-                    const SizedBox(height: 10),
-                    const Divider(color: Colors.white10),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        Icon(r.status.icon, size: 13, color: statusColor),
-                        const SizedBox(width: 6),
+                      if (r.rejectionReason != null) ...[
+                        const SizedBox(height: 4),
                         Text(
-                          '${r.status == RequisitionStatus.rejected ? "Rejeitado" : "Aprovado"} por ${r.approvedByName}',
-                          style: TextStyle(color: statusColor, fontSize: 11),
+                          'Motivo: ${r.rejectionReason}',
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                          ),
                         ),
                       ],
-                    ),
-                    if (r.rejectionReason != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        'Motivo: ${r.rejectionReason}',
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                        ),
-                      ),
                     ],
-                  ],
 
-                  // ── Ações por status ──
-                  const SizedBox(height: 20),
-                  _buildActions(context, r),
-                ],
+                    // ── Ações por status ──
+                    const SizedBox(height: 20),
+                    _buildActions(context, r),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -599,232 +613,193 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
     final dialogWidth = (size.width - inset * 2).clamp(300.0, 560.0);
 
     return Dialog(
-      backgroundColor: AppColors.surfaceDark,
+      backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(inset),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: dialogWidth.toDouble(),
-          maxHeight: size.height * 0.9,
+      child: Container(
+        decoration: AppDecorations.dialogSurface(
+          glowColor: AppColors.accentGold,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.07),
-                  ),
-                ),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: dialogWidth.toDouble(),
+            maxHeight: size.height * 0.9,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              GranithDialogHeader(
+                icon: Icons.shopping_cart_outlined,
+                title: 'Orcamento da compra',
+                subtitle: r.projectName,
+                accentColor: AppColors.accentGold,
+                onClose: () => Navigator.of(context).pop(),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.accentGold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.shopping_cart_outlined,
-                      color: AppColors.accentGold,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Orcamento da compra',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          r.projectName,
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
-              ),
-            ),
 
-            Flexible(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _sectionLabel('Setor aprovador'),
-                    TextField(
-                      controller: _approvalSectorCtrl,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _dec(
-                        'Ex.: Engenharia, Obras, Administrativo',
-                        Icons.domain_outlined,
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _sectionLabel('Setor aprovador'),
+                      TextField(
+                        controller: _approvalSectorCtrl,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: _dec(
+                          'Ex.: Engenharia, Obras, Administrativo',
+                          Icons.domain_outlined,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                    // Fornecedor
-                    _sectionLabel('Fornecedor'),
-                    _loadingSuppliers
-                        ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accentGold,
-                            strokeWidth: 2,
+                      // Fornecedor
+                      _sectionLabel('Fornecedor'),
+                      _loadingSuppliers
+                          ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.accentGold,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : DropdownButtonFormField<Supplier>(
+                            initialValue: _selectedSupplier,
+                            dropdownColor: AppColors.surfaceDark,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                            decoration: _dec(
+                              'Selecione o fornecedor',
+                              Icons.storefront_outlined,
+                            ),
+                            items:
+                                _suppliers
+                                    .map(
+                                      (s) => DropdownMenuItem(
+                                        value: s,
+                                        child: Text(
+                                          s.name,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                            onChanged:
+                                (v) => setState(() => _selectedSupplier = v),
                           ),
-                        )
-                        : DropdownButtonFormField<Supplier>(
-                          initialValue: _selectedSupplier,
-                          dropdownColor: AppColors.surfaceDark,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                          decoration: _dec(
-                            'Selecione o fornecedor',
-                            Icons.storefront_outlined,
-                          ),
-                          items:
-                              _suppliers
-                                  .map(
-                                    (s) => DropdownMenuItem(
-                                      value: s,
-                                      child: Text(
-                                        s.name,
-                                        overflow: TextOverflow.ellipsis,
+                      const SizedBox(height: 20),
+
+                      // Preços por item
+                      _sectionLabel('Valor por item (R\$)'),
+                      const Text(
+                        'Informe o valor total de cada item para esta compra.',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      ...r.items.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.itemName,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
+                                      style: const TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 11,
                                       ),
                                     ),
-                                  )
-                                  .toList(),
-                          onChanged:
-                              (v) => setState(() => _selectedSupplier = v),
-                        ),
-                    const SizedBox(height: 20),
-
-                    // Preços por item
-                    _sectionLabel('Valor por item (R\$)'),
-                    const Text(
-                      'Informe o valor total de cada item para esta compra.',
-                      style: TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    ...r.items.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.itemName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    '${item.quantity.toStringAsFixed(item.quantity % 1 == 0 ? 0 : 1)} ${item.unit}',
-                                    style: const TextStyle(
-                                      color: AppColors.textMuted,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: TextField(
-                                controller: _priceCtrl[item.itemName],
-                                keyboardType:
-                                    const TextInputType.numberWithOptions(
-                                      decimal: true,
-                                    ),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'^\d+\.?\d*'),
-                                  ),
-                                ],
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                ),
-                                decoration: _dec(
-                                  'R\$ 0,00',
-                                  Icons.attach_money,
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Botão salvar
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: _saving ? null : _save,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accentGold,
-                          foregroundColor: AppColors.primaryDark,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: TextField(
+                                  controller: _priceCtrl[item.itemName],
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'^\d+\.?\d*'),
+                                    ),
+                                  ],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                  decoration: _dec(
+                                    'R\$ 0,00',
+                                    Icons.attach_money,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        child:
-                            _saving
-                                ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                )
-                                : const Text(
-                                  'Enviar orcamento para aprovacao',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 24),
+
+                      // Botão salvar
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: _saving ? null : _save,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentGold,
+                            foregroundColor: AppColors.primaryDark,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child:
+                              _saving
+                                  ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppColors.primaryDark,
+                                    ),
+                                  )
+                                  : const Text(
+                                    'Enviar orcamento para aprovacao',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -899,21 +874,10 @@ class _ConvertToPurchaseDialogState extends State<_ConvertToPurchaseDialog> {
   }
 
   InputDecoration _dec(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.5)),
-      prefixIcon: Icon(icon, color: AppColors.accentGold, size: 18),
-      filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.04),
-      contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentGold),
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return granithInputDecoration(
+      hint: hint,
+      icon: icon,
+      accentColor: AppColors.accentGold,
     );
   }
 }

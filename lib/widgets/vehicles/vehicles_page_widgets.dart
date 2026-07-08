@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/controllers/vehicle_controller.dart';
+import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/vehicle_model.dart';
+import 'package:project_granith/services/team_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class VehiclesPageView extends StatelessWidget {
   final VehicleController? controller;
@@ -324,22 +329,17 @@ class _VehicleCard extends StatelessWidget {
     final expected = vehicle.expectedAverageKmPerLiter;
     final measured = vehicle.lastMeasuredKmPerLiter;
     final delta = vehicle.consumptionDeltaPercent;
+    final accent =
+        vehicle.isUnderExpectedConsumption
+            ? AppColors.accentRed
+            : vehicle.status.color;
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () => _VehicleFormDialog.show(context, vehicle: vehicle),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color:
-                vehicle.isUnderExpectedConsumption
-                    ? AppColors.accentRed.withValues(alpha: 0.36)
-                    : AppColors.borderColor.withValues(alpha: 0.62),
-          ),
-        ),
+        decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -479,8 +479,15 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
   final _highwayConsumptionCtrl = TextEditingController();
   final _tankCtrl = TextEditingController();
   final _employeeCtrl = TextEditingController();
+  final _employeeFocus = FocusNode();
   final _acquisitionValueCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _teamService = TeamService();
+  StreamSubscription<List<EmployeeModel>>? _employeesSubscription;
+  List<EmployeeModel> _employees = [];
+  EmployeeModel? _selectedEmployee;
+  bool _isLoadingEmployees = true;
+  String? _employeesError;
   VehicleFuelType _fuelType = VehicleFuelType.flex;
   VehicleStatus _status = VehicleStatus.active;
 
@@ -521,10 +528,14 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
     _notesCtrl.text = vehicle?.notes ?? '';
     _fuelType = vehicle?.fuelType ?? VehicleFuelType.flex;
     _status = vehicle?.status ?? VehicleStatus.active;
+    _employeeCtrl.addListener(_handleEmployeeTextChanged);
+    _listenEmployees();
   }
 
   @override
   void dispose() {
+    _employeesSubscription?.cancel();
+    _employeeCtrl.removeListener(_handleEmployeeTextChanged);
     _plateCtrl.dispose();
     _brandCtrl.dispose();
     _modelCtrl.dispose();
@@ -536,9 +547,59 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
     _highwayConsumptionCtrl.dispose();
     _tankCtrl.dispose();
     _employeeCtrl.dispose();
+    _employeeFocus.dispose();
     _acquisitionValueCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  void _listenEmployees() {
+    try {
+      _employeesSubscription = _teamService.getEmployees().listen((employees) {
+        final activeEmployees =
+            employees.where((employee) => employee.isActive).toList()..sort(
+              (left, right) =>
+                  left.name.toLowerCase().compareTo(right.name.toLowerCase()),
+            );
+
+        final currentEmployeeId = widget.vehicle?.assignedEmployeeId?.trim();
+        EmployeeModel? selected = _selectedEmployee;
+        if (selected == null &&
+            currentEmployeeId != null &&
+            currentEmployeeId.isNotEmpty) {
+          selected = _employeeById(activeEmployees, currentEmployeeId);
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _employees = activeEmployees;
+          _selectedEmployee = selected;
+          _isLoadingEmployees = false;
+          _employeesError = null;
+          if (selected != null &&
+              _employeeCtrl.text.trim() != selected.name.trim()) {
+            _employeeCtrl.text = selected.name;
+          }
+        });
+      }, onError: _handleEmployeesError);
+    } catch (error) {
+      _handleEmployeesError(error);
+    }
+  }
+
+  void _handleEmployeesError(Object error) {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingEmployees = false;
+      _employeesError = error.toString();
+    });
+  }
+
+  void _handleEmployeeTextChanged() {
+    final selected = _selectedEmployee;
+    if (selected == null) return;
+    if (_employeeCtrl.text.trim() == selected.name.trim()) return;
+    setState(() => _selectedEmployee = null);
   }
 
   @override
@@ -555,14 +616,10 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
           maxHeight: size.height * 0.92,
         ),
         child: Container(
-          decoration: BoxDecoration(
-            gradient: AppColors.cardGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.borderColor.withValues(alpha: 0.72),
-            ),
-            boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+          decoration: AppDecorations.dialogSurface(
+            glowColor: AppColors.accentBlue,
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
               _buildDialogHeader(),
@@ -649,11 +706,7 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
                         ]),
                         const SizedBox(height: 12),
                         _responsiveFields(compact, [
-                          _textField(
-                            controller: _employeeCtrl,
-                            label: 'Responsavel atual',
-                            icon: Icons.person_outline_rounded,
-                          ),
+                          _employeeSearchField(),
                           _numberField(
                             controller: _acquisitionValueCtrl,
                             label: 'Valor de aquisicao',
@@ -682,46 +735,12 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
   }
 
   Widget _buildDialogHeader() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 18, 12, 14),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.4),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: AppColors.accentBlue.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.directions_car_filled_rounded,
-              color: AppColors.accentBlue,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _isEditing ? 'Editar veiculo' : 'Novo veiculo',
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          IconButton(
-            tooltip: 'Fechar',
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-          ),
-        ],
-      ),
+    return GranithDialogHeader(
+      icon: Icons.directions_car_filled_rounded,
+      title: _isEditing ? 'Editar veiculo' : 'Novo veiculo',
+      subtitle: 'Identificacao, consumo, responsavel e status da frota',
+      accentColor: AppColors.accentBlue,
+      onClose: () => Navigator.of(context).pop(),
     );
   }
 
@@ -888,28 +907,189 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
     );
   }
 
+  Widget _employeeSearchField() {
+    final suffixIcon =
+        _employeeCtrl.text.trim().isEmpty
+            ? _isLoadingEmployees
+                ? const Padding(
+                  padding: EdgeInsets.all(13),
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+                : null
+            : IconButton(
+              tooltip: 'Limpar responsavel',
+              onPressed: () {
+                setState(() {
+                  _selectedEmployee = null;
+                  _employeeCtrl.clear();
+                });
+              },
+              icon: const Icon(Icons.close_rounded),
+            );
+
+    return RawAutocomplete<EmployeeModel>(
+      textEditingController: _employeeCtrl,
+      focusNode: _employeeFocus,
+      displayStringForOption: (employee) => employee.name,
+      optionsBuilder: (textEditingValue) {
+        final query = textEditingValue.text.trim().toLowerCase();
+        if (_employees.isEmpty) return const Iterable<EmployeeModel>.empty();
+
+        final options =
+            query.isEmpty
+                ? _employees
+                : _employees.where(
+                  (employee) => _matchesEmployeeSearch(employee, query),
+                );
+
+        return options.take(8);
+      },
+      onSelected: (employee) {
+        setState(() {
+          _selectedEmployee = employee;
+          _employeeCtrl.text = employee.name;
+        });
+      },
+      fieldViewBuilder: (
+        context,
+        textEditingController,
+        focusNode,
+        onFieldSubmitted,
+      ) {
+        return TextFormField(
+          controller: textEditingController,
+          focusNode: focusNode,
+          validator: _employeeValidator,
+          style: const TextStyle(color: AppColors.textPrimary),
+          decoration: _fieldDecoration(
+            'Responsavel / motorista',
+            Icons.person_search_rounded,
+          ).copyWith(
+            hintText: 'Busque um funcionario ativo',
+            suffixIcon: suffixIcon,
+            helperText:
+                _employeesError == null
+                    ? 'Selecione na lista para vincular ao cadastro do funcionario.'
+                    : 'Nao foi possivel carregar funcionarios.',
+            helperStyle: TextStyle(
+              color:
+                  _employeesError == null
+                      ? AppColors.textMuted
+                      : AppColors.accentRed,
+              fontSize: 11,
+            ),
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        final items = options.toList();
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            color: Colors.transparent,
+            elevation: 8,
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420, maxHeight: 280),
+              margin: const EdgeInsets.only(top: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppColors.accentBlue.withValues(alpha: 0.24),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.28),
+                    blurRadius: 24,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder:
+                    (_, __) => Divider(
+                      height: 1,
+                      color: AppColors.borderColor.withValues(alpha: 0.36),
+                    ),
+                itemBuilder: (context, index) {
+                  final employee = items[index];
+                  return InkWell(
+                    onTap: () => onSelected(employee),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: AppColors.accentBlue.withValues(
+                              alpha: 0.14,
+                            ),
+                            child: Text(
+                              employee.initials,
+                              style: const TextStyle(
+                                color: AppColors.accentBlue,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  employee.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _employeeDetails(employee),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   InputDecoration _fieldDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 18),
-      filled: true,
-      fillColor: AppColors.surfaceDark.withValues(alpha: 0.70),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.6),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.6),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.accentBlue),
-      ),
+    return granithInputDecoration(
+      label: label,
+      hint: '',
+      icon: icon,
+      accentColor: AppColors.accentBlue,
     );
   }
 
@@ -929,11 +1109,31 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
     return null;
   }
 
+  String? _employeeValidator(String? value) {
+    final input = value?.trim() ?? '';
+    if (input.isEmpty) return null;
+    if (_isLoadingEmployees) return 'Aguarde os funcionarios carregarem';
+    if (_employeesError != null) {
+      return 'Nao foi possivel carregar funcionarios';
+    }
+    if (_selectedEmployee != null &&
+        _selectedEmployee!.name.trim().toLowerCase() == input.toLowerCase()) {
+      return null;
+    }
+
+    final exactMatch = _employeeByTypedName(input);
+    if (exactMatch != null) return null;
+
+    return 'Selecione um funcionario ativo da lista';
+  }
+
   Future<void> _save() async {
+    _syncSelectedEmployeeFromText();
     if (!_formKey.currentState!.validate()) return;
 
     final now = DateTime.now();
     final initial = widget.vehicle;
+    final selectedEmployee = _selectedEmployee;
     final vehicle = Vehicle(
       id: initial?.id ?? '',
       plate: _plateCtrl.text,
@@ -948,8 +1148,8 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
       expectedCityKmPerLiter: _parseDouble(_cityConsumptionCtrl.text),
       expectedHighwayKmPerLiter: _parseDouble(_highwayConsumptionCtrl.text),
       tankCapacityLiters: _parseDouble(_tankCtrl.text),
-      assignedEmployeeId: initial?.assignedEmployeeId,
-      assignedEmployeeName: _employeeCtrl.text,
+      assignedEmployeeId: selectedEmployee?.id,
+      assignedEmployeeName: selectedEmployee?.name ?? '',
       acquisitionDate: initial?.acquisitionDate,
       acquisitionValue: _parseDouble(_acquisitionValueCtrl.text),
       fipeCode: initial?.fipeCode,
@@ -991,6 +1191,33 @@ class _VehicleFormDialogState extends State<_VehicleFormDialog> {
       );
     }
   }
+
+  void _syncSelectedEmployeeFromText() {
+    final input = _employeeCtrl.text.trim();
+    if (input.isEmpty) {
+      _selectedEmployee = null;
+      return;
+    }
+
+    final selected = _selectedEmployee;
+    if (selected != null &&
+        selected.name.trim().toLowerCase() == input.toLowerCase()) {
+      return;
+    }
+
+    _selectedEmployee = _employeeByTypedName(input);
+  }
+
+  EmployeeModel? _employeeByTypedName(String input) {
+    final normalized = input.trim().toLowerCase();
+    if (normalized.isEmpty) return null;
+    for (final employee in _employees) {
+      if (employee.name.trim().toLowerCase() == normalized) {
+        return employee;
+      }
+    }
+    return null;
+  }
 }
 
 class _FleetStatData {
@@ -1020,14 +1247,15 @@ class _FleetStatCard extends StatelessWidget {
       height: 82,
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark.withValues(alpha: 0.68),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: data.color.withValues(alpha: 0.20)),
-        ),
+        decoration: AppDecorations.statCardSurface(data.color, radius: 14),
         child: Row(
           children: [
-            Icon(data.icon, color: data.color, size: 21),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: AppDecorations.iconTile(data.color),
+              child: Icon(data.icon, color: data.color, size: 18),
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -1267,4 +1495,32 @@ class _EmptyFleetState extends StatelessWidget {
 
 double _parseDouble(String value) {
   return double.tryParse(value.trim().replaceAll(',', '.')) ?? 0;
+}
+
+EmployeeModel? _employeeById(List<EmployeeModel> employees, String id) {
+  for (final employee in employees) {
+    if (employee.id == id) return employee;
+  }
+  return null;
+}
+
+String _employeeDetails(EmployeeModel employee) {
+  final details = [
+    if (employee.jobTitle.trim().isNotEmpty) employee.jobTitle.trim(),
+    if (employee.sector.trim().isNotEmpty) employee.sector.trim(),
+    if (employee.email.trim().isNotEmpty) employee.email.trim(),
+  ];
+  return details.isEmpty ? 'Funcionario ativo' : details.join(' - ');
+}
+
+bool _matchesEmployeeSearch(EmployeeModel employee, String query) {
+  final searchable =
+      [
+        employee.name,
+        employee.jobTitle,
+        employee.sector,
+        employee.email,
+        employee.phone,
+      ].join(' ').toLowerCase();
+  return searchable.contains(query);
 }

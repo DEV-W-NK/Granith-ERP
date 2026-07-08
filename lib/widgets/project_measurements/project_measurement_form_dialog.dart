@@ -4,6 +4,7 @@ import 'package:project_granith/models/project_measurement_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class ProjectMeasurementFormDialog extends StatefulWidget {
   final List<Project> projects;
@@ -87,217 +88,196 @@ class _ProjectMeasurementFormDialogState
       child: Container(
         width: dialogWidth.toDouble(),
         constraints: BoxConstraints(maxHeight: size.height * 0.92),
-        decoration: BoxDecoration(
-          gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppColors.accentBlue.withValues(alpha: 0.24),
-          ),
-          boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+        decoration: AppDecorations.dialogSurface(
+          glowColor: AppColors.accentBlue,
         ),
-        child: SingleChildScrollView(
-          padding: ResponsiveLayout.pagePadding(size.width),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentBlue.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.fact_check_rounded,
-                        color: AppColors.accentBlue,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isEditing ? 'Editar medicao' : 'Nova medicao',
-                            style: const TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Registre o valor medido para atualizar o progresso estimado da obra.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              height: 1.45,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                DropdownButtonFormField<String>(
-                  initialValue: _selectedProjectId,
-                  dropdownColor: AppColors.surfaceDark,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Projeto'),
-                  items: projectItems,
-                  onChanged: (value) {
-                    setState(() => _selectedProjectId = value);
-                  },
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Selecione um projeto.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _titleController,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Titulo da medicao',
-                    hintText: 'Ex.: 1a medicao, medicao estrutural',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _responsivePair(
-                  TextFormField(
-                    controller: _grossAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(
-                      labelText: 'Valor bruto',
-                      prefixText: 'R\$ ',
-                    ),
-                    validator: (value) {
-                      final amount = _parseAmount(value);
-                      if (amount <= 0) {
-                        return 'Informe um valor bruto maior que zero.';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller: _discountAmountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(
-                      labelText: 'Descontos',
-                      prefixText: 'R\$ ',
-                    ),
-                    validator: (value) {
-                      final discount = _parseAmount(value);
-                      final gross = _parseAmount(_grossAmountController.text);
-                      if (discount < 0) {
-                        return 'Desconto invalido.';
-                      }
-                      if (discount > gross) {
-                        return 'Desconto maior que o valor bruto.';
-                      }
-                      return null;
-                    },
-                  ),
-                  compact,
-                ),
-                const SizedBox(height: 16),
-                _responsivePair(
-                  DropdownButtonFormField<ProjectMeasurementStatus>(
-                    initialValue: _selectedStatus,
-                    dropdownColor: AppColors.surfaceDark,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items:
-                        ProjectMeasurementStatus.values
-                            .map(
-                              (status) => DropdownMenuItem(
-                                value: status,
-                                child: Text(status.displayName),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedStatus = value);
-                      }
-                    },
-                  ),
-                  InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: _pickDate,
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Data da medicao',
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_today_rounded,
-                            color: AppColors.textMuted,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              DateFormat('dd/MM/yyyy').format(_measurementDate),
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  compact,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _notesController,
-                  minLines: 3,
-                  maxLines: 5,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(
-                    labelText: 'Observacoes',
-                    hintText:
-                        'Registre escopo medido, etapa executada ou pontos de atencao.',
-                  ),
-                ),
-                const SizedBox(height: 26),
-                Wrap(
-                  alignment: WrapAlignment.end,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancelar'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: _submit,
-                      icon: Icon(
-                        isEditing ? Icons.save_rounded : Icons.add_task_rounded,
-                      ),
-                      label: Text(isEditing ? 'Salvar' : 'Registrar'),
-                    ),
-                  ],
-                ),
-              ],
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            GranithDialogHeader(
+              icon: Icons.fact_check_rounded,
+              title: isEditing ? 'Editar medicao' : 'Nova medicao',
+              subtitle:
+                  'Registre valores medidos e atualize o progresso estimado da obra.',
+              accentColor: AppColors.accentBlue,
+              onClose: () => Navigator.pop(context),
             ),
-          ),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: ResponsiveLayout.pagePadding(size.width),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DropdownButtonFormField<String>(
+                        initialValue: _selectedProjectId,
+                        dropdownColor: AppColors.surfaceDark,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(labelText: 'Projeto'),
+                        items: projectItems,
+                        onChanged: (value) {
+                          setState(() => _selectedProjectId = value);
+                        },
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Selecione um projeto.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Titulo da medicao',
+                          hintText: 'Ex.: 1a medicao, medicao estrutural',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _responsivePair(
+                        TextFormField(
+                          controller: _grossAmountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Valor bruto',
+                            prefixText: 'R\$ ',
+                          ),
+                          validator: (value) {
+                            final amount = _parseAmount(value);
+                            if (amount <= 0) {
+                              return 'Informe um valor bruto maior que zero.';
+                            }
+                            return null;
+                          },
+                        ),
+                        TextFormField(
+                          controller: _discountAmountController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Descontos',
+                            prefixText: 'R\$ ',
+                          ),
+                          validator: (value) {
+                            final discount = _parseAmount(value);
+                            final gross = _parseAmount(
+                              _grossAmountController.text,
+                            );
+                            if (discount < 0) {
+                              return 'Desconto invalido.';
+                            }
+                            if (discount > gross) {
+                              return 'Desconto maior que o valor bruto.';
+                            }
+                            return null;
+                          },
+                        ),
+                        compact,
+                      ),
+                      const SizedBox(height: 16),
+                      _responsivePair(
+                        DropdownButtonFormField<ProjectMeasurementStatus>(
+                          initialValue: _selectedStatus,
+                          dropdownColor: AppColors.surfaceDark,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: const InputDecoration(
+                            labelText: 'Status',
+                          ),
+                          items:
+                              ProjectMeasurementStatus.values
+                                  .map(
+                                    (status) => DropdownMenuItem(
+                                      value: status,
+                                      child: Text(status.displayName),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _selectedStatus = value);
+                            }
+                          },
+                        ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: _pickDate,
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Data da medicao',
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today_rounded,
+                                  color: AppColors.textMuted,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    DateFormat(
+                                      'dd/MM/yyyy',
+                                    ).format(_measurementDate),
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        compact,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _notesController,
+                        minLines: 3,
+                        maxLines: 5,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: const InputDecoration(
+                          labelText: 'Observacoes',
+                          hintText:
+                              'Registre escopo medido, etapa executada ou pontos de atencao.',
+                        ),
+                      ),
+                      const SizedBox(height: 26),
+                      Wrap(
+                        alignment: WrapAlignment.end,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancelar'),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: _submit,
+                            icon: Icon(
+                              isEditing
+                                  ? Icons.save_rounded
+                                  : Icons.add_task_rounded,
+                            ),
+                            label: Text(isEditing ? 'Salvar' : 'Registrar'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

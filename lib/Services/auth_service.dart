@@ -19,6 +19,7 @@ import 'package:project_granith/services/auth_service_contract.dart';
 
 @visibleForTesting
 const String mobileOAuthRedirectTo = 'granithmobile://login-callback/';
+const String internalLoginEmailDomain = 'internal.granith.local';
 
 class AuthService implements AuthServiceContract {
   SupabaseClient get _client => AppSupabase.client;
@@ -201,6 +202,48 @@ class AuthService implements AuthServiceContract {
       throw const AppAuthException(
         code: 'email_sign_in_failed',
         message: 'Nao foi possivel entrar com e-mail e senha.',
+      );
+    }
+  }
+
+  @override
+  Future<void> signInWithUsernamePassword({
+    required String username,
+    required String password,
+  }) async {
+    final normalizedUsername = normalizeInternalUsername(username);
+    final validationError = validateInternalUsername(normalizedUsername);
+    if (validationError != null) {
+      throw AppAuthException(
+        code: 'invalid_username',
+        message: validationError,
+      );
+    }
+
+    try {
+      final response = await _client.auth.signInWithPassword(
+        email: internalLoginEmailForUsername(normalizedUsername),
+        password: password,
+      );
+
+      final user = response.user;
+      if (user != null) {
+        await _checkAndSetupUser(user);
+      }
+    } on AuthException catch (error) {
+      throw AppAuthException(
+        code: error.code ?? 'username_sign_in_failed',
+        message: _mapAuthError(
+          error,
+          fallbackMessage: 'Nao foi possivel entrar com usuario e senha.',
+        ),
+      );
+    } on AppAuthException {
+      rethrow;
+    } catch (_) {
+      throw const AppAuthException(
+        code: 'username_sign_in_failed',
+        message: 'Nao foi possivel entrar com usuario e senha.',
       );
     }
   }
@@ -463,7 +506,7 @@ class AuthService implements AuthServiceContract {
   String _mapAuthError(AuthException error, {required String fallbackMessage}) {
     switch (error.code) {
       case 'invalid_credentials':
-        return 'E-mail ou senha invalidos.';
+        return 'Usuario/e-mail ou senha invalidos.';
       case 'email_not_confirmed':
         return 'Esse e-mail ainda nao confirmou o acesso. Use o link enviado ou solicite um novo convite.';
       case 'user_not_found':
@@ -479,6 +522,38 @@ class AuthService implements AuthServiceContract {
         return error.message.isNotEmpty ? error.message : fallbackMessage;
     }
   }
+}
+
+String normalizeInternalUsername(String value) {
+  return value.trim().toLowerCase();
+}
+
+String? validateInternalUsername(String value) {
+  final normalized = normalizeInternalUsername(value);
+  if (normalized.isEmpty) {
+    return 'Informe o usuario para prosseguir.';
+  }
+  if (normalized.length < 3 || normalized.length > 32) {
+    return 'O usuario precisa ter entre 3 e 32 caracteres.';
+  }
+  if (!RegExp(r'^[a-z0-9][a-z0-9._-]*[a-z0-9]$').hasMatch(normalized)) {
+    return 'Use apenas letras, numeros, ponto, hifen ou sublinhado, sem espacos.';
+  }
+  if (normalized.contains('..') ||
+      normalized.contains('__') ||
+      normalized.contains('--')) {
+    return 'O usuario nao pode ter separadores repetidos.';
+  }
+  return null;
+}
+
+String internalLoginEmailForUsername(String username) {
+  final normalized = normalizeInternalUsername(username);
+  final validationError = validateInternalUsername(normalized);
+  if (validationError != null) {
+    throw AppAuthException(code: 'invalid_username', message: validationError);
+  }
+  return '$normalized@$internalLoginEmailDomain';
 }
 
 @visibleForTesting

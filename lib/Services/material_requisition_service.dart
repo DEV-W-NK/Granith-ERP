@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/models/requisition_model.dart';
 import 'package:project_granith/models/supplier_model.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 import 'package:project_granith/services/purchase_service.dart';
 
 class MaterialRequisitionService {
@@ -44,7 +48,10 @@ class MaterialRequisitionService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
+    return id;
   }
 
   Future<void> updateRequisition(MaterialRequisitionModel req) async {
@@ -52,10 +59,13 @@ class MaterialRequisitionService {
         .from(_table)
         .update(DbValue.normalizeMap(req.toMap()))
         .eq('id', req.id);
+    _notifyChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> deleteRequisition(String id) async {
     await AppSupabase.client.from(_table).delete().eq('id', id);
+    _notifyChanged();
   }
 
   Future<void> approve({
@@ -73,6 +83,8 @@ class MaterialRequisitionService {
           'rejectionReason': null,
         })
         .eq('id', requisition.id);
+    _notifyChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> reject({
@@ -95,6 +107,8 @@ class MaterialRequisitionService {
           'rejectionReason': reason.trim(),
         })
         .eq('id', requisition.id);
+    _notifyChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<List<String>> convertToPurchase({
@@ -151,6 +165,8 @@ class MaterialRequisitionService {
         })
         .eq('id', requisition.id);
 
+    _notifyChanged(extraScopes: const [AppDataRefreshBus.purchases]);
+    unawaited(MobilePushDispatchService.dispatchPending());
     return purchaseIds;
   }
 
@@ -162,5 +178,12 @@ class MaterialRequisitionService {
 
   MaterialRequisitionModel _rowToRequisition(Map<String, dynamic> row) {
     return MaterialRequisitionModel.fromMap(row, row['id'] as String? ?? '');
+  }
+
+  void _notifyChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.materialRequisitions, ...extraScopes],
+      source: 'MaterialRequisitionService',
+    );
   }
 }

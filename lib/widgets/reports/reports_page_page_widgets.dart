@@ -39,6 +39,7 @@ class _ReportsPageViewState extends State<ReportsPageView> {
       builder: (context, controller, _) {
         final width = MediaQuery.sizeOf(context).width;
         final padding = ResponsiveLayout.pagePadding(width);
+        final gap = ResponsiveLayout.gap(width);
         final report = controller.dreReport;
 
         return Scaffold(
@@ -51,19 +52,6 @@ class _ReportsPageViewState extends State<ReportsPageView> {
                     child: CircularProgressIndicator(
                       color: AppColors.accentGold,
                     ),
-                  );
-                }
-
-                final canUseOneScreen =
-                    report != null &&
-                    constraints.maxWidth >= 1600 &&
-                    constraints.maxHeight >= 900;
-
-                if (canUseOneScreen) {
-                  return _OneScreenDashboard(
-                    controller: controller,
-                    report: report,
-                    padding: padding,
                   );
                 }
 
@@ -84,7 +72,10 @@ class _ReportsPageViewState extends State<ReportsPageView> {
                         ),
                         const SizedBox(height: 18),
                         if (controller.error != null)
-                          _ErrorBanner(message: controller.error!),
+                          _ErrorBanner(
+                            message: controller.error!,
+                            compact: false,
+                          ),
                         if (report == null) ...[
                           const SizedBox(height: 80),
                           const Center(
@@ -97,21 +88,11 @@ class _ReportsPageViewState extends State<ReportsPageView> {
                             ),
                           ),
                         ] else ...[
-                          _ExecutiveSignal(report: report),
+                          _ExecutiveSignal(report: report, compact: false),
                           const SizedBox(height: 16),
-                          _KpiGrid(report: report),
-                          const SizedBox(height: 18),
-                          _ResponsivePair(
-                            left: _DreTable(report: report),
-                            right: _InsightPanel(report: report),
-                          ),
-                          const SizedBox(height: 18),
-                          _ResponsivePair(
-                            left: _ExpenseBreakdown(report: report),
-                            right: _CompanyContextPanel(report: report),
-                          ),
-                          const SizedBox(height: 18),
-                          _CashRiskPanel(report: report),
+                          _KpiGrid(report: report, compact: false),
+                          SizedBox(height: gap),
+                          _DreWorkspace(report: report, gap: gap),
                         ],
                       ],
                     ),
@@ -126,243 +107,98 @@ class _ReportsPageViewState extends State<ReportsPageView> {
   }
 }
 
-class _OneScreenDashboard extends StatelessWidget {
-  final ReportsController controller;
+class _DreWorkspace extends StatelessWidget {
   final DreExecutiveReport report;
-  final EdgeInsets padding;
+  final double gap;
 
-  const _OneScreenDashboard({
-    required this.controller,
-    required this.report,
-    required this.padding,
-  });
+  const _DreWorkspace({required this.report, required this.gap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: padding.copyWith(
-        top: padding.top.clamp(8, 12).toDouble(),
-        bottom: padding.bottom.clamp(10, 16).toDouble(),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (controller.error != null) ...[
-            _ErrorBanner(message: controller.error!, compact: true),
-            const SizedBox(height: 8),
-          ],
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 1220;
+        final medium = constraints.maxWidth >= 900;
+
+        if (wide) {
+          return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 6,
-                child: _ExecutiveSignal(report: report, compact: true),
+                flex: 13,
+                child: Column(
+                  children: [
+                    _DreTable(report: report, compact: false),
+                    SizedBox(height: gap),
+                    _CashRiskPanel(report: report, compact: false),
+                  ],
+                ),
               ),
-              const SizedBox(width: 10),
+              SizedBox(width: gap),
               Expanded(
-                flex: 12,
-                child: _KpiGrid(report: report, compact: true),
-              ),
-              const SizedBox(width: 10),
-              _CompactReportActions(
-                controller: controller,
-                report: report,
-                onReload: controller.loadDreReport,
+                flex: 8,
+                child: Column(
+                  children: [
+                    _InsightPanel(report: report, compact: false),
+                    SizedBox(height: gap),
+                    _ExpenseBreakdown(report: report, compact: false),
+                    SizedBox(height: gap),
+                    _CompanyContextPanel(report: report, compact: false),
+                  ],
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                const gap = 12.0;
-                final dreWidth = (constraints.maxWidth * 0.37).clamp(
-                  620.0,
-                  720.0,
-                );
-                final expenseWidth = (constraints.maxWidth * 0.30).clamp(
-                  440.0,
-                  560.0,
-                );
+          );
+        }
 
-                return Column(
-                  children: [
-                    Expanded(
-                      flex: 7,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          SizedBox(
-                            width: dreWidth,
-                            child: _DreTable(report: report, compact: true),
-                          ),
-                          const SizedBox(width: gap),
-                          Expanded(
-                            child: _InsightPanel(report: report, compact: true),
-                          ),
-                          const SizedBox(width: gap),
-                          SizedBox(
-                            width: expenseWidth,
-                            child: _ExpenseBreakdown(
-                              report: report,
-                              compact: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: gap),
-                    Expanded(
-                      flex: 3,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            flex: 7,
-                            child: _CompanyContextPanel(
-                              report: report,
-                              compact: true,
-                            ),
-                          ),
-                          const SizedBox(width: gap),
-                          Expanded(
-                            flex: 5,
-                            child: _CashRiskPanel(
-                              report: report,
-                              compact: true,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompactReportActions extends StatelessWidget {
-  final ReportsController controller;
-  final DreExecutiveReport report;
-  final Future<void> Function() onReload;
-
-  const _CompactReportActions({
-    required this.controller,
-    required this.report,
-    required this.onReload,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _Panel(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 138),
-            child: Text(
-              report.periodLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
+        if (medium) {
+          return Column(
+            children: [
+              _DreTable(report: report, compact: false),
+              SizedBox(height: gap),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _InsightPanel(report: report, compact: false),
+                  ),
+                  SizedBox(width: gap),
+                  Expanded(
+                    child: _ExpenseBreakdown(report: report, compact: false),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(width: 6),
-          _CompactActionButton(
-            tooltip: 'Mes atual',
-            icon: Icons.calendar_view_month_rounded,
-            selected: _controllerPeriodIsCurrentMonth(controller),
-            onPressed: () {
-              controller.setCurrentMonth();
-              controller.loadDreReport();
-            },
-          ),
-          _CompactActionButton(
-            tooltip: 'Ano atual',
-            icon: Icons.date_range_rounded,
-            selected: _controllerPeriodIsCurrentYear(controller),
-            onPressed: () {
-              controller.setCurrentYear();
-              controller.loadDreReport();
-            },
-          ),
-          _CompactActionButton(
-            tooltip: 'Historico completo',
-            icon: Icons.all_inclusive_rounded,
-            selected:
-                controller.periodFrom == null && controller.periodTo == null,
-            onPressed: () {
-              controller.clearPeriod();
-              controller.loadDreReport();
-            },
-          ),
-          _CompactActionButton(
-            tooltip: 'Atualizar DRE',
-            icon: Icons.refresh_rounded,
-            onPressed: onReload,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompactActionButton extends StatelessWidget {
-  final String tooltip;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onPressed;
-
-  const _CompactActionButton({
-    required this.tooltip,
-    required this.icon,
-    required this.onPressed,
-    this.selected = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected ? AppColors.primaryDark : AppColors.textMuted;
-    final background =
-        selected
-            ? AppColors.accentGold
-            : AppColors.surfaceElevated.withValues(alpha: 0.58);
-
-    return Tooltip(
-      message: tooltip,
-      child: Padding(
-        padding: const EdgeInsets.only(left: 3),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(7),
-          onTap: onPressed,
-          child: Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: background,
-              borderRadius: BorderRadius.circular(7),
-              border: Border.all(
-                color:
-                    selected
-                        ? AppColors.accentGold.withValues(alpha: 0.70)
-                        : AppColors.borderColor.withValues(alpha: 0.44),
+              SizedBox(height: gap),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _CompanyContextPanel(report: report, compact: false),
+                  ),
+                  SizedBox(width: gap),
+                  Expanded(
+                    child: _CashRiskPanel(report: report, compact: false),
+                  ),
+                ],
               ),
-            ),
-            child: Icon(icon, color: foreground, size: 15),
-          ),
-        ),
-      ),
+            ],
+          );
+        }
+
+        return Column(
+          children: [
+            _DreTable(report: report, compact: false),
+            SizedBox(height: gap),
+            _InsightPanel(report: report, compact: false),
+            SizedBox(height: gap),
+            _ExpenseBreakdown(report: report, compact: false),
+            SizedBox(height: gap),
+            _CompanyContextPanel(report: report, compact: false),
+            SizedBox(height: gap),
+            _CashRiskPanel(report: report, compact: false),
+          ],
+        );
+      },
     );
   }
 }
@@ -404,6 +240,42 @@ class _Header extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (report != null) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _HeaderSnapshotChip(
+                    icon: Icons.payments_rounded,
+                    label: 'Receita liquida',
+                    value: _formatCurrency(report!.netRevenue),
+                    color: AppColors.accentBlue,
+                  ),
+                  _HeaderSnapshotChip(
+                    icon:
+                        report!.operatingResult >= 0
+                            ? Icons.trending_up_rounded
+                            : Icons.trending_down_rounded,
+                    label: 'Resultado',
+                    value: _formatCurrency(report!.operatingResult),
+                    color:
+                        report!.operatingResult >= 0
+                            ? AppColors.accentGreen
+                            : AppColors.accentRed,
+                  ),
+                  _HeaderSnapshotChip(
+                    icon: Icons.percent_rounded,
+                    label: 'Margem',
+                    value: _formatPercent(report!.operatingMargin),
+                    color:
+                        report!.operatingMargin >= 0.12
+                            ? AppColors.accentGreen
+                            : AppColors.orange,
+                  ),
+                ],
+              ),
+            ],
           ],
         );
 
@@ -528,6 +400,66 @@ class _PeriodButton extends StatelessWidget {
   }
 }
 
+class _HeaderSnapshotChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _HeaderSnapshotChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 320),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 15),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ExecutiveSignal extends StatelessWidget {
   final DreExecutiveReport report;
   final bool compact;
@@ -543,15 +475,25 @@ class _ExecutiveSignal extends StatelessWidget {
             : 'DRE carregado. Mantenha os lancamentos por origem e projeto.';
     final situationLine =
         'Resultado ${_formatCurrency(report.operatingResult)} | Margem ${_formatPercent(report.operatingMargin)} | ${report.pendingIncome >= report.pendingExpense ? 'caixa coberto' : 'caixa pressionado'}';
+    final cashCoverageText =
+        report.pendingExpense <= 0
+            ? 'Sem pressao'
+            : _formatPercent(report.cashCoverage);
+    final cashCoverageColor =
+        report.pendingExpense <= 0 ||
+                report.pendingIncome >= report.pendingExpense
+            ? AppColors.accentGreen
+            : AppColors.accentRed;
 
     return _Panel(
-      padding: EdgeInsets.all(compact ? 11 : 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: compact ? 40 : 44,
-            height: compact ? 40 : 44,
+      accent: signal.color,
+      padding: EdgeInsets.all(compact ? 11 : 18),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final narrow = constraints.maxWidth < (compact ? 540 : 700);
+          final signalTile = Container(
+            width: compact ? 42 : 52,
+            height: compact ? 42 : 52,
             decoration: BoxDecoration(
               color: signal.color.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(8),
@@ -560,62 +502,122 @@ class _ExecutiveSignal extends StatelessWidget {
             child: Icon(
               signal.icon,
               color: signal.color,
-              size: compact ? 21 : 22,
+              size: compact ? 22 : 26,
             ),
-          ),
-          SizedBox(width: compact ? 12 : 14),
-          Expanded(
-            child: Column(
+          );
+          final headline = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 10,
+                runSpacing: 6,
+                children: [
+                  Text(
+                    signal.label,
+                    style: TextStyle(
+                      color: signal.color,
+                      fontSize: compact ? 15.5 : 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  _MiniPill(
+                    label:
+                        'Margem operacional ${_formatPercent(report.operatingMargin)}',
+                    color: signal.color,
+                  ),
+                ],
+              ),
+              SizedBox(height: compact ? 6 : 7),
+              Text(
+                situationLine,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: compact ? 12.4 : 14,
+                  height: 1.24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: compact ? 3 : 6),
+              Text(
+                mainInsight,
+                maxLines: compact ? 2 : null,
+                overflow: compact ? TextOverflow.ellipsis : null,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: compact ? 12.4 : 14,
+                  height: compact ? 1.28 : 1.35,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          );
+          final stats = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _SignalStat(
+                label: 'Lucro bruto',
+                value: _formatPercent(report.grossMargin),
+                color:
+                    report.grossMargin >= 0.22
+                        ? AppColors.accentGreen
+                        : AppColors.orange,
+                compact: compact,
+              ),
+              _SignalStat(
+                label: 'Custos diretos',
+                value: _formatPercent(report.directCostRatio),
+                color: AppColors.accentGold,
+                compact: compact,
+              ),
+              _SignalStat(
+                label: 'Caixa',
+                value: cashCoverageText,
+                color: cashCoverageColor,
+                compact: compact,
+              ),
+            ],
+          );
+
+          if (narrow) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 10,
-                  runSpacing: 6,
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      signal.label,
-                      style: TextStyle(
-                        color: signal.color,
-                        fontSize: compact ? 15.5 : 15,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    _MiniPill(
-                      label:
-                          'Margem operacional ${_formatPercent(report.operatingMargin)}',
-                      color: signal.color,
-                    ),
+                    signalTile,
+                    SizedBox(width: compact ? 12 : 14),
+                    Expanded(child: headline),
                   ],
                 ),
-                SizedBox(height: compact ? 6 : 6),
-                Text(
-                  situationLine,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: compact ? 12.4 : 13.2,
-                    height: 1.24,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                SizedBox(height: compact ? 3 : 6),
-                Text(
-                  mainInsight,
-                  maxLines: compact ? 2 : null,
-                  overflow: compact ? TextOverflow.ellipsis : null,
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: compact ? 12.4 : 14,
-                    height: compact ? 1.28 : 1.35,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                SizedBox(height: compact ? 8 : 12),
+                stats,
               ],
-            ),
-          ),
-        ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              signalTile,
+              SizedBox(width: compact ? 12 : 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    headline,
+                    SizedBox(height: compact ? 8 : 12),
+                    stats,
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -647,6 +649,76 @@ class _ExecutiveSignal extends StatelessWidget {
       label: 'Operacao saudavel',
       icon: Icons.trending_up_rounded,
       color: AppColors.green,
+    );
+  }
+}
+
+class _SignalStat extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  final bool compact;
+
+  const _SignalStat({
+    required this.label,
+    required this.value,
+    required this.color,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minWidth: compact ? 100 : 122),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 9 : 11,
+        vertical: compact ? 7 : 8,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: compact ? 10.2 : 10.8,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 7,
+                height: 7,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: compact ? 12 : 12.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -757,6 +829,7 @@ class _MetricCard extends StatelessWidget {
     return SizedBox(
       width: width,
       child: _Panel(
+        accent: color,
         minHeight: compact ? 0 : 132,
         padding: EdgeInsets.all(compact ? 10 : 16),
         child: Column(
@@ -817,32 +890,6 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _ResponsivePair extends StatelessWidget {
-  final Widget left;
-  final Widget right;
-
-  const _ResponsivePair({required this.left, required this.right});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 960) {
-          return Column(children: [left, const SizedBox(height: 18), right]);
-        }
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(flex: 7, child: left),
-            const SizedBox(width: 18),
-            Expanded(flex: 5, child: right),
-          ],
-        );
-      },
-    );
-  }
-}
-
 class _DreTable extends StatelessWidget {
   final DreExecutiveReport report;
   final bool compact;
@@ -868,20 +915,343 @@ class _DreTable extends StatelessWidget {
             compact: compact,
           ),
           SizedBox(height: compact ? 9 : 14),
+          _MarginBridge(report: report, compact: compact),
+          SizedBox(height: compact ? 9 : 14),
+          _DreColumnHeader(compact: compact),
           if (compact)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Column(children: rows),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(8),
+                ),
+                child: SingleChildScrollView(child: Column(children: rows)),
+              ),
             )
           else
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(8),
+              ),
               child: Column(children: rows),
             ),
         ],
       ),
     );
   }
+}
+
+class _MarginBridge extends StatelessWidget {
+  final DreExecutiveReport report;
+  final bool compact;
+
+  const _MarginBridge({required this.report, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    final grossBase =
+        report.grossRevenue.abs() < 0.01
+            ? report.netRevenue.abs()
+            : report.grossRevenue.abs();
+    final netBase =
+        report.netRevenue.abs() < 0.01 ? grossBase : report.netRevenue.abs();
+    final resultColor =
+        report.operatingResult >= 0
+            ? AppColors.accentGreen
+            : AppColors.accentRed;
+    final steps = [
+      _BridgeStep(
+        label: 'Bruta',
+        value: report.grossRevenue,
+        ratio: _safeRatio(report.grossRevenue, grossBase),
+        color: AppColors.accentBlue,
+        icon: Icons.south_west_rounded,
+      ),
+      _BridgeStep(
+        label: 'Impostos',
+        value: -report.taxDeductions,
+        ratio: _safeRatio(report.taxDeductions, grossBase),
+        color: AppColors.orange,
+        icon: Icons.remove_circle_outline_rounded,
+      ),
+      _BridgeStep(
+        label: 'Liquida',
+        value: report.netRevenue,
+        ratio: _safeRatio(report.netRevenue, grossBase),
+        color: AppColors.auraBlue,
+        icon: Icons.check_circle_outline_rounded,
+      ),
+      _BridgeStep(
+        label: 'Custos',
+        value: -report.directCosts,
+        ratio: _safeRatio(report.directCosts, netBase),
+        color: AppColors.accentGold,
+        icon: Icons.foundation_rounded,
+      ),
+      _BridgeStep(
+        label: 'Lucro bruto',
+        value: report.grossProfit,
+        ratio: _safeRatio(report.grossProfit, netBase),
+        color:
+            report.grossProfit >= 0 ? AppColors.accentGreen : AppColors.orange,
+        icon: Icons.stacked_line_chart_rounded,
+      ),
+      _BridgeStep(
+        label: 'OPEX',
+        value: -report.operationalExpenses,
+        ratio: _safeRatio(report.operationalExpenses, netBase),
+        color: AppColors.purple,
+        icon: Icons.domain_rounded,
+      ),
+      _BridgeStep(
+        label: 'Resultado',
+        value: report.operatingResult,
+        ratio: _safeRatio(report.operatingResult, netBase),
+        color: resultColor,
+        icon:
+            report.operatingResult >= 0
+                ? Icons.trending_up_rounded
+                : Icons.trending_down_rounded,
+      ),
+    ];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(compact ? 9 : 12),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: resultColor,
+        radius: 8,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.account_tree_outlined,
+                color: resultColor,
+                size: compact ? 15 : 17,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'Ponte de margem',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: compact ? 12.2 : 13,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              Text(
+                'base receita liquida',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: compact ? 10.2 : 10.8,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: compact ? 8 : 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final columns =
+                  compact
+                      ? constraints.maxWidth >= 620
+                          ? 4
+                          : 2
+                      : constraints.maxWidth >= 860
+                      ? 4
+                      : 2;
+              final spacing = compact ? 7.0 : 9.0;
+              final itemWidth =
+                  (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children:
+                    steps
+                        .map(
+                          (step) => _BridgeNode(
+                            step: step,
+                            width: itemWidth,
+                            compact: compact,
+                          ),
+                        )
+                        .toList(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BridgeStep {
+  final String label;
+  final double value;
+  final double ratio;
+  final Color color;
+  final IconData icon;
+
+  const _BridgeStep({
+    required this.label,
+    required this.value,
+    required this.ratio,
+    required this.color,
+    required this.icon,
+  });
+}
+
+class _BridgeNode extends StatelessWidget {
+  final _BridgeStep step;
+  final double width;
+  final bool compact;
+
+  const _BridgeNode({
+    required this.step,
+    required this.width,
+    required this.compact,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = step.ratio.clamp(0.0, 1.0).toDouble();
+
+    return SizedBox(
+      width: width,
+      child: Container(
+        padding: EdgeInsets.all(compact ? 8 : 10),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundMid.withValues(alpha: 0.52),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: step.color.withValues(alpha: 0.22)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(step.icon, color: step.color, size: compact ? 14 : 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    step.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: compact ? 10.6 : 11.4,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: compact ? 5 : 6),
+            Text(
+              _formatCurrency(step.value),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    step.value < 0
+                        ? AppColors.accentRed
+                        : AppColors.textPrimary,
+                fontSize: compact ? 11.8 : 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            SizedBox(height: compact ? 5 : 7),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                minHeight: compact ? 4 : 5,
+                value: progress,
+                color: step.color,
+                backgroundColor: AppColors.surfaceElevated.withValues(
+                  alpha: 0.54,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formatPercent(step.ratio),
+              style: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: compact ? 9.8 : 10.4,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DreColumnHeader extends StatelessWidget {
+  final bool compact;
+
+  const _DreColumnHeader({required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 7 : 9,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark.withValues(alpha: 0.42),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.borderColor.withValues(alpha: 0.34),
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 6,
+            child: Text('Linha', style: _dreHeaderStyle(compact)),
+          ),
+          SizedBox(width: compact ? 6 : 10),
+          SizedBox(
+            width: compact ? 58 : 78,
+            child: Text(
+              '% base',
+              textAlign: TextAlign.right,
+              style: _dreHeaderStyle(compact),
+            ),
+          ),
+          SizedBox(width: compact ? 6 : 10),
+          SizedBox(
+            width: compact ? 128 : 160,
+            child: Text(
+              'Valor',
+              textAlign: TextAlign.right,
+              style: _dreHeaderStyle(compact),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+TextStyle _dreHeaderStyle(bool compact) {
+  return TextStyle(
+    color: AppColors.textMuted,
+    fontSize: compact ? 10.6 : 11.4,
+    fontWeight: FontWeight.w900,
+    letterSpacing: 0,
+  );
 }
 
 class _DreLineRow extends StatefulWidget {
@@ -908,16 +1278,36 @@ class _DreLineRowState extends State<_DreLineRow> {
             : line.isResult && line.value >= 0
             ? AppColors.accentGreen
             : AppColors.textPrimary;
+    final rowAccent =
+        line.isResult
+            ? color
+            : line.isSubtotal
+            ? AppColors.accentGold
+            : line.isHeader
+            ? AppColors.accentBlue
+            : AppColors.borderColor;
     final canExpand =
         compact && (line.detail != null || line.referenceValue != null);
 
     return Container(
       decoration: BoxDecoration(
-        color:
+        gradient:
             isStrong
-                ? AppColors.surfaceElevated.withValues(alpha: 0.36)
-                : AppColors.surfaceDark.withValues(alpha: 0.22),
+                ? LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    rowAccent.withValues(alpha: line.isResult ? 0.16 : 0.10),
+                    AppColors.surfaceElevated.withValues(alpha: 0.34),
+                  ],
+                )
+                : null,
+        color: isStrong ? null : AppColors.surfaceDark.withValues(alpha: 0.22),
         border: Border(
+          left: BorderSide(
+            color: rowAccent.withValues(alpha: isStrong ? 0.70 : 0.22),
+            width: isStrong ? 3 : 1,
+          ),
           bottom: BorderSide(
             color: AppColors.borderColor.withValues(alpha: 0.26),
           ),
@@ -1842,11 +2232,13 @@ class _Panel extends StatelessWidget {
   final Widget child;
   final double? minHeight;
   final EdgeInsetsGeometry padding;
+  final Color? accent;
 
   const _Panel({
     required this.child,
     this.minHeight,
     this.padding = const EdgeInsets.all(16),
+    this.accent,
   });
 
   @override
@@ -1854,13 +2246,9 @@ class _Panel extends StatelessWidget {
     return Container(
       constraints: BoxConstraints(minHeight: minHeight ?? 0),
       padding: padding,
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-        boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+      decoration: AppDecorations.cardSurface(
+        accent: accent ?? AppColors.accentBlue,
+        radius: 12,
       ),
       child: child,
     );
@@ -2157,6 +2545,11 @@ class _BreakdownItem {
   final Color color;
 
   const _BreakdownItem(this.label, this.value, this.color);
+}
+
+double _safeRatio(double value, double base) {
+  if (base.abs() < 0.01) return 0;
+  return value.abs() / base.abs();
 }
 
 String _formatCurrency(double value) {

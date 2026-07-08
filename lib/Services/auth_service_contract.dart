@@ -11,6 +11,10 @@ abstract class AuthServiceContract {
     required String email,
     required String password,
   });
+  Future<void> signInWithUsernamePassword({
+    required String username,
+    required String password,
+  });
   Future<void> sendMagicLink({
     required String email,
     bool shouldCreateUser = false,

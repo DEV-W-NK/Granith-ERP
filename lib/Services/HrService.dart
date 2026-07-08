@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/BenefitCategoryModel.dart';
@@ -5,6 +8,7 @@ import 'package:project_granith/models/BenefitModel.dart';
 import 'package:project_granith/models/EmployeeBenefitModel.dart';
 import 'package:project_granith/models/SalaryHistoryModel.dart';
 import 'package:project_granith/models/employee_model.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 class HrService {
   static const _employeesTable = 'employees';
@@ -44,7 +48,10 @@ class HrService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyEmployeesChanged();
+    unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
+    return id;
   }
 
   Future<void> updateEmployee(EmployeeModel employee) async {
@@ -56,6 +63,8 @@ class HrService {
           ),
         )
         .eq('id', employee.id);
+    _notifyEmployeesChanged();
+    unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
   }
 
   Future<void> dismissEmployee(String employeeId, {String? updatedBy}) async {
@@ -103,6 +112,13 @@ class HrService {
           .update({'isActive': false, 'endDate': nowValue})
           .eq('id', id);
     }
+    _notifyEmployeesChanged(
+      extraScopes: const [
+        AppDataRefreshBus.teams,
+        AppDataRefreshBus.employeeBenefits,
+      ],
+    );
+    unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
   }
 
   Stream<List<SalaryHistoryModel>> watchSalaryHistory(String employeeId) {
@@ -150,6 +166,10 @@ class HrService {
           'updatedAt': DbValue.toPrimitive(now),
         })
         .eq('id', employeeId);
+    _notifyEmployeesChanged(
+      extraScopes: const [AppDataRefreshBus.salaryHistory],
+    );
+    unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
   }
 
   Stream<List<BenefitModel>> watchBenefits({bool onlyActive = false}) {
@@ -190,7 +210,9 @@ class HrService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyBenefitCategoriesChanged();
+    return id;
   }
 
   Future<void> updateBenefitCategory(BenefitCategoryModel category) async {
@@ -202,6 +224,7 @@ class HrService {
           ),
         )
         .eq('id', category.id);
+    _notifyBenefitCategoriesChanged();
   }
 
   Future<void> toggleBenefitCategory(String id, bool isActive) async {
@@ -212,6 +235,7 @@ class HrService {
           'updatedAt': DbValue.toPrimitive(DateTime.now()),
         })
         .eq('id', id);
+    _notifyBenefitCategoriesChanged();
   }
 
   Future<String> addBenefit(BenefitModel benefit) async {
@@ -222,7 +246,9 @@ class HrService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyBenefitsChanged();
+    return id;
   }
 
   Future<void> updateBenefit(BenefitModel benefit) async {
@@ -230,6 +256,7 @@ class HrService {
         .from(_benefitsTable)
         .update(DbValue.normalizeMap(benefit.toMap()))
         .eq('id', benefit.id);
+    _notifyBenefitsChanged();
   }
 
   Future<void> toggleBenefit(String id, bool isActive) async {
@@ -237,6 +264,7 @@ class HrService {
         .from(_benefitsTable)
         .update({'isActive': isActive})
         .eq('id', id);
+    _notifyBenefitsChanged();
   }
 
   Stream<List<EmployeeBenefitModel>> watchEmployeeBenefits(String employeeId) {
@@ -278,7 +306,10 @@ class HrService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyEmployeeBenefitsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
+    return id;
   }
 
   Future<void> updateEmployeeBenefit(EmployeeBenefitModel empBenefit) async {
@@ -286,6 +317,8 @@ class HrService {
         .from(_employeeBenefitsTable)
         .update(DbValue.normalizeMap(empBenefit.toMap()))
         .eq('id', empBenefit.id);
+    _notifyEmployeeBenefitsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> updateBenefitValue({
@@ -331,6 +364,8 @@ class HrService {
           }),
         )
         .eq('id', empBenefitId);
+    _notifyEmployeeBenefitsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> removeBenefitFromEmployee(String empBenefitId) async {
@@ -341,6 +376,8 @@ class HrService {
           'endDate': DbValue.toPrimitive(DateTime.now()),
         })
         .eq('id', empBenefitId);
+    _notifyEmployeeBenefitsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<double> getDailyBenefitCost(String employeeId) async {
@@ -393,5 +430,33 @@ class HrService {
   EmployeeBenefitModel _employeeBenefitFromRow(Map<dynamic, dynamic> row) {
     final data = Map<String, dynamic>.from(row);
     return EmployeeBenefitModel.fromMap(data, data['id'] as String? ?? '');
+  }
+
+  void _notifyEmployeesChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.employees, ...extraScopes],
+      source: 'HrService',
+    );
+  }
+
+  void _notifyBenefitCategoriesChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.benefitCategories],
+      source: 'HrService',
+    );
+  }
+
+  void _notifyBenefitsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.benefits],
+      source: 'HrService',
+    );
+  }
+
+  void _notifyEmployeeBenefitsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.employeeBenefits],
+      source: 'HrService',
+    );
   }
 }

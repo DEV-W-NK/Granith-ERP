@@ -25,20 +25,12 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.65),
-          width: 1,
-        ),
-        boxShadow: AppColors.glowShadows(color),
-      ),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {},
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           hoverColor: color.withValues(alpha: 0.05),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -53,21 +45,9 @@ class StatCard extends StatelessWidget {
                     // Ícone
                     Container(
                       padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            color.withValues(alpha: 0.20),
-                            color.withValues(alpha: 0.05),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                          color: color.withValues(alpha: 0.16),
-                        ),
-                        boxShadow: AppColors.auraShadows(color),
-                      ),
+                      decoration: AppDecorations.iconTile(
+                        color,
+                      ).copyWith(borderRadius: BorderRadius.circular(14)),
                       child: Icon(icon, color: color, size: 24),
                     ),
                     // Indicador de Tendência
@@ -84,7 +64,7 @@ class StatCard extends StatelessWidget {
                         color: AppColors.textPrimary,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
+                        letterSpacing: 0,
                       ),
                     ),
                     const SizedBox(height: 4),

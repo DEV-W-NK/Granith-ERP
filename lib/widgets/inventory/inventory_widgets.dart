@@ -19,22 +19,17 @@ class InventoryItemCard extends StatelessWidget {
     final isLowStock = item.quantity <= item.minQuantity;
 
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border:
-            isLowStock
-                ? Border.all(color: AppColors.accentRed.withOpacity(0.5))
-                : null,
+      decoration: AppDecorations.cardSurface(
+        accent: isLowStock ? AppColors.accentRed : AppColors.accentBlue,
+        radius: 14,
       ),
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primaryDark,
-              borderRadius: BorderRadius.circular(10),
+            decoration: AppDecorations.iconTile(
+              isLowStock ? AppColors.accentRed : AppColors.accentBlue,
             ),
             child: Icon(
               Icons.inventory_2_rounded,

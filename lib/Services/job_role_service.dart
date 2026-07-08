@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/job_role_model.dart';
@@ -34,9 +35,18 @@ class JobRoleService {
           .update(DbValue.normalizeMap(role.toMap()))
           .eq('id', role.id);
     }
+    _notifyJobRolesChanged();
   }
 
   Future<void> deleteJobRole(String id) async {
     await AppSupabase.client.from(_collection).delete().eq('id', id);
+    _notifyJobRolesChanged();
+  }
+
+  void _notifyJobRolesChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.jobRoles],
+      source: 'JobRoleService',
+    );
   }
 }

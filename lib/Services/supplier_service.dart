@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/supplier_model.dart';
@@ -210,12 +211,14 @@ class SupplierService {
               .select('id')
               .single();
 
-      return supplier.copyWith(
+      final created = supplier.copyWith(
         id: row['id'] as String,
         cnpj: cleanCnpj,
         createdAt: now,
         updatedAt: now,
       );
+      _notifyChanged();
+      return created;
     } catch (e) {
       throw Exception('Erro ao criar fornecedor: $e');
     }
@@ -240,6 +243,7 @@ class SupplierService {
           .update(DbValue.normalizeMap(data))
           .eq('id', supplier.id);
 
+      _notifyChanged();
       return updated;
     } catch (e) {
       throw Exception('Erro ao atualizar fornecedor: $e');
@@ -249,6 +253,7 @@ class SupplierService {
   Future<void> deleteSupplier(String id) async {
     try {
       await AppSupabase.client.from(_table).delete().eq('id', id);
+      _notifyChanged();
     } catch (e) {
       throw Exception('Erro ao deletar fornecedor: $e');
     }
@@ -304,6 +309,7 @@ class SupplierService {
       if (supplier == null) {
         throw Exception('Fornecedor nao encontrado');
       }
+      _notifyChanged();
       return supplier.copyWith(isActive: isActive, updatedAt: DateTime.now());
     } catch (e) {
       throw Exception('Erro ao alterar status: $e');
@@ -447,6 +453,13 @@ class SupplierService {
 
   void dispose() {
     _httpClient.close();
+  }
+
+  void _notifyChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.suppliers],
+      source: 'SupplierService',
+    );
   }
 }
 

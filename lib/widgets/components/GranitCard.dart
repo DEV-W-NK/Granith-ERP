@@ -24,6 +24,8 @@ class GranitCard extends StatelessWidget {
   final Border? customBorder;
   final BorderRadius? borderRadius;
   final VoidCallback? onTap;
+  final Color? accentColor;
+  final bool emphasized;
 
   const GranitCard({
     super.key,
@@ -33,19 +35,20 @@ class GranitCard extends StatelessWidget {
     this.customBorder,
     this.borderRadius,
     this.onTap,
+    this.accentColor,
+    this.emphasized = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final radius = borderRadius ?? BorderRadius.circular(16);
-    final decoration = BoxDecoration(
-      gradient: AppColors.cardGradient,
+    final decoration = AppDecorations.cardSurface(
+      accent: accentColor,
+      emphasized: emphasized,
+    ).copyWith(
       color: backgroundColor ?? AppColors.surfaceDark.withValues(alpha: 0.76),
       borderRadius: radius,
-      border:
-          customBorder ??
-          Border.all(color: AppColors.borderColor.withValues(alpha: 0.66)),
-      boxShadow: AppColors.glowShadows(),
+      border: customBorder,
     );
 
     if (onTap != null) {

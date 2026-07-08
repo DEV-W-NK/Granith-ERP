@@ -41,15 +41,9 @@ class FinancialStatCard extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             width: width,
             padding: EdgeInsets.all(compact ? 16 : 20),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color:
-                    onTap != null
-                        ? color.withOpacity(0.15)
-                        : Colors.white.withOpacity(0.05),
-              ),
+            decoration: AppDecorations.statCardSurface(
+              color,
+              radius: compact ? 14 : 16,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +51,12 @@ class FinancialStatCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Icon(icon, color: color, size: 16),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: AppDecorations.iconTile(color),
+                      child: Icon(icon, color: color, size: 15),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

@@ -28,29 +28,34 @@ class BudgetTypeCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
-      color: AppColors.surfaceDark,
+      color: Colors.transparent,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.42)),
-      ),
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compactList = isListView && constraints.maxWidth < 560;
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: AppDecorations.cardSurface(
+            accent: color,
+            emphasized: !isListView,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compactList = isListView && constraints.maxWidth < 560;
 
-            return Padding(
-              padding: const EdgeInsets.all(14),
-              child:
-                  isListView
-                      ? compactList
-                          ? _buildCompactListLayout(color, icon)
-                          : _buildListLayout(color, icon)
-                      : _buildGridLayout(color, icon),
-            );
-          },
+              return Padding(
+                padding: const EdgeInsets.all(14),
+                child:
+                    isListView
+                        ? compactList
+                            ? _buildCompactListLayout(color, icon)
+                            : _buildListLayout(color, icon)
+                        : _buildGridLayout(color, icon),
+              );
+            },
+          ),
         ),
       ),
     );

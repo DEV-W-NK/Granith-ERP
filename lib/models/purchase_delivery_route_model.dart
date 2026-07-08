@@ -90,25 +90,41 @@ class PurchaseDeliveryRoute {
 
   factory PurchaseDeliveryRoute.fromMap(Map<String, dynamic> map) {
     return PurchaseDeliveryRoute(
-      id: map['id'] as String? ?? '',
-      name: map['name'] as String? ?? '',
-      driverId: map['driverId'] as String?,
-      driverName: map['driverName'] as String? ?? '',
+      id: _readString(map, 'id'),
+      name: _readString(map, 'name'),
+      driverId: _readNullableString(map, 'driverId', 'driver_id'),
+      driverName: _readString(map, 'driverName', 'driver_name'),
       status: PurchaseRouteStatus.values.firstWhere(
-        (status) => status.name == map['status'],
+        (status) => status.name == _readString(map, 'status'),
         orElse: () => PurchaseRouteStatus.planned,
       ),
-      scheduledDate: DbValue.toDateTime(map['scheduledDate']),
-      startedAt: DbValue.toDateTime(map['startedAt']),
-      completedAt: DbValue.toDateTime(map['completedAt']),
-      estimatedDistanceKm: (map['estimatedDistanceKm'] as num? ?? 0).toDouble(),
-      actualDistanceKm: (map['actualDistanceKm'] as num? ?? 0).toDouble(),
-      kmRate: (map['kmRate'] as num? ?? 0).toDouble(),
-      bonusValue: (map['bonusValue'] as num? ?? 0).toDouble(),
-      notes: map['notes'] as String? ?? '',
-      createdBy: map['createdBy'] as String?,
-      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
-      updatedAt: DbValue.toDateTime(map['updatedAt']) ?? DateTime.now(),
+      scheduledDate: DbValue.toDateTime(
+        _read(map, 'scheduledDate', 'scheduled_date'),
+      ),
+      startedAt: DbValue.toDateTime(_read(map, 'startedAt', 'started_at')),
+      completedAt: DbValue.toDateTime(
+        _read(map, 'completedAt', 'completed_at'),
+      ),
+      estimatedDistanceKm: _readDouble(
+        map,
+        'estimatedDistanceKm',
+        'estimated_distance_km',
+      ),
+      actualDistanceKm: _readDouble(
+        map,
+        'actualDistanceKm',
+        'actual_distance_km',
+      ),
+      kmRate: _readDouble(map, 'kmRate', 'km_rate'),
+      bonusValue: _readDouble(map, 'bonusValue', 'bonus_value'),
+      notes: _readString(map, 'notes'),
+      createdBy: _readNullableString(map, 'createdBy', 'created_by'),
+      createdAt:
+          DbValue.toDateTime(_read(map, 'createdAt', 'created_at')) ??
+          DateTime.now(),
+      updatedAt:
+          DbValue.toDateTime(_read(map, 'updatedAt', 'updated_at')) ??
+          DateTime.now(),
     );
   }
 
@@ -165,24 +181,28 @@ class PurchaseDeliveryRouteStop {
 
   factory PurchaseDeliveryRouteStop.fromMap(Map<String, dynamic> map) {
     return PurchaseDeliveryRouteStop(
-      id: map['id'] as String? ?? '',
-      routeId: map['routeId'] as String? ?? '',
-      purchaseId: map['purchaseId'] as String? ?? '',
+      id: _readString(map, 'id'),
+      routeId: _readString(map, 'routeId', 'route_id'),
+      purchaseId: _readString(map, 'purchaseId', 'purchase_id'),
       stopType: PurchaseRouteStopType.values.firstWhere(
-        (type) => type.name == map['stopType'],
+        (type) => type.name == _readString(map, 'stopType', 'stop_type'),
         orElse: () => PurchaseRouteStopType.delivery,
       ),
-      sequence: (map['sequence'] as num? ?? 0).toInt(),
-      address: map['address'] as String? ?? '',
-      supplierName: map['supplierName'] as String? ?? '',
-      projectName: map['projectName'] as String? ?? '',
+      sequence: _readInt(map, 'sequence'),
+      address: _readString(map, 'address'),
+      supplierName: _readString(map, 'supplierName', 'supplier_name'),
+      projectName: _readString(map, 'projectName', 'project_name'),
       status: PurchaseRouteStopStatus.values.firstWhere(
-        (status) => status.name == map['status'],
+        (status) => status.name == _readString(map, 'status'),
         orElse: () => PurchaseRouteStopStatus.pending,
       ),
-      notes: map['notes'] as String? ?? '',
-      completedAt: DbValue.toDateTime(map['completedAt']),
-      createdAt: DbValue.toDateTime(map['createdAt']) ?? DateTime.now(),
+      notes: _readString(map, 'notes'),
+      completedAt: DbValue.toDateTime(
+        _read(map, 'completedAt', 'completed_at'),
+      ),
+      createdAt:
+          DbValue.toDateTime(_read(map, 'createdAt', 'created_at')) ??
+          DateTime.now(),
     );
   }
 
@@ -202,4 +222,43 @@ class PurchaseDeliveryRouteStop {
       'createdAt': DbValue.toPrimitive(createdAt),
     };
   }
+}
+
+dynamic _read(Map<String, dynamic> map, String primary, [String? fallback]) {
+  if (map.containsKey(primary)) return map[primary];
+  if (fallback != null && map.containsKey(fallback)) return map[fallback];
+  return null;
+}
+
+String _readString(
+  Map<String, dynamic> map,
+  String primary, [
+  String? fallback,
+]) {
+  return _read(map, primary, fallback)?.toString() ?? '';
+}
+
+String? _readNullableString(
+  Map<String, dynamic> map,
+  String primary, [
+  String? fallback,
+]) {
+  final value = _read(map, primary, fallback)?.toString().trim();
+  return value == null || value.isEmpty ? null : value;
+}
+
+double _readDouble(
+  Map<String, dynamic> map,
+  String primary, [
+  String? fallback,
+]) {
+  final value = _read(map, primary, fallback);
+  if (value is num) return value.toDouble();
+  return double.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+int _readInt(Map<String, dynamic> map, String primary, [String? fallback]) {
+  final value = _read(map, primary, fallback);
+  if (value is num) return value.toInt();
+  return int.tryParse(value?.toString() ?? '') ?? 0;
 }

@@ -117,11 +117,7 @@ class _JobRoleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
-      ),
+      decoration: AppDecorations.cardSurface(accent: AppColors.accentGold),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -265,10 +261,10 @@ class _JobRoleFormPanelState extends State<_JobRoleFormPanel> {
 
     return Container(
       padding: ResponsiveLayout.pagePadding(width),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.2)),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 18,
       ),
       child: Form(
         key: _formKey,
@@ -426,7 +422,7 @@ class _SubmitButton extends StatelessWidget {
         ),
         child: const Text(
           'SALVAR CARGO',
-          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
+          style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0),
         ),
       ),
     );

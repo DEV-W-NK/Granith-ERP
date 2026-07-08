@@ -9,6 +9,7 @@ import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class PurchaseFormDialog extends StatefulWidget {
   final Purchase? purchase;
@@ -158,14 +159,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
           child: Container(
             width: dialogWidth.toDouble(),
             constraints: BoxConstraints(maxHeight: size.height * 0.92),
-            decoration: BoxDecoration(
-              gradient: AppColors.cardGradient,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: AppColors.borderColor.withValues(alpha: 0.66),
-              ),
-              boxShadow: AppColors.glowShadows(AppColors.accentGold),
+            decoration: AppDecorations.dialogSurface(
+              glowColor: AppColors.accentGold,
             ),
+            clipBehavior: Clip.antiAlias,
             child:
                 _isLoading
                     ? const SizedBox(
@@ -249,49 +246,12 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   // ─── Header ───────────────────────────────────────────────────────────────
 
   Widget _buildHeader(bool isEditing) {
-    final width = MediaQuery.sizeOf(context).width;
-    final compact = width < 420;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(compact ? 16 : 24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.accentGold, Color(0xFFB8941F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primaryDark.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.shopping_cart_rounded,
-              color: AppColors.primaryDark,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              isEditing ? 'Editar compra' : 'Registrar compra',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: compact ? 18 : 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primaryDark,
-              ),
-            ),
-          ),
-        ],
-      ),
+    return GranithDialogHeader(
+      icon: Icons.shopping_cart_rounded,
+      title: isEditing ? 'Editar compra' : 'Registrar compra',
+      subtitle: 'Projeto, item, fornecedor e atendimento da compra',
+      accentColor: AppColors.accentGold,
+      onClose: () => Navigator.pop(context),
     );
   }
 
@@ -637,29 +597,10 @@ class _PurchaseFormDialogState extends State<PurchaseFormDialog>
   }
 
   InputDecoration _dec(String hint, IconData icon) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.68)),
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-      filled: true,
-      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
-      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
-      ),
+    return granithInputDecoration(
+      hint: hint,
+      icon: icon,
+      accentColor: AppColors.accentGold,
     );
   }
 }

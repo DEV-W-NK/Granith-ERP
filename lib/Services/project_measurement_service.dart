@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/project_measurement_model.dart';
@@ -151,7 +152,9 @@ class ProjectMeasurementService {
         await _client.from(_table).insert(payload).select('id').single();
 
     await _recalculateProject(measurement.projectId);
-    return (inserted['id'] ?? '').toString();
+    final id = (inserted['id'] ?? '').toString();
+    _notifyMeasurementsChanged();
+    return id;
   }
 
   Future<void> updateMeasurement(ProjectMeasurement measurement) async {
@@ -200,6 +203,7 @@ class ProjectMeasurementService {
         previousProjectId != measurement.projectId) {
       await _recalculateProject(previousProjectId);
     }
+    _notifyMeasurementsChanged();
   }
 
   Future<void> deleteMeasurement(String measurementId) async {
@@ -220,6 +224,7 @@ class ProjectMeasurementService {
     if (projectId.isNotEmpty) {
       await _recalculateProject(projectId);
     }
+    _notifyMeasurementsChanged();
   }
 
   Future<void> _recalculateProject(String projectId) async {
@@ -340,5 +345,15 @@ class ProjectMeasurementService {
     if (measurement.discountAmount > measurement.grossAmount) {
       throw Exception('Desconto nao pode ser maior que o valor bruto.');
     }
+  }
+
+  void _notifyMeasurementsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [
+        AppDataRefreshBus.projectMeasurements,
+        AppDataRefreshBus.projects,
+      ],
+      source: 'ProjectMeasurementService',
+    );
   }
 }

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+
+import 'package:project_granith/constants/supplier_constants.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
-import 'package:project_granith/constants/supplier_constants.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 
 class SupplierCard extends StatelessWidget {
@@ -24,35 +25,35 @@ class SupplierCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent =
+        supplier.isActive ? AppColors.accentBlue : AppColors.textMuted;
+    final radius = BorderRadius.circular(16);
+
     return Card(
-      elevation: SupplierConstants.cardElevation,
+      elevation: 0,
       margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(SupplierConstants.cardBorderRadius),
-      ),
-      color: AppColors.surfaceDark,
+      color: Colors.transparent,
+      shadowColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: radius),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(SupplierConstants.cardBorderRadius),
+        borderRadius: radius,
         child: Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              SupplierConstants.cardBorderRadius,
-            ),
-            border: Border.all(
-              color: AppColors.borderColor.withOpacity(0.2),
-              width: 1,
-            ),
+          decoration: AppDecorations.cardSurface(
+            accent: accent,
+            emphasized: supplier.isActive,
+            radius: 16,
           ),
           child:
               isListView
                   ? LayoutBuilder(
-                    builder:
-                        (context, constraints) =>
-                            constraints.maxWidth < ResponsiveLayout.compact
-                                ? _buildCompactListView()
-                                : _buildListView(),
+                    builder: (context, constraints) {
+                      return constraints.maxWidth < ResponsiveLayout.compact
+                          ? _buildCompactListView()
+                          : _buildListView();
+                    },
                   )
                   : _buildGridView(),
         ),
@@ -62,22 +63,25 @@ class SupplierCard extends StatelessWidget {
 
   Widget _buildListView() {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLeadingIcon(),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(child: _buildSupplierName()),
+                  const SizedBox(width: 12),
                   _buildStatusBadge(),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               _buildSupplierCnpj(),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               _buildSupplierInfo(),
             ],
           ),
@@ -102,7 +106,7 @@ class SupplierCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildSupplierName(),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   _buildSupplierCnpj(),
                 ],
               ),
@@ -115,7 +119,7 @@ class SupplierCard extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
-          children: [_buildStatusBadge(), _buildSupplierInfo()],
+          children: [_buildStatusBadge(), ..._buildSupplierInfoItems()],
         ),
       ],
     );
@@ -126,6 +130,7 @@ class SupplierCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildLeadingIcon(),
             const Spacer(),
@@ -134,9 +139,9 @@ class SupplierCard extends StatelessWidget {
             _buildActions(),
           ],
         ),
-        const SizedBox(height: 12),
-        _buildSupplierName(),
-        const SizedBox(height: 4),
+        const SizedBox(height: 13),
+        _buildSupplierName(maxLines: 2),
+        const SizedBox(height: 6),
         _buildSupplierCnpj(),
         const Spacer(),
         _buildSupplierInfo(),
@@ -145,88 +150,85 @@ class SupplierCard extends StatelessWidget {
   }
 
   Widget _buildLeadingIcon() {
+    final accent =
+        supplier.isActive ? AppColors.accentBlue : AppColors.textMuted;
+
     return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            supplier.isActive
-                ? AppColors.accentGold.withOpacity(0.2)
-                : AppColors.textMuted.withOpacity(0.1),
-            supplier.isActive
-                ? AppColors.accentGold.withOpacity(0.1)
-                : AppColors.textMuted.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              supplier.isActive
-                  ? AppColors.accentGold.withOpacity(0.3)
-                  : AppColors.textMuted.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
+      width: 46,
+      height: 46,
+      decoration: AppDecorations.iconTile(accent),
       child: Icon(
-        Icons.business_rounded,
-        color:
-            supplier.isActive
-                ? AppColors.accentGold
-                : AppColors.textMuted.withOpacity(0.6),
-        size: 24,
+        supplier.isActive
+            ? Icons.storefront_rounded
+            : Icons.storefront_outlined,
+        color: accent,
+        size: 23,
       ),
     );
   }
 
-  Widget _buildSupplierName() {
+  Widget _buildSupplierName({int? maxLines}) {
     return Text(
       supplier.name,
       style: TextStyle(
         color: supplier.isActive ? AppColors.textPrimary : AppColors.textMuted,
         fontSize: 16,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
+        height: 1.18,
       ),
-      maxLines: isListView ? 1 : 2,
+      maxLines: maxLines ?? (isListView ? 1 : 2),
       overflow: TextOverflow.ellipsis,
     );
   }
 
   Widget _buildSupplierCnpj() {
-    return Text(
-      supplier.formattedCnpj,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: TextStyle(
-        color:
-            supplier.isActive
-                ? AppColors.textSecondary
-                : AppColors.textMuted.withOpacity(0.7),
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-        fontFamily: 'monospace',
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: supplier.isActive ? AppColors.accentGold : AppColors.textMuted,
+        radius: 10,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.badge_outlined,
+            size: 15,
+            color:
+                supplier.isActive ? AppColors.accentGold : AppColors.textMuted,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              supplier.formattedCnpj,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    supplier.isActive
+                        ? AppColors.textSecondary
+                        : AppColors.textMuted.withValues(alpha: 0.82),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                fontFamily: 'monospace',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStatusBadge() {
+    final color =
+        supplier.isActive ? AppColors.accentGreen : AppColors.accentRed;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color:
-            supplier.isActive
-                ? AppColors.accentGreen.withOpacity(0.15)
-                : AppColors.textMuted.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              supplier.isActive
-                  ? AppColors.accentGreen.withOpacity(0.3)
-                  : AppColors.textMuted.withOpacity(0.2),
-          width: 1,
-        ),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
         supplier.isActive
@@ -235,60 +237,51 @@ class SupplierCard extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color:
-              supplier.isActive ? AppColors.accentGreen : AppColors.textMuted,
+          color: color,
           fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 
   Widget _buildSupplierInfo() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 220),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.schedule_rounded,
-            size: 14,
-            color: AppColors.textMuted.withOpacity(0.7),
-          ),
-          const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              'Criado em ${_formatDate(supplier.createdAt)}',
-              style: TextStyle(
-                color: AppColors.textMuted.withOpacity(0.8),
-                fontSize: 12,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
+    return Wrap(spacing: 8, runSpacing: 8, children: _buildSupplierInfoItems());
+  }
+
+  List<Widget> _buildSupplierInfoItems() {
+    return [
+      _SupplierInfoPill(
+        icon: Icons.event_available_outlined,
+        label: 'Criado em ${_formatLongDate(supplier.createdAt)}',
+        color: AppColors.textSecondary,
       ),
-    );
+      _SupplierInfoPill(
+        icon: Icons.update_rounded,
+        label: 'Atualizado ${_formatShortDate(supplier.updatedAt)}',
+        color: AppColors.accentBlue,
+      ),
+    ];
   }
 
   Widget _buildActions() {
     return PopupMenuButton<String>(
+      tooltip: 'Acoes do fornecedor',
       icon: Icon(
         Icons.more_vert_rounded,
-        color: AppColors.textMuted.withOpacity(0.8),
+        color: AppColors.textMuted.withValues(alpha: 0.9),
         size: 20,
       ),
       color: AppColors.surfaceDark,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: AppColors.borderColor.withOpacity(0.2),
+          color: AppColors.borderColor.withValues(alpha: 0.55),
           width: 1,
         ),
       ),
       elevation: 8,
-      onSelected: (String action) => _handleAction(action),
+      onSelected: _handleAction,
       itemBuilder:
           (BuildContext context) => [
             PopupMenuItem<String>(
@@ -338,10 +331,10 @@ class SupplierCard extends StatelessWidget {
         const SizedBox(width: 12),
         Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 14,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -365,8 +358,8 @@ class SupplierCard extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime date) {
-    final months = [
+  String _formatLongDate(DateTime date) {
+    const months = [
       'jan',
       'fev',
       'mar',
@@ -382,5 +375,51 @@ class SupplierCard extends StatelessWidget {
     ];
 
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatShortDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
+  }
+}
+
+class _SupplierInfoPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _SupplierInfoPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 220),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
+      decoration: AppDecorations.cardInnerSurface(accent: color, radius: 10),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

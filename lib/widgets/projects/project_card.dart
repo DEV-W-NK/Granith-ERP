@@ -31,30 +31,23 @@ class ProjectCard extends StatelessWidget {
         project.isOverBudget || project.isOverdue
             ? AppColors.accentRed
             : AppColors.borderColor;
+    final cardAccent =
+        project.isOverBudget || project.isOverdue
+            ? AppColors.accentRed
+            : AppColors.accentBlue;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(18),
+      decoration: AppDecorations.cardSurface(
+        accent: cardAccent,
+        emphasized: !compactScreen,
+        elevated: !compactScreen,
+        radius: 18,
+      ).copyWith(
         border: Border.all(
           color: alertColor.withOpacity(compactScreen ? 0.40 : 0.58),
           width: 1,
         ),
-        boxShadow:
-            compactScreen
-                ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.14),
-                    blurRadius: 14,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-                : AppColors.glowShadows(
-                  project.isOverBudget || project.isOverdue
-                      ? AppColors.accentRed
-                      : AppColors.accentBlue,
-                ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -584,9 +577,8 @@ class _CompactProjectMetaLine extends StatelessWidget {
 
 class _ProjectMetaWrap extends StatelessWidget {
   final Project project;
-  final bool compact;
 
-  const _ProjectMetaWrap({required this.project, this.compact = false});
+  const _ProjectMetaWrap({required this.project});
 
   @override
   Widget build(BuildContext context) {
@@ -608,7 +600,7 @@ class _ProjectMetaWrap extends StatelessWidget {
           label: '${project.teamSize} pessoas',
           color: AppColors.accentGreen,
         ),
-        if (!compact && coordinator != null && coordinator.isNotEmpty)
+        if (coordinator != null && coordinator.isNotEmpty)
           _ProjectMetaChip(
             icon: Icons.assignment_ind_rounded,
             label: 'Coord. $coordinator',

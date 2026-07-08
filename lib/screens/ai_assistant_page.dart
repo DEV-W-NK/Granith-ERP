@@ -14,8 +14,12 @@ class AiAssistantPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
+      key: ValueKey('ai-controller-${area.value}'),
       create: (_) => AiAssistantController(area: area),
-      child: _AiAssistantView(area: area),
+      child: _AiAssistantView(
+        key: ValueKey('ai-view-${area.value}'),
+        area: area,
+      ),
     );
   }
 }
@@ -23,7 +27,7 @@ class AiAssistantPage extends StatelessWidget {
 class _AiAssistantView extends StatefulWidget {
   final AiAssistantArea area;
 
-  const _AiAssistantView({required this.area});
+  const _AiAssistantView({super.key, required this.area});
 
   @override
   State<_AiAssistantView> createState() => _AiAssistantViewState();
@@ -50,7 +54,11 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
     if (!_bootstrapped && user != null) {
       _bootstrapped = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<AiAssistantController>().init(user);
+        final aiController = context.read<AiAssistantController>();
+        aiController.init(user).then((_) {
+          if (!mounted) return;
+          _scrollToBottom();
+        });
       });
     }
 
@@ -134,6 +142,10 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
     if (!mounted || !success) return;
 
     await Future<void>.delayed(const Duration(milliseconds: 80));
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,

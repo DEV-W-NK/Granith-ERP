@@ -7,10 +7,7 @@ import 'package:project_granith/widgets/suppliers/suppliers_page_page_widgets.da
 import '../helpers/fake_supplier_service.dart';
 
 void main() {
-  Supplier supplier({
-    required String id,
-    required String name,
-  }) {
+  Supplier supplier({required String id, required String name}) {
     return Supplier(
       id: id,
       name: name,
@@ -20,31 +17,37 @@ void main() {
     );
   }
 
-  testWidgets('SuppliersPageView renderiza lista ou vazio com controller injetado', (
-    tester,
-  ) async {
-    final populated = SupplierController(
-      FakeSupplierService(
-        initialSuppliers: [supplier(id: '1', name: 'Fornecedor X')],
-      ),
-    );
-    await populated.loadSuppliers();
+  testWidgets(
+    'SuppliersPageView renderiza lista ou vazio com controller injetado',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(home: SuppliersPageView(controller: populated)),
-    );
-    await tester.pump(const Duration(milliseconds: 200));
+      final populated = SupplierController(
+        FakeSupplierService(
+          initialSuppliers: [supplier(id: '1', name: 'Fornecedor X')],
+        ),
+      );
+      await tester.runAsync(populated.loadSuppliers);
 
-    expect(find.text('Fornecedor X'), findsOneWidget);
+      await tester.pumpWidget(
+        MaterialApp(home: SuppliersPageView(controller: populated)),
+      );
+      await tester.pump();
 
-    final empty = SupplierController(FakeSupplierService());
-    await empty.loadSuppliers();
+      expect(find.text('Fornecedor X'), findsOneWidget);
 
-    await tester.pumpWidget(
-      MaterialApp(home: SuppliersPageView(controller: empty)),
-    );
-    await tester.pump(const Duration(milliseconds: 200));
+      final empty = SupplierController(FakeSupplierService());
+      await tester.runAsync(empty.loadSuppliers);
 
-    expect(find.text('Nenhum fornecedor encontrado.'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        MaterialApp(home: SuppliersPageView(controller: empty)),
+      );
+      await tester.pump();
+
+      expect(find.text('Nenhum fornecedor cadastrado'), findsOneWidget);
+    },
+  );
 }

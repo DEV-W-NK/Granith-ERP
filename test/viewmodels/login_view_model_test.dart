@@ -48,6 +48,29 @@ void main() {
       },
     );
 
+    test(
+      'envia usuario e senha ao service quando formulario interno esta valido',
+      () async {
+        final authService = FakeAuthService();
+        final viewModel = LoginViewModel(
+          authService: authService,
+          showLoading: _noopShow,
+          dismissLoading: _noopDismiss,
+          isWeb: false,
+        );
+        viewModel.setCredentialMode(LoginCredentialMode.username);
+        viewModel.setUsername('maria.obra');
+        viewModel.setPassword('12345678');
+
+        final result = await viewModel.handleUsernamePasswordSignIn();
+
+        expect(result, isTrue);
+        expect(authService.lastUsername, 'maria.obra');
+        expect(authService.lastPassword, '12345678');
+        expect(viewModel.errorMessage, isNull);
+      },
+    );
+
     test('expoe erro de link expirado vindo do redirect web', () {
       final viewModel = LoginViewModel(
         authService: FakeAuthService(),

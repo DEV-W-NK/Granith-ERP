@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_model.dart';
@@ -12,6 +13,7 @@ class ServiceOrcamentos {
       await AppSupabase.client
           .from(_collectionName)
           .insert(DbValue.normalizeMap(budget.toMap()));
+      _notifyBudgetsChanged();
     } catch (e) {
       throw Exception('Erro ao adicionar orçamento: $e');
     }
@@ -23,6 +25,7 @@ class ServiceOrcamentos {
           .from(_collectionName)
           .update(DbValue.normalizeMap(budget.toMap()))
           .eq('id', budget.id);
+      _notifyBudgetsChanged();
     } catch (e) {
       throw Exception('Erro ao atualizar orçamento: $e');
     }
@@ -31,6 +34,7 @@ class ServiceOrcamentos {
   Future<void> deleteBudget(String id) async {
     try {
       await AppSupabase.client.from(_collectionName).delete().eq('id', id);
+      _notifyBudgetsChanged();
     } catch (e) {
       throw Exception('Erro ao deletar orçamento: $e');
     }
@@ -354,6 +358,7 @@ class ServiceOrcamentos {
           })
           .eq('id', budget.id);
 
+      _notifyBudgetsChanged(extraScopes: const [AppDataRefreshBus.projects]);
       return projectId;
     } catch (e) {
       throw Exception('Erro ao aprovar orçamento: $e');
@@ -365,13 +370,19 @@ class ServiceOrcamentos {
         .from(_collectionName)
         .update({'status': BudgetStatus.rejected.index})
         .eq('id', budgetId);
+    _notifyBudgetsChanged();
   }
 
   bool debugShouldMarkAsExpired(Budget budget) => _shouldMarkAsExpired(budget);
 
-  Future<List<Budget>> debugCheckAndUpdateExpiredBudgets(
-    List<Budget> budgets,
-  ) {
+  Future<List<Budget>> debugCheckAndUpdateExpiredBudgets(List<Budget> budgets) {
     return _checkAndUpdateExpiredBudgetsSync(budgets);
+  }
+
+  void _notifyBudgetsChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.budgets, ...extraScopes],
+      source: 'ServiceOrcamentos',
+    );
   }
 }

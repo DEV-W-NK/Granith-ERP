@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/services/service_orcamentos.dart';
@@ -8,6 +9,7 @@ class BudgetsViewModel extends ChangeNotifier {
 
   List<Budget> _allBudgets = [];
   List<Budget> filteredBudgets = [];
+  List<Budget> get allBudgets => List.unmodifiable(_allBudgets);
 
   bool isLoading = true;
   String? errorMessage;
@@ -17,12 +19,10 @@ class BudgetsViewModel extends ChangeNotifier {
   bool isUpdatingExpired = false;
   String searchQuery = '';
 
-  // IDs de orçamentos em aprovação para evitar double-tap
   final Set<String> approvingIds = {};
 
   StreamSubscription? _subscription;
 
-  // Injeção de dependência via construtor
   BudgetsViewModel(this._service, {bool bootstrapOnInit = true}) {
     if (bootstrapOnInit) {
       _init();
@@ -59,7 +59,7 @@ class BudgetsViewModel extends ChangeNotifier {
     var temp = _allBudgets;
 
     if (isFiltering) {
-      temp = temp.where((b) => b.status == filterStatus).toList();
+      temp = temp.where((budget) => budget.status == filterStatus).toList();
     }
 
     if (searchQuery.isNotEmpty) {
@@ -67,9 +67,14 @@ class BudgetsViewModel extends ChangeNotifier {
       temp =
           temp
               .where(
-                (b) =>
-                    b.clientName.toLowerCase().contains(term) ||
-                    b.projectName.toLowerCase().contains(term),
+                (budget) =>
+                    budget.clientName.toLowerCase().contains(term) ||
+                    budget.projectName.toLowerCase().contains(term) ||
+                    budget.description.toLowerCase().contains(term) ||
+                    budget.status.displayName.toLowerCase().contains(term) ||
+                    budget.items.any(
+                      (item) => item.description.toLowerCase().contains(term),
+                    ),
               )
               .toList();
     }
@@ -97,8 +102,6 @@ class BudgetsViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ─── LÓGICA DE NEGÓCIO ──────────────────────────────────────────────────
-
   Future<void> forceCheckExpiredBudgets({
     Function(String)? onSuccess,
     Function(String)? onError,
@@ -107,9 +110,9 @@ class BudgetsViewModel extends ChangeNotifier {
     notifyListeners();
     try {
       await _service.forceUpdateExpiredBudgets();
-      onSuccess?.call('Verificando Orçamentos Expirados...');
-    } catch (e) {
-      onError?.call('Erro ao verificar orçamentos expirados: $e');
+      onSuccess?.call('Verificando orcamentos expirados...');
+    } catch (error) {
+      onError?.call('Erro ao verificar orcamentos expirados: $error');
     } finally {
       isUpdatingExpired = false;
       notifyListeners();
@@ -126,9 +129,9 @@ class BudgetsViewModel extends ChangeNotifier {
 
     try {
       await _service.approveBudget(budget);
-      onSuccess?.call('Orçamento aprovado! Projeto criado em Planejamento.');
-    } catch (e) {
-      onError?.call('Erro ao aprovar orçamento: $e');
+      onSuccess?.call('Orcamento aprovado! Projeto criado em planejamento.');
+    } catch (error) {
+      onError?.call('Erro ao aprovar orcamento: $error');
     } finally {
       approvingIds.remove(budget.id);
       notifyListeners();
@@ -142,9 +145,9 @@ class BudgetsViewModel extends ChangeNotifier {
   }) async {
     try {
       await _service.rejectBudget(budget.id);
-      onSuccess?.call('Orçamento rejeitado.');
-    } catch (e) {
-      onError?.call('Erro ao rejeitar: $e');
+      onSuccess?.call('Orcamento rejeitado.');
+    } catch (error) {
+      onError?.call('Erro ao rejeitar: $error');
     }
   }
 
@@ -155,11 +158,9 @@ class BudgetsViewModel extends ChangeNotifier {
   }) async {
     try {
       await _service.deleteBudget(budget.id);
-      onSuccess?.call(
-        'Orçamento de "${budget.clientName}" excluído com sucesso!',
-      );
-    } catch (e) {
-      onError?.call('Erro ao excluir orçamento: $e');
+      onSuccess?.call('Orcamento de "${budget.clientName}" excluido.');
+    } catch (error) {
+      onError?.call('Erro ao excluir orcamento: $error');
     }
   }
 

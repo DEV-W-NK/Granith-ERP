@@ -58,11 +58,7 @@ class StatsGrid extends StatelessWidget {
     return GranithPressable(
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.borderColor),
-        ),
+        decoration: AppDecorations.statCardSurface(stat.accent, radius: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -71,10 +67,7 @@ class StatsGrid extends StatelessWidget {
                 Container(
                   width: 28,
                   height: 28,
-                  decoration: BoxDecoration(
-                    color: stat.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: AppDecorations.iconTile(stat.accent),
                   child: Icon(stat.icon, color: stat.accent, size: 15),
                 ),
                 const Spacer(),
@@ -97,7 +90,7 @@ class StatsGrid extends StatelessWidget {
                 color: AppColors.textSecondary,
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
+                letterSpacing: 0,
               ),
             ),
             const SizedBox(height: 5),

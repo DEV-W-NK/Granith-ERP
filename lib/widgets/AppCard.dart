@@ -15,12 +15,7 @@ class AppCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: padding,
-    decoration: BoxDecoration(
-      gradient: AppColors.cardGradient,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.72)),
-      boxShadow: AppColors.glowShadows(),
-    ),
+    decoration: AppDecorations.cardSurface(),
     child: child,
   );
 }
@@ -40,7 +35,7 @@ class AppCardTitle extends StatelessWidget {
         color: AppColors.textSecondary,
         fontSize: 10,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
+        letterSpacing: 0,
       ),
     ),
   );

@@ -35,7 +35,7 @@ class GranitSectionHeader extends StatelessWidget {
                 color:
                     iconBg ??
                     (iconColor ?? AppColors.accentGold).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: (iconColor ?? AppColors.accentGold).withValues(
                     alpha: 0.28,

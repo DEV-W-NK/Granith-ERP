@@ -1,12 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:project_granith/constants/supplier_constants.dart';
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/services/supplier_service.dart';
 
 class SupplierController extends ChangeNotifier {
   final SupplierService _service;
+  final AppDataRefreshBus _refreshBus;
 
-  SupplierController(this._service);
+  SupplierController(
+    this._service, {
+    AppDataRefreshBus? refreshBus,
+    bool autoRefresh = true,
+  }) : _refreshBus = refreshBus ?? AppDataRefreshBus.instance {
+    if (autoRefresh) {
+      _refreshSubscription = _refreshBus.listen(const [
+        AppDataRefreshBus.suppliers,
+      ], (_) => _scheduleSuppliersRefresh());
+    }
+  }
 
   // State variables
   List<Supplier> _suppliers = [];
@@ -16,6 +30,10 @@ class SupplierController extends ChangeNotifier {
   bool _isGridView = true;
   String _searchQuery = '';
   String _selectedFilter = SupplierConstants.filterAll;
+  bool _hasLoadedSuppliers = false;
+  bool _isDisposed = false;
+  StreamSubscription<AppDataRefreshEvent>? _refreshSubscription;
+  Timer? _refreshDebounce;
 
   // Getters
   List<Supplier> get suppliers => _suppliers;
@@ -64,10 +82,15 @@ class SupplierController extends ChangeNotifier {
       _searchQuery.isNotEmpty || _selectedFilter != SupplierConstants.filterAll;
 
   // Load suppliers
-  Future<void> loadSuppliers({bool forceRefresh = false}) async {
+  Future<void> loadSuppliers({
+    bool forceRefresh = false,
+    bool showLoader = true,
+  }) async {
     if (_isLoading && !forceRefresh) return;
 
-    _setLoading(true);
+    if (showLoader) {
+      _setLoading(true);
+    }
     _clearError();
 
     try {
@@ -76,10 +99,24 @@ class SupplierController extends ChangeNotifier {
       ); // Simulate network delay
       final suppliers = await _service.getSuppliers();
       _suppliers = suppliers;
-      _setLoading(false);
+      _hasLoadedSuppliers = true;
+      if (showLoader) {
+        _setLoading(false);
+      } else {
+        notifyListeners();
+      }
     } catch (e) {
       _setError('Erro ao carregar fornecedores: ${e.toString()}');
     }
+  }
+
+  void _scheduleSuppliersRefresh() {
+    if (_isDisposed || !_hasLoadedSuppliers) return;
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (_isDisposed || !_hasLoadedSuppliers) return;
+      unawaited(loadSuppliers(forceRefresh: true, showLoader: false));
+    });
   }
 
   // Create supplier
@@ -386,5 +423,13 @@ class SupplierController extends ChangeNotifier {
     // This would typically be handled by the UI layer
     // For now, we'll just clear the loading state
     _setLoading(false);
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _refreshDebounce?.cancel();
+    _refreshSubscription?.cancel();
+    super.dispose();
   }
 }

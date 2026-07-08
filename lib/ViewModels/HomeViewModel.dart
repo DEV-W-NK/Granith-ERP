@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
@@ -111,15 +114,39 @@ class HomeViewModel extends ChangeNotifier {
     HomeProjectsLoader? projectsLoader,
     HomeRecentActivitiesLoader? recentActivitiesLoader,
     DateTime Function()? nowProvider,
+    AppDataRefreshBus? refreshBus,
+    bool autoRefresh = true,
   }) : _listLoader = listLoader,
        _projectsLoader = projectsLoader,
        _recentActivitiesLoader = recentActivitiesLoader,
-       _nowProvider = nowProvider ?? DateTime.now;
+       _nowProvider = nowProvider ?? DateTime.now,
+       _refreshBus = refreshBus ?? AppDataRefreshBus.instance {
+    if (autoRefresh) {
+      _refreshSubscription = _refreshBus.listen(const [
+        AppDataRefreshBus.budgets,
+        AppDataRefreshBus.dailyLogs,
+        AppDataRefreshBus.employees,
+        AppDataRefreshBus.employeeBenefits,
+        AppDataRefreshBus.financialTransactions,
+        AppDataRefreshBus.inventory,
+        AppDataRefreshBus.inventoryMovements,
+        AppDataRefreshBus.materialRequisitions,
+        AppDataRefreshBus.projectMeasurements,
+        AppDataRefreshBus.projects,
+        AppDataRefreshBus.purchases,
+        AppDataRefreshBus.teams,
+      ], (_) => _scheduleDashboardRefresh());
+    }
+  }
 
   final HomeListLoader? _listLoader;
   final HomeProjectsLoader? _projectsLoader;
   final HomeRecentActivitiesLoader? _recentActivitiesLoader;
   final DateTime Function() _nowProvider;
+  final AppDataRefreshBus _refreshBus;
+  StreamSubscription<AppDataRefreshEvent>? _refreshSubscription;
+  Timer? _refreshDebounce;
+  bool _isDisposed = false;
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
@@ -158,8 +185,15 @@ class HomeViewModel extends ChangeNotifier {
   List<ActivityItem> _recentActivities = [];
   List<ActivityItem> get recentActivities => _recentActivities;
 
-  Future<void> loadDashboardData() async {
-    _isLoading = true;
+  Future<void> loadDashboardData() {
+    return _loadDashboardData();
+  }
+
+  Future<void> _loadDashboardData({bool showLoader = true}) async {
+    if (!showLoader && _isLoading) return;
+    if (showLoader) {
+      _isLoading = true;
+    }
     _error = null;
     notifyListeners();
 
@@ -188,8 +222,19 @@ class HomeViewModel extends ChangeNotifier {
       debugPrint('[HomeViewModel] $_error');
     }
 
-    _isLoading = false;
+    if (showLoader) {
+      _isLoading = false;
+    }
     notifyListeners();
+  }
+
+  void _scheduleDashboardRefresh() {
+    if (_isDisposed) return;
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (_isDisposed) return;
+      unawaited(_loadDashboardData(showLoader: false));
+    });
   }
 
   Future<void> _runSection(
@@ -675,5 +720,13 @@ class HomeViewModel extends ChangeNotifier {
     if (diff.inDays == 1) return 'Ontem';
     if (diff.inDays < 7) return '${diff.inDays}d atras';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    _refreshDebounce?.cancel();
+    _refreshSubscription?.cancel();
+    super.dispose();
   }
 }

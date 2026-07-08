@@ -53,25 +53,29 @@ class GranitStatCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-        decoration: BoxDecoration(
-          gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.borderColor.withValues(alpha: 0.66),
-          ),
-          boxShadow: AppColors.glowShadows(accent),
-        ),
+        decoration: AppDecorations.statCardSurface(accent),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Accent bar
-            Container(
-              width: 28,
-              height: 2,
-              decoration: BoxDecoration(
-                color: accent,
-                borderRadius: BorderRadius.circular(999),
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 28,
+                  height: 2,
+                  decoration: BoxDecoration(
+                    color: accent,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const Spacer(),
+                if (icon != null)
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: AppDecorations.iconTile(accent),
+                    child: Icon(icon, color: accent, size: 17),
+                  ),
+              ],
             ),
             const SizedBox(height: 10),
 
@@ -184,13 +188,7 @@ class _GranitStatCardSkeletonState extends State<GranitStatCardSkeleton>
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.66),
-        ),
-      ),
+      decoration: AppDecorations.cardSurface(elevated: false),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

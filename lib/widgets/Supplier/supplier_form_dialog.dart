@@ -4,6 +4,7 @@ import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/constants/supplier_constants.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class SupplierFormDialog extends StatefulWidget {
   final Supplier? supplier;
@@ -52,122 +53,40 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
     final inset = size.width < 420 ? 8.0 : 16.0;
     final dialogWidth = (size.width - inset * 2).clamp(300.0, 500.0);
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
+    return GranithDialogSurface(
+      width: dialogWidth.toDouble(),
+      maxHeight: size.height * 0.92,
+      accentColor: AppColors.accentBlue,
       insetPadding: EdgeInsets.all(inset),
       child: Container(
-        width: dialogWidth.toDouble(),
-        constraints: BoxConstraints(
-          maxWidth: isDesktop ? 500 : size.width - inset * 2,
-          maxHeight: size.height * 0.92,
-        ),
-        child: Card(
-          color: AppColors.surfaceDark,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 8,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildHeader(),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: ResponsiveLayout.pagePadding(size.width),
-                  child: _buildForm(),
-                ),
+        constraints: BoxConstraints(maxWidth: isDesktop ? 500 : size.width),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildHeader(),
+            Flexible(
+              child: SingleChildScrollView(
+                padding: ResponsiveLayout.pagePadding(size.width),
+                child: _buildForm(),
               ),
-              _buildActions(),
-            ],
-          ),
+            ),
+            _buildActions(),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildHeader() {
-    final compact = MediaQuery.sizeOf(context).width < 420;
-
-    return Container(
-      padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primaryDark, Color(0xFF1a1a2e)],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.2),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.accentGold.withValues(alpha: 0.2),
-                  AppColors.accentGold.withValues(alpha: 0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.accentGold.withValues(alpha: 0.3),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.business_rounded,
-              color: AppColors.accentGold,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: compact ? 18 : 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _isEditing
-                      ? 'Atualize as informações do fornecedor'
-                      : 'Preencha os dados para cadastrar',
-                  style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.8),
-                    fontSize: compact ? 13 : 14,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-            tooltip: 'Fechar',
-          ),
-        ],
-      ),
+    return GranithDialogHeader(
+      icon: Icons.business_rounded,
+      title: _isEditing ? 'Editar fornecedor' : 'Novo fornecedor',
+      subtitle:
+          _isEditing
+              ? 'Atualize as informacoes cadastrais'
+              : 'Preencha os dados para cadastrar',
+      accentColor: AppColors.accentBlue,
+      onClose: () => Navigator.of(context).pop(),
     );
   }
 
@@ -221,50 +140,9 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
         TextFormField(
           controller: _nameController,
           focusNode: _nameFocusNode,
-          decoration: InputDecoration(
-            hintText: SupplierConstants.hintSupplierName,
-            hintStyle: TextStyle(
-              color: AppColors.textMuted.withValues(alpha: 0.68),
-            ),
-            filled: true,
-            fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withValues(alpha: 0.72),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withValues(alpha: 0.72),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentBlue,
-                width: 1.4,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 1.2,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 1.4,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+          decoration: granithInputDecoration(
+            hint: SupplierConstants.hintSupplierName,
+            icon: Icons.business_rounded,
           ),
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
           textCapitalization: TextCapitalization.words,
@@ -309,50 +187,9 @@ class _SupplierFormDialogState extends State<SupplierFormDialog> {
         TextFormField(
           controller: _cnpjController,
           focusNode: _cnpjFocusNode,
-          decoration: InputDecoration(
-            hintText: SupplierConstants.hintSupplierCnpj,
-            hintStyle: TextStyle(
-              color: AppColors.textMuted.withValues(alpha: 0.68),
-            ),
-            filled: true,
-            fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withValues(alpha: 0.72),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withValues(alpha: 0.72),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentBlue,
-                width: 1.4,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 1.2,
-              ),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 1.4,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
+          decoration: granithInputDecoration(
+            hint: SupplierConstants.hintSupplierCnpj,
+            icon: Icons.badge_rounded,
           ),
           style: const TextStyle(
             color: AppColors.textPrimary,

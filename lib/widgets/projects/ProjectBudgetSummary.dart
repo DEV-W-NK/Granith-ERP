@@ -143,15 +143,15 @@ class _FullView extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color:
-              snapshot.isOverBudget
-                  ? Colors.redAccent.withOpacity(0.3)
-                  : Colors.white.withOpacity(0.06),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent:
+            snapshot.isOverBudget
+                ? AppColors.accentRed
+                : snapshot.isNearLimit
+                ? Colors.orangeAccent
+                : AppColors.accentGreen,
+        emphasized: snapshot.isOverBudget,
+        radius: 16,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

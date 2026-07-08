@@ -10,11 +10,13 @@ import 'package:project_granith/themes/app_theme.dart';
 class InventoryActionDialog extends StatefulWidget {
   final InventoryItem item;
   final InventoryMovementType type;
+  final InventoryService? service;
 
   const InventoryActionDialog({
     super.key,
     required this.item,
     required this.type,
+    this.service,
   });
 
   @override
@@ -23,21 +25,31 @@ class InventoryActionDialog extends StatefulWidget {
 
 class _InventoryActionDialogState extends State<InventoryActionDialog> {
   final _formKey = GlobalKey<FormState>();
-  final InventoryService _inventoryService = InventoryService();
-
   final TextEditingController _qtdController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
+  late final InventoryService _inventoryService;
   List<Project> _projects = [];
   Project? _selectedProject;
-
   bool _isLoading = true;
   bool _isSaving = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    _inventoryService = widget.service ?? InventoryService();
+    if (_needsProjectPicker) {
+      _loadProjects();
+    } else {
+      _isLoading = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtdController.dispose();
+    _notesController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProjects() async {
@@ -47,19 +59,18 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
           .select()
           .order('name');
 
-      final projs =
+      final projects =
           (response as List).map((row) {
             final data = Map<String, dynamic>.from(row as Map);
             return Project.fromMap(data['id'] as String? ?? '', data);
           }).toList();
 
-      if (mounted) {
-        setState(() {
-          _projects = projs;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _projects = projects;
+        _isLoading = false;
+      });
+    } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -67,13 +78,13 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
   @override
   Widget build(BuildContext context) {
     final isTransfer = widget.type == InventoryMovementType.transfer;
-    final title = isTransfer ? 'Transferir para Obra' : 'Registrar Baixa / Uso';
-    final color = isTransfer ? AppColors.accentBlue : AppColors.accentRed;
+    final isAdjustment = widget.type == InventoryMovementType.adjustment;
+    final color = _dialogColor;
 
     return AlertDialog(
       backgroundColor: AppColors.surfaceDark,
       title: Text(
-        title,
+        _dialogTitle,
         style: TextStyle(color: color, fontWeight: FontWeight.bold),
       ),
       content:
@@ -98,64 +109,74 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Disponível: ${widget.item.quantity.toStringAsFixed(2)} ${widget.item.unit}',
+                        'Disponivel: ${widget.item.quantity.toStringAsFixed(2)} ${widget.item.unit}',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 14,
                         ),
                       ),
-                      const SizedBox(height: 24),
-
-                      DropdownButtonFormField<Project>(
-                        dropdownColor: AppColors.secondaryDark,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: InputDecoration(
-                          labelText:
-                              isTransfer
-                                  ? 'Para qual Obra? (Destino)'
-                                  : 'Utilizado em qual Obra?',
-                          labelStyle: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.backgroundDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      if (isAdjustment) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Informe o novo saldo total do material.',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
                           ),
                         ),
-                        items:
-                            _projects
-                                .map(
-                                  (p) => DropdownMenuItem(
-                                    value: p,
-                                    child: Text(p.name),
-                                  ),
-                                )
-                                .toList(),
-                        onChanged:
-                            (val) => setState(() => _selectedProject = val),
-                        validator:
-                            isTransfer
-                                ? (val) =>
-                                    val == null
-                                        ? 'Selecione a obra de destino'
-                                        : null
-                                : null,
-                      ),
-                      if (!isTransfer)
-                        const Padding(
-                          padding: EdgeInsets.only(top: 4, left: 4),
-                          child: Text(
-                            'Deixe vazio para baixar como uso geral/perda do Depósito',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              fontSize: 11,
+                      ],
+                      const SizedBox(height: 24),
+                      if (_needsProjectPicker) ...[
+                        DropdownButtonFormField<Project>(
+                          dropdownColor: AppColors.secondaryDark,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: InputDecoration(
+                            labelText:
+                                isTransfer
+                                    ? 'Para qual obra? (destino)'
+                                    : 'Utilizado em qual obra?',
+                            labelStyle: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.backgroundDark,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
+                          items:
+                              _projects
+                                  .map(
+                                    (project) => DropdownMenuItem(
+                                      value: project,
+                                      child: Text(project.name),
+                                    ),
+                                  )
+                                  .toList(),
+                          onChanged:
+                              (project) =>
+                                  setState(() => _selectedProject = project),
+                          validator:
+                              isTransfer
+                                  ? (project) =>
+                                      project == null
+                                          ? 'Selecione a obra de destino'
+                                          : null
+                                  : null,
                         ),
-
-                      const SizedBox(height: 16),
-
+                        if (!isTransfer)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 4, left: 4),
+                            child: Text(
+                              'Deixe vazio para baixar como uso geral/perda do deposito.',
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
+                      ],
                       TextFormField(
                         controller: _qtdController,
                         style: const TextStyle(color: AppColors.textPrimary),
@@ -163,12 +184,13 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
                           decimal: true,
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'^\d+\.?\d*'),
-                          ),
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
                         ],
                         decoration: InputDecoration(
-                          labelText: 'Quantidade (${widget.item.unit})',
+                          labelText:
+                              isAdjustment
+                                  ? 'Novo saldo (${widget.item.unit})'
+                                  : 'Quantidade (${widget.item.unit})',
                           labelStyle: const TextStyle(
                             color: AppColors.textSecondary,
                           ),
@@ -178,24 +200,37 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        validator: (val) {
-                          if (val == null || val.isEmpty)
-                            return 'Informe a quantidade';
-                          final qtd = double.tryParse(val) ?? 0;
-                          if (qtd <= 0) return 'Inválido';
-                          if (qtd > widget.item.quantity)
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return isAdjustment
+                                ? 'Informe o novo saldo'
+                                : 'Informe a quantidade';
+                          }
+                          final quantity = double.tryParse(
+                            value.replaceAll(',', '.'),
+                          );
+                          if (quantity == null) return 'Valor invalido';
+                          if (isAdjustment) {
+                            return quantity < 0
+                                ? 'Informe saldo igual ou maior que zero'
+                                : null;
+                          }
+                          if (quantity <= 0) return 'Valor invalido';
+                          if (quantity > widget.item.quantity) {
                             return 'Saldo insuficiente';
+                          }
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 16),
-
                       TextFormField(
                         controller: _notesController,
                         style: const TextStyle(color: AppColors.textPrimary),
                         decoration: InputDecoration(
-                          labelText: 'Observações (Opcional)',
+                          labelText:
+                              isAdjustment
+                                  ? 'Justificativa (opcional)'
+                                  : 'Observacoes (opcional)',
                           labelStyle: const TextStyle(
                             color: AppColors.textSecondary,
                           ),
@@ -240,51 +275,90 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
     );
   }
 
-  void _submit() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isSaving = true);
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSaving = true);
 
-      try {
-        final qtd = double.parse(_qtdController.text);
+    try {
+      final quantity = double.parse(_qtdController.text.replaceAll(',', '.'));
+      final notes =
+          _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim();
 
-        // Criando o objeto de movimentação
-        final movement = InventoryMovement(
-          id: '', // Sera gerado pelo banco
+      if (widget.type == InventoryMovementType.adjustment) {
+        await _inventoryService.addAdjustment(
           itemId: widget.item.id,
           itemName: widget.item.name,
-          quantity: qtd,
+          newQuantity: quantity,
+          userId: 'current_user',
+          notes: notes,
+        );
+      } else {
+        final movement = InventoryMovement(
+          id: '',
+          itemId: widget.item.id,
+          itemName: widget.item.name,
+          quantity: quantity,
           type: widget.type,
           projectId: _selectedProject?.id,
           projectName: _selectedProject?.name,
           date: DateTime.now(),
-          notes: _notesController.text,
+          notes: notes,
           userId: 'current_user',
         );
 
-        // Chamando o método no serviço (CORRIGIDO AQUI: addMovement com M maiúsculo)
         await _inventoryService.addMovement(movement);
-
-        if (mounted) {
-          Navigator.pop(context, true);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Movimentação registrada com sucesso!'),
-              backgroundColor: AppColors.accentGreen,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro: $e'),
-              backgroundColor: AppColors.accentRed,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isSaving = false);
       }
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Movimentacao registrada com sucesso!'),
+          backgroundColor: AppColors.accentGreen,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erro: $error'),
+          backgroundColor: AppColors.accentRed,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  bool get _needsProjectPicker =>
+      widget.type == InventoryMovementType.transfer ||
+      widget.type == InventoryMovementType.outbound;
+
+  String get _dialogTitle {
+    switch (widget.type) {
+      case InventoryMovementType.inbound:
+        return 'Registrar entrada';
+      case InventoryMovementType.outbound:
+        return 'Registrar baixa / uso';
+      case InventoryMovementType.transfer:
+        return 'Transferir para obra';
+      case InventoryMovementType.adjustment:
+        return 'Ajustar saldo';
+    }
+  }
+
+  Color get _dialogColor {
+    switch (widget.type) {
+      case InventoryMovementType.inbound:
+        return AppColors.accentGreen;
+      case InventoryMovementType.outbound:
+        return AppColors.accentRed;
+      case InventoryMovementType.transfer:
+        return AppColors.accentBlue;
+      case InventoryMovementType.adjustment:
+        return AppColors.accentGold;
     }
   }
 }

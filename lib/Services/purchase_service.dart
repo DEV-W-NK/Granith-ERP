@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
@@ -5,6 +8,7 @@ import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
 import 'package:project_granith/services/financial_service.dart';
 import 'package:project_granith/services/inventory_service.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 typedef PurchaseDeliveryPersister =
     Future<void> Function({
@@ -74,6 +78,7 @@ class PurchaseService {
       if (purchase.id.isNotEmpty) {
         data['id'] = purchase.id;
         await AppSupabase.client.from(_table).upsert(data);
+        _notifyPurchasesChanged();
         return purchase.id;
       }
 
@@ -84,7 +89,9 @@ class PurchaseService {
               .select('id')
               .single();
 
-      return row['id'] as String;
+      final id = row['id'] as String;
+      _notifyPurchasesChanged();
+      return id;
     } catch (e) {
       throw Exception('Erro ao registrar compra: $e');
     }
@@ -95,10 +102,12 @@ class PurchaseService {
         .from(_table)
         .update(DbValue.normalizeMap(purchase.toMap()))
         .eq('id', purchase.id);
+    _notifyPurchasesChanged();
   }
 
   Future<void> deletePurchase(String id) async {
     await AppSupabase.client.from(_table).delete().eq('id', id);
+    _notifyPurchasesChanged();
   }
 
   Stream<List<Purchase>> getPurchasesStream() {
@@ -178,6 +187,7 @@ class PurchaseService {
           })
           .eq('id', purchaseId);
     }
+    _notifyPurchasesChanged();
   }
 
   Future<void> consolidatePurchase({
@@ -248,6 +258,9 @@ class PurchaseService {
           })
           .eq('id', purchase.id);
     }
+    _notifyPurchasesChanged(
+      extraScopes: const [AppDataRefreshBus.financialTransactions],
+    );
   }
 
   Future<void> rejectPurchase({
@@ -270,6 +283,7 @@ class PurchaseService {
           'rejectionReason': reason.trim(),
         })
         .eq('id', purchaseId);
+    _notifyPurchasesChanged();
   }
 
   Future<void> confirmDelivery({
@@ -337,6 +351,14 @@ class PurchaseService {
         print('[PurchaseService] Aviso: sync de custo falhou: $e');
       }
     }
+    _notifyPurchasesChanged(
+      extraScopes: const [
+        AppDataRefreshBus.inventory,
+        AppDataRefreshBus.inventoryMovements,
+        AppDataRefreshBus.projects,
+        AppDataRefreshBus.financialTransactions,
+      ],
+    );
   }
 
   Future<void> cancelPurchase({
@@ -358,6 +380,9 @@ class PurchaseService {
     if (transactionId != null && transactionId.isNotEmpty) {
       await FinancialService().cancelTransaction(transactionId);
     }
+    _notifyPurchasesChanged(
+      extraScopes: const [AppDataRefreshBus.financialTransactions],
+    );
   }
 
   Future<void> updateStatus(String id, PurchaseStatus status) async {
@@ -371,6 +396,7 @@ class PurchaseService {
         .from(_table)
         .update({'status': status.index})
         .eq('id', id);
+    _notifyPurchasesChanged();
   }
 
   List<Purchase> _rowsToPurchases(List<dynamic> rows) {
@@ -435,5 +461,13 @@ class PurchaseService {
     );
 
     return financialService.addTransaction(transaction);
+  }
+
+  void _notifyPurchasesChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.purchases, ...extraScopes],
+      source: 'PurchaseService',
+    );
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 }

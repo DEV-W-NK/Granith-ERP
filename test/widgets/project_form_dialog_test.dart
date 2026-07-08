@@ -39,7 +39,9 @@ void main() {
     testWidgets('valida campos obrigatorios antes de avancar', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1200, 1200));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-      final teamService = FakeTeamService();
+      final teamService = FakeTeamService(
+        employees: [_employee(id: 'coord-1', name: 'Ana Coordenadora')],
+      );
       addTearDown(teamService.disposeControllers);
 
       await tester.pumpWidget(
@@ -65,7 +67,9 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       final projectService = FakeServiceProjetos();
-      final teamService = FakeTeamService();
+      final teamService = FakeTeamService(
+        employees: [_employee(id: 'coord-1', name: 'Ana Coordenadora')],
+      );
       addTearDown(teamService.disposeControllers);
       final clientService = FakeClientAccountService(
         accounts: const [
@@ -104,6 +108,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(projectService.lastAddedProject?.name, 'Obra Atlas');
+      expect(projectService.lastAddedProject?.coordinatorId, 'coord-1');
       expect(savedProject?.clientAccountId, 'client-1');
     });
 
@@ -139,14 +144,16 @@ void main() {
       await tester.enterText(find.byType(TextFormField).at(0), 'Obra Delta');
       await tester.enterText(find.byType(TextFormField).at(1), 'Cliente Delta');
 
-      await tester.tap(find.byIcon(Icons.arrow_forward_rounded).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Selecione o coordenador da obra'));
+      await tester.tap(
+        find.byKey(const ValueKey('project-coordinator-dropdown')),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Ana Coordenadora').last);
       await tester.pumpAndSettle();
       expect(find.text('Bruno Supervisor'), findsNothing);
 
+      await tester.tap(find.byIcon(Icons.arrow_forward_rounded).first);
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.arrow_forward_rounded).first);
       await tester.pumpAndSettle();
       await tester.ensureVisible(find.textContaining('Criar'));

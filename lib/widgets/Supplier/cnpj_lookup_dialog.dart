@@ -4,6 +4,7 @@ import 'package:project_granith/controllers/supplier_controller.dart';
 import 'package:project_granith/services/supplier_service.dart' as services;
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:provider/provider.dart';
 
 class CNPJLookupDialog extends StatefulWidget {
@@ -40,122 +41,54 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.9,
         ),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.borderColor.withOpacity(0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
+        decoration: AppDecorations.dialogSurface(
+          glowColor: AppColors.accentBlue,
         ),
+        clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _DialogHeader(),
+            _dialogHeader(),
             Flexible(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
-                child: _DialogContent(),
+                child: _dialogContent(),
               ),
             ),
-            _DialogActions(),
+            _dialogActions(),
           ],
         ),
       ),
     );
   }
 
-  Widget _DialogHeader() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.accentBlue.withOpacity(0.1),
-            AppColors.accentBlue.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        border: Border(
-          bottom: BorderSide(color: AppColors.borderColor.withOpacity(0.2)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.accentBlue.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.search_rounded,
-              color: AppColors.accentBlue,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Buscar por CNPJ',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Consulte dados da Receita Federal',
-                  style: TextStyle(
-                    color: AppColors.textMuted.withOpacity(0.8),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close_rounded, color: AppColors.textMuted),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.borderColor.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ),
+  Widget _dialogHeader() {
+    return GranithDialogHeader(
+      icon: Icons.search_rounded,
+      title: 'Buscar por CNPJ',
+      subtitle: 'Consulte dados cadastrais para preencher o fornecedor',
+      accentColor: AppColors.accentBlue,
+      onClose: () => Navigator.pop(context),
     );
   }
 
-  Widget _DialogContent() {
+  Widget _dialogContent() {
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _CNPJInputField(),
+          _cnpjInputField(),
           const SizedBox(height: 24),
-          if (_isLoading) _LoadingWidget(),
-          if (_errorMessage != null) _ErrorWidget(),
-          if (_cnpjData != null) _CNPJDataPreview(),
+          if (_isLoading) _loadingWidget(),
+          if (_errorMessage != null) _errorWidget(),
+          if (_cnpjData != null) _cnpjDataPreview(),
         ],
       ),
     );
   }
 
-  Widget _CNPJInputField() {
+  Widget _cnpjInputField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -175,49 +108,11 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
             FilteringTextInputFormatter.digitsOnly,
             _CNPJFormatter(),
           ],
-          decoration: InputDecoration(
-            hintText: '00.000.000/0000-00',
-            hintStyle: TextStyle(color: AppColors.textMuted.withOpacity(0.6)),
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.accentBlue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.business_rounded,
-                color: AppColors.accentBlue,
-                size: 20,
-              ),
-            ),
-            filled: true,
-            fillColor: AppColors.backgroundDark,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.accentBlue,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 2,
-              ),
-            ),
+          decoration: granithInputDecoration(
+            label: 'CNPJ',
+            hint: '00.000.000/0000-00',
+            icon: Icons.business_rounded,
+            accentColor: AppColors.accentBlue,
           ),
           style: const TextStyle(
             color: AppColors.textPrimary,
@@ -254,13 +149,13 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
     );
   }
 
-  Widget _LoadingWidget() {
+  Widget _loadingWidget() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.accentBlue.withOpacity(0.05),
+        color: AppColors.accentBlue.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentBlue.withOpacity(0.2)),
+        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -284,13 +179,13 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
     );
   }
 
-  Widget _ErrorWidget() {
+  Widget _errorWidget() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.accentRed.withOpacity(0.1),
+        color: AppColors.accentRed.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentRed.withOpacity(0.3)),
+        border: Border.all(color: AppColors.accentRed.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -315,15 +210,15 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
     );
   }
 
-  Widget _CNPJDataPreview() {
+  Widget _cnpjDataPreview() {
     if (_cnpjData == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.accentGreen.withOpacity(0.1),
+        color: AppColors.accentGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.accentGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.accentGreen.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,25 +242,25 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
             ],
           ),
           const SizedBox(height: 16),
-          _DataRow('Razão Social', _cnpjData!.razaoSocial),
+          _dataRow('Razão Social', _cnpjData!.razaoSocial),
           if (_cnpjData!.nomeFantasia.isNotEmpty)
-            _DataRow('Nome Fantasia', _cnpjData!.nomeFantasia),
-          _DataRow(
+            _dataRow('Nome Fantasia', _cnpjData!.nomeFantasia),
+          _dataRow(
             'CNPJ',
             services.SupplierService.formatarCNPJ(_cnpjData!.cnpj),
           ),
-          _DataRow('Situação', _cnpjData!.situacao),
+          _dataRow('Situação', _cnpjData!.situacao),
           if (_cnpjData!.enderecoCompleto.isNotEmpty)
-            _DataRow('Endereço', _cnpjData!.enderecoCompleto),
+            _dataRow('Endereço', _cnpjData!.enderecoCompleto),
           if (_cnpjData!.telefone.isNotEmpty)
-            _DataRow('Telefone', _cnpjData!.telefone),
-          if (_cnpjData!.email.isNotEmpty) _DataRow('Email', _cnpjData!.email),
+            _dataRow('Telefone', _cnpjData!.telefone),
+          if (_cnpjData!.email.isNotEmpty) _dataRow('Email', _cnpjData!.email),
         ],
       ),
     );
   }
 
-  Widget _DataRow(String label, String value) {
+  Widget _dataRow(String label, String value) {
     if (value.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -405,12 +300,12 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
     );
   }
 
-  Widget _DialogActions() {
+  Widget _dialogActions() {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: AppColors.borderColor.withOpacity(0.2)),
+          top: BorderSide(color: AppColors.borderColor.withValues(alpha: 0.2)),
         ),
       ),
       child: Row(
@@ -420,7 +315,9 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
               onPressed: _isLoading ? null : () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.textMuted,
-                side: BorderSide(color: AppColors.borderColor.withOpacity(0.5)),
+                side: BorderSide(
+                  color: AppColors.borderColor.withValues(alpha: 0.5),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -485,6 +382,7 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
 
     try {
       final cnpjData = await _service.consultarCNPJ(_cnpjController.text);
+      if (!mounted) return;
 
       if (cnpjData != null) {
         // Verifica se o CNPJ já existe no sistema
@@ -492,24 +390,32 @@ class _CNPJLookupDialogState extends State<CNPJLookupDialog> {
           context,
           listen: false,
         );
-        final existingSupplier = controller.suppliers.firstWhere(
-          (s) =>
-              s.cnpj ==
-              services.SupplierService.limparCNPJ(_cnpjController.text),
-          orElse: () => null as dynamic,
+        final cleanCnpj = services.SupplierService.limparCNPJ(
+          _cnpjController.text,
+        );
+        final alreadyExists = controller.suppliers.any(
+          (supplier) => supplier.cnpj == cleanCnpj,
         );
 
-        setState(() {
-          _errorMessage = 'CNPJ já cadastrado no sistema';
-          _isLoading = false;
-        });
-        return;
+        if (alreadyExists) {
+          setState(() {
+            _errorMessage = 'CNPJ ja cadastrado no sistema';
+            _isLoading = false;
+          });
+          return;
+        }
 
         setState(() {
           _cnpjData = cnpjData;
           _isLoading = false;
         });
+        return;
       }
+
+      setState(() {
+        _errorMessage = 'CNPJ nao encontrado';
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class EmployeeFormContent extends StatefulWidget {
   final EmployeeModel? employee;
@@ -143,7 +144,7 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
                 style: TextStyle(
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.1,
+                  letterSpacing: 0,
                 ),
               ),
             ),
@@ -178,7 +179,7 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
             color: Colors.white70,
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 0,
           ),
         ),
         const SizedBox(width: 16),
@@ -202,22 +203,11 @@ class _EmployeeFormContentState extends State<EmployeeFormContent> {
   }
 
   InputDecoration _inputDecoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      filled: true,
-      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
+    return granithInputDecoration(
+      label: label,
+      hint: '',
+      icon: icon,
+      accentColor: AppColors.accentBlue,
     );
   }
 }

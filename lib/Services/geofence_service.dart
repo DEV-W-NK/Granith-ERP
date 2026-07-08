@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/models/geofence_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/service_projetos.dart';
@@ -61,6 +62,7 @@ class GeofenceService {
 
     _items.add(created);
     _emit();
+    _notifyGeofencesChanged();
     return created;
   }
 
@@ -73,12 +75,14 @@ class GeofenceService {
     final updated = geofence.copyWith(updatedAt: DateTime.now());
     _items[index] = updated;
     _emit();
+    _notifyGeofencesChanged();
     return updated;
   }
 
   Future<void> deleteGeofence(String id) async {
     _items.removeWhere((item) => item.id == id);
     _emit();
+    _notifyGeofencesChanged();
   }
 
   void dispose() {
@@ -88,6 +92,13 @@ class GeofenceService {
   void _emit() {
     if (_streamController.isClosed) return;
     _streamController.add(List<GeofenceArea>.unmodifiable(_items));
+  }
+
+  void _notifyGeofencesChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.geofences],
+      source: 'GeofenceService',
+    );
   }
 }
 

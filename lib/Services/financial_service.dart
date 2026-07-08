@@ -1,4 +1,5 @@
 import 'package:project_granith/core/data/db_value.dart';
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
@@ -174,7 +175,9 @@ class FinancialService {
             .select('id')
             .single();
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyChanged();
+    return id;
   }
 
   Future<void> addTransactionsBatch(
@@ -192,6 +195,7 @@ class FinancialService {
         }).toList();
 
     await AppSupabase.client.from(_table).insert(rows);
+    _notifyChanged();
   }
 
   Future<void> updateTransaction(FinancialTransactionModel transaction) async {
@@ -199,6 +203,7 @@ class FinancialService {
         .from(_table)
         .update(DbValue.normalizeMap(transaction.toMap()))
         .eq('id', transaction.id);
+    _notifyChanged();
   }
 
   Future<void> markAsPaid(String id) async {
@@ -211,6 +216,7 @@ class FinancialService {
           'updatedAt': DbValue.toPrimitive(now),
         })
         .eq('id', id);
+    _notifyChanged();
   }
 
   Future<void> cancelTransaction(String id) async {
@@ -221,10 +227,12 @@ class FinancialService {
           'updatedAt': DbValue.toPrimitive(DateTime.now()),
         })
         .eq('id', id);
+    _notifyChanged();
   }
 
   Future<void> deleteTransaction(String id) async {
     await AppSupabase.client.from(_table).delete().eq('id', id);
+    _notifyChanged();
   }
 
   Future<double> _sumByProject({
@@ -253,5 +261,12 @@ class FinancialService {
 
   FinancialTransactionModel _rowToTransaction(Map<String, dynamic> row) {
     return FinancialTransactionModel.fromMap(row, row['id'] as String? ?? '');
+  }
+
+  void _notifyChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.financialTransactions],
+      source: 'FinancialService',
+    );
   }
 }

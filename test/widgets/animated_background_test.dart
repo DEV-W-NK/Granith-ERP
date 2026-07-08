@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:project_granith/widgets/animations/animation_background.dart';
 
 void main() {
-  testWidgets('AnimatedBackground desenha tres fontes de luz ambiente', (
+  testWidgets('AnimatedBackground renderiza pintura ambiente animada', (
     tester,
   ) async {
     final controller = AnimationController(
@@ -17,7 +17,15 @@ void main() {
       ),
     );
 
-    expect(find.byType(ImageFiltered), findsNWidgets(3));
+    expect(
+      find.descendant(
+        of: find.byType(AnimatedBackground),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is CustomPaint && widget.painter != null,
+        ),
+      ),
+      findsOneWidget,
+    );
 
     controller.dispose();
   });

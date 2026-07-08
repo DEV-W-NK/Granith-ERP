@@ -41,5 +41,22 @@ void main() {
       expect(updated.isActive, isFalse);
       expect(updated.toMap()['memberIds'], ['e3', 'e4']);
     });
+
+    test('copyWith permite limpar lider e projeto', () {
+      final team = TeamModel(
+        id: 'team-1',
+        name: 'Equipe Beta',
+        memberIds: const ['e3'],
+        leaderId: 'e3',
+        projectId: 'p1',
+        createdAt: DateTime(2026, 5, 1),
+        updatedAt: DateTime(2026, 5, 1),
+      );
+
+      final updated = team.copyWith(leaderId: null, projectId: null);
+
+      expect(updated.leaderId, isNull);
+      expect(updated.projectId, isNull);
+    });
   });
 }

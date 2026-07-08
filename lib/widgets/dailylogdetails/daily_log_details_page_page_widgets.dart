@@ -363,11 +363,7 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minWidth: 150),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.26)),
-      ),
+      decoration: AppDecorations.statCardSurface(color, radius: 14),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

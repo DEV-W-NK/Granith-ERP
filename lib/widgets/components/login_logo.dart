@@ -53,7 +53,7 @@ class LoginLogo extends StatelessWidget {
             style: Theme.of(context).textTheme.headlineLarge?.copyWith(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w900,
-              letterSpacing: 8,
+              letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 10),
@@ -61,7 +61,7 @@ class LoginLogo extends StatelessWidget {
             settings.workspaceTagline,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
-              letterSpacing: 0.6,
+              letterSpacing: 0,
             ),
           ),
         ],

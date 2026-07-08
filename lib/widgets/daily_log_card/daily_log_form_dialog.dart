@@ -10,6 +10,7 @@ import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 // Widget utilitário para manter o estado das páginas do PageView
 class PageKeepAlive extends StatefulWidget {
@@ -476,25 +477,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
             maxHeight: size.height * (size.width < 420 ? 0.94 : 0.9),
             minHeight: size.height < 720 ? 0 : 520,
           ),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.surfaceDark,
-                AppColors.surfaceDark.withValues(alpha: 0.95),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accentGold.withValues(alpha: 0.1),
-                blurRadius: 30,
-                spreadRadius: 0,
-                offset: const Offset(0, 10),
-              ),
-            ],
+          decoration: AppDecorations.dialogSurface(
+            glowColor: AppColors.accentGold,
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
               _buildEnhancedHeader(),
@@ -538,12 +524,8 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
         child: Container(
           width: dialogWidth,
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppColors.accentGreen.withValues(alpha: 0.34),
-            ),
+          decoration: AppDecorations.dialogSurface(
+            glowColor: AppColors.accentGreen,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1302,58 +1284,10 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
                 ? (v) =>
                     v == null || v.trim().isEmpty ? 'Campo obrigatório' : null
                 : null,
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: AppColors.textMuted.withValues(alpha: 0.74),
-          ),
-          prefixIcon: Padding(
-            padding: EdgeInsets.only(
-              left: 12,
-              right: 8,
-              bottom: maxLines > 1 ? 58 : 0,
-            ),
-            child: Icon(
-              icon,
-              color: AppColors.accentGold.withValues(alpha: 0.78),
-              size: 20,
-            ),
-          ),
-          prefixIconConstraints: const BoxConstraints(
-            minWidth: 44,
-            minHeight: 44,
-          ),
-          filled: true,
-          fillColor: AppColors.surfaceDark.withValues(alpha: 0.50),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(
-              color: AppColors.borderColor.withValues(alpha: 0.42),
-            ),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(
-              color: AppColors.borderColor.withValues(alpha: 0.42),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(
-              color: AppColors.accentGold,
-              width: 1.5,
-            ),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.accentRed, width: 1),
-          ),
-          contentPadding: EdgeInsets.fromLTRB(
-            14,
-            maxLines > 1 ? 16 : 15,
-            14,
-            maxLines > 1 ? 16 : 15,
-          ),
+        decoration: granithInputDecoration(
+          hint: hint,
+          icon: icon,
+          accentColor: AppColors.accentGold,
         ),
       ),
     );

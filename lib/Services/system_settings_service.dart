@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
@@ -36,6 +37,11 @@ class SystemSettingsService {
             .select(SupabaseSelects.systemSettings)
             .single();
 
-    return SystemSettings.fromMap(Map<String, dynamic>.from(response));
+    final saved = SystemSettings.fromMap(Map<String, dynamic>.from(response));
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.settings],
+      source: 'SystemSettingsService',
+    );
+    return saved;
   }
 }

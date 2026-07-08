@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_type.dart';
@@ -13,7 +14,9 @@ class BudgetTypeService {
               .insert(DbValue.normalizeMap(budgetType.toMap()))
               .select('id')
               .single();
-      return response['id'] as String;
+      final id = response['id'] as String;
+      _notifyBudgetTypesChanged();
+      return id;
     } catch (e) {
       throw Exception('Erro ao criar tipo de orcamento: $e');
     }
@@ -29,6 +32,7 @@ class BudgetTypeService {
             ),
           )
           .eq('id', budgetType.id);
+      _notifyBudgetTypesChanged();
     } catch (e) {
       throw Exception('Erro ao atualizar tipo de orcamento: $e');
     }
@@ -37,6 +41,7 @@ class BudgetTypeService {
   Future<void> deleteBudgetType(String id) async {
     try {
       await AppSupabase.client.from(_collection).delete().eq('id', id);
+      _notifyBudgetTypesChanged();
     } catch (e) {
       throw Exception('Erro ao deletar tipo de orcamento: $e');
     }
@@ -167,8 +172,16 @@ class BudgetTypeService {
             'updatedAt': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', id);
+      _notifyBudgetTypesChanged();
     } catch (e) {
       throw Exception('Erro ao alterar status: $e');
     }
+  }
+
+  void _notifyBudgetTypesChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.budgetTypes],
+      source: 'BudgetTypeService',
+    );
   }
 }

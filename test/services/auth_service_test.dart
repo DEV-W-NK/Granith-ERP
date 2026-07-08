@@ -84,6 +84,23 @@ void main() {
     });
   });
 
+  group('AuthService internal username helpers', () {
+    test('normaliza usuario interno e gera e-mail tecnico estavel', () {
+      expect(normalizeInternalUsername(' Maria.Obra '), 'maria.obra');
+      expect(
+        internalLoginEmailForUsername('Maria.Obra'),
+        'maria.obra@internal.granith.local',
+      );
+    });
+
+    test('rejeita usuario interno com espaco ou separador repetido', () {
+      expect(validateInternalUsername('ma'), isNotNull);
+      expect(validateInternalUsername('maria obra'), isNotNull);
+      expect(validateInternalUsername('maria..obra'), isNotNull);
+      expect(validateInternalUsername('maria.obra'), isNull);
+    });
+  });
+
   group('AuthService profile payloads', () {
     test('insert payload creates only non-privileged client profile', () {
       final payload = buildAuthUserProfileInsertPayload(

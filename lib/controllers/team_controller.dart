@@ -2,25 +2,33 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:project_granith/models/employee_model.dart';
+import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/models/team_model.dart';
+import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/services/team_service.dart';
 
 class TeamController extends ChangeNotifier {
   final TeamService _service;
+  final ServiceProjetos? _projectService;
 
-  TeamController({TeamService? service}) : _service = service ?? TeamService();
+  TeamController({TeamService? service, ServiceProjetos? projectService})
+    : _service = service ?? TeamService(),
+      _projectService = projectService;
 
   List<EmployeeModel> _employees = [];
   List<TeamModel> _teams = [];
+  List<Project> _projects = [];
   bool _isLoading = false;
   String? _error;
   bool _initialized = false;
 
   StreamSubscription<List<EmployeeModel>>? _employeeSub;
   StreamSubscription<List<TeamModel>>? _teamSub;
+  StreamSubscription<List<Project>>? _projectSub;
 
   List<EmployeeModel> get employees => _employees;
   List<TeamModel> get teams => _teams;
+  List<Project> get projects => _projects;
   bool get isLoading => _isLoading;
   String? get error => _error;
 
@@ -51,13 +59,29 @@ class TeamController extends ChangeNotifier {
         notifyListeners();
       },
     );
+
+    if (_projectService != null) {
+      _projectSub = _projectService.watchProjects().listen(
+        (list) {
+          _projects = list;
+          _clearError();
+          notifyListeners();
+        },
+        onError: (e) {
+          _error = 'Erro ao carregar obras/projetos: $e';
+          notifyListeners();
+        },
+      );
+    }
   }
 
   Future<void> refresh() async {
     await _employeeSub?.cancel();
     await _teamSub?.cancel();
+    await _projectSub?.cancel();
     _employeeSub = null;
     _teamSub = null;
+    _projectSub = null;
     _initialized = false;
     init();
   }
@@ -66,6 +90,7 @@ class TeamController extends ChangeNotifier {
   void dispose() {
     _employeeSub?.cancel();
     _teamSub?.cancel();
+    _projectSub?.cancel();
     super.dispose();
   }
 
@@ -75,6 +100,14 @@ class TeamController extends ChangeNotifier {
 
   List<EmployeeModel> getAvailableEmployees(TeamModel team) {
     return _employees.where((e) => !team.memberIds.contains(e.id)).toList();
+  }
+
+  Project? getProjectById(String? projectId) {
+    if (projectId == null || projectId.trim().isEmpty) return null;
+    for (final project in _projects) {
+      if (project.id == projectId) return project;
+    }
+    return null;
   }
 
   Future<void> saveEmployee(EmployeeModel employee) async {

@@ -22,10 +22,9 @@ class DailyLogCard extends StatelessWidget {
     final signatureColor = _signatureColor(log);
 
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+      decoration: AppDecorations.cardSurface(
+        accent: signatureColor,
+        emphasized: log.isPendingSignature,
       ),
       child: Material(
         color: Colors.transparent,

@@ -68,9 +68,15 @@ void main() {
       expect(find.text('Permissoes e Clientes'), findsOneWidget);
       expect(find.text('gestor@granith.com'), findsOneWidget);
       expect(find.text('Salvar acesso do usuario'), findsNothing);
+      expect(find.text('Editar permissoes'), findsOneWidget);
+      expect(find.text('Visualizar projetos'), findsNothing);
+
+      await tester.tap(find.text('Editar permissoes'));
+      await tester.pumpAndSettle();
+
       expect(find.text('Visualizar projetos'), findsOneWidget);
       expect(find.text('Visualizar salarios no RH'), findsOneWidget);
-      expect(find.text('Financeiro'), findsOneWidget);
+      expect(find.text('Financeiro'), findsWidgets);
       expect(find.text('projects.read'), findsNothing);
 
       await tester.tap(find.text('Criar e editar projetos'));
@@ -87,12 +93,85 @@ void main() {
       );
       expect(find.text('Salvar acesso do usuario'), findsNothing);
 
+      await tester.tap(find.text('Criar usuario interno'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Nome do colaborador'),
+        'Maria Obra',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Usuario'),
+        'maria.obra',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Senha inicial'),
+        'senha1234',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Confirmar senha'),
+        'senha1234',
+      );
+      await tester.tap(find.text('Criar usuario'));
+      await tester.pumpAndSettle();
+
+      expect(accessService.lastCreatedInternalUser?.username, 'maria.obra');
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Buscar usuario'),
+        'maria.obra',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Usuario: maria.obra'), findsOneWidget);
+
       await tester.tap(find.text('Clientes do portal'));
       await tester.pumpAndSettle();
 
       expect(find.text('Cliente Norte'), findsOneWidget);
       expect(find.text('Enviar convite'), findsOneWidget);
     });
+
+    testWidgets(
+      'mostra usuarios em lotes para evitar renderizacao inicial pesada',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(1440, 1800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final users = List<UserModel>.generate(
+          24,
+          (index) => UserModel(
+            uid: 'user-$index',
+            email: 'usuario-$index@granith.com',
+            displayName: 'Usuario $index',
+            permissions: const ['projects.read'],
+          ),
+        );
+        final accessService = FakeAccessManagementService(users: users);
+        final clientService = FakeClientAccountService();
+        final portalService = FakeClientPortalAccessService();
+
+        await tester.pumpWidget(
+          _buildHarness(
+            accessService: accessService,
+            clientAccountService: clientService,
+            portalAccessService: portalService,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('usuario-0@granith.com'), findsOneWidget);
+        expect(find.text('usuario-18@granith.com'), findsNothing);
+
+        await tester.drag(find.byType(ListView), const Offset(0, -1400));
+        await tester.pumpAndSettle();
+
+        expect(find.text('usuario-18@granith.com'), findsNothing);
+        expect(find.text('Mostrar mais (18 de 24)'), findsOneWidget);
+
+        await tester.tap(find.text('Mostrar mais (18 de 24)'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('usuario-18@granith.com'), findsOneWidget);
+      },
+    );
 
     testWidgets('salva cliente novo e envia convite no mesmo fluxo', (
       tester,

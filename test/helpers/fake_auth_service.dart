@@ -27,6 +27,7 @@ class FakeAuthService implements AuthServiceContract {
   final List<ClientAccount> _ownedAccounts;
 
   String? lastEmail;
+  String? lastUsername;
   String? lastPassword;
   bool googleSignInCalled = false;
   bool magicLinkCalled = false;
@@ -64,6 +65,18 @@ class FakeAuthService implements AuthServiceContract {
     required String password,
   }) async {
     lastEmail = email;
+    lastPassword = password;
+    if (emailPasswordError != null) {
+      throw emailPasswordError!;
+    }
+  }
+
+  @override
+  Future<void> signInWithUsernamePassword({
+    required String username,
+    required String password,
+  }) async {
+    lastUsername = username;
     lastPassword = password;
     if (emailPasswordError != null) {
       throw emailPasswordError!;

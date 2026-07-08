@@ -6,6 +6,8 @@ import 'package:project_granith/services/auth_service_contract.dart';
 typedef LoadingPresenter = Future<void> Function({String? status});
 typedef LoadingDismiss = Future<void> Function();
 
+enum LoginCredentialMode { email, username }
+
 class LoginViewModel extends ChangeNotifier {
   final AuthServiceContract _authService;
   final LoadingPresenter _showLoading;
@@ -25,8 +27,14 @@ class LoginViewModel extends ChangeNotifier {
   String _email = '';
   String get email => _email;
 
+  String _username = '';
+  String get username => _username;
+
   String _password = '';
   String get password => _password;
+
+  LoginCredentialMode _credentialMode = LoginCredentialMode.email;
+  LoginCredentialMode get credentialMode => _credentialMode;
 
   bool _isDisposed = false;
 
@@ -50,9 +58,23 @@ class LoginViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setUsername(String value) {
+    if (_isDisposed) return;
+    _username = value;
+    notifyListeners();
+  }
+
   void setPassword(String value) {
     if (_isDisposed) return;
     _password = value;
+    notifyListeners();
+  }
+
+  void setCredentialMode(LoginCredentialMode value) {
+    if (_isDisposed || _credentialMode == value) return;
+    _credentialMode = value;
+    _errorMessage = null;
+    _infoMessage = null;
     notifyListeners();
   }
 
@@ -127,6 +149,40 @@ class LoginViewModel extends ChangeNotifier {
       _errorMessage = e.message;
     } catch (_) {
       _errorMessage = 'Nao foi possivel entrar com e-mail e senha.';
+    }
+
+    _setLoading(false);
+    await _dismissLoading();
+    return false;
+  }
+
+  Future<bool> handleUsernamePasswordSignIn() async {
+    if (_isDisposed) return false;
+
+    _setLoading(true);
+    _errorMessage = null;
+    _infoMessage = null;
+    await _showLoading(status: 'Autenticando com usuario...');
+
+    if (_username.trim().isEmpty || _password.isEmpty) {
+      _errorMessage = 'Informe usuario e senha para prosseguir.';
+      _setLoading(false);
+      await _dismissLoading();
+      return false;
+    }
+
+    try {
+      await _authService.signInWithUsernamePassword(
+        username: _username,
+        password: _password,
+      );
+      _setLoading(false);
+      await _dismissLoading();
+      return true;
+    } on AppAuthException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
+      _errorMessage = 'Nao foi possivel entrar com usuario e senha.';
     }
 
     _setLoading(false);

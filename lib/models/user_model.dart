@@ -48,6 +48,11 @@ class UserModel {
   final UserRole role;
   final String? clientAccountId;
   final String? clientAccountName;
+  final String? username;
+  final String? internalLoginEmail;
+  final String authProvider;
+  final String? employeeId;
+  final String? employeeName;
 
   const UserModel({
     required this.uid,
@@ -59,11 +64,20 @@ class UserModel {
     this.role = UserRole.employee,
     this.clientAccountId,
     this.clientAccountName,
+    this.username,
+    this.internalLoginEmail,
+    this.authProvider = 'email',
+    this.employeeId,
+    this.employeeName,
   });
 
   bool get isAdmin => role == UserRole.admin;
   bool get isEmployee => role == UserRole.employee || role == UserRole.admin;
   bool get isClient => role == UserRole.client;
+  bool get isInternalCredential =>
+      authProvider == 'internal' ||
+      (username?.trim().isNotEmpty == true &&
+          internalLoginEmail?.trim().isNotEmpty == true);
 
   factory UserModel.fromMap(Map<String, dynamic> map, String id) {
     return UserModel(
@@ -81,6 +95,19 @@ class UserModel {
       clientAccountName:
           map['clientAccountName']?.toString() ??
           map['client_account_name']?.toString(),
+      username:
+          map['username']?.toString() ?? map['login_username']?.toString(),
+      internalLoginEmail:
+          map['internalLoginEmail']?.toString() ??
+          map['internal_login_email']?.toString(),
+      authProvider:
+          map['authProvider']?.toString() ??
+          map['auth_provider']?.toString() ??
+          'email',
+      employeeId:
+          map['employeeId']?.toString() ?? map['employee_id']?.toString(),
+      employeeName:
+          map['employeeName']?.toString() ?? map['employee_name']?.toString(),
     );
   }
 
@@ -94,6 +121,11 @@ class UserModel {
     UserRole? role,
     String? clientAccountId,
     String? clientAccountName,
+    String? username,
+    String? internalLoginEmail,
+    String? authProvider,
+    String? employeeId,
+    String? employeeName,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -105,6 +137,11 @@ class UserModel {
       role: role ?? this.role,
       clientAccountId: clientAccountId ?? this.clientAccountId,
       clientAccountName: clientAccountName ?? this.clientAccountName,
+      username: username ?? this.username,
+      internalLoginEmail: internalLoginEmail ?? this.internalLoginEmail,
+      authProvider: authProvider ?? this.authProvider,
+      employeeId: employeeId ?? this.employeeId,
+      employeeName: employeeName ?? this.employeeName,
     );
   }
 
@@ -120,6 +157,16 @@ class UserModel {
       'client_account_id': clientAccountId,
       'clientAccountName': clientAccountName,
       'client_account_name': clientAccountName,
+      'username': username,
+      'login_username': username,
+      'internalLoginEmail': internalLoginEmail,
+      'internal_login_email': internalLoginEmail,
+      'authProvider': authProvider,
+      'auth_provider': authProvider,
+      'employeeId': employeeId,
+      'employee_id': employeeId,
+      'employeeName': employeeName,
+      'employee_name': employeeName,
     };
   }
 }

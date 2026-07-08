@@ -1,62 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:project_granith/controllers/supplier_controller.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 
 class SuppliersHeader extends StatelessWidget {
   final bool isDesktop;
+  final VoidCallback? onAddSupplier;
+  final VoidCallback? onLookupCnpj;
 
-  const SuppliersHeader({required this.isDesktop});
+  const SuppliersHeader({
+    super.key,
+    required this.isDesktop,
+    this.onAddSupplier,
+    this.onLookupCnpj,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SupplierController>(
       builder: (context, controller, child) {
+        final suppliers = controller.suppliers;
+        final activeCount =
+            suppliers.where((supplier) => supplier.isActive).length;
+        final inactiveCount = suppliers.length - activeCount;
+        final lastUpdate = _lastUpdate(suppliers.map((s) => s.updatedAt));
+
         return Container(
-          padding: EdgeInsets.all(isDesktop ? 32 : 20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primaryDark, Color(0xFF1a1a2e)],
-            ),
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: AppDecorations.cardSurface(
+            accent: AppColors.accentBlue,
+            elevated: false,
+            radius: 16,
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
+              final compact = constraints.maxWidth < ResponsiveLayout.compact;
               final title = SupplierHeaderTitle(
                 isDesktop: isDesktop,
-                supplierCount: controller.suppliers.length,
-                activeCount:
-                    controller.suppliers.where((s) => s.isActive).length,
-                isLoading: controller.isLoading,
+                supplierCount: suppliers.length,
+                activeCount: activeCount,
+                isLoading: controller.isLoading && suppliers.isEmpty,
               );
-              final actions = SupplierHeaderActions(isDesktop: isDesktop);
+              final metrics = Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+                children: [
+                  _SupplierHeaderMetric(
+                    icon: Icons.business_rounded,
+                    label: _plural(
+                      suppliers.length,
+                      'fornecedor',
+                      'fornecedores',
+                    ),
+                    color: AppColors.accentBlue,
+                  ),
+                  _SupplierHeaderMetric(
+                    icon: Icons.verified_outlined,
+                    label: '$activeCount ativos',
+                    color: AppColors.accentGreen,
+                  ),
+                  _SupplierHeaderMetric(
+                    icon: Icons.pause_circle_outline_rounded,
+                    label: '$inactiveCount inativos',
+                    color:
+                        inactiveCount == 0
+                            ? AppColors.textSecondary
+                            : AppColors.accentRed,
+                  ),
+                  _SupplierHeaderMetric(
+                    icon: Icons.update_rounded,
+                    label:
+                        lastUpdate == null
+                            ? 'sem atualizacao'
+                            : 'atualizado ${_formatDate(lastUpdate)}',
+                    color: AppColors.accentGold,
+                  ),
+                ],
+              );
+              final actions = SupplierHeaderActions(
+                isDesktop: isDesktop,
+                onAddSupplier: onAddSupplier,
+                onLookupCnpj: onLookupCnpj,
+              );
 
-              if (constraints.maxWidth < ResponsiveLayout.compact) {
+              if (compact) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [title, const SizedBox(height: 14), actions],
+                  children: [
+                    title,
+                    const SizedBox(height: 14),
+                    metrics,
+                    const SizedBox(height: 14),
+                    actions,
+                  ],
                 );
               }
 
               return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: title),
-                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [title, const SizedBox(height: 14), metrics],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
                   actions,
                 ],
               );
@@ -75,6 +128,7 @@ class SupplierHeaderTitle extends StatelessWidget {
   final bool isLoading;
 
   const SupplierHeaderTitle({
+    super.key,
     required this.isDesktop,
     required this.supplierCount,
     required this.activeCount,
@@ -83,63 +137,57 @@ class SupplierHeaderTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Fornecedores',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: isDesktop ? 28 : 24,
-          ),
-        ),
-        const SizedBox(height: 4),
-        if (isLoading)
-          Text(
-            'Carregando...',
-            style: TextStyle(
-              color: AppColors.textMuted.withOpacity(0.8),
-              fontSize: 14,
+        if (isDesktop) ...[
+          Container(
+            width: 46,
+            height: 46,
+            decoration: AppDecorations.iconTile(AppColors.accentBlue),
+            child: const Icon(
+              Icons.storefront_rounded,
+              color: AppColors.accentBlue,
             ),
-          )
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                supplierCount == 0
-                    ? 'Nenhum fornecedor encontrado'
-                    : '$supplierCount ${supplierCount == 1 ? 'fornecedor' : 'fornecedores'}',
-                style: TextStyle(
-                  color: AppColors.textMuted.withOpacity(0.8),
-                  fontSize: 14,
+                'Fornecedores',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: isDesktop ? 24 : 21,
                 ),
               ),
-              if (supplierCount > 0) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentGreen.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '$activeCount ativos',
-                    style: TextStyle(
-                      color: AppColors.accentGreen,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
+              const SizedBox(height: 4),
+              if (isLoading)
+                const Text(
+                  'Carregando...',
+                  style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                )
+              else
+                Text(
+                  supplierCount == 0
+                      ? 'Nenhum fornecedor encontrado'
+                      : '$supplierCount ${supplierCount == 1 ? 'fornecedor' : 'fornecedores'} cadastrados, $activeCount ativos',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ],
             ],
           ),
+        ),
       ],
     );
   }
@@ -147,26 +195,42 @@ class SupplierHeaderTitle extends StatelessWidget {
 
 class SupplierHeaderActions extends StatelessWidget {
   final bool isDesktop;
+  final VoidCallback? onAddSupplier;
+  final VoidCallback? onLookupCnpj;
 
-  const SupplierHeaderActions({required this.isDesktop});
+  const SupplierHeaderActions({
+    super.key,
+    required this.isDesktop,
+    this.onAddSupplier,
+    this.onLookupCnpj,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SupplierController>(
       builder: (context, controller, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
+        return Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: isDesktop ? WrapAlignment.end : WrapAlignment.start,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
+            if (onAddSupplier != null)
+              FilledButton.icon(
+                onPressed: onAddSupplier,
+                icon: const Icon(Icons.add_business_rounded),
+                label: const Text('Novo fornecedor'),
+              ),
+            if (onLookupCnpj != null)
+              OutlinedButton.icon(
+                onPressed: onLookupCnpj,
+                icon: const Icon(Icons.manage_search_rounded),
+                label: const Text('Consultar CNPJ'),
+              ),
             SupplierViewToggleButtons(isDesktop: isDesktop),
-            if (isDesktop) const SizedBox(width: 16),
-            if (controller.suppliers.isNotEmpty) ...[
-              if (!isDesktop) const SizedBox(width: 12),
+            if (controller.suppliers.isNotEmpty)
               SupplierExportButton(hasData: controller.suppliers.isNotEmpty),
-            ],
-            if (isDesktop) ...[
-              const SizedBox(width: 16),
-              SupplierRefreshButton(),
-            ],
+            SupplierRefreshButton(),
           ],
         );
       },
@@ -177,7 +241,7 @@ class SupplierHeaderActions extends StatelessWidget {
 class SupplierViewToggleButtons extends StatelessWidget {
   final bool isDesktop;
 
-  const SupplierViewToggleButtons({required this.isDesktop});
+  const SupplierViewToggleButtons({super.key, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -185,13 +249,9 @@ class SupplierViewToggleButtons extends StatelessWidget {
       builder: (context, controller, child) {
         return Container(
           padding: const EdgeInsets.all(2),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: AppColors.borderColor.withOpacity(0.2),
-              width: 1,
-            ),
+          decoration: AppDecorations.cardInnerSurface(
+            accent: AppColors.accentBlue,
+            radius: 12,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -200,13 +260,13 @@ class SupplierViewToggleButtons extends StatelessWidget {
                 icon: Icons.grid_view_rounded,
                 isSelected: controller.isGridView,
                 onTap: () => controller.setViewMode(true),
-                tooltip: 'Visualização em Grade',
+                tooltip: 'Visualizacao em grade',
               ),
               SupplierViewToggleButton(
                 icon: Icons.view_list_rounded,
                 isSelected: !controller.isGridView,
                 onTap: () => controller.setViewMode(false),
-                tooltip: 'Visualização em Lista',
+                tooltip: 'Visualizacao em lista',
               ),
             ],
           ),
@@ -223,6 +283,7 @@ class SupplierViewToggleButton extends StatelessWidget {
   final String? tooltip;
 
   const SupplierViewToggleButton({
+    super.key,
     required this.icon,
     required this.isSelected,
     required this.onTap,
@@ -231,45 +292,45 @@ class SupplierViewToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final button = GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? AppColors.accentGold.withOpacity(0.15)
-                  : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isSelected ? AppColors.accentGold : AppColors.textMuted,
+    final button = Semantics(
+      button: true,
+      selected: isSelected,
+      label: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? AppColors.accentBlue.withValues(alpha: 0.16)
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isSelected ? AppColors.accentBlue : AppColors.textMuted,
+          ),
         ),
       ),
     );
     if (tooltip != null) return Tooltip(message: tooltip!, child: button);
-    return Semantics(
-      button: true,
-      label:
-          isSelected
-              ? 'Modo de visualização ativo'
-              : 'Alternar modo de visualização',
-      child: button,
-    );
+    return button;
   }
 }
 
 class SupplierExportButton extends StatelessWidget {
   final bool hasData;
 
-  const SupplierExportButton({required this.hasData});
+  const SupplierExportButton({super.key, required this.hasData});
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message: 'Exportar Fornecedores',
+      message: 'Exportar fornecedores',
       child: IconButton(
         onPressed: hasData ? () => _showExportOptions(context) : null,
         icon: const Icon(Icons.download_rounded),
@@ -288,12 +349,14 @@ class SupplierExportButton extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SupplierExportOptionsSheet(),
+      builder: (context) => const SupplierExportOptionsSheet(),
     );
   }
 }
 
 class SupplierRefreshButton extends StatelessWidget {
+  const SupplierRefreshButton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SupplierController>(
@@ -309,7 +372,7 @@ class SupplierRefreshButton extends StatelessWidget {
               Icons.refresh_rounded,
               color:
                   controller.isLoading
-                      ? AppColors.textMuted.withOpacity(0.5)
+                      ? AppColors.textMuted.withValues(alpha: 0.5)
                       : AppColors.textSecondary,
             ),
           ),
@@ -320,6 +383,8 @@ class SupplierRefreshButton extends StatelessWidget {
 }
 
 class SupplierExportOptionsSheet extends StatelessWidget {
+  const SupplierExportOptionsSheet({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -329,7 +394,7 @@ class SupplierExportOptionsSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Exportar Fornecedores',
+            'Exportar fornecedores',
             style: Theme.of(
               context,
             ).textTheme.titleLarge?.copyWith(color: AppColors.textPrimary),
@@ -344,7 +409,7 @@ class SupplierExportOptionsSheet extends StatelessWidget {
           SupplierExportOption(
             icon: Icons.picture_as_pdf,
             title: 'Exportar como PDF',
-            subtitle: 'Relatório formatado',
+            subtitle: 'Relatorio formatado',
             onTap: () => _handleExport(context, 'PDF'),
           ),
         ],
@@ -356,7 +421,7 @@ class SupplierExportOptionsSheet extends StatelessWidget {
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Exportação $type em desenvolvimento'),
+        content: Text('Exportacao $type em desenvolvimento'),
         backgroundColor: AppColors.accentBlue,
       ),
     );
@@ -370,6 +435,7 @@ class SupplierExportOption extends StatelessWidget {
   final VoidCallback onTap;
 
   const SupplierExportOption({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
@@ -389,3 +455,56 @@ class SupplierExportOption extends StatelessWidget {
     );
   }
 }
+
+class _SupplierHeaderMetric extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _SupplierHeaderMetric({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: AppDecorations.cardInnerSurface(accent: color),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+DateTime? _lastUpdate(Iterable<DateTime> dates) {
+  final sorted = dates.toList();
+  if (sorted.isEmpty) return null;
+  sorted.sort((left, right) => right.compareTo(left));
+  return sorted.first;
+}
+
+String _formatDate(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  return '$day/$month/${date.year}';
+}
+
+String _plural(int count, String singular, String plural) =>
+    '$count ${count == 1 ? singular : plural}';

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/controllers/team_controller.dart';
 import 'package:project_granith/models/employee_model.dart';
+import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/models/team_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
@@ -104,6 +105,7 @@ class _TeamPageViewState extends State<TeamPageView> {
           (_) => _TeamFormDialog(
             team: team,
             employees: controller.employees.where((e) => e.isActive).toList(),
+            projects: controller.projects,
           ),
     );
 
@@ -116,6 +118,7 @@ class _TeamPageViewState extends State<TeamPageView> {
           description: result.description,
           memberIds: result.memberIds,
           leaderId: result.leaderId,
+          projectId: result.projectId,
         );
         if (!context.mounted) return;
         _showSnack(context, 'Equipe criada.');
@@ -126,6 +129,7 @@ class _TeamPageViewState extends State<TeamPageView> {
             description: result.description,
             memberIds: result.memberIds,
             leaderId: result.leaderId,
+            projectId: result.projectId,
           ),
         );
         if (!context.mounted) return;
@@ -230,6 +234,10 @@ class _TeamHeader extends StatelessWidget {
             (team) => team.memberIds.contains(employee.id),
           );
         }).length;
+    final linkedProjects =
+        controller.teams
+            .where((team) => team.projectId?.trim().isNotEmpty == true)
+            .length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -259,6 +267,11 @@ class _TeamHeader extends StatelessWidget {
               label: 'Disponiveis',
               value: '$unassigned',
               color: AppColors.accentGold,
+            ),
+            _StatPill(
+              label: 'Com obra',
+              value: '$linkedProjects',
+              color: AppColors.textSecondary,
             ),
           ],
         );
@@ -332,17 +345,19 @@ class _TeamsGrid extends StatelessWidget {
             crossAxisCount: columns,
             crossAxisSpacing: 14,
             mainAxisSpacing: 14,
-            mainAxisExtent: constraints.maxWidth < 420 ? 306 : 268,
+            mainAxisExtent: constraints.maxWidth < 420 ? 324 : 288,
           ),
           itemCount: controller.teams.length,
           itemBuilder: (context, index) {
             final team = controller.teams[index];
             final members = controller.getMembersOfTeam(team);
             final leader = _employeeById(controller.employees, team.leaderId);
+            final project = controller.getProjectById(team.projectId);
             return _TeamCard(
               team: team,
               members: members,
               leader: leader,
+              project: project,
               canManage: canManage,
               onEdit: () => onEdit(team),
               onManageMembers: () => onManageMembers(team),
@@ -359,6 +374,7 @@ class _TeamCard extends StatelessWidget {
   final TeamModel team;
   final List<EmployeeModel> members;
   final EmployeeModel? leader;
+  final Project? project;
   final bool canManage;
   final VoidCallback onEdit;
   final VoidCallback onManageMembers;
@@ -368,6 +384,7 @@ class _TeamCard extends StatelessWidget {
     required this.team,
     required this.members,
     required this.leader,
+    required this.project,
     required this.canManage,
     required this.onEdit,
     required this.onManageMembers,
@@ -377,6 +394,7 @@ class _TeamCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SurfaceTile(
+      accent: AppColors.accentBlue,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -409,6 +427,8 @@ class _TeamCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: AppColors.textSecondary),
                     ),
+                    const SizedBox(height: 3),
+                    _ProjectLine(project: project, projectId: team.projectId),
                   ],
                 ),
               ),
@@ -504,6 +524,47 @@ class _TeamCard extends StatelessWidget {
   }
 }
 
+class _ProjectLine extends StatelessWidget {
+  final Project? project;
+  final String? projectId;
+
+  const _ProjectLine({required this.project, required this.projectId});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasProjectId = projectId?.trim().isNotEmpty == true;
+    final label =
+        project != null
+            ? 'Obra: ${project!.name}'
+            : hasProjectId
+            ? 'Obra vinculada'
+            : 'Sem obra vinculada';
+
+    return Row(
+      children: [
+        Icon(
+          hasProjectId ? Icons.business_rounded : Icons.business_outlined,
+          size: 14,
+          color: hasProjectId ? AppColors.accentGold : AppColors.textMuted,
+        ),
+        const SizedBox(width: 5),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: hasProjectId ? AppColors.accentGold : AppColors.textMuted,
+              fontSize: 12,
+              fontWeight: hasProjectId ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _MembersPreview extends StatelessWidget {
   final List<EmployeeModel> members;
 
@@ -535,8 +596,13 @@ class _MembersPreview extends StatelessWidget {
 class _TeamFormDialog extends StatefulWidget {
   final TeamModel? team;
   final List<EmployeeModel> employees;
+  final List<Project> projects;
 
-  const _TeamFormDialog({this.team, required this.employees});
+  const _TeamFormDialog({
+    this.team,
+    required this.employees,
+    required this.projects,
+  });
 
   @override
   State<_TeamFormDialog> createState() => _TeamFormDialogState();
@@ -548,6 +614,7 @@ class _TeamFormDialogState extends State<_TeamFormDialog> {
   final _descriptionCtrl = TextEditingController();
   late final Set<String> _memberIds;
   String? _leaderId;
+  String? _projectId;
 
   bool get _isEdit => widget.team != null;
 
@@ -559,6 +626,7 @@ class _TeamFormDialogState extends State<_TeamFormDialog> {
     _descriptionCtrl.text = team?.description ?? '';
     _memberIds = Set<String>.from(team?.memberIds ?? const []);
     _leaderId = team?.leaderId;
+    _projectId = _normalizeOptionalId(team?.projectId);
   }
 
   @override
@@ -603,6 +671,15 @@ class _TeamFormDialogState extends State<_TeamFormDialog> {
                   controller: _descriptionCtrl,
                   maxLines: 3,
                   decoration: const InputDecoration(labelText: 'Descricao'),
+                ),
+                const SizedBox(height: 14),
+                _ProjectSelector(
+                  projects: widget.projects,
+                  selectedProjectId: _projectId,
+                  onChanged:
+                      (value) => setState(
+                        () => _projectId = _normalizeOptionalId(value),
+                      ),
                 ),
                 const SizedBox(height: 18),
                 _EmployeePicker(
@@ -653,7 +730,73 @@ class _TeamFormDialogState extends State<_TeamFormDialog> {
         description: _descriptionCtrl.text.trim(),
         memberIds: _memberIds.toList(),
         leaderId: _memberIds.contains(_leaderId) ? _leaderId : null,
+        projectId: _normalizeOptionalId(_projectId),
       ),
+    );
+  }
+}
+
+class _ProjectSelector extends StatelessWidget {
+  final List<Project> projects;
+  final String? selectedProjectId;
+  final ValueChanged<String?> onChanged;
+
+  const _ProjectSelector({
+    required this.projects,
+    required this.selectedProjectId,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedSelection = _normalizeOptionalId(selectedProjectId);
+    final sortedProjects = _sortedProjects(projects);
+    final currentProjectLoaded = sortedProjects.any(
+      (project) => project.id == normalizedSelection,
+    );
+    final hasMissingSelection =
+        normalizedSelection != null && !currentProjectLoaded;
+    final dropdownValue = normalizedSelection ?? '';
+
+    return DropdownButtonFormField<String>(
+      key: ValueKey('team-project-$dropdownValue-${sortedProjects.length}'),
+      initialValue: dropdownValue,
+      decoration: InputDecoration(
+        labelText: 'Obra/projeto vinculado',
+        helperText:
+            sortedProjects.isEmpty
+                ? 'Nenhuma obra carregada.'
+                : 'Vinculo operacional da equipe.',
+        prefixIcon: const Icon(Icons.business_rounded),
+      ),
+      dropdownColor: AppColors.surfaceDark,
+      menuMaxHeight: 360,
+      items: [
+        const DropdownMenuItem<String>(
+          value: '',
+          child: Text('Sem obra vinculada'),
+        ),
+        if (hasMissingSelection)
+          DropdownMenuItem<String>(
+            value: normalizedSelection,
+            child: Text(
+              'Obra atual nao carregada',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ...sortedProjects.map(
+          (project) => DropdownMenuItem<String>(
+            value: project.id,
+            child: Text(
+              _projectDropdownLabel(project),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
+      ],
+      onChanged: (value) => onChanged(_normalizeOptionalId(value)),
     );
   }
 }
@@ -1121,18 +1264,15 @@ class _HeaderTitle extends StatelessWidget {
 
 class _SurfaceTile extends StatelessWidget {
   final Widget child;
+  final Color accent;
 
-  const _SurfaceTile({required this.child});
+  const _SurfaceTile({required this.child, this.accent = AppColors.accentBlue});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.7)),
-      ),
+      decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
       child: child,
     );
   }
@@ -1149,11 +1289,7 @@ class _TileIcon extends StatelessWidget {
     return Container(
       width: 42,
       height: 42,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
+      decoration: AppDecorations.iconTile(color),
       child: Icon(icon, color: color, size: 20),
     );
   }
@@ -1288,12 +1424,14 @@ class _TeamFormResult {
   final String description;
   final List<String> memberIds;
   final String? leaderId;
+  final String? projectId;
 
   const _TeamFormResult({
     required this.name,
     required this.description,
     required this.memberIds,
     required this.leaderId,
+    required this.projectId,
   });
 }
 
@@ -1327,6 +1465,39 @@ EmployeeModel? _employeeById(List<EmployeeModel> employees, String? id) {
     if (employee.id == id) return employee;
   }
   return null;
+}
+
+List<Project> _sortedProjects(List<Project> projects) {
+  return [...projects]..sort((a, b) {
+    final statusComparison = _projectStatusOrder(
+      a,
+    ).compareTo(_projectStatusOrder(b));
+    if (statusComparison != 0) return statusComparison;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+}
+
+int _projectStatusOrder(Project project) {
+  switch (project.status) {
+    case ProjectStatus.inProgress:
+      return 0;
+    case ProjectStatus.planning:
+      return 1;
+    case ProjectStatus.completed:
+      return 2;
+  }
+}
+
+String _projectDropdownLabel(Project project) {
+  final client = project.client.trim();
+  final status = project.status.displayName;
+  if (client.isEmpty) return '${project.name} - $status';
+  return '${project.name} - $client - $status';
+}
+
+String? _normalizeOptionalId(String? value) {
+  final normalized = value?.trim();
+  return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
 bool _matchesEmployeeSearch(EmployeeModel employee, String query) {

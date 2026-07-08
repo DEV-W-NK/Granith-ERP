@@ -22,6 +22,7 @@ import 'package:provider/provider.dart';
 
 import '../helpers/fake_auth_service.dart';
 import '../helpers/fake_project_budget_service.dart';
+import '../helpers/fake_project_measurement_service.dart';
 import '../helpers/fake_project_service.dart';
 import '../helpers/fake_service_projetos.dart';
 import '../helpers/fake_system_settings_service.dart';
@@ -247,6 +248,7 @@ void main() {
                 _project(id: 'p-1', clientAccountId: 'client-1'),
               ],
             ),
+            measurementService: FakeProjectMeasurementService(),
           );
 
           await tester.pumpWidget(

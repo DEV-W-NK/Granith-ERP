@@ -41,24 +41,17 @@ class LoginFormCard extends StatelessWidget {
           child: Opacity(
             opacity: opacityAnimation.value,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(30),
+              borderRadius: BorderRadius.circular(18),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
                 child: Container(
                   width: double.infinity,
                   constraints: const BoxConstraints(maxWidth: 420),
                   padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.cardGradient,
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      width: 1.3,
-                    ),
-                    boxShadow: [
-                      ...AppColors.glowShadows(AppColors.accentBlue),
-                      ...AppColors.auraShadows(AppColors.accentGold),
-                    ],
+                  decoration: AppDecorations.cardSurface(
+                    accent: AppColors.accentBlue,
+                    emphasized: true,
+                    radius: 18,
                   ),
                   child: FadeTransition(
                     opacity: contentFadeAnimation,
@@ -103,26 +96,57 @@ class _CardContent extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark.withValues(alpha: 0.42),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: AppColors.borderColor.withValues(alpha: 0.45),
-            ),
+          decoration: AppDecorations.cardInnerSurface(
+            accent: AppColors.accentBlue,
+            radius: 14,
           ),
           child: const Text(
-            'Colaboradores entram com e-mail e senha ou Google. Clientes recebem um link de acesso para entrar direto no portal. Se o link expirar, basta pedir outro abaixo.',
+            'Colaboradores entram com e-mail, usuario interno ou Google. Clientes recebem um link de acesso para entrar direto no portal.',
             style: TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
         ),
         const SizedBox(height: 18),
+        SegmentedButton<LoginCredentialMode>(
+          segments: const [
+            ButtonSegment(
+              value: LoginCredentialMode.email,
+              icon: Icon(Icons.alternate_email_rounded),
+              label: Text('E-mail'),
+            ),
+            ButtonSegment(
+              value: LoginCredentialMode.username,
+              icon: Icon(Icons.person_outline_rounded),
+              label: Text('Usuario'),
+            ),
+          ],
+          selected: {controller.credentialMode},
+          onSelectionChanged:
+              controller.isLoading
+                  ? null
+                  : (values) => controller.setCredentialMode(values.first),
+        ),
+        const SizedBox(height: 18),
         TextField(
-          onChanged: controller.setEmail,
-          keyboardType: TextInputType.emailAddress,
+          key: ValueKey(controller.credentialMode),
+          onChanged:
+              controller.credentialMode == LoginCredentialMode.email
+                  ? controller.setEmail
+                  : controller.setUsername,
+          keyboardType:
+              controller.credentialMode == LoginCredentialMode.email
+                  ? TextInputType.emailAddress
+                  : TextInputType.text,
+          textInputAction: TextInputAction.next,
           style: const TextStyle(color: AppColors.textPrimary),
-          decoration: const InputDecoration(
-            labelText: 'E-mail',
-            hintText: 'seu@email.com.br',
+          decoration: InputDecoration(
+            labelText:
+                controller.credentialMode == LoginCredentialMode.email
+                    ? 'E-mail'
+                    : 'Usuario',
+            hintText:
+                controller.credentialMode == LoginCredentialMode.email
+                    ? 'seu@email.com.br'
+                    : 'usuario.interno',
           ),
         ),
         const SizedBox(height: 14),
@@ -132,7 +156,7 @@ class _CardContent extends StatelessWidget {
           style: const TextStyle(color: AppColors.textPrimary),
           decoration: const InputDecoration(
             labelText: 'Senha',
-            hintText: '••••••••',
+            hintText: '********',
           ),
         ),
         const SizedBox(height: 18),
@@ -144,12 +168,17 @@ class _CardContent extends StatelessWidget {
                 controller.isLoading
                     ? null
                     : () async {
-                      await controller.handleEmailPasswordSignIn();
+                      if (controller.credentialMode ==
+                          LoginCredentialMode.email) {
+                        await controller.handleEmailPasswordSignIn();
+                      } else {
+                        await controller.handleUsernamePasswordSignIn();
+                      }
                     },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.accentBlue,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
             child:
@@ -163,7 +192,7 @@ class _CardContent extends StatelessWidget {
                       ),
                     )
                     : const Text(
-                      'Entrar com e-mail',
+                      'Entrar',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
           ),
@@ -193,16 +222,17 @@ class _CardContent extends StatelessWidget {
         const SizedBox(height: 16),
         _buildGoogleButton(context, controller),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed:
-              controller.isLoading
-                  ? null
-                  : () async {
-                    await controller.handleMagicLinkSignIn();
-                  },
-          icon: const Icon(Icons.mark_email_unread_outlined),
-          label: const Text('Receber link de acesso'),
-        ),
+        if (controller.credentialMode == LoginCredentialMode.email)
+          OutlinedButton.icon(
+            onPressed:
+                controller.isLoading
+                    ? null
+                    : () async {
+                      await controller.handleMagicLinkSignIn();
+                    },
+            icon: const Icon(Icons.mark_email_unread_outlined),
+            label: const Text('Receber link de acesso'),
+          ),
         if (controller.errorMessage != null) ...[
           const SizedBox(height: 16),
           _buildErrorBox(context, controller),
@@ -222,7 +252,7 @@ class _CardContent extends StatelessWidget {
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(14),
         gradient: LinearGradient(
           colors: [
             AppColors.accentGold.withValues(alpha: 0.92),
@@ -234,7 +264,7 @@ class _CardContent extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(14),
           onTap:
               controller.isLoading
                   ? null
@@ -350,11 +380,11 @@ class _CardContent extends StatelessWidget {
 
   Widget _buildFooter(BuildContext context) {
     return Text(
-      '© ${DateTime.now().year} Granith Enterprise',
+      '(c) ${DateTime.now().year} Granith Enterprise',
       style: const TextStyle(
         color: AppColors.textMuted,
         fontSize: 12,
-        letterSpacing: 1.2,
+        letterSpacing: 0,
       ),
     );
   }

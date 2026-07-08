@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/vehicle_model.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 class VehicleService {
   static const _table = 'vehicles';
@@ -50,12 +53,14 @@ class VehicleService {
             .select('id')
             .single();
 
-    return vehicle.copyWith(
+    final created = vehicle.copyWith(
       id: row['id'] as String,
       plate: vehicle.normalizedPlate,
       createdAt: now,
       updatedAt: now,
     );
+    _notifyVehiclesChanged();
+    return created;
   }
 
   Future<Vehicle> updateVehicle(Vehicle vehicle) async {
@@ -69,11 +74,13 @@ class VehicleService {
         .update(DbValue.normalizeMap(updated.toMap()))
         .eq('id', vehicle.id);
 
+    _notifyVehiclesChanged();
     return updated;
   }
 
   Future<void> deleteVehicle(String id) async {
     await AppSupabase.client.from(_table).delete().eq('id', id);
+    _notifyVehiclesChanged();
   }
 
   Stream<List<VehicleFuelLog>> watchFuelLogs(String vehicleId) {
@@ -108,7 +115,11 @@ class VehicleService {
         })
         .eq('id', log.vehicleId);
 
-    return row['id'] as String;
+    final id = row['id'] as String;
+    _notifyVehiclesChanged(
+      extraScopes: const [AppDataRefreshBus.vehicleFuelLogs],
+    );
+    return id;
   }
 
   Vehicle _vehicleFromRow(dynamic row) {
@@ -119,6 +130,14 @@ class VehicleService {
   VehicleFuelLog _fuelLogFromRow(dynamic row) {
     final data = Map<String, dynamic>.from(row as Map);
     return VehicleFuelLog.fromMap(data, data['id'] as String? ?? '');
+  }
+
+  void _notifyVehiclesChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.vehicles, ...extraScopes],
+      source: 'VehicleService',
+    );
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 }
 

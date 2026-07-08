@@ -399,12 +399,9 @@ class _ItemCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.76),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.54),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent:
+            item.hasFreightData ? AppColors.accentGreen : AppColors.accentBlue,
       ),
       child: InkWell(
         onTap: () => _openItemDialog(context, item: item),
@@ -747,12 +744,9 @@ class _ToolbarSurface extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.52),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.55),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
       ),
       child: child,
     );

@@ -12,6 +12,7 @@ import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/services/team_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import '../../models/project_model.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:project_granith/widgets/projects/keep_alive.dart';
 
 class ProjectFormDialog extends StatefulWidget {
@@ -198,11 +199,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         setState(() {
           _coordinators = coordinators;
           _isLoadingCoordinators = false;
-          if (_selectedCoordinatorId != null &&
-              !_coordinators.any(
-                (employee) => employee.id == _selectedCoordinatorId,
-              )) {
-            _selectedCoordinatorId = null;
+          if (_selectedCoordinatorId == null &&
+              widget.project == null &&
+              coordinators.length == 1) {
+            _selectedCoordinatorId = coordinators.first.id;
           }
         });
       },
@@ -247,8 +247,8 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
             : isDesktop
             ? 24.0
             : 16.0;
-    final dialogWidth = (size.width - inset * 2).clamp(300.0, 700.0);
-    final dialogHeight = size.height * (size.width < 420 ? 0.94 : 0.85);
+    final dialogWidth = (size.width - inset * 2).clamp(320.0, 820.0);
+    final dialogHeight = size.height * (size.width < 420 ? 0.94 : 0.88);
 
     return SlideTransition(
       position: _slideAnimation,
@@ -260,25 +260,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         child: Container(
           width: dialogWidth.toDouble(),
           height: dialogHeight,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.surfaceDark,
-                AppColors.surfaceDark.withOpacity(0.95),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accentGold.withOpacity(0.1),
-                blurRadius: 30,
-                spreadRadius: 0,
-                offset: const Offset(0, 10),
-              ),
-            ],
+          decoration: AppDecorations.dialogSurface(
+            glowColor: AppColors.accentGold,
           ),
+          clipBehavior: Clip.antiAlias,
           child: Column(
             mainAxisSize: MainAxisSize.min, // Ocupa apenas o necessário
             children: [
@@ -296,22 +281,7 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Widget _buildEnhancedHeader(double padding) {
     return Container(
       padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.primaryDark, AppColors.primaryDark.withBlue(20)],
-        ),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.accentGold.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      decoration: AppDecorations.dialogHeader(accent: AppColors.accentGold),
       child: Row(
         children: [
           Container(
@@ -341,16 +311,16 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                   widget.project != null ? 'Editar Projeto' : 'Novo Projeto',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 20, // Fonte levemente menor para melhor encaixe
+                    fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
+                    letterSpacing: 0,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   widget.project != null
-                      ? 'Modifique as informações do projeto'
-                      : 'Preencha os dados para criar um novo projeto',
+                      ? 'Ajuste dados, coordenador e parametros da obra'
+                      : 'Cadastre a obra com responsavel definido',
                   style: TextStyle(
                     color: AppColors.textSecondary.withOpacity(0.8),
                     fontSize: 13,
@@ -386,11 +356,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       padding: EdgeInsets.symmetric(horizontal: padding, vertical: 12),
       child: Row(
         children: [
-          _buildProgressStep(0, 'Básico', Icons.info_outline),
+          _buildProgressStep(0, 'Base', Icons.assignment_ind_outlined),
           _buildProgressConnector(0),
-          _buildProgressStep(1, 'Detalhes', Icons.settings_outlined),
+          _buildProgressStep(1, 'Operacao', Icons.tune_rounded),
           _buildProgressConnector(1),
-          _buildProgressStep(2, 'Finalizar', Icons.check_circle_outline),
+          _buildProgressStep(2, 'Revisao', Icons.fact_check_outlined),
         ],
       ),
     );
@@ -487,92 +457,35 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
       padding: EdgeInsets.all(padding),
       child: Form(
         key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: _buildFormSection(
+          title: 'Base do projeto',
+          icon: Icons.assignment_ind_outlined,
+          accent: AppColors.accentGold,
           children: [
-            _buildSectionTitle('Informações Básicas', Icons.business_outlined),
-            const SizedBox(height: 20),
-            _buildEnhancedTextField(
-              controller: _nameController,
-              label: 'Nome do Projeto',
-              hint: 'Digite o nome do projeto',
-              icon: Icons.work_outline,
-              required: true,
-            ),
-            const SizedBox(height: 16),
-            _buildEnhancedTextField(
-              controller: _clientController,
-              label: 'Cliente',
-              hint: 'Nome do cliente',
-              icon: Icons.person_outline,
-              required: true,
-            ),
+            _buildResponsiveFieldRow([
+              _buildEnhancedTextField(
+                controller: _nameController,
+                label: 'Nome do Projeto',
+                hint: 'Digite o nome do projeto',
+                icon: Icons.work_outline,
+                required: true,
+              ),
+              _buildEnhancedTextField(
+                controller: _clientController,
+                label: 'Cliente',
+                hint: 'Nome do cliente',
+                icon: Icons.person_outline,
+                required: true,
+              ),
+            ]),
             if (_clientAccounts.isNotEmpty) ...[
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedClientAccountId,
-                dropdownColor: AppColors.secondaryDark,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  labelText: 'Conta do cliente no portal',
-                  labelStyle: const TextStyle(color: AppColors.textSecondary),
-                  filled: true,
-                  fillColor: AppColors.secondaryDark.withOpacity(0.7),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(
-                      color: AppColors.accentGold,
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                ),
-                items: [
-                  const DropdownMenuItem<String>(
-                    value: '',
-                    child: Text('Sem vínculo de portal'),
-                  ),
-                  ..._clientAccounts.map(
-                    (account) => DropdownMenuItem<String>(
-                      value: account.id,
-                      child: Text(account.name),
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedClientAccountId =
-                        value == null || value.isEmpty ? null : value;
-                    final selectedAccount = _clientAccounts
-                        .cast<ClientAccount?>()
-                        .firstWhere(
-                          (account) => account?.id == _selectedClientAccountId,
-                          orElse: () => null,
-                        );
-                    if (selectedAccount != null) {
-                      _clientController.text = selectedAccount.name;
-                    }
-                  });
-                },
-              ),
+              _buildClientAccountDropdown(),
             ],
-            const SizedBox(height: 20),
-            _buildEnhancedImagePicker(),
-            const SizedBox(height: 20),
-            _buildEnhancedTextField(
-              controller: _descriptionController,
-              label: 'Descrição',
-              hint: 'Descrição detalhada do projeto',
-              icon: Icons.description_outlined,
-              maxLines: 3, // Reduzido de 4 para 3 para economizar espaço
-            ),
+            const SizedBox(height: 16),
+            _buildCoordinatorDropdown(),
+            const SizedBox(height: 16),
+            _buildEnhancedStatusDropdown(),
           ],
         ),
       ),
@@ -582,15 +495,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Widget _buildDetailsPage(double padding) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(padding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: _buildFormSection(
+        title: 'Operacao da obra',
+        icon: Icons.tune_rounded,
+        accent: AppColors.accentBlue,
         children: [
-          _buildSectionTitle('Detalhes do Projeto', Icons.settings_outlined),
-          const SizedBox(height: 20),
-          _buildEnhancedStatusDropdown(),
-          const SizedBox(height: 16),
-          _buildCoordinatorDropdown(),
-          const SizedBox(height: 16),
           _buildLocationGeofenceSection(),
           const SizedBox(height: 16),
           _buildEnhancedDateFields(),
@@ -612,11 +521,21 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   Widget _buildFinalizePage(double padding) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(padding),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: _buildFormSection(
+        title: 'Apresentacao e revisao',
+        icon: Icons.fact_check_outlined,
+        accent: AppColors.accentGreen,
         children: [
-          _buildSectionTitle('Finalização', Icons.check_circle_outline),
-          const SizedBox(height: 20),
+          _buildEnhancedImagePicker(),
+          const SizedBox(height: 16),
+          _buildEnhancedTextField(
+            controller: _descriptionController,
+            label: 'Descricao',
+            hint: 'Descricao detalhada do projeto',
+            icon: Icons.description_outlined,
+            maxLines: 3,
+          ),
+          const SizedBox(height: 16),
           _buildEnhancedTagsSection(),
           const SizedBox(height: 24),
           _buildProjectSummary(),
@@ -625,24 +544,121 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildFormSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+    Color accent = AppColors.accentGold,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.formPanel(borderColor: accent),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle(title, icon, accent: accent),
+          const SizedBox(height: 18),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResponsiveFieldRow(List<Widget> fields) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 620;
+        if (compact || fields.length == 1) {
+          return Column(
+            children: [
+              for (var i = 0; i < fields.length; i++) ...[
+                fields[i],
+                if (i < fields.length - 1) const SizedBox(height: 16),
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < fields.length; i++) ...[
+              Expanded(child: fields[i]),
+              if (i < fields.length - 1) const SizedBox(width: 14),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildClientAccountDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: _selectedClientAccountId ?? '',
+      dropdownColor: AppColors.secondaryDark,
+      style: const TextStyle(color: AppColors.textPrimary),
+      decoration: granithInputDecoration(
+        hint: 'Sem vinculo de portal',
+        icon: Icons.account_circle_outlined,
+        accentColor: AppColors.accentGold,
+      ).copyWith(labelText: 'Conta do cliente no portal'),
+      items: [
+        const DropdownMenuItem<String>(
+          value: '',
+          child: Text('Sem vinculo de portal'),
+        ),
+        ..._clientAccounts.map(
+          (account) => DropdownMenuItem<String>(
+            value: account.id,
+            child: Text(account.name),
+          ),
+        ),
+      ],
+      onChanged:
+          _canInteract()
+              ? (value) {
+                setState(() {
+                  _selectedClientAccountId =
+                      value == null || value.isEmpty ? null : value;
+                  final selectedAccount = _clientAccounts
+                      .cast<ClientAccount?>()
+                      .firstWhere(
+                        (account) => account?.id == _selectedClientAccountId,
+                        orElse: () => null,
+                      );
+                  if (selectedAccount != null) {
+                    _clientController.text = selectedAccount.name;
+                  }
+                });
+              }
+              : null,
+    );
+  }
+
+  Widget _buildSectionTitle(
+    String title,
+    IconData icon, {
+    Color accent = AppColors.accentGold,
+  }) {
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: AppColors.accentGold.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: AppColors.accentGold, size: 18),
+          decoration: AppDecorations.iconTile(accent),
+          child: Icon(icon, color: accent, size: 18),
         ),
         const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ],
@@ -863,45 +879,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: TextStyle(
-                color: AppColors.textMuted.withOpacity(0.7),
-                fontWeight: FontWeight.w400,
-              ),
-              prefixIcon: Padding(
-                padding: const EdgeInsets.only(left: 14, right: 10),
-                child: Icon(
-                  icon,
-                  color: AppColors.accentGold.withOpacity(0.7),
-                  size: 20,
-                ),
-              ),
-              prefixIconConstraints: const BoxConstraints(minWidth: 40),
-              filled: true,
-              fillColor: AppColors.secondaryDark.withOpacity(0.7),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.accentGold,
-                  width: 2,
-                ),
-              ),
-              errorBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: AppColors.accentRed,
-                  width: 2,
-                ),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
+            decoration: granithInputDecoration(
+              hint: hint,
+              icon: icon,
+              accentColor: AppColors.accentGold,
             ),
             validator:
                 required
@@ -1158,32 +1139,72 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   }
 
   Widget _buildCoordinatorDropdown() {
+    final selectedId = _selectedCoordinatorId?.trim();
+    final currentCoordinatorLoaded = _coordinators.any(
+      (employee) => employee.id == selectedId,
+    );
+    final hasMissingCurrent =
+        selectedId != null &&
+        selectedId.isNotEmpty &&
+        !currentCoordinatorLoaded;
     final selectedValue =
-        _coordinators.any((employee) => employee.id == _selectedCoordinatorId)
-            ? _selectedCoordinatorId
-            : null;
+        selectedId != null && selectedId.isNotEmpty ? selectedId : null;
+    final selectedCoordinator = _selectedCoordinator;
+    final dropdownItems = <DropdownMenuItem<String>>[
+      if (hasMissingCurrent)
+        DropdownMenuItem<String>(
+          value: selectedId,
+          child: Text(
+            widget.project?.coordinatorName?.trim().isNotEmpty == true
+                ? '${widget.project!.coordinatorName} (atual)'
+                : 'Coordenador atual',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ..._coordinators.map(
+        (employee) => DropdownMenuItem<String>(
+          value: employee.id,
+          child: Text(
+            employee.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Coordenador Responsavel',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+        RichText(
+          text: const TextSpan(
+            text: 'Coordenador Responsavel',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            children: [
+              TextSpan(
+                text: ' *',
+                style: TextStyle(color: AppColors.accentRed),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
+          key: const ValueKey('project-coordinator-dropdown'),
           initialValue: selectedValue,
           style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
           dropdownColor: AppColors.secondaryDark,
+          menuMaxHeight: 340,
           decoration: InputDecoration(
             hintText:
                 _isLoadingCoordinators
                     ? 'Carregando coordenadores...'
-                    : _coordinators.isEmpty
+                    : dropdownItems.isEmpty
                     ? 'Nenhum coordenador ativo cadastrado'
                     : 'Selecione o coordenador da obra',
             hintStyle: const TextStyle(color: AppColors.textMuted),
@@ -1221,53 +1242,151 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
               horizontal: 16,
             ),
           ),
-          items:
-              _coordinators
-                  .map(
-                    (employee) => DropdownMenuItem<String>(
-                      value: employee.id,
-                      child: Text(employee.name),
-                    ),
-                  )
-                  .toList(),
+          items: dropdownItems,
           validator: (value) {
-            if (_coordinators.isNotEmpty &&
-                (value == null || value.trim().isEmpty)) {
+            if (value == null || value.trim().isEmpty) {
+              if (_coordinators.isEmpty && !hasMissingCurrent) {
+                return 'Cadastre um coordenador ativo antes de criar a obra';
+              }
               return 'Selecione o coordenador responsavel';
             }
             return null;
           },
           onChanged:
-              _canInteract() && _coordinators.isNotEmpty
+              _canInteract() && dropdownItems.isNotEmpty
                   ? (value) => setState(() => _selectedCoordinatorId = value)
                   : null,
         ),
+        const SizedBox(height: 10),
+        _buildCoordinatorHint(selectedCoordinator, hasMissingCurrent),
       ],
     );
   }
 
-  Widget _buildEnhancedDateFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildEnhancedDateField(
-            'Data de Início',
-            _startDate,
-            true,
-            Icons.play_arrow_outlined,
-          ),
+  Widget _buildCoordinatorHint(
+    EmployeeModel? selectedCoordinator,
+    bool hasMissingCurrent,
+  ) {
+    if (_isLoadingCoordinators) {
+      return _buildInlineNotice(
+        icon: Icons.sync_rounded,
+        text: 'Carregando colaboradores de coordenacao.',
+        color: AppColors.accentBlue,
+      );
+    }
+
+    if (selectedCoordinator != null) {
+      final details = [
+        selectedCoordinator.jobTitle,
+        selectedCoordinator.sector,
+      ].where((item) => item.trim().isNotEmpty).join(' - ');
+
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: AppDecorations.formHintPanel(color: AppColors.accentGold),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.verified_user_rounded,
+              color: AppColors.accentGold,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectedCoordinator.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (details.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      details,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildEnhancedDateField(
-            'Data Prevista',
-            _endDate,
-            false,
-            Icons.flag_outlined,
-          ),
-        ),
-      ],
+      );
+    }
+
+    if (hasMissingCurrent) {
+      return _buildInlineNotice(
+        icon: Icons.info_outline_rounded,
+        text: 'Coordenador atual mantido. Selecione outro ativo para alterar.',
+        color: AppColors.accentGold,
+      );
+    }
+
+    return _buildInlineNotice(
+      icon: Icons.priority_high_rounded,
+      text:
+          _coordinators.isEmpty
+              ? 'Sem coordenadores ativos disponiveis para novas obras.'
+              : 'Defina o responsavel antes de concluir o cadastro.',
+      color: AppColors.accentRed,
     );
+  }
+
+  Widget _buildInlineNotice({
+    required IconData icon,
+    required String text,
+    required Color color,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: AppDecorations.formHintPanel(color: color),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEnhancedDateFields() {
+    return _buildResponsiveFieldRow([
+      _buildEnhancedDateField(
+        'Data de Inicio',
+        _startDate,
+        true,
+        Icons.play_arrow_outlined,
+      ),
+      _buildEnhancedDateField(
+        'Data Prevista',
+        _endDate,
+        false,
+        Icons.flag_outlined,
+      ),
+    ]);
   }
 
   Widget _buildEnhancedDateField(
@@ -1356,29 +1475,22 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
   }
 
   Widget _buildEnhancedFinancialFields() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildEnhancedTextField(
-            controller: _budgetController,
-            label: 'Orçamento',
-            hint: 'R\$ 0,00',
-            icon: Icons.account_balance_wallet_outlined,
-            keyboardType: TextInputType.number,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildEnhancedTextField(
-            controller: _currentCostController,
-            label: 'Custo Atual',
-            hint: 'R\$ 0,00',
-            icon: Icons.monetization_on_outlined,
-            keyboardType: TextInputType.number,
-          ),
-        ),
-      ],
-    );
+    return _buildResponsiveFieldRow([
+      _buildEnhancedTextField(
+        controller: _budgetController,
+        label: 'Orcamento',
+        hint: 'R\$ 0,00',
+        icon: Icons.account_balance_wallet_outlined,
+        keyboardType: TextInputType.number,
+      ),
+      _buildEnhancedTextField(
+        controller: _currentCostController,
+        label: 'Custo Atual',
+        hint: 'R\$ 0,00',
+        icon: Icons.monetization_on_outlined,
+        keyboardType: TextInputType.number,
+      ),
+    ]);
   }
 
   Widget _buildEnhancedTagsSection() {
@@ -1933,11 +2045,23 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     });
   }
 
+  void _goToPage(int page) {
+    if (!_pageController.hasClients) return;
+    _pageController.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
   Future<void> _saveProject() async {
     if (_isSaving || _operationCompleted) return;
 
-    // Add null check for form state
-    if (_formKey.currentState?.validate() == false) return;
+    final formValid = _formKey.currentState?.validate() ?? true;
+    if (!formValid) {
+      _goToPage(0);
+      return;
+    }
     if (!_validateProjectLocation()) return;
 
     _lastSaveAttempt = DateTime.now();
@@ -1976,6 +2100,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
     String? imageUrl;
     String projectId = widget.project?.id ?? _generateProjectId();
     final selectedCoordinator = _selectedCoordinator;
+    final coordinatorId = _selectedCoordinatorId?.trim();
+
+    if (coordinatorId == null || coordinatorId.isEmpty) {
+      throw StateError('Selecione o coordenador responsavel pela obra.');
+    }
 
     if (_selectedFile != null || _selectedImageWeb != null) {
       try {
@@ -2019,10 +2148,10 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
                 orElse: () => null,
               )
               ?.name,
-      coordinatorId: _selectedCoordinatorId,
+      coordinatorId: coordinatorId,
       coordinatorName:
           selectedCoordinator?.name ??
-          (_selectedCoordinatorId == widget.project?.coordinatorId
+          (coordinatorId == widget.project?.coordinatorId
               ? widget.project?.coordinatorName
               : null),
       estimatedProgress: widget.project?.estimatedProgress ?? 0,
@@ -2094,9 +2223,15 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
 
   bool _validateProjectLocation() {
     final address = _locationController.text.trim();
+    final hasLocationInput =
+        address.isNotEmpty ||
+        _latitudeController.text.trim().isNotEmpty ||
+        _longitudeController.text.trim().isNotEmpty;
     final latitude = _parseNullableDouble(_latitudeController.text);
     final longitude = _parseNullableDouble(_longitudeController.text);
     final side = _parseNullableDouble(_geofenceSideController.text);
+
+    if (!hasLocationInput) return true;
 
     if (address.isEmpty) {
       _showErrorMessage('Informe o endereco da obra.');

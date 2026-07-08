@@ -8,6 +8,7 @@ import 'package:project_granith/controllers/projects_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class TransactionFormDialog extends StatefulWidget {
   final FinancialTransactionModel? initial;
@@ -109,16 +110,15 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: EdgeInsets.all(size.width < 420 ? 8 : 24),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppColors.borderColor.withValues(alpha: 0.72),
-          ),
-          boxShadow: AppColors.glowShadows(AppColors.accentBlue),
+        decoration: AppDecorations.dialogSurface(
+          glowColor:
+              _type == TransactionType.income
+                  ? AppColors.accentGreen
+                  : AppColors.accentGold,
         ),
+        clipBehavior: Clip.antiAlias,
         child: ConstrainedBox(
           constraints: BoxConstraints(
             maxWidth: isDesktop ? 560 : double.infinity,
@@ -229,53 +229,18 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
 
   Widget _buildHeader() {
     final isIncome = _type == TransactionType.income;
-    final color = isIncome ? Colors.greenAccent : Colors.redAccent;
+    final color = isIncome ? AppColors.accentGreen : AppColors.accentGold;
     final label =
         _isEditing
             ? 'Editar transação'
             : (isIncome ? 'Nova receita' : 'Nova despesa');
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: color.withValues(alpha: 0.24)),
-            ),
-            child: Icon(
-              isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-              color: color,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: AppColors.textMuted),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
-      ),
+    return GranithDialogHeader(
+      icon: isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+      title: label,
+      subtitle: 'Lancamento financeiro manual com status, origem e projeto',
+      accentColor: color,
+      onClose: () => Navigator.of(context).pop(),
     );
   }
 
@@ -289,7 +254,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
             TransactionType.income,
             'Receita',
             Icons.arrow_upward,
-            Colors.greenAccent,
+            AppColors.accentGreen,
           ),
         ),
         const SizedBox(width: 10),
@@ -298,7 +263,7 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
             TransactionType.expense,
             'Despesa',
             Icons.arrow_downward,
-            Colors.redAccent,
+            AppColors.accentGold,
           ),
         ),
       ],
@@ -618,31 +583,14 @@ class _TransactionFormDialogState extends State<TransactionFormDialog> {
   // ─── Helpers de UI ───────────────────────────────────────────────────────────
 
   InputDecoration _decoration(String label, IconData icon) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 18),
-      filled: true,
-      fillColor: AppColors.surfaceDark.withValues(alpha: 0.72),
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentRed, width: 1.2),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderSide: const BorderSide(color: AppColors.accentRed, width: 1.4),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+    return granithInputDecoration(
+      label: label,
+      hint: '',
+      icon: icon,
+      accentColor:
+          _type == TransactionType.income
+              ? AppColors.accentGreen
+              : AppColors.accentGold,
     );
   }
 

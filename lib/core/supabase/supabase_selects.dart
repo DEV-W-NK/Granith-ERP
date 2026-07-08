@@ -2,7 +2,9 @@ class SupabaseSelects {
   static const String userProfile =
       'id,email,displayName,display_name,photoUrl,photo_url,status,permissions,'
       'role,clientAccountId,client_account_id,clientAccountName,'
-      'client_account_name';
+      'client_account_name,username,login_username,internalLoginEmail,'
+      'internal_login_email,authProvider,auth_provider,employeeId,'
+      'employee_id,employeeName,employee_name';
 
   static const String clientAccount =
       'id,name,ownerEmail,owner_email,contactEmail,contact_email,contactPhone,'

@@ -40,7 +40,7 @@ class RecentActivities extends StatelessWidget {
                     color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: -0.5,
+                    letterSpacing: 0,
                   ),
                 ),
                 TextButton(

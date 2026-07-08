@@ -54,7 +54,10 @@ final materialRequisitionControllerProvider =
     });
 
 final teamControllerProvider = Provider<TeamController>((ref) {
-  final controller = TeamController(service: ref.watch(teamServiceProvider));
+  final controller = TeamController(
+    service: ref.watch(teamServiceProvider),
+    projectService: ref.watch(serviceProjetosProvider),
+  );
   controller.init();
   ref.onDispose(controller.dispose);
   return controller;

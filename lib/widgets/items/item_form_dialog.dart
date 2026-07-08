@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:project_granith/models/item_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class ItemFormDialog extends StatefulWidget {
   final Item? item;
@@ -238,21 +239,10 @@ class _ItemFormDialogState extends State<ItemFormDialog> {
   }
 
   InputDecoration _inputDecoration(String label) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.72),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.accentBlue, width: 1.4),
-      ),
-      filled: true,
-      fillColor: AppColors.surfaceDark.withValues(alpha: 0.76),
+    return granithInputDecoration(
+      label: label,
+      hint: '',
+      accentColor: AppColors.accentBlue,
     );
   }
 }

@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/team_model.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 class EmployeeSchemaException implements Exception {
   final String message;
@@ -44,12 +48,15 @@ class TeamService {
                 .insert(data)
                 .select('id')
                 .single();
-        return response['id'] as String;
+        final id = response['id'] as String;
+        _notifyEmployeesChanged();
+        return id;
       } else {
         await AppSupabase.client
             .from(_employees)
             .update(data)
             .eq('id', employee.id);
+        _notifyEmployeesChanged();
         return employee.id;
       }
     } catch (error) {
@@ -90,6 +97,7 @@ class TeamService {
           })
           .eq('id', team['id']);
     }
+    _notifyEmployeesChanged(extraScopes: const [AppDataRefreshBus.teams]);
   }
 
   Future<void> dismissEmployee(String id) async {
@@ -119,6 +127,7 @@ class TeamService {
           })
           .eq('id', team['id']);
     }
+    _notifyEmployeesChanged(extraScopes: const [AppDataRefreshBus.teams]);
   }
 
   Stream<List<TeamModel>> getTeams() {
@@ -147,6 +156,8 @@ class TeamService {
             .insert(DbValue.normalizeMap(team.toMap()))
             .select('id')
             .single();
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
     return response['id'] as String;
   }
 
@@ -158,6 +169,8 @@ class TeamService {
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', team.id);
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> deleteTeam(String teamId) async {
@@ -168,6 +181,8 @@ class TeamService {
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', teamId);
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> addMemberToTeam(String teamId, String employeeId) async {
@@ -181,6 +196,8 @@ class TeamService {
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', teamId);
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> removeMemberFromTeam(String teamId, String employeeId) async {
@@ -194,6 +211,8 @@ class TeamService {
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', teamId);
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<void> setTeamLeader(String teamId, String? employeeId) async {
@@ -204,6 +223,8 @@ class TeamService {
           'updatedAt': DateTime.now().toUtc().toIso8601String(),
         })
         .eq('id', teamId);
+    _notifyTeamsChanged();
+    unawaited(MobilePushDispatchService.dispatchPending());
   }
 
   Future<TeamModel?> getTeamById(String teamId) async {
@@ -215,5 +236,19 @@ class TeamService {
             .maybeSingle();
     if (row == null) return null;
     return TeamModel.fromMap(Map<String, dynamic>.from(row), teamId);
+  }
+
+  void _notifyEmployeesChanged({List<String> extraScopes = const []}) {
+    AppDataRefreshBus.instance.notify(
+      scopes: [AppDataRefreshBus.employees, ...extraScopes],
+      source: 'TeamService',
+    );
+  }
+
+  void _notifyTeamsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.teams],
+      source: 'TeamService',
+    );
   }
 }

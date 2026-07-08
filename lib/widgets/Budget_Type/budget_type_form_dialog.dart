@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/constants/budget_type_constants.dart';
 import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class BudgetTypeFormDialog extends StatefulWidget {
   final BudgetType? budgetType;
@@ -91,20 +92,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
       child: Container(
         width: dialogWidth,
         constraints: BoxConstraints(maxHeight: dialogMaxHeight),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: AppColors.borderColor.withValues(alpha: 0.5),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.32),
-              blurRadius: 24,
-              offset: const Offset(0, 16),
-            ),
-          ],
-        ),
+        decoration: AppDecorations.dialogSurface(glowColor: _effectiveColor()),
         clipBehavior: Clip.antiAlias,
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -134,14 +122,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
 
     return Container(
       padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
-      decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.38),
-          ),
-        ),
-      ),
+      decoration: AppDecorations.dialogHeader(accent: color),
       child: Row(
         children: [
           Container(
@@ -152,6 +133,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
               color: color.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: color.withValues(alpha: 0.35)),
+              boxShadow: AppColors.auraShadows(color),
             ),
             child: Icon(icon, color: color, size: 22),
           ),
@@ -273,9 +255,11 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.4)),
+        color: AppColors.surfaceDark.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.42),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,9 +587,11 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.primaryDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.4)),
+        color: AppColors.surfaceDark.withValues(alpha: 0.58),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.42),
+        ),
       ),
       child: Row(
         children: [
@@ -712,7 +698,7 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
         return Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.primaryDark,
+            color: AppColors.surfaceDark.withValues(alpha: 0.98),
             border: Border(
               top: BorderSide(
                 color: AppColors.borderColor.withValues(alpha: 0.38),
@@ -742,49 +728,18 @@ class _BudgetTypeFormDialogState extends State<BudgetTypeFormDialog> {
     required String hint,
     required IconData icon,
   }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon, color: AppColors.textMuted, size: 20),
-      filled: true,
-      fillColor: AppColors.primaryDark,
+    return granithInputDecoration(
+      label: label,
+      hint: hint,
+      icon: icon,
+      accentColor: _effectiveColor(),
+    ).copyWith(
       counterStyle: const TextStyle(color: AppColors.textMuted, fontSize: 11),
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
-      hintStyle: const TextStyle(color: AppColors.textMuted),
-      errorStyle: const TextStyle(color: AppColors.accentRed),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.34),
-        ),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(
-          color: AppColors.borderColor.withValues(alpha: 0.34),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentGold, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentRed),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: AppColors.accentRed, width: 1.5),
-      ),
     );
   }
 
   BoxDecoration _controlSurfaceDecoration() {
-    return BoxDecoration(
-      color: AppColors.primaryDark,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.34)),
-    );
+    return AppDecorations.formPanel(borderColor: _effectiveColor());
   }
 
   Color _effectiveColor() {

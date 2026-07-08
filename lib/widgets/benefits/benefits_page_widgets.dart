@@ -636,6 +636,7 @@ class _BenefitCard extends StatelessWidget {
             : 'Diaria ${currency.format(benefit.dailyValue)}';
 
     return _SurfaceTile(
+      accent: AppColors.accentGold,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -782,6 +783,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _SurfaceTile(
+      accent: AppColors.accentBlue,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -945,6 +947,7 @@ class _AssignmentTile extends StatelessWidget {
         benefit?.valueMode == BenefitValueMode.reimbursement;
 
     return _SurfaceTile(
+      accent: AppColors.accentGold,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2074,18 +2077,15 @@ class _HeaderTitle extends StatelessWidget {
 
 class _SurfaceTile extends StatelessWidget {
   final Widget child;
+  final Color accent;
 
-  const _SurfaceTile({required this.child});
+  const _SurfaceTile({required this.child, this.accent = AppColors.accentBlue});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.7)),
-      ),
+      decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
       child: child,
     );
   }
@@ -2102,11 +2102,7 @@ class _TileIcon extends StatelessWidget {
     return Container(
       width: 42,
       height: 42,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
+      decoration: AppDecorations.iconTile(color),
       child: Icon(icon, color: color, size: 20),
     );
   }

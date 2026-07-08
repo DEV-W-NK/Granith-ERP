@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/sector_model.dart';
@@ -35,10 +36,20 @@ class SectorService {
               .insert(data)
               .select('id')
               .single();
-      return row['id'] as String;
+      final id = row['id'] as String;
+      _notifySectorsChanged();
+      return id;
     }
 
     await AppSupabase.client.from(_collection).update(data).eq('id', sector.id);
+    _notifySectorsChanged();
     return sector.id;
+  }
+
+  void _notifySectorsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.sectors],
+      source: 'SectorService',
+    );
   }
 }

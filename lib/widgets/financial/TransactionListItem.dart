@@ -75,21 +75,22 @@ class TransactionListItem extends StatelessWidget {
 
     final statusColor = _statusColor(t.status);
     final statusLabel = _statusLabel(t.status);
+    final accent =
+        t.isOverdue
+            ? AppColors.accentRed
+            : isIncome
+            ? AppColors.accentGreen
+            : AppColors.accentGold;
 
     return GestureDetector(
       onTap: () => TransactionFormDialog.show(context, initial: t),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color:
-                t.isOverdue
-                    ? Colors.redAccent.withOpacity(0.3)
-                    : Colors.white.withOpacity(0.05),
-          ),
+        decoration: AppDecorations.cardSurface(
+          accent: accent,
+          emphasized: t.isOverdue,
+          radius: 14,
         ),
         child: Row(
           children: [
@@ -97,10 +98,7 @@ class TransactionListItem extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
-                color: (isIncome ? Colors.green : Colors.red).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
+              decoration: AppDecorations.iconTile(accent),
               child: Icon(
                 isIncome ? Icons.arrow_upward : Icons.arrow_downward,
                 color: isIncome ? Colors.greenAccent : Colors.redAccent,

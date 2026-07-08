@@ -1,0 +1,78 @@
+name: CI/CD Firebase Hosting
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: firebase-hosting-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FIREBASE_PROJECT_ID: granith-skyforge
+
+jobs:
+  build:
+    name: Validate, build and deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Test
+        run: flutter test
+
+      - name: Generate web runtime environment
+        shell: bash
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          node -e "const fs = require('fs'); fs.writeFileSync('web/env.js', 'window.GRANITH_ENV = ' + JSON.stringify({ GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || '' }) + ';\\n');"
+
+      - name: Build Flutter Web
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+          GOOGLE_OAUTH_WEB_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_WEB_CLIENT_ID }}
+        run: |
+          SUPABASE_URL_VALUE="${SUPABASE_URL:-https://example.supabase.co}"
+          SUPABASE_KEY_VALUE="${SUPABASE_PUBLISHABLE_KEY:-placeholder}"
+          flutter build web --release \
+            --dart-define=SUPABASE_URL="$SUPABASE_URL_VALUE" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY_VALUE" \
+            --dart-define=GOOGLE_MAPS_API_KEY="${GOOGLE_MAPS_API_KEY:-}" \
+            --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID="${GOOGLE_OAUTH_WEB_CLIENT_ID:-}"
+
+      - name: Deploy to Firebase Hosting
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
+          channelId: live
+          projectId: ${{ env.FIREBASE_PROJECT_ID }}

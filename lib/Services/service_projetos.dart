@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ServiceProjetos {
@@ -231,7 +234,10 @@ class ServiceProjetos {
       final created =
           await _client.from(_table).insert(payload).select('id').single();
 
-      return (created['id']).toString();
+      final id = (created['id']).toString();
+      _notifyProjectsChanged();
+      unawaited(MobilePushDispatchService.dispatchPending());
+      return id;
     } catch (e) {
       rethrow;
     } finally {
@@ -277,6 +283,8 @@ class ServiceProjetos {
           .from(_table)
           .update(_projectToRow(project, includeId: false))
           .eq('id', project.id);
+      _notifyProjectsChanged();
+      unawaited(MobilePushDispatchService.dispatchPending());
     } catch (e) {
       rethrow;
     } finally {
@@ -344,6 +352,7 @@ class ServiceProjetos {
       _markProjectProcessing(projectKey, 'delete');
       await _client.from(_table).delete().eq('id', projectId);
       await _deleteProjectImage(projectId);
+      _notifyProjectsChanged();
     } catch (e) {
       rethrow;
     } finally {
@@ -693,5 +702,12 @@ class ServiceProjetos {
     }
 
     return recovered;
+  }
+
+  void _notifyProjectsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.projects],
+      source: 'ServiceProjetos',
+    );
   }
 }

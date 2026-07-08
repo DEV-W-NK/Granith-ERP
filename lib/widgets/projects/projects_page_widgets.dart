@@ -1420,7 +1420,7 @@ class _EmptyState extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
+                letterSpacing: 0,
               ),
               textAlign: TextAlign.center,
             ),

@@ -384,11 +384,10 @@ class _GeofenceCard extends StatelessWidget {
         onTap: () => controller.selectGeofence(geofence.id),
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            gradient: AppColors.cardGradient,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.45)),
-          ),
+          decoration: AppDecorations.cardSurface(
+            accent: color,
+            emphasized: selected,
+          ).copyWith(border: Border.all(color: color.withValues(alpha: 0.45))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -711,10 +710,10 @@ class _ToolSurface extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.68),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.7)),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 16,
       ),
       child: child,
     );

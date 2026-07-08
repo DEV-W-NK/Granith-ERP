@@ -23,40 +23,41 @@ void main() {
     );
   }
 
-  testWidgets('SuppliersHeader mostra contagem, alterna modo e abre exportacao', (
-    tester,
-  ) async {
-    final controller = SupplierController(
-      FakeSupplierService(
-        initialSuppliers: [
-          supplier(id: '1', name: 'Alpha', isActive: true),
-          supplier(id: '2', name: 'Beta', isActive: false),
-        ],
-      ),
-    );
-    await controller.loadSuppliers();
-
-    await tester.pumpWidget(
-      ChangeNotifierProvider<SupplierController>.value(
-        value: controller,
-        child: const MaterialApp(
-          home: Scaffold(body: SuppliersHeader(isDesktop: true)),
+  testWidgets(
+    'SuppliersHeader mostra contagem, alterna modo e abre exportacao',
+    (tester) async {
+      final controller = SupplierController(
+        FakeSupplierService(
+          initialSuppliers: [
+            supplier(id: '1', name: 'Alpha', isActive: true),
+            supplier(id: '2', name: 'Beta', isActive: false),
+          ],
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 100));
+      );
+      await tester.runAsync(controller.loadSuppliers);
 
-    expect(find.text('Fornecedores'), findsOneWidget);
-    expect(find.textContaining('2 fornecedores'), findsOneWidget);
-    expect(find.text('1 ativos'), findsOneWidget);
+      await tester.pumpWidget(
+        ChangeNotifierProvider<SupplierController>.value(
+          value: controller,
+          child: const MaterialApp(
+            home: Scaffold(body: SuppliersHeader(isDesktop: true)),
+          ),
+        ),
+      );
+      await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.view_list_rounded));
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(controller.isGridView, isFalse);
+      expect(find.text('Fornecedores'), findsOneWidget);
+      expect(find.text('2 fornecedores cadastrados, 1 ativos'), findsOneWidget);
+      expect(find.text('1 ativos'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.download_rounded));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Exportar Fornecedores'), findsOneWidget);
-    expect(find.text('Exportar como CSV'), findsOneWidget);
-  });
+      await tester.tap(find.byIcon(Icons.view_list_rounded));
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(controller.isGridView, isFalse);
+
+      await tester.tap(find.byIcon(Icons.download_rounded));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Exportar fornecedores'), findsOneWidget);
+      expect(find.text('Exportar como CSV'), findsOneWidget);
+    },
+  );
 }

@@ -43,7 +43,7 @@ void main() {
 
       expect(find.text('Cliente Atlas'), findsOneWidget);
       expect(find.text('Torre Norte'), findsOneWidget);
-      expect(find.textContaining('125000'), findsOneWidget);
+      expect(find.text('R\$ 125.000,00'), findsOneWidget);
 
       await tester.tap(find.text('Aprovar'));
       await tester.pumpAndSettle();

@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/InventoryMovementType.dart';
@@ -113,6 +114,7 @@ class InventoryService {
     );
 
     await _insertMovement(movement);
+    _notifyInventoryChanged();
   }
 
   Future<void> addOutboundMovement({
@@ -148,6 +150,7 @@ class InventoryService {
         userId: userId,
       ),
     );
+    _notifyInventoryChanged();
   }
 
   Future<void> addAdjustment({
@@ -178,6 +181,7 @@ class InventoryService {
         userId: userId,
       ),
     );
+    _notifyInventoryChanged();
   }
 
   Future<void> addMovement(InventoryMovement movement) async {
@@ -195,6 +199,7 @@ class InventoryService {
 
     await _updateItemQuantity(movement.itemId, newQuantity, DateTime.now());
     await _insertMovement(movement);
+    _notifyInventoryChanged();
   }
 
   Future<InventoryItem?> getItemById(String id) async {
@@ -250,5 +255,15 @@ class InventoryService {
   InventoryMovement _movementFromRow(dynamic row) {
     final data = Map<String, dynamic>.from(row as Map);
     return InventoryMovement.fromMap(data, data['id'] as String? ?? '');
+  }
+
+  void _notifyInventoryChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [
+        AppDataRefreshBus.inventory,
+        AppDataRefreshBus.inventoryMovements,
+      ],
+      source: 'InventoryService',
+    );
   }
 }

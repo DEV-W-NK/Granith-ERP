@@ -135,6 +135,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
+      await tester.ensureVisible(find.text('Marcar pago').first);
+      await tester.pumpAndSettle();
+
       await tester.tap(find.text('Marcar pago').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
@@ -147,6 +150,60 @@ void main() {
       financialController.dispose();
       await service.dispose();
       authController.dispose();
+    });
+
+    testWidgets('mantem cards estaveis em viewports comuns', (tester) async {
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      for (final size in const [
+        Size(390, 844),
+        Size(1024, 720),
+        Size(1366, 768),
+      ]) {
+        await tester.binding.setSurfaceSize(size);
+        final authController = _TestAuthController(
+          const UserModel(
+            uid: 'finance-1',
+            email: 'financeiro@granith.com',
+            permissions: [PermissionCodes.purchaseFinanceWrite],
+          ),
+        );
+        final service = FakeFinancialService();
+        final financialController = FinancialController(service: service)
+          ..init();
+        service.emit([
+          _tx(
+            id: 'purchase-payable',
+            description: 'Compra: Cimento',
+            origin: TransactionOrigin.purchase,
+          ),
+          _tx(
+            id: 'purchase-paid',
+            description: 'Compra: Brita',
+            origin: TransactionOrigin.purchase,
+            status: TransactionStatus.paid,
+          ),
+        ]);
+
+        await tester.pumpWidget(
+          _buildHarness(
+            authController: authController,
+            financialController: financialController,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
+
+        expect(find.text('Compras no Financeiro'), findsOneWidget);
+        expect(find.text('Em aberto'), findsWidgets);
+        expect(find.text('Compra: Cimento'), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        financialController.dispose();
+        await service.dispose();
+        authController.dispose();
+      }
     });
   });
 }

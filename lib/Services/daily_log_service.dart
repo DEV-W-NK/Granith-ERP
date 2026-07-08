@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
@@ -37,6 +38,7 @@ class DailyLogService {
       } else {
         await AppSupabase.client.from(_table).update(data).eq('id', log.id);
       }
+      _notifyDailyLogsChanged();
     } catch (e) {
       throw Exception('Erro ao salvar diario: $e');
     }
@@ -164,6 +166,7 @@ class DailyLogService {
       });
 
       await AppSupabase.client.from(_table).update(data).eq('id', log.id);
+      _notifyDailyLogsChanged();
     } catch (e) {
       throw Exception('Erro ao assinar diario: $e');
     }
@@ -246,6 +249,13 @@ class DailyLogService {
     }
 
     return '';
+  }
+
+  void _notifyDailyLogsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.dailyLogs],
+      source: 'DailyLogService',
+    );
   }
 }
 

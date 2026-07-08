@@ -73,7 +73,7 @@ void main() {
 
     await tester.pumpWidget(_LoginFormHarness(viewModel: viewModel));
 
-    expect(find.text('Entrar com e-mail'), findsOneWidget);
+    expect(find.text('Entrar'), findsOneWidget);
     expect(find.text('Conectar com Google'), findsOneWidget);
     expect(find.text('Receber link de acesso'), findsOneWidget);
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -91,7 +91,7 @@ void main() {
     );
 
     await tester.pumpWidget(_LoginFormHarness(viewModel: viewModel));
-    await tester.tap(find.text('Entrar com e-mail'));
+    await tester.tap(find.text('Entrar'));
     await tester.pumpAndSettle();
 
     expect(

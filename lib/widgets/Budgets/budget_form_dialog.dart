@@ -6,6 +6,7 @@ import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 // Classe para representar um tipo de orçamento com valor
 class BudgetTypeItem {
@@ -481,41 +482,10 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
           keyboardType: keyboardType,
           maxLines: maxLines,
           style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
-          decoration: InputDecoration(
-            prefixIcon: Icon(icon, color: AppColors.accentGold, size: 20),
-            filled: true,
-            fillColor: AppColors.secondaryDark,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.accentGold,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.accentRed),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: AppColors.accentRed,
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            errorStyle: const TextStyle(color: AppColors.accentRed),
+          decoration: granithInputDecoration(
+            hint: '',
+            icon: icon,
+            accentColor: AppColors.accentGold,
           ),
         ),
       ],
@@ -1316,23 +1286,10 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
           child: Container(
             width: dialogWidth.toDouble(),
             constraints: BoxConstraints(maxHeight: size.height * 0.92),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.borderColor.withOpacity(0.5)),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primaryDark.withOpacity(0.5),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: AppColors.accentGold.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+            decoration: AppDecorations.dialogSurface(
+              glowColor: AppColors.accentGold,
             ),
+            clipBehavior: Clip.antiAlias,
             child: SingleChildScrollView(
               child: Form(
                 key: _formKey,
@@ -1343,23 +1300,8 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                     Container(
                       width: double.infinity,
                       padding: padding,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppColors.accentGold, Color(0xFFB8941F)],
-                        ),
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(20),
-                          topRight: Radius.circular(20),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.accentGold.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                      decoration: AppDecorations.dialogHeader(
+                        accent: AppColors.accentGold,
                       ),
                       child: Row(
                         children: [
@@ -1367,14 +1309,17 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: AppColors.primaryDark.withOpacity(0.2),
+                              color: AppColors.accentGold.withOpacity(0.12),
                               borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: AppColors.accentGold.withOpacity(0.30),
+                              ),
                             ),
                             child: Icon(
                               widget.budget != null
                                   ? Icons.edit_rounded
                                   : Icons.add_rounded,
-                              color: AppColors.primaryDark,
+                              color: AppColors.accentGold,
                               size: 20,
                             ),
                           ),
@@ -1392,7 +1337,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                   style: TextStyle(
                                     fontSize: isCompact ? 18 : 20,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 Text(
@@ -1401,9 +1346,7 @@ class _BudgetFormDialogState extends State<BudgetFormDialog>
                                       : 'Preencha os dados para criar um novo orçamento',
                                   style: TextStyle(
                                     fontSize: isCompact ? 13 : 14,
-                                    color: AppColors.primaryDark.withOpacity(
-                                      0.8,
-                                    ),
+                                    color: AppColors.textSecondary,
                                   ),
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,

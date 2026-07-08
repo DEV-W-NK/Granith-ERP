@@ -1,3 +1,4 @@
+import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/item_model.dart';
@@ -13,7 +14,9 @@ class ItemService {
               .insert(DbValue.normalizeMap(item.toMap()))
               .select('id')
               .single();
-      return response['id'] as String;
+      final id = response['id'] as String;
+      _notifyItemsChanged();
+      return id;
     } catch (e) {
       throw Exception('Erro ao adicionar item: $e');
     }
@@ -29,6 +32,7 @@ class ItemService {
             ),
           )
           .eq('id', item.id);
+      _notifyItemsChanged();
     } catch (e) {
       throw Exception('Erro ao atualizar item: $e');
     }
@@ -37,6 +41,7 @@ class ItemService {
   Future<void> deleteItem(String id) async {
     try {
       await AppSupabase.client.from(_collection).delete().eq('id', id);
+      _notifyItemsChanged();
     } catch (e) {
       throw Exception('Erro ao deletar item: $e');
     }
@@ -74,5 +79,12 @@ class ItemService {
           ),
         )
         .toList();
+  }
+
+  void _notifyItemsChanged() {
+    AppDataRefreshBus.instance.notify(
+      scopes: const [AppDataRefreshBus.items],
+      source: 'ItemService',
+    );
   }
 }

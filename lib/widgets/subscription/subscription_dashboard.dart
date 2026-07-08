@@ -255,13 +255,10 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.62),
-        ),
-        boxShadow: AppColors.glowShadows(),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        emphasized: true,
+        radius: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,13 +331,10 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.62),
-        ),
-        boxShadow: AppColors.glowShadows(),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 20,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,10 +561,9 @@ class _SubscriptionDashboardState extends State<SubscriptionDashboard> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.60),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.25)),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        radius: 18,
       ),
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,7 +653,7 @@ class _StatusPill extends StatelessWidget {
           color: color,
           fontWeight: FontWeight.w700,
           fontSize: 12,
-          letterSpacing: 0.4,
+          letterSpacing: 0,
         ),
       ),
     );
@@ -687,12 +680,7 @@ class _MetricCard extends StatelessWidget {
     return Container(
       width: width < ResponsiveLayout.compact ? double.infinity : 250,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-        boxShadow: AppColors.glowShadows(color),
-      ),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
