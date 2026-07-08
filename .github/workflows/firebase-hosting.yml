@@ -47,8 +47,8 @@ jobs:
       - name: Test
         run: flutter test
 
-      - name: Validate deploy secrets
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+      - name: Check deploy secrets
+        id: deploy_secrets
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -66,7 +66,9 @@ jobs:
 
           if [ "${#missing[@]}" -gt 0 ]; then
             printf 'Missing GitHub Actions secrets: %s\n' "${missing[*]}"
-            exit 1
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate web runtime environment
@@ -93,7 +95,7 @@ jobs:
             --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID="${GOOGLE_OAUTH_WEB_CLIENT_ID:-}"
 
       - name: Deploy preview to Firebase Hosting
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.deploy_secrets.outputs.ready == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -102,11 +104,19 @@ jobs:
           channelId: pr-${{ github.event.pull_request.number }}
           expires: 7d
 
+      - name: Skip Firebase preview deploy
+        if: github.event_name == 'pull_request' && steps.deploy_secrets.outputs.ready != 'true'
+        run: echo "Firebase preview deploy skipped because GitHub Actions secrets are not fully configured."
+
       - name: Deploy to Firebase Hosting
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.deploy_secrets.outputs.ready == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
           channelId: live
           projectId: ${{ env.FIREBASE_PROJECT_ID }}
+
+      - name: Skip Firebase live deploy
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.deploy_secrets.outputs.ready != 'true'
+        run: echo "Firebase live deploy skipped because GitHub Actions secrets are not fully configured."

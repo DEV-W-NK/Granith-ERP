@@ -359,7 +359,7 @@ GitHub > Repository > Settings > Secrets and variables > Actions
 
 `FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE` deve conter o JSON completo da service account do Firebase. Ele pode ser gerado pelo Firebase Console em `Project settings > Service accounts`, ou pelo assistente `firebase init hosting:github`.
 
-O deploy live falha cedo se algum secret obrigatorio nao estiver configurado. Em pull requests vindos de forks, o workflow valida e builda o app, mas nao publica preview porque o GitHub nao libera secrets para forks por padrao.
+Se algum secret obrigatorio ainda nao estiver configurado, o workflow continua rodando validacao, testes e build com placeholders, mas pula o deploy no Firebase. Em pull requests vindos de forks, o workflow tambem nao publica preview porque o GitHub nao libera secrets para forks por padrao.
 
 Nao coloque no GitHub Actions:
 
