@@ -107,7 +107,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                       ),
                     ),
                     child: const Text(
-                      'Granith Command Surface',
+                      'Granith ERP',
                       style: TextStyle(
                         color: AppColors.accentBlue,
                         fontSize: 12,

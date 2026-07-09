@@ -380,7 +380,7 @@ class _CardContent extends StatelessWidget {
 
   Widget _buildFooter(BuildContext context) {
     return Text(
-      '(c) ${DateTime.now().year} Granith Enterprise',
+      '(c) ${DateTime.now().year} Granith ERP',
       style: const TextStyle(
         color: AppColors.textMuted,
         fontSize: 12,

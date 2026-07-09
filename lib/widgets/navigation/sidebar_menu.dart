@@ -75,7 +75,7 @@ class SidebarMenu extends StatelessWidget {
             Expanded(
               child: isExpanded ? _buildExpandedList() : _buildCollapsedRail(),
             ),
-            _buildFooter(auth.user?.email ?? ''),
+            _buildFooter(context, auth.user?.email ?? ''),
           ],
         ),
       ),
@@ -211,23 +211,13 @@ class SidebarMenu extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.accentBlue.withValues(alpha: 0.95),
-                    AppColors.auraCyan.withValues(alpha: 0.75),
-                  ],
-                ),
-                boxShadow: AppColors.auraShadows(AppColors.accentBlue),
-              ),
-              child: const Icon(
-                Icons.architecture,
-                color: AppColors.textPrimary,
-                size: 18,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(
+                'assets/branding/granith_app_icon.png',
+                width: 34,
+                height: 34,
+                fit: BoxFit.cover,
               ),
             ),
           ],
@@ -247,20 +237,14 @@ class SidebarMenu extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.accentBlue.withValues(alpha: 0.95),
-                  AppColors.auraCyan.withValues(alpha: 0.75),
-                ],
-              ),
-              boxShadow: AppColors.auraShadows(AppColors.accentBlue),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.asset(
+              'assets/branding/granith_app_icon.png',
+              width: 42,
+              height: 42,
+              fit: BoxFit.cover,
             ),
-            child: const Icon(Icons.architecture, color: AppColors.textPrimary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -490,7 +474,7 @@ class SidebarMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(String email) {
+  Widget _buildFooter(BuildContext context, String email) {
     if (!isExpanded) {
       return Container(
         padding: const EdgeInsets.fromLTRB(10, 10, 10, 14),
@@ -501,12 +485,30 @@ class SidebarMenu extends StatelessWidget {
             ),
           ),
         ),
-        child: Tooltip(
-          message: 'Sair',
-          child: IconButton(
-            onPressed: onLogout,
-            icon: const Icon(Icons.logout_rounded, color: AppColors.accentRed),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Tooltip(
+              message: 'Sobre o Granith',
+              child: IconButton(
+                onPressed: () => _showAbout(context),
+                icon: const Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.accentGold,
+                ),
+              ),
+            ),
+            Tooltip(
+              message: 'Sair',
+              child: IconButton(
+                onPressed: onLogout,
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  color: AppColors.accentRed,
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -560,6 +562,15 @@ class SidebarMenu extends StatelessWidget {
           ],
           SizedBox(
             width: double.infinity,
+            child: TextButton.icon(
+              onPressed: () => _showAbout(context),
+              icon: const Icon(Icons.info_outline_rounded, size: 18),
+              label: const Text('Sobre o Granith'),
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: onLogout,
               icon: const Icon(Icons.logout_rounded),
@@ -571,6 +582,30 @@ class SidebarMenu extends StatelessWidget {
     );
   }
 
+  void _showAbout(BuildContext context) {
+    showAboutDialog(
+      context: context,
+      applicationName: 'Granith ERP',
+      applicationVersion: '0.1.0',
+      applicationIcon: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          'assets/branding/granith_app_icon.png',
+          width: 52,
+          height: 52,
+          fit: BoxFit.cover,
+        ),
+      ),
+      applicationLegalese: 'Granith - gestao integrada para obras.',
+      children: const [
+        SizedBox(height: 12),
+        Text(
+          'ERP web para controlar projetos, financeiro, estoque, compras, '
+          'equipes, rotas, geofencing, portal do cliente e integracoes mobile.',
+        ),
+      ],
+    );
+  }
   String _sidebarTitle(NavigationModule module) {
     switch (module.index) {
       case 2:

@@ -23,42 +23,37 @@ class LoginLogo extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(18),
+            width: 310,
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.sizeOf(context).width * 0.72,
+            ),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.accentBlue.withValues(alpha: 0.95),
-                  AppColors.auraCyan.withValues(alpha: 0.78),
-                ],
-              ),
+              borderRadius: BorderRadius.circular(24),
+              color: AppColors.primaryDark.withValues(alpha: 0.32),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: AppColors.accentGold.withValues(alpha: 0.32),
                 width: 1.4,
               ),
               boxShadow: [
-                ...AppColors.glowShadows(AppColors.accentBlue),
-                ...AppColors.auraShadows(AppColors.accentBlue),
+                ...AppColors.glowShadows(AppColors.accentGold),
+                ...AppColors.auraShadows(AppColors.accentGold),
               ],
             ),
-            child: const Icon(
-              Icons.home_work_outlined,
-              size: 64,
-              color: AppColors.textPrimary,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: Image.asset(
+                'assets/branding/granith_logo_wordmark.png',
+                height: 118,
+                fit: BoxFit.contain,
+                alignment: Alignment.center,
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            settings.workspaceName.toUpperCase(),
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
           Text(
             settings.workspaceTagline,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.textSecondary,
               letterSpacing: 0,
