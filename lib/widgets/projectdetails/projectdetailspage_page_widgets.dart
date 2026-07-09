@@ -18,6 +18,7 @@ import 'package:project_granith/widgets/projects/project_image.dart';
 import 'package:project_granith/helpers/projects_helpers.dart';
 import 'package:project_granith/ViewModels/ProjectDetailsViewModel.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/projectdetails/project_labor_cost_analysis_tab.dart';
 
 class ProjectDetailsPageView extends StatefulWidget {
   const ProjectDetailsPageView({super.key});
@@ -33,7 +34,7 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
   }
 
   @override
@@ -62,6 +63,7 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                 children: [
                   _ResumoTab(project: p),
                   _FinanceiroTab(project: p),
+                  ProjectLaborCostAnalysisTab(project: p),
                   _DiarioTab(project: p),
                   _EquipeTab(project: p),
                 ],
@@ -94,7 +96,7 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.black38,
-                    AppColors.primaryDark.withOpacity(0.95),
+                    AppColors.primaryDark.withValues(alpha: 0.95),
                   ],
                 ),
               ),
@@ -182,6 +184,10 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
           Tab(
             icon: Icon(Icons.account_balance_outlined, size: 18),
             text: 'Financeiro',
+          ),
+          Tab(
+            icon: Icon(Icons.engineering_outlined, size: 18),
+            text: 'Mao de obra',
           ),
           Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'Diário'),
           Tab(icon: Icon(Icons.groups_outlined, size: 18), text: 'Equipe'),
@@ -275,16 +281,18 @@ class _FinanceiroTab extends StatelessWidget {
                 }).toList(),
           ),
       builder: (context, snap) {
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.accentGold),
           );
+        }
         final transactions = snap.data!;
-        if (transactions.isEmpty)
+        if (transactions.isEmpty) {
           return const _EmptyState(
             icon: Icons.account_balance_wallet,
             label: 'Nenhuma transação registrada',
           );
+        }
 
         return ListView.builder(
           padding: ResponsiveLayout.pagePadding(
@@ -300,7 +308,7 @@ class _FinanceiroTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surfaceDark,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Row(
                 children: [
@@ -384,16 +392,18 @@ class _DiarioTabState extends State<_DiarioTab> {
                 }).toList(),
           ),
       builder: (context, snap) {
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.accentGold),
           );
+        }
         final logs = snap.data!;
-        if (logs.isEmpty)
+        if (logs.isEmpty) {
           return const _EmptyState(
             icon: Icons.menu_book,
             label: 'Nenhum registro no diário',
           );
+        }
 
         return ListView.builder(
           padding: ResponsiveLayout.pagePadding(
@@ -409,7 +419,7 @@ class _DiarioTabState extends State<_DiarioTab> {
               decoration: BoxDecoration(
                 color: AppColors.surfaceDark,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -556,9 +566,9 @@ class _DailyLogSignaturePill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Text(
         label,
@@ -615,16 +625,18 @@ class _EquipeTab extends StatelessWidget {
                     .toList(),
           ),
       builder: (context, snap) {
-        if (!snap.hasData)
+        if (!snap.hasData) {
           return const Center(
             child: CircularProgressIndicator(color: AppColors.accentGold),
           );
+        }
         final teams = snap.data!;
-        if (teams.isEmpty)
+        if (teams.isEmpty) {
           return const _EmptyState(
             icon: Icons.groups,
             label: 'Nenhuma equipe vinculada',
           );
+        }
 
         return ListView.builder(
           padding: ResponsiveLayout.pagePadding(
@@ -639,7 +651,7 @@ class _EquipeTab extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.surfaceDark,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -757,9 +769,9 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: project.status.color.withOpacity(0.15),
+        color: project.status.color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: project.status.color.withOpacity(0.4)),
+        border: Border.all(color: project.status.color.withValues(alpha: 0.4)),
       ),
       child: Text(
         project.status.displayName,
@@ -783,9 +795,9 @@ class _AlertPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.4)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
@@ -821,11 +833,12 @@ class _RecentPurchasesPreview extends StatelessWidget {
       builder: (context, snap) {
         if (!snap.hasData) return const LinearProgressIndicator();
         final purchases = snap.data!;
-        if (purchases.isEmpty)
+        if (purchases.isEmpty) {
           return const Text(
             'Nenhuma compra registrada',
             style: TextStyle(color: AppColors.textMuted, fontSize: 12),
           );
+        }
         return Column(
           children:
               purchases
@@ -860,7 +873,11 @@ class _EmptyState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, size: 48, color: AppColors.textMuted.withOpacity(0.3)),
+          Icon(
+            icon,
+            size: 48,
+            color: AppColors.textMuted.withValues(alpha: 0.3),
+          ),
           const SizedBox(height: 12),
           Text(
             label,
