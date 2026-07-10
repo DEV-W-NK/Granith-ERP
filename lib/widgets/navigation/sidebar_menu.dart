@@ -619,10 +619,12 @@ class SidebarMenu extends StatelessWidget {
       case 17:
         return 'Entradas e Saidas';
       case 18:
-        return 'Compras a Pagar';
+        return 'Ponto e Custos';
       case 19:
-        return 'DRE';
+        return 'Compras a Pagar';
       case 20:
+        return 'DRE';
+      case 21:
         return 'Acessos';
       default:
         return module.title;

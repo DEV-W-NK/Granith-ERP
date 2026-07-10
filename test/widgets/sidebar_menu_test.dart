@@ -50,20 +50,27 @@ Widget _buildHarness({
             ),
             NavigationModule(
               index: 18,
+              title: 'Ponto e Custos',
+              section: 'Financeiro',
+              icon: Icons.price_check_rounded,
+              aliases: 'ponto custos horas',
+            ),
+            NavigationModule(
+              index: 19,
               title: 'Compras no Financeiro',
               section: 'Financeiro',
               icon: Icons.receipt_long_rounded,
               aliases: 'compras pagar',
             ),
             NavigationModule(
-              index: 19,
+              index: 20,
               title: 'DRE Gerencial',
               section: 'Financeiro',
               icon: Icons.bar_chart_rounded,
               aliases: 'dre resultados',
             ),
             NavigationModule(
-              index: 20,
+              index: 21,
               title: 'Permissoes e Clientes',
               section: 'Administrativo',
               icon: Icons.admin_panel_settings_rounded,
@@ -119,6 +126,7 @@ void main() {
       expect(find.text('GRANITH'), findsOneWidget);
       expect(find.text('Projetos'), findsOneWidget);
       expect(find.text('Entradas e Saidas'), findsOneWidget);
+      expect(find.text('Ponto e Custos'), findsOneWidget);
       expect(find.text('Compras a Pagar'), findsOneWidget);
       expect(find.text('DRE'), findsOneWidget);
       expect(find.text('Permissoes'), findsNothing);

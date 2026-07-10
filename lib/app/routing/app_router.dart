@@ -47,31 +47,31 @@ class AppRouter {
       case '/ai/operational':
         return _guardedRoute(
           settings,
-          const MainLayout(initialIndex: 21),
+          const MainLayout(initialIndex: 22),
           allow: _canAccessInternalApp,
         );
       case '/ai/hr':
         return _guardedRoute(
           settings,
-          const MainLayout(initialIndex: 22),
+          const MainLayout(initialIndex: 23),
           allow: _canAccessInternalApp,
         );
       case '/ai/commercial':
         return _guardedRoute(
           settings,
-          const MainLayout(initialIndex: 23),
+          const MainLayout(initialIndex: 24),
           allow: _canAccessInternalApp,
         );
       case '/ai/supplies':
         return _guardedRoute(
           settings,
-          const MainLayout(initialIndex: 24),
+          const MainLayout(initialIndex: 25),
           allow: _canAccessInternalApp,
         );
       case '/ai/administrative':
         return _guardedRoute(
           settings,
-          const MainLayout(initialIndex: 25),
+          const MainLayout(initialIndex: 26),
           allow: _canAccessInternalApp,
         );
       case '/subscription':
