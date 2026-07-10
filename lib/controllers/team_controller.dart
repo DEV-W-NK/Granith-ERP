@@ -110,11 +110,12 @@ class TeamController extends ChangeNotifier {
     return null;
   }
 
-  Future<void> saveEmployee(EmployeeModel employee) async {
+  Future<String> saveEmployee(EmployeeModel employee) async {
     _setLoading(true);
     try {
-      await _service.saveEmployee(employee);
+      final id = await _service.saveEmployee(employee);
       _clearError();
+      return id;
     } catch (e) {
       _error = 'Erro ao salvar funcionario: $e';
       rethrow;

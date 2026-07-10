@@ -69,6 +69,10 @@ Deno.serve(async (request) => {
       return await createInternalUser(adminClient, body);
     }
 
+    if (action === 'invite_employee') {
+      return await inviteEmployeeByEmail(adminClient, body);
+    }
+
     if (action === 'reset_password') {
       return await resetInternalPassword(adminClient, body);
     }
@@ -198,14 +202,176 @@ async function createInternalUser(adminClient: ReturnType<typeof createClient>, 
   return jsonResponse({ ok: true, user: profile });
 }
 
+async function inviteEmployeeByEmail(
+  adminClient: ReturnType<typeof createClient>,
+  body: Record<string, unknown>,
+) {
+  const email = normalizeEmail(String(body.email ?? ''));
+  if (!isValidEmail(email)) {
+    return jsonResponse(
+      { error: 'invalid_email', message: 'Informe um e-mail valido para convidar o funcionario.' },
+      400,
+    );
+  }
+
+  let employeeBinding;
+  try {
+    employeeBinding = await resolveEmployeeBinding(adminClient, body, { requireEmployee: true });
+  } catch (error) {
+    return jsonResponse(
+      {
+        error: 'invalid_employee_binding',
+        message: error instanceof Error ? error.message : 'Colaborador vinculado invalido.',
+      },
+      400,
+    );
+  }
+
+  const displayName =
+    String(body.displayName ?? body.display_name ?? employeeBinding.employeeName ?? email).trim() ||
+    employeeBinding.employeeName ||
+    email;
+  const role = normalizeRole(String(body.role ?? 'employee'));
+  const permissions = normalizePermissions(body.permissions);
+  const redirectTo = normalizeRedirectTo(body.redirectTo ?? body.redirect_to);
+  const existingByEmployee = await findUserByEmployeeId(adminClient, employeeBinding.employeeId);
+
+  if (
+    existingByEmployee &&
+    normalizeEmail(String(existingByEmployee.email ?? '')) !== email
+  ) {
+    return jsonResponse(
+      {
+        error: 'employee_already_bound',
+        message: `Esse funcionario ja esta vinculado ao acesso ${existingByEmployee.email}.`,
+      },
+      409,
+    );
+  }
+
+  const existingByEmail = await findUserByEmail(adminClient, email);
+  if (
+    existingByEmail &&
+    existingByEmail.employee_id &&
+    String(existingByEmail.employee_id) !== employeeBinding.employeeId
+  ) {
+    return jsonResponse(
+      {
+        error: 'email_already_bound',
+        message: 'Esse e-mail ja esta vinculado a outro funcionario.',
+      },
+      409,
+    );
+  }
+
+  const inviteOptions: Record<string, unknown> = {
+    data: {
+      full_name: displayName,
+      role,
+      auth_provider: 'email',
+      employee_id: employeeBinding.employeeId,
+      employee_name: employeeBinding.employeeName,
+    },
+  };
+  if (redirectTo) {
+    inviteOptions.redirectTo = redirectTo;
+  }
+
+  const { data: invited, error: inviteError } =
+    await adminClient.auth.admin.inviteUserByEmail(email, inviteOptions);
+
+  const alreadyRegistered = inviteError?.message
+    ?.toLowerCase()
+    .match(/already|registered|exists/);
+  if (inviteError && !alreadyRegistered) {
+    return jsonResponse(
+      {
+        error: 'invite_failed',
+        message: friendlyAuthError(inviteError.message),
+      },
+      400,
+    );
+  }
+
+  const authUserId = invited?.user?.id ?? existingByEmail?.id ?? existingByEmployee?.id;
+  if (!authUserId) {
+    return jsonResponse(
+      {
+        error: 'auth_user_not_found',
+        message:
+          'O e-mail ja existe no Auth, mas nao foi possivel localizar o perfil para vincular o funcionario.',
+      },
+      409,
+    );
+  }
+
+  if (alreadyRegistered) {
+    await adminClient.auth.admin.updateUserById(authUserId, {
+      user_metadata: {
+        full_name: displayName,
+        role,
+        auth_provider: 'email',
+        employee_id: employeeBinding.employeeId,
+        employee_name: employeeBinding.employeeName,
+      },
+    });
+  }
+
+  const now = new Date().toISOString();
+  const payload = {
+    id: authUserId,
+    email,
+    displayName,
+    display_name: displayName,
+    status: 'ativo',
+    permissions,
+    role,
+    username: null,
+    login_username: null,
+    internalLoginEmail: null,
+    internal_login_email: null,
+    authProvider: 'email',
+    auth_provider: 'email',
+    employeeId: employeeBinding.employeeId,
+    employee_id: employeeBinding.employeeId,
+    employeeName: employeeBinding.employeeName,
+    employee_name: employeeBinding.employeeName,
+    created_at: now,
+    updated_at: now,
+  };
+
+  const { data: profile, error: profileError } = await adminClient
+    .from('users')
+    .upsert(payload)
+    .select('id,email,displayName,display_name,photoUrl,photo_url,status,permissions,role,clientAccountId,client_account_id,clientAccountName,client_account_name,username,login_username,internalLoginEmail,internal_login_email,authProvider,auth_provider,employeeId,employee_id,employeeName,employee_name')
+    .single();
+
+  if (profileError) {
+    return jsonResponse(
+      { error: 'profile_create_failed', message: 'Convite gerado, mas o perfil do funcionario nao foi salvo.' },
+      500,
+    );
+  }
+
+  return jsonResponse({
+    ok: true,
+    invited: !alreadyRegistered,
+    user: profile,
+  });
+}
+
 async function resolveEmployeeBinding(
   adminClient: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
+  options: { requireEmployee?: boolean } = {},
 ) {
   const requestedEmployeeId = String(body.employeeId ?? body.employee_id ?? '').trim();
   const requestedEmployeeName = String(body.employeeName ?? body.employee_name ?? '').trim();
 
   if (!requestedEmployeeId) {
+    if (options.requireEmployee) {
+      throw new Error('Selecione o funcionario que recebera o acesso.');
+    }
     return {
       employeeId: null,
       employeeName: requestedEmployeeName || null,
@@ -230,6 +396,33 @@ async function resolveEmployeeBinding(
     employeeId: String(employee.id),
     employeeName: String(employee.name ?? requestedEmployeeName),
   };
+}
+
+async function findUserByEmail(adminClient: ReturnType<typeof createClient>, email: string) {
+  const { data, error } = await adminClient
+    .from('users')
+    .select('id,email,employee_id')
+    .ilike('email', email)
+    .maybeSingle();
+
+  if (error) return null;
+  return data ?? null;
+}
+
+async function findUserByEmployeeId(
+  adminClient: ReturnType<typeof createClient>,
+  employeeId: string | null,
+) {
+  if (!employeeId) return null;
+
+  const { data, error } = await adminClient
+    .from('users')
+    .select('id,email,employee_id')
+    .eq('employee_id', employeeId)
+    .maybeSingle();
+
+  if (error) return null;
+  return data ?? null;
 }
 
 async function resetInternalPassword(adminClient: ReturnType<typeof createClient>, body: Record<string, unknown>) {
@@ -334,6 +527,25 @@ function requireEnv(name: string): string {
 
 function normalizeUsername(value: string) {
   return value.trim().toLowerCase();
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function normalizeRedirectTo(value: unknown) {
+  const text = String(value ?? '').trim();
+  if (!text) return null;
+  try {
+    const url = new URL(text);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function validateUsername(value: string) {

@@ -18,6 +18,18 @@ class InternalUserProvisionException implements Exception {
   String toString() => message;
 }
 
+class EmployeeEmailInviteResult {
+  final UserModel user;
+  final bool invited;
+  final String message;
+
+  const EmployeeEmailInviteResult({
+    required this.user,
+    required this.invited,
+    required this.message,
+  });
+}
+
 class EmployeeAccessBinding {
   final String id;
   final String name;
@@ -100,6 +112,52 @@ class AccessManagementService {
     _notifyAccessChanged();
     unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
     return createdUser;
+  }
+
+  Future<EmployeeEmailInviteResult> inviteEmployeeByEmail({
+    required String email,
+    required String employeeId,
+    required String employeeName,
+    UserRole role = UserRole.employee,
+    List<String> permissions = const [],
+    String? redirectTo,
+  }) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    if (!_isValidEmail(normalizedEmail)) {
+      throw const InternalUserProvisionException(
+        'Informe um e-mail valido para convidar o funcionario.',
+      );
+    }
+    if (employeeId.trim().isEmpty) {
+      throw const InternalUserProvisionException(
+        'Selecione o funcionario que recebera o acesso.',
+      );
+    }
+
+    final data = await _invokeInternalUserFunction({
+      'action': 'invite_employee',
+      'email': normalizedEmail,
+      'displayName':
+          employeeName.trim().isEmpty ? normalizedEmail : employeeName.trim(),
+      'role': role.value,
+      'permissions': permissions,
+      'employeeId': employeeId.trim(),
+      'employeeName': employeeName.trim(),
+      if (redirectTo?.trim().isNotEmpty == true) 'redirectTo': redirectTo,
+    });
+
+    final user = _userFromFunctionData(data);
+    final invited = data['invited'] != false;
+    _notifyAccessChanged();
+    unawaited(MobilePushDispatchService.dispatchPending(limit: 50));
+    return EmployeeEmailInviteResult(
+      user: user,
+      invited: invited,
+      message:
+          invited
+              ? 'Convite enviado para $normalizedEmail.'
+              : 'Acesso de $normalizedEmail vinculado ao funcionario.',
+    );
   }
 
   Future<List<EmployeeAccessBinding>> getActiveEmployeeBindings() async {
@@ -192,5 +250,9 @@ class AccessManagementService {
       scopes: const [AppDataRefreshBus.access],
       source: 'AccessManagementService',
     );
+  }
+
+  bool _isValidEmail(String value) {
+    return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
   }
 }
