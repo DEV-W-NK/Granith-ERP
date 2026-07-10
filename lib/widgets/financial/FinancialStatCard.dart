@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
-/// Card de métrica financeira usado no dashboard da FinancialPage.
+/// Card de metrica financeira usado no dashboard da FinancialPage.
 ///
-/// [badgeCount] exibe um badge vermelho de alerta (ex: nº de itens vencidos).
+/// [badgeCount] exibe um badge vermelho de alerta.
 /// [onTap] permite filtrar a lista ao tocar no card.
 class FinancialStatCard extends StatelessWidget {
   final String title;
@@ -32,89 +33,103 @@ class FinancialStatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
-    return GestureDetector(
+    return GranithPressable(
       onTap: onTap,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            width: width,
-            padding: EdgeInsets.all(compact ? 16 : 20),
-            decoration: AppDecorations.statCardSurface(
-              color,
-              radius: compact ? 14 : 16,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: AppDecorations.iconTile(color),
-                      child: Icon(icon, color: color, size: 15),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
+      premium: onTap != null,
+      premiumColor: AppColors.accentGold,
+      borderRadius: BorderRadius.circular(compact ? 14 : 16),
+      hoverScale: 1.012,
+      builder: (context, state) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: width,
+              padding: EdgeInsets.all(compact ? 16 : 20),
+              decoration: AppDecorations.statCardSurface(
+                color,
+                radius: compact ? 14 : 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: GranithPremiumIconTile(
+                          icon: icon,
+                          color: color,
+                          size: 28,
+                          iconSize: 15,
+                          radius: 9,
+                          active: state.active && onTap != null,
+                          progress: state.glowProgress,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                _AnimatedValue(
-                  value: value,
-                  color: color,
-                  format: currency,
-                  compact: compact,
-                ),
-              ],
-            ),
-          ),
-
-          // Badge de alerta (ex: nº de vencidos)
-          if (badgeCount != null && badgeCount! > 0)
-            Positioned(
-              top: -6,
-              right: -6,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.redAccent,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: AppColors.backgroundDark,
-                    width: 1.5,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                child: Text(
-                  '$badgeCount',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                  const Spacer(),
+                  _AnimatedValue(
+                    value: value,
+                    color: color,
+                    format: currency,
+                    compact: compact,
+                  ),
+                ],
+              ),
+            ),
+            if (badgeCount != null && badgeCount! > 0)
+              Positioned(
+                top: -6,
+                right: -6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: AppColors.backgroundDark,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
-      ),
+          ],
+        );
+      },
+      child: const SizedBox.shrink(),
     );
   }
 }
 
-/// Anima a troca de valor com um fade+slide suave.
 class _AnimatedValue extends StatelessWidget {
   final double value;
   final Color color;
@@ -134,22 +149,23 @@ class _AnimatedValue extends StatelessWidget {
       tween: Tween(begin: 0, end: value),
       duration: const Duration(milliseconds: 600),
       curve: Curves.easeOut,
-      builder:
-          (_, v, __) => Align(
-            alignment: Alignment.centerLeft,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                format.format(v),
-                maxLines: 1,
-                style: TextStyle(
-                  color: color,
-                  fontSize: compact ? 18 : 20,
-                  fontWeight: FontWeight.bold,
-                ),
+      builder: (_, v, __) {
+        return Align(
+          alignment: Alignment.centerLeft,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              format.format(v),
+              maxLines: 1,
+              style: TextStyle(
+                color: color,
+                fontSize: compact ? 18 : 20,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
+        );
+      },
     );
   }
 }

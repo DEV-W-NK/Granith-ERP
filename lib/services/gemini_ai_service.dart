@@ -1,12 +1,12 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/ai_assistant_models.dart';
 
+typedef GeminiFunctionInvoker =
+    Future<dynamic> Function(String functionName, Map<String, dynamic> body);
+
 class GeminiAiService {
-  GeminiAiService({http.Client? httpClient, String? apiKey, String? model})
-    : _httpClient = httpClient ?? http.Client(),
-      _apiKey = apiKey ?? const String.fromEnvironment('GEMINI_API_KEY'),
+  GeminiAiService({GeminiFunctionInvoker? functionInvoker, String? model})
+    : _functionInvoker = functionInvoker ?? _defaultFunctionInvoker,
       _model =
           model ??
           const String.fromEnvironment(
@@ -14,8 +14,7 @@ class GeminiAiService {
             defaultValue: 'gemini-2.5-flash',
           );
 
-  final http.Client _httpClient;
-  final String _apiKey;
+  final GeminiFunctionInvoker _functionInvoker;
   final String _model;
 
   String get model => _model;
@@ -25,80 +24,38 @@ class GeminiAiService {
     required List<AiMessage> history,
     required String message,
   }) async {
-    if (_apiKey.trim().isEmpty) {
-      throw Exception(
-        'GEMINI_API_KEY nao configurada. Informe a chave via --dart-define.',
-      );
-    }
-
-    final uri = Uri.https(
-      'generativelanguage.googleapis.com',
-      '/v1beta/models/$_model:generateContent',
-      {'key': _apiKey},
-    );
-
-    final contents = <Map<String, dynamic>>[
-      ...history
+    final data = await _invoke({
+      'action': 'generate',
+      'model': _model,
+      'systemInstruction': systemInstruction,
+      'history': history
           .take(12)
           .map(
             (item) => {
               'role': item.role == AiMessageRole.user ? 'user' : 'model',
-              'parts': [
-                {'text': item.content},
-              ],
+              'content': item.content,
             },
-          ),
-      {
-        'role': 'user',
-        'parts': [
-          {'text': message},
-        ],
-      },
-    ];
+          )
+          .toList(growable: false),
+      'message': message,
+    });
 
-    final response = await _httpClient.post(
-      uri,
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({
-        'systemInstruction': {
-          'parts': [
-            {'text': systemInstruction},
-          ],
-        },
-        'contents': contents,
-        'generationConfig': {
-          'temperature': 0.2,
-          'topP': 0.8,
-          'maxOutputTokens': 1200,
-        },
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Falha no Gemini (${response.statusCode}): ${response.body}',
-      );
-    }
-
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('Resposta inesperada do Gemini.');
-    }
-
-    final text = _extractText(decoded);
     final usage = Map<String, dynamic>.from(
-      (decoded['usageMetadata'] as Map?) ?? const {},
+      (data['usageMetadata'] as Map?) ?? const {},
     );
+    final text = (data['text'] ?? '').toString().trim();
 
     return GeminiUsage(
-      model: _model,
+      model: (data['model'] ?? _model).toString(),
       text:
-          text.trim().isEmpty
+          text.isEmpty
               ? 'Nao encontrei uma resposta segura com o contexto disponivel.'
-              : text.trim(),
-      promptTokens: _readInt(usage['promptTokenCount']),
-      outputTokens: _readInt(usage['candidatesTokenCount']),
-      totalTokens: _readInt(usage['totalTokenCount']),
+              : text,
+      promptTokens: _readInt(data['promptTokens'] ?? usage['promptTokenCount']),
+      outputTokens: _readInt(
+        data['outputTokens'] ?? usage['candidatesTokenCount'],
+      ),
+      totalTokens: _readInt(data['totalTokens'] ?? usage['totalTokenCount']),
       rawUsage: usage,
     );
   }
@@ -107,51 +64,35 @@ class GeminiAiService {
     required String systemInstruction,
     required String message,
   }) async {
-    if (_apiKey.trim().isEmpty) return 0;
-
-    final uri = Uri.https(
-      'generativelanguage.googleapis.com',
-      '/v1beta/models/$_model:countTokens',
-      {'key': _apiKey},
-    );
-
-    final response = await _httpClient.post(
-      uri,
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {
-            'role': 'user',
-            'parts': [
-              {'text': '$systemInstruction\n\n$message'},
-            ],
-          },
-        ],
-      }),
-    );
-
-    if (response.statusCode < 200 || response.statusCode >= 300) return 0;
-    final decoded = jsonDecode(response.body);
-    if (decoded is! Map<String, dynamic>) return 0;
-    return _readInt(decoded['totalTokens']);
+    final data = await _invoke({
+      'action': 'countTokens',
+      'model': _model,
+      'systemInstruction': systemInstruction,
+      'message': message,
+    });
+    return _readInt(data['totalTokens']);
   }
 
-  String _extractText(Map<String, dynamic> decoded) {
-    final candidates = decoded['candidates'];
-    if (candidates is! List || candidates.isEmpty) return '';
-    final content = (candidates.first as Map?)?['content'];
-    final parts = (content as Map?)?['parts'];
-    if (parts is! List) return '';
+  Future<Map<String, dynamic>> _invoke(Map<String, dynamic> body) async {
+    final result = await _functionInvoker('gemini_generate', body);
+    if (result is Map<String, dynamic>) {
+      return result;
+    }
+    if (result is Map) {
+      return Map<String, dynamic>.from(result);
+    }
+    throw const FormatException('Resposta inesperada da function Gemini.');
+  }
 
-    return parts
-        .map((part) {
-          if (part is Map && part['text'] != null) {
-            return part['text'].toString();
-          }
-          return '';
-        })
-        .where((text) => text.trim().isNotEmpty)
-        .join('\n');
+  static Future<dynamic> _defaultFunctionInvoker(
+    String functionName,
+    Map<String, dynamic> body,
+  ) async {
+    final response = await AppSupabase.client.functions.invoke(
+      functionName,
+      body: body,
+    );
+    return response.data;
   }
 
   int _readInt(dynamic value) {

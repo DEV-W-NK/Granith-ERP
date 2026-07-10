@@ -6,7 +6,7 @@ import 'package:project_granith/themes/app_theme.dart';
 class BudgetTypesHeader extends StatelessWidget {
   final bool isDesktop;
 
-  const BudgetTypesHeader({required this.isDesktop});
+  const BudgetTypesHeader({super.key, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +58,7 @@ class BudgetTypeHeaderTitle extends StatelessWidget {
   final bool isLoading;
 
   const BudgetTypeHeaderTitle({
+    super.key,
     required this.isDesktop,
     required this.budgetTypeCount,
     required this.isLoading,
@@ -103,7 +104,7 @@ class BudgetTypeHeaderTitle extends StatelessWidget {
 class BudgetTypeHeaderActions extends StatelessWidget {
   final bool isDesktop;
 
-  const BudgetTypeHeaderActions({required this.isDesktop});
+  const BudgetTypeHeaderActions({super.key, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +135,7 @@ class BudgetTypeHeaderActions extends StatelessWidget {
 class BudgetTypeViewToggleButtons extends StatelessWidget {
   final bool isDesktop;
 
-  const BudgetTypeViewToggleButtons({required this.isDesktop});
+  const BudgetTypeViewToggleButtons({super.key, required this.isDesktop});
 
   @override
   Widget build(BuildContext context) {
@@ -180,6 +181,7 @@ class BudgetTypeViewToggleButton extends StatelessWidget {
   final String? tooltip;
 
   const BudgetTypeViewToggleButton({
+    super.key,
     required this.icon,
     required this.isSelected,
     required this.onTap,
@@ -223,7 +225,7 @@ class BudgetTypeViewToggleButton extends StatelessWidget {
 class BudgetTypeExportButton extends StatelessWidget {
   final bool hasData;
 
-  const BudgetTypeExportButton({required this.hasData});
+  const BudgetTypeExportButton({super.key, required this.hasData});
 
   @override
   Widget build(BuildContext context) {
@@ -253,6 +255,8 @@ class BudgetTypeExportButton extends StatelessWidget {
 }
 
 class BudgetTypeRefreshButton extends StatelessWidget {
+  const BudgetTypeRefreshButton({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<BudgetTypeController>(
@@ -279,6 +283,8 @@ class BudgetTypeRefreshButton extends StatelessWidget {
 }
 
 class BudgetTypeExportOptionsSheet extends StatelessWidget {
+  const BudgetTypeExportOptionsSheet({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -329,6 +335,7 @@ class BudgetTypeExportOption extends StatelessWidget {
   final VoidCallback onTap;
 
   const BudgetTypeExportOption({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,

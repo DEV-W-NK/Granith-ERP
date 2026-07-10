@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 // =============================================================================
 // GRANIT CARD
@@ -51,21 +52,24 @@ class GranitCard extends StatelessWidget {
       border: customBorder,
     );
 
+    final content = Container(
+      padding: padding,
+      decoration: decoration,
+      child: child,
+    );
+
     if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: radius,
-          child: Ink(
-            decoration: decoration,
-            child: Padding(padding: padding, child: child),
-          ),
-        ),
+      return GranithPressable(
+        onTap: onTap,
+        premium: true,
+        premiumColor: AppColors.accentGold,
+        borderRadius: radius,
+        hoverScale: 1.01,
+        child: content,
       );
     }
 
-    return Container(padding: padding, decoration: decoration, child: child);
+    return content;
   }
 }
 

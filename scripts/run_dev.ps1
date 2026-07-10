@@ -21,17 +21,18 @@ $allowedKeys = @(
   "GOOGLE_OAUTH_IOS_CLIENT_ID",
   "GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID",
   "GOOGLE_OAUTH_CLIENT_SECRET",
-  "GOOGLE_OAUTH_REDIRECT_URL"
+  "GOOGLE_OAUTH_REDIRECT_URL",
+  "GRANITH_ANIMATE_WEB_BACKDROP"
 )
 $dartDefineKeys = @(
   "SUPABASE_URL",
   "SUPABASE_PUBLISHABLE_KEY",
-  "GEMINI_API_KEY",
   "GEMINI_MODEL",
   "GOOGLE_MAPS_API_KEY",
   "GOOGLE_OAUTH_WEB_CLIENT_ID",
   "GOOGLE_OAUTH_ANDROID_CLIENT_ID",
-  "GOOGLE_OAUTH_IOS_CLIENT_ID"
+  "GOOGLE_OAUTH_IOS_CLIENT_ID",
+  "GRANITH_ANIMATE_WEB_BACKDROP"
 )
 $values = @{}
 
@@ -112,7 +113,7 @@ foreach ($key in $dartDefineKeys) {
 }
 
 $setupGroups = @(
-  @{ Name = "Gemini"; Keys = @("GEMINI_API_KEY") },
+  @{ Name = "Gemini Edge Function"; Keys = @("GEMINI_MODEL") },
   @{ Name = "Google Maps"; Keys = @("GOOGLE_MAPS_API_KEY") },
   @{ Name = "Google OAuth Supabase"; Keys = @("GOOGLE_OAUTH_WEB_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET") },
   @{ Name = "Google Sign-In iOS"; Keys = @("GOOGLE_OAUTH_IOS_CLIENT_ID") }

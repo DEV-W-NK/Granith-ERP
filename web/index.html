@@ -32,15 +32,6 @@
   <title>Granith ERP</title>
   <link rel="manifest" href="manifest.json">
   <script src="env.js"></script>
-  <script>
-    (function () {
-      var key = window.GRANITH_ENV && window.GRANITH_ENV.GOOGLE_MAPS_API_KEY;
-      if (!key) {
-        return;
-      }
-      document.write('<script src="https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(key) + '"><\/script>');
-    }());
-  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

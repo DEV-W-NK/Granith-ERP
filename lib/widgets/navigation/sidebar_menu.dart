@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
 class NavigationModule {
@@ -354,72 +355,87 @@ class SidebarMenu extends StatelessWidget {
     final isSelected = selectedIndex == module.index;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
-      child: InkWell(
+      child: GranithPressable(
         onTap: () => onItemSelected(module.index),
+        selected: isSelected,
+        premium: true,
+        premiumColor: AppColors.accentGold,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          height: 46,
-          decoration: _itemDecoration(isSelected),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (isSelected)
-                Positioned(
-                  left: 0,
-                  top: 10,
-                  bottom: 10,
-                  child: Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentBlue,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 22,
-                      height: 46,
-                      child: Icon(
-                        module.icon,
-                        size: 20,
-                        color:
-                            isSelected
-                                ? AppColors.accentBlue
-                                : AppColors.textSecondary,
+        hoverScale: 1.012,
+        builder: (context, state) {
+          final active = state.active;
+          final iconColor =
+              active ? AppColors.accentGold : AppColors.textSecondary;
+
+          return Container(
+            height: 46,
+            decoration: _itemDecoration(isSelected, active),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (active)
+                  Positioned(
+                    left: 0,
+                    top: 10,
+                    bottom: 10,
+                    child: Container(
+                      width: 3,
+                      decoration: BoxDecoration(
+                        color: AppColors.accentGold,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: AppColors.auraShadows(AppColors.accentGold),
                       ),
                     ),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _sidebarTitle(module),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color:
-                                isSelected
-                                    ? Colors.white
-                                    : AppColors.textSecondary,
-                            fontSize: 13,
-                            height: 1,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 24,
+                        height: 46,
+                        child: Center(
+                          child: GranithPremiumIconTile(
+                            icon: module.icon,
+                            color: iconColor,
+                            size: 24,
+                            iconSize: 16,
+                            radius: 8,
+                            active: active,
+                            progress: state.glowProgress,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            _sidebarTitle(module),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color:
+                                  active
+                                      ? Colors.white
+                                      : AppColors.textSecondary,
+                              fontSize: 13,
+                              height: 1,
+                              fontWeight:
+                                  active ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
+        child: const SizedBox.shrink(),
       ),
     );
   }
@@ -431,46 +447,61 @@ class SidebarMenu extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 450),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: InkWell(
+        child: GranithPressable(
           onTap: () => onItemSelected(module.index),
+          selected: isSelected,
+          premium: true,
+          premiumColor: AppColors.accentGold,
           borderRadius: BorderRadius.circular(18),
-          child: Container(
-            width: 56,
-            height: 48,
-            decoration: _itemDecoration(isSelected),
-            child: Icon(
-              module.icon,
-              size: 21,
-              color:
-                  isSelected ? AppColors.accentBlue : AppColors.textSecondary,
-            ),
-          ),
+          hoverScale: 1.04,
+          builder: (context, state) {
+            final active = state.active;
+            final iconColor =
+                active ? AppColors.accentGold : AppColors.textSecondary;
+
+            return Container(
+              width: 56,
+              height: 48,
+              decoration: _itemDecoration(isSelected, active),
+              alignment: Alignment.center,
+              child: GranithPremiumIconTile(
+                icon: module.icon,
+                color: iconColor,
+                size: 30,
+                iconSize: 18,
+                radius: 10,
+                active: active,
+                progress: state.glowProgress,
+              ),
+            );
+          },
+          child: const SizedBox.shrink(),
         ),
       ),
     );
   }
 
-  BoxDecoration _itemDecoration(bool isSelected) {
+  BoxDecoration _itemDecoration(bool isSelected, bool active) {
+    final highlight = active || isSelected;
     return BoxDecoration(
-      color: isSelected ? null : Colors.white.withValues(alpha: 0.018),
+      color: highlight ? null : Colors.white.withValues(alpha: 0.018),
       borderRadius: BorderRadius.circular(14),
       border: Border.all(
         color:
-            isSelected
-                ? AppColors.accentBlue.withValues(alpha: 0.55)
+            highlight
+                ? AppColors.accentGold.withValues(alpha: 0.62)
                 : Colors.white.withValues(alpha: 0.03),
       ),
       gradient:
-          isSelected
+          highlight
               ? LinearGradient(
                 colors: [
-                  AppColors.accentBlue.withValues(alpha: 0.18),
+                  AppColors.accentGold.withValues(alpha: 0.18),
                   AppColors.auraCyan.withValues(alpha: 0.08),
                 ],
               )
               : null,
-      boxShadow:
-          isSelected ? AppColors.auraShadows(AppColors.accentBlue) : null,
+      boxShadow: highlight ? AppColors.auraShadows(AppColors.accentGold) : null,
     );
   }
 
@@ -606,6 +637,7 @@ class SidebarMenu extends StatelessWidget {
       ],
     );
   }
+
   String _sidebarTitle(NavigationModule module) {
     switch (module.index) {
       case 2:

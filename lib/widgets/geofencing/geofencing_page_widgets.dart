@@ -1,9 +1,10 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:project_granith/controllers/geofence_controller.dart';
 import 'package:project_granith/models/geofence_model.dart';
+import 'package:project_granith/services/google_maps_web_loader.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:provider/provider.dart';
@@ -189,16 +190,27 @@ class _GeofenceSidePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final list = _GeofenceList(expanded: expandedList);
+    if (expandedList) {
+      return ListView(
+        padding: EdgeInsets.zero,
+        children: const [
+          _GeofenceFormPanel(),
+          SizedBox(height: 14),
+          _GeofenceFilters(),
+          SizedBox(height: 14),
+          _GeofenceList(expanded: false),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _GeofenceFormPanel(),
-        const SizedBox(height: 14),
-        const _GeofenceFilters(),
-        const SizedBox(height: 14),
-        if (expandedList) Expanded(child: list) else list,
+      children: const [
+        _GeofenceFormPanel(),
+        SizedBox(height: 14),
+        _GeofenceFilters(),
+        SizedBox(height: 14),
+        _GeofenceList(expanded: false),
       ],
     );
   }
@@ -514,6 +526,13 @@ class _GoogleGeofenceMap extends StatefulWidget {
 
 class _GoogleGeofenceMapState extends State<_GoogleGeofenceMap> {
   GoogleMapController? _mapController;
+  late Future<void> _mapsApiFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapsApiFuture = ensureGoogleMapsWebApiLoaded();
+  }
 
   @override
   void didUpdateWidget(covariant _GoogleGeofenceMap oldWidget) {
@@ -535,6 +554,29 @@ class _GoogleGeofenceMapState extends State<_GoogleGeofenceMap> {
       return const _MapEmptyState();
     }
 
+    return FutureBuilder<void>(
+      future: _mapsApiFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const _MapLoadingState();
+        }
+
+        if (snapshot.hasError) {
+          return _MapLoadErrorState(
+            message: snapshot.error.toString(),
+            onRetry:
+                () => setState(() {
+                  _mapsApiFuture = ensureGoogleMapsWebApiLoaded();
+                }),
+          );
+        }
+
+        return _buildGoogleMap();
+      },
+    );
+  }
+
+  Widget _buildGoogleMap() {
     final initial = widget.selected ?? widget.geofences.first;
     final polygons = <Polygon>{};
     final markers = <Marker>{};
@@ -672,6 +714,95 @@ class _MapInfoOverlay extends StatelessWidget {
                     ),
                   ],
                 ),
+      ),
+    );
+  }
+}
+
+class _MapLoadingState extends StatelessWidget {
+  const _MapLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.primaryDark,
+      child: const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Carregando mapa',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapLoadErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _MapLoadErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.primaryDark,
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.map_outlined,
+                color: AppColors.accentRed,
+                size: 42,
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Nao foi possivel carregar o mapa',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 14),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 17),
+                label: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

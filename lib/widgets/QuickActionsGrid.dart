@@ -88,46 +88,61 @@ class QuickActionsGrid extends StatelessWidget {
   }) {
     return GranithPressable(
       onTap: () => Navigator.of(context).pushNamed(route),
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 88),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: AppColors.borderColor.withValues(alpha: 0.6),
+      premium: true,
+      premiumColor: AppColors.accentGold,
+      borderRadius: BorderRadius.circular(16),
+      hoverScale: 1.015,
+      builder: (context, state) {
+        return Container(
+          constraints: const BoxConstraints(minHeight: 88),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+          decoration: BoxDecoration(
+            gradient: AppColors.cardGradient,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color:
+                  state.active
+                      ? AppColors.accentGold.withValues(alpha: 0.48)
+                      : AppColors.borderColor.withValues(alpha: 0.6),
+            ),
+            boxShadow:
+                state.active
+                    ? AppColors.auraShadows(AppColors.accentGold)
+                    : AppColors.glowShadows(color),
           ),
-          boxShadow: AppColors.glowShadows(color),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: color.withValues(alpha: 0.18)),
-                boxShadow: AppColors.auraShadows(color),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 36,
+                height: 36,
+                child: GranithPremiumIconTile(
+                  icon: icon,
+                  color: color,
+                  size: 36,
+                  iconSize: 18,
+                  radius: 11,
+                  active: state.active,
+                  progress: state.glowProgress,
+                ),
               ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(height: 7),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.tx2,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 7),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: state.active ? Colors.white : AppColors.tx2,
+                  fontSize: 10,
+                  fontWeight: state.active ? FontWeight.w700 : FontWeight.w500,
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
+      child: const SizedBox.shrink(),
     );
   }
 

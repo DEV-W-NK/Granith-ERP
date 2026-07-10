@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class GranitSectionHeader extends StatelessWidget {
   final IconData icon;
@@ -157,34 +158,48 @@ class GranitPeriodButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return GranithPressable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color:
-              active
-                  ? AppColors.accentGold.withValues(alpha: 0.13)
-                  : AppColors.surfaceDark.withValues(alpha: 0.72),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(
+      selected: active,
+      premium: true,
+      premiumColor: AppColors.accentGold,
+      borderRadius: BorderRadius.circular(999),
+      hoverScale: 1.025,
+      builder: (context, state) {
+        final highlighted = state.active;
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
             color:
-                active
-                    ? AppColors.accentGold.withValues(alpha: 0.40)
-                    : AppColors.borderColor.withValues(alpha: 0.62),
+                highlighted
+                    ? AppColors.accentGold.withValues(alpha: 0.13)
+                    : AppColors.surfaceDark.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color:
+                  highlighted
+                      ? AppColors.accentGold.withValues(alpha: 0.42)
+                      : AppColors.borderColor.withValues(alpha: 0.62),
+            ),
+            boxShadow:
+                highlighted
+                    ? AppColors.auraShadows(AppColors.accentGold)
+                    : null,
           ),
-        ),
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: active ? GranitTokens.gold : GranitTokens.textMuted,
-            fontSize: 11,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w600,
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: highlighted ? GranitTokens.gold : GranitTokens.textMuted,
+              fontSize: 11,
+              fontWeight: highlighted ? FontWeight.w700 : FontWeight.w600,
+            ),
           ),
-        ),
-      ),
+        );
+      },
+      child: const SizedBox.shrink(),
     );
   }
 }

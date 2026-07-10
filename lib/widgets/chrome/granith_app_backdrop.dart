@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
 
@@ -14,15 +15,27 @@ class GranithAppBackdrop extends StatefulWidget {
 
 class _GranithAppBackdropState extends State<GranithAppBackdrop>
     with SingleTickerProviderStateMixin {
+  static const bool _animateWebBackdrop = bool.fromEnvironment(
+    'GRANITH_ANIMATE_WEB_BACKDROP',
+    defaultValue: false,
+  );
+
   late final AnimationController _controller;
+  late final bool _shouldAnimate;
 
   @override
   void initState() {
     super.initState();
+    _shouldAnimate = !kIsWeb || _animateWebBackdrop;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat(reverse: true);
+      duration: const Duration(seconds: 24),
+      value: 0.38,
+    );
+
+    if (_shouldAnimate) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   @override

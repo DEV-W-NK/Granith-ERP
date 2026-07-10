@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/constants/GranitTokens.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 // =============================================================================
 // GRANIT STAT CARD
@@ -49,88 +50,103 @@ class GranitStatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return GranithPressable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-        decoration: AppDecorations.statCardSurface(accent),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      premium: onTap != null,
+      premiumColor: AppColors.accentGold,
+      hoverScale: 1.012,
+      builder:
+          (context, state) => Container(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            decoration: AppDecorations.statCardSurface(accent),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 28,
-                  height: 2,
-                  decoration: BoxDecoration(
-                    color: accent,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 2,
+                      decoration: BoxDecoration(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (icon != null)
+                      SizedBox(
+                        width: 32,
+                        height: 32,
+                        child: GranithPremiumIconTile(
+                          icon: icon!,
+                          color: accent,
+                          size: 32,
+                          iconSize: 17,
+                          radius: 10,
+                          active: state.active && onTap != null,
+                          progress: state.glowProgress,
+                        ),
+                      ),
+                  ],
                 ),
-                const Spacer(),
-                if (icon != null)
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: AppDecorations.iconTile(accent),
-                    child: Icon(icon, color: accent, size: 17),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
+                const SizedBox(height: 10),
 
-            // Label
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GranitTokens.labelSmall,
-            ),
-            const SizedBox(height: 5),
-
-            // Value
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  value,
-                  maxLines: 1,
-                  style: GranitTokens.valueStyle.copyWith(color: accent),
+                // Label
+                Text(
+                  label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GranitTokens.labelSmall,
                 ),
-              ),
-            ),
-            const SizedBox(height: 4),
+                const SizedBox(height: 5),
 
-            // Delta
-            Row(
-              children: [
-                Icon(
-                  deltaPositive
-                      ? Icons.arrow_upward_rounded
-                      : Icons.arrow_downward_rounded,
-                  size: 10,
-                  color: deltaPositive ? GranitTokens.green : GranitTokens.red,
-                ),
-                const SizedBox(width: 3),
-                Flexible(
-                  child: Text(
-                    delta,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color:
-                          deltaPositive ? GranitTokens.green : GranitTokens.red,
-                      fontSize: 10,
+                // Value
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      style: GranitTokens.valueStyle.copyWith(color: accent),
                     ),
                   ),
                 ),
+                const SizedBox(height: 4),
+
+                // Delta
+                Row(
+                  children: [
+                    Icon(
+                      deltaPositive
+                          ? Icons.arrow_upward_rounded
+                          : Icons.arrow_downward_rounded,
+                      size: 10,
+                      color:
+                          deltaPositive ? GranitTokens.green : GranitTokens.red,
+                    ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        delta,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color:
+                              deltaPositive
+                                  ? GranitTokens.green
+                                  : GranitTokens.red,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+      child: const SizedBox.shrink(),
     );
   }
 }

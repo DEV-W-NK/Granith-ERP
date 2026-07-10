@@ -308,7 +308,7 @@ class AppTheme {
       brightness: Brightness.dark,
       primaryColor: AppColors.accentBlue,
       scaffoldBackgroundColor: Colors.transparent,
-      canvasColor: Colors.transparent,
+      canvasColor: AppColors.surfaceDark.withValues(alpha: 0.98),
       cardColor: Colors.transparent,
       dividerColor: AppColors.dividerColor,
       colorScheme: colorScheme,
@@ -422,6 +422,23 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
               color: AppColors.borderColor.withValues(alpha: 0.8),
+            ),
+          ),
+        ),
+      ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(
+            AppColors.surfaceDark.withValues(alpha: 0.98),
+          ),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          elevation: const WidgetStatePropertyAll(0),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: AppColors.borderColor.withValues(alpha: 0.75),
+              ),
             ),
           ),
         ),

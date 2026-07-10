@@ -137,8 +137,9 @@ class _InventoryWriteOffDialogState extends State<InventoryWriteOffDialog> {
                 ),
               ),
               validator: (value) {
-                if (value == null || value.isEmpty)
+                if (value == null || value.isEmpty) {
                   return 'Informe a quantidade';
+                }
                 final qty = double.tryParse(value.replaceAll(',', '.'));
                 if (qty == null || qty <= 0) return 'Valor inválido';
                 if (qty > widget.item.quantity) return 'Saldo insuficiente';
@@ -220,13 +221,14 @@ class _InventoryWriteOffDialogState extends State<InventoryWriteOffDialog> {
         );
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
             backgroundColor: AppColors.accentRed,
           ),
         );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

@@ -12,6 +12,8 @@ type MobilePushNotification = {
   actionRoute: string;
   payload: Record<string, unknown> | null;
   priority: string;
+  attempts: number;
+  maxAttempts: number;
 };
 
 type MobileDeviceToken = {
@@ -54,13 +56,15 @@ Deno.serve(async (request) => {
 
     const firebase = dryRun ? null : readFirebaseConfig();
     const accessToken = dryRun ? '' : await getFirebaseAccessToken(firebase!);
+    const dispatchStartedAt = new Date();
 
     const { data, error } = await adminClient
       .from('mobile_push_notifications')
       .select(
-        'id,recipientUserId,recipientEmployeeId,title,body,category,actionRoute,payload,priority',
+        'id,recipientUserId,recipientEmployeeId,title,body,category,actionRoute,payload,priority,attempts,maxAttempts',
       )
       .eq('status', 'pending')
+      .lte('nextAttemptAt', dispatchStartedAt.toISOString())
       .order('createdAt', { ascending: true })
       .limit(limit);
 
@@ -93,6 +97,11 @@ Deno.serve(async (request) => {
 
       let sent = 0;
       const failures: string[] = [];
+      let hasRetryableFailure = false;
+      const nextAttempt = Math.min(
+        Number(notification.attempts ?? 0) + 1,
+        Number(notification.maxAttempts ?? 5),
+      );
 
       for (const token of tokens) {
         if (dryRun) {
@@ -112,6 +121,7 @@ Deno.serve(async (request) => {
         }
 
         failures.push(response.errorMessage);
+        hasRetryableFailure = hasRetryableFailure || response.retryable;
 
         if (response.shouldDisableToken) {
           await adminClient
@@ -126,19 +136,56 @@ Deno.serve(async (request) => {
       }
 
       if (!dryRun) {
-        await markNotification(adminClient, notification.id, {
-          status: sent > 0 ? 'sent' : 'failed',
-          sentAt: sent > 0 ? new Date().toISOString() : null,
-          errorMessage: failures.join(' | ').slice(0, 1200),
-        });
+        if (sent > 0) {
+          await markNotification(adminClient, notification.id, {
+            status: 'sent',
+            sentAt: new Date().toISOString(),
+            errorMessage: failures.join(' | ').slice(0, 1200),
+            attempts: nextAttempt,
+            lastAttemptAt: dispatchStartedAt.toISOString(),
+            nextAttemptAt: null,
+          });
+        } else if (
+          hasRetryableFailure &&
+          nextAttempt < Number(notification.maxAttempts ?? 5)
+        ) {
+          const nextAttemptAt = calculateNextAttemptAt(
+            dispatchStartedAt,
+            nextAttempt,
+          );
+          await markNotification(adminClient, notification.id, {
+            status: 'pending',
+            errorMessage: failures.join(' | ').slice(0, 1200),
+            attempts: nextAttempt,
+            lastAttemptAt: dispatchStartedAt.toISOString(),
+            nextAttemptAt: nextAttemptAt.toISOString(),
+          });
+        } else {
+          await markNotification(adminClient, notification.id, {
+            status: 'failed',
+            sentAt: null,
+            errorMessage: failures.join(' | ').slice(0, 1200),
+            attempts: nextAttempt,
+            lastAttemptAt: dispatchStartedAt.toISOString(),
+            nextAttemptAt: null,
+          });
+        }
       }
 
       results.push({
         id: notification.id,
-        status: dryRun ? 'would_send' : sent > 0 ? 'sent' : 'failed',
+        status: dryRun
+          ? 'would_send'
+          : sent > 0
+            ? 'sent'
+            : hasRetryableFailure &&
+                nextAttempt < Number(notification.maxAttempts ?? 5)
+              ? 'retry_scheduled'
+              : 'failed',
         tokens: tokens.length,
         sent: dryRun ? tokens.length : sent,
         failed: dryRun ? 0 : tokens.length - sent,
+        attempt: dryRun ? Number(notification.attempts ?? 0) : nextAttempt,
       });
     }
 
@@ -270,18 +317,35 @@ async function markNotification(
   adminClient: ReturnType<typeof createClient>,
   id: string,
   fields: {
-    status: 'sent' | 'failed';
+    status: 'pending' | 'sent' | 'failed';
     sentAt?: string | null;
     errorMessage?: string;
+    attempts?: number;
+    lastAttemptAt?: string | null;
+    nextAttemptAt?: string | null;
   },
 ) {
+  const updateFields: Record<string, unknown> = {
+    status: fields.status,
+    errorMessage: fields.errorMessage ?? '',
+  };
+
+  if ('sentAt' in fields) {
+    updateFields.sentAt = fields.sentAt ?? null;
+  }
+  if ('attempts' in fields) {
+    updateFields.attempts = fields.attempts;
+  }
+  if ('lastAttemptAt' in fields) {
+    updateFields.lastAttemptAt = fields.lastAttemptAt ?? null;
+  }
+  if ('nextAttemptAt' in fields) {
+    updateFields.nextAttemptAt = fields.nextAttemptAt ?? null;
+  }
+
   const { error } = await adminClient
     .from('mobile_push_notifications')
-    .update({
-      status: fields.status,
-      sentAt: fields.sentAt ?? null,
-      errorMessage: fields.errorMessage ?? '',
-    })
+    .update(updateFields)
     .eq('id', id);
 
   if (error) {
@@ -325,11 +389,20 @@ async function sendFcmMessage(
   );
 
   if (response.ok) {
-    return { ok: true, errorMessage: '', shouldDisableToken: false };
+    return {
+      ok: true,
+      errorMessage: '',
+      shouldDisableToken: false,
+      retryable: false,
+    };
   }
 
   const errorBody = await response.json().catch(() => ({}));
   const errorMessage = JSON.stringify(errorBody);
+  const retryable =
+    response.status === 408 ||
+    response.status === 429 ||
+    response.status >= 500;
 
   return {
     ok: false,
@@ -337,7 +410,14 @@ async function sendFcmMessage(
     shouldDisableToken:
       errorMessage.includes('UNREGISTERED') ||
       errorMessage.includes('Requested entity was not found'),
+    retryable,
   };
+}
+
+function calculateNextAttemptAt(now: Date, attempt: number) {
+  const backoffSeconds = Math.min(3600, 60 * 2 ** Math.max(0, attempt - 1));
+  const jitterSeconds = Math.floor(Math.random() * 20);
+  return new Date(now.getTime() + (backoffSeconds + jitterSeconds) * 1000);
 }
 
 function notificationData(notification: MobilePushNotification) {

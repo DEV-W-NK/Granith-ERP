@@ -13,6 +13,7 @@ import 'package:project_granith/screens/dailyLogsPage.dart';
 import 'package:project_granith/screens/geofencing_page.dart';
 import 'package:project_granith/screens/inventory_page.dart';
 import 'package:project_granith/screens/items_page.dart';
+import 'package:project_granith/screens/labor_finance_analysis_page.dart';
 import 'package:project_granith/screens/material_requisition_page.dart';
 import 'package:project_granith/screens/project_measurements_page.dart';
 import 'package:project_granith/screens/projects_page.dart';
@@ -85,6 +86,7 @@ class _MainLayoutState extends State<MainLayout> {
         const VehiclesPage(),
         const GeofencingPage(),
         const FinancialPage(),
+        const LaborFinanceAnalysisPage(),
         const PurchaseFinancePage(),
         const ReportsPage(),
         const AccessManagementPage(),
@@ -117,6 +119,7 @@ class _MainLayoutState extends State<MainLayout> {
         'Frota e Veiculos',
         'Geofencing',
         'Financeiro',
+        'Ponto e Custos',
         'Compras no Financeiro',
         'DRE Gerencial',
         'Permissoes e Clientes',
@@ -149,6 +152,7 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.directions_car_filled_rounded,
         Icons.map_rounded,
         Icons.account_balance_rounded,
+        Icons.price_check_rounded,
         Icons.receipt_long_rounded,
         Icons.bar_chart_rounded,
         Icons.admin_panel_settings_rounded,
@@ -294,62 +298,69 @@ class _MainLayoutState extends State<MainLayout> {
           title: pageTitles[18],
           section: 'Financeiro',
           icon: pageIcons[18],
-          aliases: 'compras financeiro contas pagar nota fiscal fornecedor',
+          aliases: 'ponto custos horas mao obra geofence cerca funcionario',
         ),
         NavigationModule(
           index: 19,
           title: pageTitles[19],
           section: 'Financeiro',
           icon: pageIcons[19],
-          aliases: 'dre relatorio gerencial resultados',
+          aliases: 'compras financeiro contas pagar nota fiscal fornecedor',
         ),
         NavigationModule(
           index: 20,
           title: pageTitles[20],
-          section: 'Administrativo',
+          section: 'Financeiro',
           icon: pageIcons[20],
-          aliases: 'permissoes clientes acesso usuarios portal',
+          aliases: 'dre relatorio gerencial resultados',
         ),
         NavigationModule(
           index: 21,
           title: pageTitles[21],
-          section: 'I.A',
+          section: 'Administrativo',
           icon: pageIcons[21],
-          aliases: 'ia operacional obras campo diarios medicoes',
+          aliases: 'permissoes clientes acesso usuarios portal',
         ),
         NavigationModule(
           index: 22,
           title: pageTitles[22],
           section: 'I.A',
           icon: pageIcons[22],
-          aliases: 'ia rh recursos humanos pessoas equipe beneficios',
+          aliases: 'ia operacional obras campo diarios medicoes',
         ),
         NavigationModule(
           index: 23,
           title: pageTitles[23],
           section: 'I.A',
           icon: pageIcons[23],
-          aliases: 'ia comercial orcamentos clientes propostas',
+          aliases: 'ia rh recursos humanos pessoas equipe beneficios',
         ),
         NavigationModule(
           index: 24,
           title: pageTitles[24],
           section: 'I.A',
           icon: pageIcons[24],
-          aliases: 'ia suprimentos compras fornecedores estoque',
+          aliases: 'ia comercial orcamentos clientes propostas',
         ),
         NavigationModule(
           index: 25,
           title: pageTitles[25],
           section: 'I.A',
           icon: pageIcons[25],
-          aliases: 'ia administrativa configuracoes acessos uso plataforma',
+          aliases: 'ia suprimentos compras fornecedores estoque',
         ),
         NavigationModule(
           index: 26,
           title: pageTitles[26],
-          section: 'Administrativo',
+          section: 'I.A',
           icon: pageIcons[26],
+          aliases: 'ia administrativa configuracoes acessos uso plataforma',
+        ),
+        NavigationModule(
+          index: 27,
+          title: pageTitles[27],
+          section: 'Administrativo',
+          icon: pageIcons[27],
           aliases: 'configuracoes ajustes sistema preferencias',
         ),
       ];
@@ -397,7 +408,10 @@ class _MainLayoutState extends State<MainLayout> {
                             boxShadow: AppColors.glowShadows(),
                           ),
                           child: GranithPageBackground(
-                            child: pages[selectedIndex],
+                            child: _ModulePageSwitcher(
+                              selectedIndex: selectedIndex,
+                              child: pages[selectedIndex],
+                            ),
                           ),
                         ),
                       ),
@@ -458,7 +472,12 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
                 body: SafeArea(
                   top: false,
-                  child: GranithPageBackground(child: pages[selectedIndex]),
+                  child: GranithPageBackground(
+                    child: _ModulePageSwitcher(
+                      selectedIndex: selectedIndex,
+                      child: pages[selectedIndex],
+                    ),
+                  ),
                 ),
               ),
     );
@@ -466,6 +485,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   void _selectModule(int index) {
     if (index < 0 || index >= pages.length) return;
+    if (index == selectedIndex) return;
     setState(() => selectedIndex = index);
   }
 
@@ -510,5 +530,50 @@ class _MainLayoutState extends State<MainLayout> {
     }
 
     await context.read<AuthViewModel>().logout();
+  }
+}
+
+class _ModulePageSwitcher extends StatelessWidget {
+  final int selectedIndex;
+  final Widget child;
+
+  const _ModulePageSwitcher({required this.selectedIndex, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 170),
+      reverseDuration: const Duration(milliseconds: 120),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        );
+      },
+      transitionBuilder: (switchChild, animation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.018),
+              end: Offset.zero,
+            ).animate(curved),
+            child: switchChild,
+          ),
+        );
+      },
+      child: KeyedSubtree(key: ValueKey<int>(selectedIndex), child: child),
+    );
   }
 }

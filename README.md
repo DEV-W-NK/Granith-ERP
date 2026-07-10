@@ -174,8 +174,8 @@ O script carrega variaveis locais, repassa os valores seguros via `--dart-define
 | `GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID` | URL scheme iOS |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | Apenas local/Supabase, nunca no cliente Flutter Web |
 | `GOOGLE_OAUTH_REDIRECT_URL` | Redirect local do OAuth |
-| `GEMINI_API_KEY` | Apenas desenvolvimento local. Para producao, usar backend seguro |
-| `GEMINI_MODEL` | Modelo Gemini configurado |
+| `GEMINI_MODEL` | Modelo Gemini solicitado pelo cliente. A chave real fica somente na Edge Function |
+| `GRANITH_ANIMATE_WEB_BACKDROP` | Opcional. Ativa o fundo animado no Flutter Web para comparacao visual/performance |
 
 Nunca versionar secrets. O `SUPABASE_PUBLISHABLE_KEY` e publico por natureza, mas so deve ser usado com RLS forte. Nunca usar `service_role` no cliente Flutter.
 
@@ -208,6 +208,10 @@ SUPABASE_SERVICE_ROLE_KEY
 GRANITH_MANAGEMENT_API_TOKEN
 GRANITH_PUSH_DISPATCH_TOKEN
 FIREBASE_SERVICE_ACCOUNT_JSON
+GEMINI_API_KEY
+GEMINI_MODEL
+GEMINI_ALLOWED_MODELS
+GEMINI_MAX_OUTPUT_TOKENS
 ```
 
 ## CI/CD e Firebase Hosting
@@ -286,7 +290,6 @@ Base atual:
 
 Pontos antes de producao ampla:
 
-- Migrar chamadas Gemini para Edge Function/backend seguro.
 - Revisar buckets privados e URLs assinadas.
 - Refinar RLS por permissao e operacao critica.
 - Validar fluxo de usuarios reais por perfil.
@@ -295,15 +298,25 @@ Pontos antes de producao ampla:
 
 ## IA e Gemini
 
-O ERP possui base de assistentes por area. Em desenvolvimento local, a chave Gemini pode ser usada via `.env.local`.
+O ERP possui assistentes por area. O Flutter Web nao chama mais a API do Gemini diretamente e nao deve receber `GEMINI_API_KEY` em `--dart-define`.
 
-Para producao web, `GEMINI_API_KEY` nao deve ser enviada no `flutter build web`, porque qualquer chave embutida no bundle pode ser lida no navegador. O caminho correto e:
+O fluxo correto e:
 
 ```text
 Flutter Web -> Supabase Edge Function -> Gemini API
 ```
 
-Assim a chave fica protegida no backend, com possibilidade de rate limit, auditoria, permissao por usuario e controle de custo.
+Assim a chave fica protegida no backend, com sessao Supabase obrigatoria, allowlist de modelos, limite de payload e limite de tokens de saida.
+
+Configure os secrets da function:
+
+```powershell
+npx supabase secrets set GEMINI_API_KEY="SUA_CHAVE"
+npx supabase secrets set GEMINI_MODEL="gemini-2.5-flash"
+npx supabase secrets set GEMINI_ALLOWED_MODELS="gemini-2.5-flash"
+npx supabase secrets set GEMINI_MAX_OUTPUT_TOKENS="1200"
+npx supabase functions deploy gemini_generate
+```
 
 ## Portal do Cliente e Convites
 
