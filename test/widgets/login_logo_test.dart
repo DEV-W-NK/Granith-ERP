@@ -35,9 +35,13 @@ void main() {
       ),
     );
 
-    expect(find.text('SKYFORGE'), findsOneWidget);
     expect(find.text('Construcao com previsibilidade'), findsOneWidget);
-    expect(find.byIcon(Icons.home_work_outlined), findsOneWidget);
+    final image = tester.widget<Image>(find.byType(Image));
+    expect(image.image, isA<AssetImage>());
+    expect(
+      (image.image as AssetImage).assetName,
+      'assets/branding/granith_logo_wordmark.png',
+    );
 
     controller.dispose();
   });
