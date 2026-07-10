@@ -94,6 +94,92 @@ void main() {
       expect(report.dailyEstimateUsedCost, 0);
       expect(report.consolidatedCost, 0);
     });
+
+    test('forma jornadas a partir dos eventos de ponto do app', () {
+      final joao = _employee(
+        id: 'emp-1',
+        name: 'Joao Silva',
+        jobTitle: 'Pedreiro',
+        salary: 2200,
+      );
+      final maria = _employee(
+        id: 'emp-2',
+        name: 'Maria Souza',
+        jobTitle: 'Servente',
+        salary: 2200,
+      );
+
+      final report = const ProjectLaborCostCalculator().build(
+        projectId: 'project-1',
+        dailyLogs: const [],
+        mobileEntries: const [],
+        timeClockEvents: [
+          ProjectLaborTimeClockEvent(
+            id: 'clock-1',
+            projectId: 'project-1',
+            employeeId: 'emp-1',
+            employeeName: 'Joao Silva',
+            eventAt: DateTime(2026, 5, 1, 8),
+            eventKind: 'punch',
+            punchType: 'entry',
+            geofenceStatus: 'inside',
+            reason: '',
+            receiptCode: 'AAA',
+          ),
+          ProjectLaborTimeClockEvent(
+            id: 'clock-2',
+            projectId: 'project-1',
+            employeeId: 'emp-1',
+            employeeName: 'Joao Silva',
+            eventAt: DateTime(2026, 5, 1, 10),
+            eventKind: 'punch',
+            punchType: 'exit',
+            geofenceStatus: 'inside',
+            reason: '',
+            receiptCode: 'BBB',
+          ),
+          ProjectLaborTimeClockEvent(
+            id: 'clock-3',
+            projectId: 'project-1',
+            employeeId: 'emp-2',
+            employeeName: 'Maria Souza',
+            eventAt: DateTime(2026, 5, 1, 8),
+            eventKind: 'punch',
+            punchType: 'entry',
+            geofenceStatus: 'inside',
+            reason: '',
+            receiptCode: 'CCC',
+          ),
+          ProjectLaborTimeClockEvent(
+            id: 'clock-4',
+            projectId: 'project-1',
+            employeeId: 'emp-2',
+            employeeName: 'Maria Souza',
+            eventAt: DateTime(2026, 5, 1, 9),
+            eventKind: 'punch',
+            punchType: 'exit',
+            geofenceStatus: 'inside',
+            reason: '',
+            receiptCode: 'DDD',
+          ),
+        ],
+        employees: [joao, maria],
+        teams: [
+          _team(memberIds: const ['emp-1', 'emp-2']),
+        ],
+      );
+
+      expect(report.timeClockEventsCount, 4);
+      expect(report.timeClockPairedEntriesCount, 2);
+      expect(report.approvedMobileHours, 3);
+      expect(report.consolidatedCost, 30);
+      expect(report.employeeCosts.map((employee) => employee.employeeName), [
+        'Maria Souza',
+        'Joao Silva',
+      ]);
+      expect(report.employeeCosts.first.approvedMinutes, 60);
+      expect(report.employeeCosts.last.approvedMinutes, 120);
+    });
   });
 }
 

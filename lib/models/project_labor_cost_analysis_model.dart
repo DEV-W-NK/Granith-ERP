@@ -66,6 +66,54 @@ class ProjectLaborWorkHourEntry {
   }
 }
 
+class ProjectLaborTimeClockEvent {
+  final String id;
+  final String projectId;
+  final String employeeId;
+  final String employeeName;
+  final DateTime eventAt;
+  final String eventKind;
+  final String punchType;
+  final String geofenceStatus;
+  final String reason;
+  final String receiptCode;
+
+  const ProjectLaborTimeClockEvent({
+    required this.id,
+    required this.projectId,
+    required this.employeeId,
+    required this.employeeName,
+    required this.eventAt,
+    required this.eventKind,
+    required this.punchType,
+    required this.geofenceStatus,
+    required this.reason,
+    required this.receiptCode,
+  });
+
+  factory ProjectLaborTimeClockEvent.fromMap(
+    Map<String, dynamic> map,
+    String docId,
+  ) {
+    return ProjectLaborTimeClockEvent(
+      id: docId,
+      projectId: map['projectId']?.toString() ?? '',
+      employeeId: map['employeeId']?.toString() ?? '',
+      employeeName: map['employeeName']?.toString() ?? '',
+      eventAt: DbValue.toDateTime(map['eventAt']) ?? DateTime.now(),
+      eventKind: map['eventKind']?.toString() ?? '',
+      punchType: map['punchType']?.toString() ?? 'unknown',
+      geofenceStatus: map['geofenceStatus']?.toString() ?? 'unknown',
+      reason: map['reason']?.toString() ?? '',
+      receiptCode: map['receiptCode']?.toString() ?? '',
+    );
+  }
+
+  bool get isAcceptedPunch => eventKind == 'punch';
+  bool get isEntry => punchType == 'entry';
+  bool get isExit => punchType == 'exit';
+}
+
 class ProjectLaborCostReport {
   final double consolidatedCost;
   final double approvedMobileCost;
@@ -77,9 +125,12 @@ class ProjectLaborCostReport {
   final int dailyEstimatedPeople;
   final int dailyLogsCount;
   final int mobileEntriesCount;
+  final int timeClockEventsCount;
+  final int timeClockPairedEntriesCount;
   final int linkedTeamMembersCount;
   final int linkedTeamMembersWithSalaryCount;
   final double averageHourlyRate;
+  final List<ProjectLaborEmployeeCost> employeeCosts;
   final List<ProjectLaborRoleCost> roleCosts;
   final List<ProjectLaborDayCost> dayCosts;
   final List<String> missingSalaryNames;
@@ -95,9 +146,12 @@ class ProjectLaborCostReport {
     required this.dailyEstimatedPeople,
     required this.dailyLogsCount,
     required this.mobileEntriesCount,
+    required this.timeClockEventsCount,
+    required this.timeClockPairedEntriesCount,
     required this.linkedTeamMembersCount,
     required this.linkedTeamMembersWithSalaryCount,
     required this.averageHourlyRate,
+    required this.employeeCosts,
     required this.roleCosts,
     required this.dayCosts,
     required this.missingSalaryNames,
@@ -110,6 +164,42 @@ class ProjectLaborCostReport {
     if (linkedTeamMembersCount == 0) return 0;
     return linkedTeamMembersWithSalaryCount / linkedTeamMembersCount;
   }
+}
+
+class ProjectLaborEmployeeCost {
+  final String employeeId;
+  final String employeeName;
+  final String roleName;
+  final double approvedCost;
+  final double pendingCost;
+  final int approvedMinutes;
+  final int pendingMinutes;
+  final int entriesCount;
+  final int timeClockEntriesCount;
+  final int manualEntriesCount;
+  final DateTime? firstAt;
+  final DateTime? lastAt;
+
+  const ProjectLaborEmployeeCost({
+    required this.employeeId,
+    required this.employeeName,
+    required this.roleName,
+    required this.approvedCost,
+    required this.pendingCost,
+    required this.approvedMinutes,
+    required this.pendingMinutes,
+    required this.entriesCount,
+    required this.timeClockEntriesCount,
+    required this.manualEntriesCount,
+    required this.firstAt,
+    required this.lastAt,
+  });
+
+  double get totalCost => approvedCost + pendingCost;
+  int get totalMinutes => approvedMinutes + pendingMinutes;
+  double get approvedHours => approvedMinutes / 60;
+  double get pendingHours => pendingMinutes / 60;
+  double get totalHours => totalMinutes / 60;
 }
 
 class ProjectLaborRoleCost {
@@ -170,13 +260,18 @@ class ProjectLaborCostCalculator {
     String? coordinatorId,
     required List<DailyLogModel> dailyLogs,
     required List<ProjectLaborWorkHourEntry> mobileEntries,
+    List<ProjectLaborTimeClockEvent> timeClockEvents = const [],
     required List<EmployeeModel> employees,
     required List<TeamModel> teams,
   }) {
     final filteredLogs =
         dailyLogs.where((log) => log.projectId == projectId).toList();
+    final timeClockEntries = _buildEntriesFromTimeClockEvents(
+      projectId: projectId,
+      events: timeClockEvents,
+    );
     final filteredEntries =
-        mobileEntries
+        [...mobileEntries, ...timeClockEntries]
             .where((entry) => entry.projectId == projectId)
             .where((entry) => entry.durationMinutes > 0)
             .where((entry) => entry.status != 'rejected')
@@ -217,6 +312,7 @@ class ProjectLaborCostCalculator {
     final averageHourlyRate = _averageHourlyRate(salaryBase);
     final roleRates = _buildRoleRates(salaryBase);
     final roleBuckets = <String, _RoleCostAccumulator>{};
+    final employeeBuckets = <String, _EmployeeCostAccumulator>{};
     final dayBuckets = <DateTime, _DayCostAccumulator>{};
     final missingSalaryNames = <String>{};
 
@@ -235,6 +331,22 @@ class ProjectLaborCostCalculator {
         employee,
         fallback: entry.employeeName,
       );
+      final employeeBucket = employeeBuckets.putIfAbsent(
+        _employeeBucketKey(employee, entry),
+        () => _EmployeeCostAccumulator(
+          employeeId: employee?.id ?? entry.employeeId,
+          employeeName: _employeeDisplayName(employee, entry),
+          roleName: roleName,
+        ),
+      );
+      employeeBucket.entriesCount += 1;
+      if (entry.source == 'time_clock_afd_events') {
+        employeeBucket.timeClockEntriesCount += 1;
+      } else {
+        employeeBucket.manualEntriesCount += 1;
+      }
+      employeeBucket.registerRange(entry.startAt, entry.endAt);
+
       final day = _dateOnly(entry.startAt);
       final dayBucket = dayBuckets.putIfAbsent(
         day,
@@ -252,11 +364,15 @@ class ProjectLaborCostCalculator {
         );
         roleBucket.mobileCost += cost;
         roleBucket.mobileHours += entry.durationHours;
+        employeeBucket.approvedCost += cost;
+        employeeBucket.approvedMinutes += entry.durationMinutes;
       } else if (entry.isPending) {
         pendingMobileCost += cost;
         pendingMobileMinutes += entry.durationMinutes;
         dayBucket.pendingMobileCost += cost;
         dayBucket.pendingMobileMinutes += entry.durationMinutes;
+        employeeBucket.pendingCost += cost;
+        employeeBucket.pendingMinutes += entry.durationMinutes;
       }
 
       if (employee != null && employee.baseSalary <= 0) {
@@ -325,6 +441,17 @@ class ProjectLaborCostCalculator {
             .toList()
           ..sort((a, b) => b.totalCost.compareTo(a.totalCost));
 
+    final employeeCosts =
+        employeeBuckets.values
+            .map((bucket) => bucket.toEmployeeCost())
+            .where((employee) => employee.totalMinutes > 0)
+            .toList()
+          ..sort((a, b) {
+            final byMinutes = a.totalMinutes.compareTo(b.totalMinutes);
+            if (byMinutes != 0) return byMinutes;
+            return a.employeeName.compareTo(b.employeeName);
+          });
+
     final dayCosts =
         dayBuckets.values.map((bucket) => bucket.toDayCost()).toList()
           ..sort((a, b) => b.date.compareTo(a.date));
@@ -343,13 +470,76 @@ class ProjectLaborCostCalculator {
       dailyEstimatedPeople: dailyEstimatedPeople,
       dailyLogsCount: filteredLogs.length,
       mobileEntriesCount: filteredEntries.length,
+      timeClockEventsCount:
+          timeClockEvents
+              .where((event) => event.projectId == projectId)
+              .where((event) => event.isAcceptedPunch)
+              .length,
+      timeClockPairedEntriesCount: timeClockEntries.length,
       linkedTeamMembersCount: linkedEmployees.length,
       linkedTeamMembersWithSalaryCount: linkedWithSalary,
       averageHourlyRate: averageHourlyRate,
+      employeeCosts: employeeCosts,
       roleCosts: roleCosts,
       dayCosts: dayCosts,
       missingSalaryNames: missingSalaryNames.toList()..sort(),
     );
+  }
+
+  static List<ProjectLaborWorkHourEntry> _buildEntriesFromTimeClockEvents({
+    required String projectId,
+    required List<ProjectLaborTimeClockEvent> events,
+  }) {
+    final ordered =
+        events
+            .where((event) => event.projectId == projectId)
+            .where((event) => event.isAcceptedPunch)
+            .where((event) => event.isEntry || event.isExit)
+            .toList()
+          ..sort((a, b) => a.eventAt.compareTo(b.eventAt));
+
+    final openEntries = <String, ProjectLaborTimeClockEvent>{};
+    final entries = <ProjectLaborWorkHourEntry>[];
+
+    for (final event in ordered) {
+      final key = _timeClockEmployeeKey(event);
+      if (key.isEmpty) continue;
+
+      if (event.isEntry) {
+        openEntries[key] = event;
+        continue;
+      }
+
+      final entryEvent = openEntries.remove(key);
+      if (entryEvent == null) continue;
+
+      final durationMinutes =
+          event.eventAt.difference(entryEvent.eventAt).inMinutes;
+      if (durationMinutes <= 0 || durationMinutes > 18 * 60) continue;
+
+      entries.add(
+        ProjectLaborWorkHourEntry(
+          id: 'time-clock-${entryEvent.id}-${event.id}',
+          projectId: projectId,
+          employeeId:
+              entryEvent.employeeId.isNotEmpty
+                  ? entryEvent.employeeId
+                  : event.employeeId,
+          employeeName:
+              entryEvent.employeeName.isNotEmpty
+                  ? entryEvent.employeeName
+                  : event.employeeName,
+          startAt: entryEvent.eventAt,
+          endAt: event.eventAt,
+          durationMinutes: durationMinutes,
+          status: 'approved',
+          reason: _timeClockReason(entryEvent, event),
+          source: 'time_clock_afd_events',
+        ),
+      );
+    }
+
+    return entries;
   }
 
   static double _averageHourlyRate(List<EmployeeModel> employees) {
@@ -400,6 +590,28 @@ class ProjectLaborCostCalculator {
   static double? _employeeHourlyRate(EmployeeModel? employee) {
     if (employee == null || employee.baseSalary <= 0) return null;
     return employee.baseSalary / monthlyHours;
+  }
+
+  static String _employeeBucketKey(
+    EmployeeModel? employee,
+    ProjectLaborWorkHourEntry entry,
+  ) {
+    if (employee != null) return 'employee:${employee.id}';
+    final id = entry.employeeId.trim();
+    if (id.isNotEmpty) return 'entry:$id';
+    final name = _normalize(entry.employeeName);
+    return name.isEmpty ? 'entry:${entry.id}' : 'name:$name';
+  }
+
+  static String _employeeDisplayName(
+    EmployeeModel? employee,
+    ProjectLaborWorkHourEntry entry,
+  ) {
+    if (employee != null && employee.name.trim().isNotEmpty) {
+      return employee.name.trim();
+    }
+    final name = entry.employeeName.trim();
+    return name.isEmpty ? 'Funcionario sem nome' : name;
   }
 
   static String _employeeRoleName(EmployeeModel? employee, {String? fallback}) {
@@ -453,6 +665,26 @@ class ProjectLaborCostCalculator {
         .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
         .trim();
   }
+
+  static String _timeClockEmployeeKey(ProjectLaborTimeClockEvent event) {
+    final id = event.employeeId.trim();
+    if (id.isNotEmpty) return 'employee:$id';
+    final name = _normalize(event.employeeName);
+    if (name.isNotEmpty) return 'name:$name';
+    return event.id;
+  }
+
+  static String _timeClockReason(
+    ProjectLaborTimeClockEvent start,
+    ProjectLaborTimeClockEvent end,
+  ) {
+    final receipts = [
+      start.receiptCode.trim(),
+      end.receiptCode.trim(),
+    ].where((receipt) => receipt.isNotEmpty).join(' / ');
+    if (receipts.isEmpty) return 'Ponto registrado no app';
+    return 'Ponto registrado no app ($receipts)';
+  }
 }
 
 class _RoleCostAccumulator {
@@ -473,6 +705,53 @@ class _RoleCostAccumulator {
       estimatedCost: estimatedCost,
       estimatedHours: estimatedHours,
       estimatedPeopleDays: estimatedPeopleDays,
+    );
+  }
+}
+
+class _EmployeeCostAccumulator {
+  final String employeeId;
+  final String employeeName;
+  final String roleName;
+  double approvedCost = 0;
+  double pendingCost = 0;
+  int approvedMinutes = 0;
+  int pendingMinutes = 0;
+  int entriesCount = 0;
+  int timeClockEntriesCount = 0;
+  int manualEntriesCount = 0;
+  DateTime? firstAt;
+  DateTime? lastAt;
+
+  _EmployeeCostAccumulator({
+    required this.employeeId,
+    required this.employeeName,
+    required this.roleName,
+  });
+
+  void registerRange(DateTime startAt, DateTime endAt) {
+    if (firstAt == null || startAt.isBefore(firstAt!)) {
+      firstAt = startAt;
+    }
+    if (lastAt == null || endAt.isAfter(lastAt!)) {
+      lastAt = endAt;
+    }
+  }
+
+  ProjectLaborEmployeeCost toEmployeeCost() {
+    return ProjectLaborEmployeeCost(
+      employeeId: employeeId,
+      employeeName: employeeName,
+      roleName: roleName,
+      approvedCost: approvedCost,
+      pendingCost: pendingCost,
+      approvedMinutes: approvedMinutes,
+      pendingMinutes: pendingMinutes,
+      entriesCount: entriesCount,
+      timeClockEntriesCount: timeClockEntriesCount,
+      manualEntriesCount: manualEntriesCount,
+      firstAt: firstAt,
+      lastAt: lastAt,
     );
   }
 }

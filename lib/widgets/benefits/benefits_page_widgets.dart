@@ -287,6 +287,26 @@ class _EmployeeBenefitsTab extends StatefulWidget {
 }
 
 class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
+  final _employeeSearchCtrl = TextEditingController();
+  String _employeeQuery = '';
+  String? _selectedEmployeeId;
+
+  @override
+  void initState() {
+    super.initState();
+    _employeeSearchCtrl.addListener(() {
+      final next = _employeeSearchCtrl.text;
+      if (next == _employeeQuery) return;
+      setState(() => _employeeQuery = next);
+    });
+  }
+
+  @override
+  void dispose() {
+    _employeeSearchCtrl.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<EmployeeModel>>(
@@ -347,6 +367,19 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
                 final assignments = assignmentsSnapshot.data!;
                 final activeAssignments =
                     assignments.where((item) => item.isActive).toList();
+                final activeEmployees =
+                    employees
+                        .where((employee) => !employee.isDismissed)
+                        .toList();
+                if (_selectedEmployeeId == null && activeEmployees.isNotEmpty) {
+                  _selectedEmployeeId = activeEmployees.first.id;
+                } else if (_selectedEmployeeId != null &&
+                    activeEmployees.every(
+                      (employee) => employee.id != _selectedEmployeeId,
+                    )) {
+                  _selectedEmployeeId =
+                      activeEmployees.isEmpty ? null : activeEmployees.first.id;
+                }
 
                 return Column(
                   children: [
@@ -363,12 +396,13 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
                                 employees: employees,
                                 benefits: benefits,
                                 assignments: assignments,
+                                initialEmployeeId: _selectedEmployeeId,
                               ),
                     ),
                     const SizedBox(height: 14),
                     Expanded(
                       child:
-                          assignments.isEmpty
+                          employees.isEmpty || benefits.isEmpty
                               ? _CenteredMessage(
                                 icon: Icons.link_rounded,
                                 title: 'Nenhum vinculo cadastrado',
@@ -387,12 +421,28 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
                                           employees: employees,
                                           benefits: benefits,
                                           assignments: assignments,
+                                          initialEmployeeId:
+                                              _selectedEmployeeId,
                                         ),
                               )
-                              : _AssignmentsList(
+                              : _EmployeeBenefitWorkspace(
                                 employees: employees,
                                 benefits: benefits,
                                 assignments: assignments,
+                                selectedEmployeeId: _selectedEmployeeId,
+                                employeeSearchController: _employeeSearchCtrl,
+                                employeeQuery: _employeeQuery,
+                                onSelectEmployee:
+                                    (employee) => setState(
+                                      () => _selectedEmployeeId = employee.id,
+                                    ),
+                                onCreateForEmployee:
+                                    (employee) => _openAssignmentForm(
+                                      employees: employees,
+                                      benefits: benefits,
+                                      assignments: assignments,
+                                      initialEmployeeId: employee.id,
+                                    ),
                                 onEdit:
                                     (assignment) => _openAssignmentForm(
                                       employees: employees,
@@ -418,6 +468,7 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
     required List<BenefitModel> benefits,
     required List<EmployeeBenefitModel> assignments,
     EmployeeBenefitModel? assignment,
+    String? initialEmployeeId,
   }) {
     return showDialog<void>(
       context: context,
@@ -428,6 +479,7 @@ class _EmployeeBenefitsTabState extends State<_EmployeeBenefitsTab> {
             benefits: benefits,
             assignments: assignments,
             assignment: assignment,
+            initialEmployeeId: initialEmployeeId,
           ),
     );
   }
@@ -868,6 +920,564 @@ class _CategoryTile extends StatelessWidget {
                     ),
                   ),
                 ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeBenefitWorkspace extends StatelessWidget {
+  final List<EmployeeModel> employees;
+  final List<BenefitModel> benefits;
+  final List<EmployeeBenefitModel> assignments;
+  final String? selectedEmployeeId;
+  final TextEditingController employeeSearchController;
+  final String employeeQuery;
+  final ValueChanged<EmployeeModel> onSelectEmployee;
+  final ValueChanged<EmployeeModel> onCreateForEmployee;
+  final ValueChanged<EmployeeBenefitModel> onEdit;
+  final ValueChanged<EmployeeBenefitModel> onRemove;
+
+  const _EmployeeBenefitWorkspace({
+    required this.employees,
+    required this.benefits,
+    required this.assignments,
+    required this.selectedEmployeeId,
+    required this.employeeSearchController,
+    required this.employeeQuery,
+    required this.onSelectEmployee,
+    required this.onCreateForEmployee,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final activeEmployees =
+        employees.where((employee) => !employee.isDismissed).toList();
+    final selectedEmployee = _findEmployee(activeEmployees, selectedEmployeeId);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 900;
+        final selector = _EmployeeBenefitSelectorPanel(
+          employees: activeEmployees,
+          assignments: assignments,
+          selectedEmployeeId: selectedEmployee?.id,
+          searchController: employeeSearchController,
+          query: employeeQuery,
+          onSelect: onSelectEmployee,
+        );
+        final detail = _EmployeeBenefitDetailPanel(
+          employee: selectedEmployee,
+          employees: employees,
+          benefits: benefits,
+          assignments: assignments,
+          onCreate: onCreateForEmployee,
+          onEdit: onEdit,
+          onRemove: onRemove,
+        );
+
+        if (compact) {
+          return Column(
+            children: [
+              SizedBox(height: 300, child: selector),
+              const SizedBox(height: 12),
+              Expanded(child: detail),
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(width: 360, child: selector),
+            const SizedBox(width: 14),
+            Expanded(child: detail),
+          ],
+        );
+      },
+    );
+  }
+
+  EmployeeModel? _findEmployee(List<EmployeeModel> employees, String? id) {
+    if (id == null) return employees.isEmpty ? null : employees.first;
+    for (final employee in employees) {
+      if (employee.id == id) return employee;
+    }
+    return employees.isEmpty ? null : employees.first;
+  }
+}
+
+class _EmployeeBenefitSelectorPanel extends StatelessWidget {
+  final List<EmployeeModel> employees;
+  final List<EmployeeBenefitModel> assignments;
+  final String? selectedEmployeeId;
+  final TextEditingController searchController;
+  final String query;
+  final ValueChanged<EmployeeModel> onSelect;
+
+  const _EmployeeBenefitSelectorPanel({
+    required this.employees,
+    required this.assignments,
+    required this.selectedEmployeeId,
+    required this.searchController,
+    required this.query,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedQuery = _normalizeBenefitSearch(query);
+    final filtered =
+        normalizedQuery.isEmpty
+            ? employees
+            : employees.where((employee) {
+              final haystack = _normalizeBenefitSearch(
+                '${employee.name} ${employee.email} ${employee.jobTitle} '
+                '${employee.sector} ${employee.role.label}',
+              );
+              return haystack.contains(normalizedQuery);
+            }).toList();
+    final activeAssignments =
+        assignments.where((assignment) => assignment.isActive).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        radius: 16,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const _TileIcon(
+                icon: Icons.people_alt_outlined,
+                color: AppColors.accentBlue,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Funcionarios',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      '${employees.length} disponiveis para beneficios',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              hintText: 'Buscar funcionario, cargo ou setor',
+              prefixIcon: Icon(Icons.search_rounded),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child:
+                filtered.isEmpty
+                    ? const _BenefitInlineEmpty(
+                      icon: Icons.search_off_rounded,
+                      text: 'Nenhum funcionario encontrado.',
+                    )
+                    : ListView.separated(
+                      padding: EdgeInsets.zero,
+                      itemCount: filtered.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final employee = filtered[index];
+                        final employeeAssignments =
+                            activeAssignments
+                                .where(
+                                  (assignment) =>
+                                      assignment.employeeId == employee.id,
+                                )
+                                .toList();
+                        return _EmployeeBenefitEmployeeCard(
+                          employee: employee,
+                          assignments: employeeAssignments,
+                          selected: employee.id == selectedEmployeeId,
+                          onTap: () => onSelect(employee),
+                        );
+                      },
+                    ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmployeeBenefitEmployeeCard extends StatelessWidget {
+  final EmployeeModel employee;
+  final List<EmployeeBenefitModel> assignments;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _EmployeeBenefitEmployeeCard({
+    required this.employee,
+    required this.assignments,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final dailyTotal = assignments.fold<double>(
+      0,
+      (sum, assignment) => sum + assignment.dailyValue,
+    );
+    final accent = selected ? AppColors.accentGold : AppColors.borderColor;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color:
+                selected
+                    ? AppColors.accentGold.withValues(alpha: 0.10)
+                    : AppColors.surfaceDark.withValues(alpha: 0.52),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color:
+                  selected
+                      ? AppColors.accentGold.withValues(alpha: 0.52)
+                      : accent.withValues(alpha: 0.45),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: AppDecorations.iconTile(
+                  selected ? AppColors.accentGold : AppColors.accentBlue,
+                ),
+                child: Center(
+                  child: Text(
+                    employee.initials,
+                    style: TextStyle(
+                      color:
+                          selected
+                              ? AppColors.accentGold
+                              : AppColors.accentBlue,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employee.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      employee.jobTitle.trim().isEmpty
+                          ? employee.role.label
+                          : employee.jobTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _StatusBadge(
+                          label: '${assignments.length} beneficios',
+                          color:
+                              assignments.isEmpty
+                                  ? AppColors.textMuted
+                                  : AppColors.accentGreen,
+                        ),
+                        if (dailyTotal > 0)
+                          _StatusBadge(
+                            label: currency.format(dailyTotal),
+                            color: AppColors.accentGold,
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: selected ? AppColors.accentGold : AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmployeeBenefitDetailPanel extends StatelessWidget {
+  final EmployeeModel? employee;
+  final List<EmployeeModel> employees;
+  final List<BenefitModel> benefits;
+  final List<EmployeeBenefitModel> assignments;
+  final ValueChanged<EmployeeModel> onCreate;
+  final ValueChanged<EmployeeBenefitModel> onEdit;
+  final ValueChanged<EmployeeBenefitModel> onRemove;
+
+  const _EmployeeBenefitDetailPanel({
+    required this.employee,
+    required this.employees,
+    required this.benefits,
+    required this.assignments,
+    required this.onCreate,
+    required this.onEdit,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = employee;
+    if (selected == null) {
+      return const _CenteredMessage(
+        icon: Icons.person_search_rounded,
+        title: 'Selecione um funcionario',
+        message:
+            'Escolha um colaborador para visualizar e vincular os beneficios.',
+      );
+    }
+
+    final selectedAssignments =
+        assignments
+            .where((assignment) => assignment.employeeId == selected.id)
+            .toList()
+          ..sort((a, b) {
+            if (a.isActive != b.isActive) return a.isActive ? -1 : 1;
+            return a.benefitName.toLowerCase().compareTo(
+              b.benefitName.toLowerCase(),
+            );
+          });
+
+    return Column(
+      children: [
+        _SelectedEmployeeBenefitsHeader(
+          employee: selected,
+          assignments: selectedAssignments,
+          onCreate: () => onCreate(selected),
+        ),
+        const SizedBox(height: 12),
+        Expanded(
+          child:
+              selectedAssignments.isEmpty
+                  ? _CenteredMessage(
+                    icon: Icons.card_giftcard_rounded,
+                    title: 'Sem beneficios vinculados',
+                    message:
+                        'Vincule o primeiro beneficio para ${selected.name}.',
+                    actionLabel: 'Vincular beneficio',
+                    onAction: () => onCreate(selected),
+                  )
+                  : _AssignmentsList(
+                    employees: employees,
+                    benefits: benefits,
+                    assignments: selectedAssignments,
+                    onEdit: onEdit,
+                    onRemove: onRemove,
+                  ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectedEmployeeBenefitsHeader extends StatelessWidget {
+  final EmployeeModel employee;
+  final List<EmployeeBenefitModel> assignments;
+  final VoidCallback onCreate;
+
+  const _SelectedEmployeeBenefitsHeader({
+    required this.employee,
+    required this.assignments,
+    required this.onCreate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final activeAssignments =
+        assignments.where((assignment) => assignment.isActive).toList();
+    final dailyTotal = activeAssignments.fold<double>(
+      0,
+      (sum, assignment) => sum + assignment.dailyValue,
+    );
+
+    return _SurfaceTile(
+      accent: AppColors.accentGold,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 720;
+          final identity = Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: AppDecorations.iconTile(AppColors.accentGold),
+                child: Center(
+                  child: Text(
+                    employee.initials,
+                    style: const TextStyle(
+                      color: AppColors.accentGold,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      employee.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      [
+                        if (employee.jobTitle.trim().isNotEmpty)
+                          employee.jobTitle,
+                        employee.sector,
+                        employee.role.label,
+                      ].where((item) => item.trim().isNotEmpty).join(' | '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final stats = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+            children: [
+              _StatPill(
+                label: 'ativos',
+                value: '${activeAssignments.length}',
+                color: AppColors.accentGreen,
+              ),
+              _StatPill(
+                label: 'por dia',
+                value: currency.format(dailyTotal),
+                color: AppColors.accentGold,
+              ),
+              SizedBox(
+                height: 36,
+                child: ElevatedButton.icon(
+                  onPressed: onCreate,
+                  icon: const Icon(Icons.add_link_rounded, size: 17),
+                  label: const Text('Vincular beneficio'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentGold,
+                    foregroundColor: AppColors.primaryDark,
+                  ),
+                ),
+              ),
+            ],
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [identity, const SizedBox(height: 14), stats],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: identity),
+              const SizedBox(width: 16),
+              stats,
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _BenefitInlineEmpty extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _BenefitInlineEmpty({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: AppColors.textMuted, size: 28),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
           ),
         ],
       ),
@@ -1515,6 +2125,7 @@ class _AssignmentFormDialog extends StatefulWidget {
   final List<BenefitModel> benefits;
   final List<EmployeeBenefitModel> assignments;
   final EmployeeBenefitModel? assignment;
+  final String? initialEmployeeId;
 
   const _AssignmentFormDialog({
     required this.service,
@@ -1522,6 +2133,7 @@ class _AssignmentFormDialog extends StatefulWidget {
     required this.benefits,
     required this.assignments,
     this.assignment,
+    this.initialEmployeeId,
   });
 
   @override
@@ -1549,6 +2161,12 @@ class _AssignmentFormDialogState extends State<_AssignmentFormDialog> {
       _valueCtrl.text = assignment.dailyValue.toStringAsFixed(2);
       _startDate = assignment.startDate;
       _isActive = assignment.isActive;
+    } else if (widget.initialEmployeeId != null &&
+        widget.employees.any(
+          (employee) =>
+              employee.id == widget.initialEmployeeId && !employee.isDismissed,
+        )) {
+      _employeeId = widget.initialEmployeeId;
     }
   }
 
@@ -2284,6 +2902,32 @@ double? _parseMoney(String value) {
           ? cleaned.replaceAll('.', '').replaceAll(',', '.')
           : cleaned;
   return double.tryParse(normalized);
+}
+
+String _normalizeBenefitSearch(String value) {
+  const replacements = {
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'ã': 'a',
+    'ä': 'a',
+    'é': 'e',
+    'ê': 'e',
+    'í': 'i',
+    'ó': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ú': 'u',
+    'ü': 'u',
+    'ç': 'c',
+  };
+  return value
+      .trim()
+      .toLowerCase()
+      .split('')
+      .map((char) => replacements[char] ?? char)
+      .join()
+      .replaceAll(RegExp(r'\s+'), ' ');
 }
 
 void _showSnack(BuildContext context, String message) {
