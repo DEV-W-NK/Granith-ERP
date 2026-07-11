@@ -2,49 +2,19 @@
 
 [![CI/CD Firebase Hosting](https://github.com/DEV-W-NK/Granith-ERP/actions/workflows/firebase-hosting.yml/badge.svg)](https://github.com/DEV-W-NK/Granith-ERP/actions/workflows/firebase-hosting.yml)
 
-ERP web para construtoras, obras e operacoes que precisam sair da planilha e trabalhar com rastreabilidade, controle financeiro, estoque, compras, equipes, portal do cliente e visao gerencial.
+ERP web vertical para construtoras, obras e operacoes de campo. O Granith centraliza o fluxo entre comercial, projetos, medicoes, requisicoes, compras, estoque, financeiro, RH, frota, clientes, relatorios e mobile.
 
-O Granith ERP centraliza a rotina operacional de uma empresa de obras: projetos, orcamentos, medicoes, diario de obra, requisicoes, compras, estoque, financeiro, RH, frota, geofencing, permissoes, clientes, relatorios e assistentes de IA em evolucao.
+> Status: beta avancado com fluxo ponta a ponta implementado. O sistema ja cobre a maior parte da operacao real de uma empresa de obras e esta pronto para demonstracao, validacao com usuarios e pilotos controlados. Para producao ampla, ainda exige hardening final de seguranca, RLS, infraestrutura e politicas operacionais.
 
-> Status: MVP avancado em beta operacional. O projeto esta pronto para demonstracao, validacao com usuarios e pilotos controlados. Para producao ampla, ainda exige hardening final de seguranca, revisao de infraestrutura e amadurecimento de alguns fluxos.
-
-## Visao Rapida
-
-| Area | Estado |
-| --- | --- |
-| Frontend | Flutter Web responsivo |
-| Backend | Supabase, Postgres, Auth, Storage, Realtime, migrations e Edge Functions |
-| Deploy web | Firebase Hosting via GitHub Actions |
-| Banco | Migrations Supabase versionadas |
-| Testes | Models, services, controllers, viewmodels e widgets |
-| Integracoes | Supabase, OAuth Google, Google Maps/geocoding, Firebase Hosting e base para IA Gemini |
-| Mobile | Projeto Android complementar em evolucao para rotinas de campo |
-
-Deploy web configurado para Firebase Hosting:
+Deploy publico:
 
 ```text
 https://granith-skyforge.web.app/
 ```
 
-## Principais Recursos
+## Produto
 
-- Projetos e obras como centro da operacao.
-- Orcamentos comerciais e tipos de orcamento.
-- Medicoes de obra com progresso e valores.
-- Diario de obra com base para evidencias e historico operacional.
-- Requisicoes de materiais e servicos.
-- Compras, fornecedores, estoque e catalogo de itens.
-- Financeiro com contas, transacoes, origem e referencia.
-- DRE gerencial e relatorios executivos.
-- RH, colaboradores, cargos, setores, beneficios e equipes.
-- Frota, veiculos, motoristas e base para logistica.
-- Geofencing com Google Maps/geocoding.
-- Portal do cliente com acesso separado da area interna.
-- Gestao de usuarios, permissoes e acessos internos/clientes.
-- Notificacoes e base para integracao com app mobile.
-- Assistentes de IA por contexto, com roadmap para backend seguro.
-
-## Fluxo Operacional
+O Granith ERP foi construido como uma base real de produto, nao apenas uma prova de conceito. A proposta e reduzir planilhas e controles isolados, criando uma linha operacional rastreavel:
 
 ```text
 Orcamento aprovado
@@ -53,113 +23,223 @@ Orcamento aprovado
 Projeto / Obra
         |
         v
-Medicoes, diario, equipe e geofencing
+Equipe, medicoes, diario, geofence e evidencias
         |
         v
 Requisicao de material ou servico
         |
         v
-Compra com fornecedor
+Cotacao, compra, entrega e estoque
         |
         v
-Entrega, estoque ou consumo direto
+Contas a pagar, contas a receber e DRE
         |
         v
-Conta a pagar / transacao financeira
-        |
-        v
-DRE, relatorios e indicadores
+Portal do cliente, relatorios e indicadores
 ```
 
-## Modulos
+## Cobertura Atual
 
-| Modulo | Descricao |
+| Area | Cobertura |
 | --- | --- |
-| Dashboard | Visao geral da operacao e indicadores principais |
-| Projetos | Obras, clientes, status, custos, progresso, equipes e localizacao |
-| Orcamentos | Propostas comerciais, tipos, itens, valores e status |
-| Medicoes | Progresso fisico/financeiro, valores medidos e acumulados |
-| Diario de obra | Historico operacional e registros de campo |
-| Requisicoes | Demandas internas para compras, materiais e servicos |
-| Compras | Pedidos, fornecedores, itens, notas, entregas e financeiro |
-| Estoque | Saldos, movimentacoes, entradas, saidas e transferencias |
-| Fornecedores | Cadastro, consulta CNPJ e suporte ao fluxo de compras |
-| Financeiro | Receitas, despesas, contas, origem, referencia e compras a pagar |
-| Relatorios/DRE | Leitura gerencial de resultado, custos e desempenho |
-| RH | Colaboradores, cargos, setores, beneficios e historico |
-| Equipes | Associacao de pessoas, liderancas e projetos |
-| Frota | Veiculos, responsaveis, status e base para operacao mobile |
-| Geofencing | Cercas geograficas para obras e validacao de presenca |
-| Acessos | Usuarios, permissoes, clientes e portal do cliente |
-| Configuracoes | Parametros gerais, assinatura e administracao do workspace |
+| Comercial | Orcamentos, tipos de orcamento, propostas, clientes e origem do projeto |
+| Projetos | Obras, status, localizacao, progresso, custos, coordenador e equipe |
+| Medicoes | Progresso fisico/financeiro, valores medidos e historico |
+| Diario de obra | Registros de campo, rastreabilidade e base para evidencias |
+| Requisicoes | Pedidos internos de materiais/servicos, status e integracao com compras |
+| Compras | Fornecedores, itens, pedidos, cotacoes, entrega e reflexo financeiro |
+| Estoque | Catalogo, saldos, entradas, baixas, transferencias e associacao por obra |
+| Financeiro | Entradas/saidas, compras a pagar, DRE, ponto/custos e origem das transacoes |
+| RH | Funcionarios, cargos, setores, beneficios, equipes e coordenadores |
+| Frota/logistica | Veiculos, motoristas, coletas, entregas, rotas e quilometragem |
+| Geofencing | Cercas por obra, base para validacao de ponto e presenca |
+| Cliente | Portal com projetos, detalhes, medicoes aprovadas e documentos |
+| Acessos | Usuarios internos, clientes, permissoes, convite e vinculos |
+| IA | Assistentes por contexto via Edge Function, sem expor chave Gemini no web |
+| Mobile | Integracao com app Android para campo, rotas, ponto, offline e notificacoes |
 
-## Stack Tecnica
+## Modulos Principais
+
+- Dashboard operacional.
+- Projetos e obras.
+- Medicoes de obra.
+- Diario de obra.
+- Requisicoes de materiais.
+- Orcamentos e tipos de orcamento.
+- Compras, fornecedores e catalogo de itens.
+- Estoque e movimentacoes.
+- Entradas e saidas financeiras.
+- Compras a pagar.
+- Analise de ponto e custo de mao de obra por obra.
+- DRE gerencial.
+- RH, funcionarios, cargos, beneficios e equipes.
+- Frota, veiculos, rotas, coletas e entregas.
+- Geofencing de obras.
+- Portal do cliente.
+- Permissoes, usuarios internos e clientes.
+- Configuracoes do workspace.
+- Assistentes de IA por area.
+
+## Destaques Tecnicos
 
 | Camada | Tecnologia |
 | --- | --- |
-| UI | Flutter |
-| Estado | Provider/ChangeNotifier e Riverpod em pontos de orquestracao |
-| Backend | Supabase Postgres + PostgREST |
-| Auth | Supabase Auth e OAuth Google |
-| Storage | Supabase Storage |
-| Edge Functions | Deno/Supabase Functions |
-| Maps | Google Maps e geocoding |
+| UI | Flutter Web responsivo |
+| Estado | Provider/ChangeNotifier e Riverpod em pontos especificos |
+| Backend | Supabase Postgres, Auth, Storage, Realtime e PostgREST |
+| Edge Functions | Supabase Functions em Deno |
+| Auth | Supabase Auth, OAuth Google e usuarios internos |
+| Banco | Migrations versionadas |
+| Mapas | Google Maps e geocoding |
 | Graficos | fl_chart |
 | Deploy | Firebase Hosting |
 | CI/CD | GitHub Actions |
-| Testes | flutter_test |
+| Testes | flutter_test para models, services, controllers, viewmodels e widgets |
 
-## Estrutura
+## Arquitetura
 
 ```text
 lib/
-  app/           bootstrap, providers e roteamento
+  app/           bootstrap, providers globais e roteamento
   controllers/   estado e regras de tela
-  core/          infraestrutura compartilhada
-  features/      modulos novos em arquitetura por feature
+  core/          configuracoes, infraestrutura e utilitarios
+  features/      modulos novos organizados por feature
   models/        entidades e serializacao
   screens/       paginas principais
-  services/      Supabase e integracoes externas
-  widgets/       componentes e views por modulo
+  services/      Supabase, OAuth, Maps e integracoes
+  themes/        identidade visual
+  widgets/       views e componentes por modulo
+
 supabase/
-  functions/     Edge Functions
-  migrations/    schema e evolucao do banco
+  functions/     Edge Functions server-side
+  migrations/    evolucao do banco
   templates/     templates auxiliares
-test/            testes automatizados
-docs/            auditorias e documentacao tecnica
+
+test/            cobertura automatizada
+docs/            auditorias e guias tecnicos
 ```
 
-## Como Rodar Localmente
+## Integracao ERP + Mobile
+
+O ERP e a fonte principal de cadastro, aprovacao, analise e gestao. O app mobile coleta dados de campo e sincroniza com o mesmo banco:
+
+| ERP Web | Mobile Android |
+| --- | --- |
+| Cadastra projetos, equipes, obras e coordenadores | Exibe obras/equipes vinculadas ao funcionario |
+| Planeja rotas e coletas/entregas | Motorista executa rota, checkpoints e tracking |
+| Define cercas e regras de ponto | Funcionario bate ponto validado por geofence |
+| Controla requisicoes e compras | Funcionario solicita material e acompanha status |
+| Consolida financeiro e DRE | Mobile envia eventos de campo e evidencias |
+| Gerencia notificacoes | App recebe push e sincroniza dados locais |
+
+## Seguranca
+
+Base atual:
+
+- Autenticacao Supabase.
+- Separacao entre admin, funcionario e cliente.
+- Usuarios internos sem depender apenas de Google.
+- Permissoes por codigo e escopo.
+- RLS versionado em migrations.
+- Edge Functions para acoes sensiveis.
+- Firebase/Gemini protegidos por backend quando necessario.
+- `.env.local`, service accounts, keystores e secrets fora do Git.
+- Historico higienizado para repositorio publico.
+
+Antes de producao ampla:
+
+- Revisar politicas RLS por cada perfil.
+- Validar buckets privados e URLs assinadas.
+- Configurar SMTP proprio para convites.
+- Definir politicas de backup, logs e auditoria.
+- Revisar limites, quotas e observabilidade.
+
+## IA e Gemini
+
+O Flutter Web nao recebe `GEMINI_API_KEY`. O fluxo correto e:
+
+```text
+Flutter Web -> Supabase Edge Function -> Gemini API
+```
+
+A Edge Function valida sessao, modelo permitido, payload e limite de tokens.
+
+Comandos comuns:
+
+```powershell
+npx supabase secrets set GEMINI_API_KEY="SUA_CHAVE"
+npx supabase secrets set GEMINI_MODEL="gemini-2.5-flash"
+npx supabase secrets set GEMINI_ALLOWED_MODELS="gemini-2.5-flash"
+npx supabase secrets set GEMINI_MAX_OUTPUT_TOKENS="1200"
+npx supabase functions deploy gemini_generate
+```
+
+## Firebase Hosting e CI/CD
+
+Workflow:
+
+```text
+.github/workflows/firebase-hosting.yml
+```
+
+Comportamento:
+
+| Evento | Acao |
+| --- | --- |
+| Pull request para `main` | `pub get`, `analyze`, `test`, `build web` e preview quando secrets existem |
+| Push na `main` | Validacao, build e deploy live no Firebase Hosting |
+| `workflow_dispatch` | Deploy manual |
+
+Secrets esperados no GitHub Actions:
+
+```text
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
+GOOGLE_MAPS_API_KEY
+GOOGLE_OAUTH_WEB_CLIENT_ID
+FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE
+```
+
+Nao colocar no build web:
+
+```text
+SUPABASE_SERVICE_ROLE_KEY
+GOOGLE_OAUTH_CLIENT_SECRET
+GEMINI_API_KEY
+```
+
+Essas chaves sao server-side.
+
+## Ambiente Local
 
 Requisitos:
 
 - Flutter stable.
-- Dart SDK compativel com a versao do Flutter.
-- Chrome para desenvolvimento web.
-- Supabase CLI se for aplicar migrations.
-- JDK 21 para builds Android.
+- Chrome.
+- Supabase CLI ou `npx supabase`.
+- Node/npm para ferramentas auxiliares.
+- JDK/Android SDK se for gerar builds mobile relacionados.
 
-Instale dependencias:
+Instalacao:
 
 ```powershell
 flutter pub get
-```
-
-Crie os arquivos locais de ambiente:
-
-```powershell
 Copy-Item .env.example .env.local
 Copy-Item supabase/.env.example supabase/.env.local
 ```
 
-Edite `.env.local` com as chaves de desenvolvimento. Depois rode:
+Rodar web local:
 
 ```powershell
 .\scripts\run_dev.ps1 -CheckOnly
 .\scripts\run_dev.ps1 -Device chrome
 ```
 
-O script carrega variaveis locais, repassa os valores seguros via `--dart-define`, gera `web/env.js` local para Google Maps no navegador e prepara secrets locais de iOS quando necessario.
+Rodar em porta fixa:
+
+```powershell
+.\scripts\run_dev.ps1 -Device chrome --web-port 65350
+```
 
 ## Variaveis Locais
 
@@ -172,97 +252,39 @@ O script carrega variaveis locais, repassa os valores seguros via `--dart-define
 | `GOOGLE_OAUTH_ANDROID_CLIENT_ID` | OAuth Google Android |
 | `GOOGLE_OAUTH_IOS_CLIENT_ID` | OAuth Google iOS |
 | `GOOGLE_OAUTH_IOS_REVERSED_CLIENT_ID` | URL scheme iOS |
-| `GOOGLE_OAUTH_CLIENT_SECRET` | Apenas local/Supabase, nunca no cliente Flutter Web |
-| `GOOGLE_OAUTH_REDIRECT_URL` | Redirect local do OAuth |
-| `GEMINI_MODEL` | Modelo Gemini solicitado pelo cliente. A chave real fica somente na Edge Function |
-| `GRANITH_ANIMATE_WEB_BACKDROP` | Opcional. Ativa o fundo animado no Flutter Web para comparacao visual/performance |
-
-Nunca versionar secrets. O `SUPABASE_PUBLISHABLE_KEY` e publico por natureza, mas so deve ser usado com RLS forte. Nunca usar `service_role` no cliente Flutter.
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Apenas local/Supabase, nunca no Flutter Web |
+| `GOOGLE_OAUTH_REDIRECT_URL` | Redirect local de OAuth |
+| `GEMINI_MODEL` | Modelo solicitado ao backend |
+| `GRANITH_ANIMATE_WEB_BACKDROP` | Alterna fundo animado no web |
 
 ## Supabase
 
-Migrations ficam em:
+Migrations:
 
 ```text
 supabase/migrations
 ```
 
-Edge Functions ficam em:
+Functions:
 
 ```text
 supabase/functions
 ```
 
-Comandos comuns:
+Comandos:
 
 ```powershell
-supabase login
-supabase link --project-ref SEU_PROJECT_REF
-supabase db push
+npx supabase login
+npx supabase link --project-ref SEU_PROJECT_REF
+npx supabase db push
+npx supabase functions deploy dispatch_mobile_push
+npx supabase functions deploy manage_internal_user
+npx supabase functions deploy gemini_generate
 ```
 
-Secrets de Edge Functions devem ficar em `supabase/.env.local`, que e ignorado pelo Git. Exemplos de secrets server-side:
-
-```text
-SUPABASE_SERVICE_ROLE_KEY
-GRANITH_MANAGEMENT_API_TOKEN
-GRANITH_PUSH_DISPATCH_TOKEN
-FIREBASE_SERVICE_ACCOUNT_JSON
-GEMINI_API_KEY
-GEMINI_MODEL
-GEMINI_ALLOWED_MODELS
-GEMINI_MAX_OUTPUT_TOKENS
-```
-
-## CI/CD e Firebase Hosting
-
-O workflow principal fica em:
-
-```text
-.github/workflows/firebase-hosting.yml
-```
-
-Comportamento:
-
-| Evento | Acao |
-| --- | --- |
-| Pull request para `main` | Roda `pub get`, `analyze`, `test`, `build web` e publica preview quando os secrets existem |
-| Push na `main` | Roda validacao/build e publica no Firebase Hosting live quando os secrets existem |
-| `workflow_dispatch` | Permite deploy manual pelo GitHub Actions |
-
-Secrets necessarios no GitHub Actions:
-
-```text
-SUPABASE_URL
-SUPABASE_PUBLISHABLE_KEY
-GOOGLE_MAPS_API_KEY
-GOOGLE_OAUTH_WEB_CLIENT_ID
-FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE
-```
-
-Configure em:
-
-```text
-GitHub > Repository > Settings > Secrets and variables > Actions
-```
-
-`FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE` deve receber o JSON completo da service account do Firebase.
-
-Se algum secret ainda nao estiver configurado, o workflow continua rodando validacao, testes e build com placeholders, mas pula o deploy.
-
-Nao coloque estes secrets no build Flutter Web:
-
-```text
-SUPABASE_SERVICE_ROLE_KEY
-GOOGLE_OAUTH_CLIENT_SECRET
-GEMINI_API_KEY
-```
-
-Essas chaves precisam ficar no backend/Edge Functions.
+Secrets server-side ficam em Supabase Secrets, nunca no Flutter Web.
 
 ## Testes
-
-Comandos recomendados:
 
 ```powershell
 flutter analyze --no-fatal-infos --no-fatal-warnings
@@ -274,97 +296,30 @@ flutter build web --release `
   --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID=""
 ```
 
-A suite cobre models, services, controllers, viewmodels e widgets de modulos como projetos, orcamentos, compras, estoque, financeiro, RH, permissoes, portal do cliente, veiculos e relatorios.
+## Estado do Produto
 
-## Seguranca
+O Granith ERP esta praticamente completo como base funcional de ERP vertical:
 
-Base atual:
+- possui fluxo operacional de ponta a ponta;
+- possui UI responsiva e identidade visual propria;
+- possui integracao com banco real e migrations;
+- possui CI/CD e deploy publico;
+- possui app mobile complementar;
+- possui testes automatizados em areas criticas;
+- possui arquitetura preparada para evolucao modular.
 
-- Supabase Auth.
-- Separacao entre usuario interno, admin e cliente.
-- Modelo de permissoes por codigo.
-- Baseline de RLS em migrations.
-- Edge Functions para operacoes server-side sensiveis.
-- Arquivos locais sensiveis ignorados pelo Git.
-- Historico Git limpo para publicacao do repositorio.
-
-Pontos antes de producao ampla:
-
-- Revisar buckets privados e URLs assinadas.
-- Refinar RLS por permissao e operacao critica.
-- Validar fluxo de usuarios reais por perfil.
-- Configurar SMTP proprio para convites do portal do cliente.
-- Revisar headers de seguranca no hosting.
-
-## IA e Gemini
-
-O ERP possui assistentes por area. O Flutter Web nao chama mais a API do Gemini diretamente e nao deve receber `GEMINI_API_KEY` em `--dart-define`.
-
-O fluxo correto e:
-
-```text
-Flutter Web -> Supabase Edge Function -> Gemini API
-```
-
-Assim a chave fica protegida no backend, com sessao Supabase obrigatoria, allowlist de modelos, limite de payload e limite de tokens de saida.
-
-Configure os secrets da function:
-
-```powershell
-npx supabase secrets set GEMINI_API_KEY="SUA_CHAVE"
-npx supabase secrets set GEMINI_MODEL="gemini-2.5-flash"
-npx supabase secrets set GEMINI_ALLOWED_MODELS="gemini-2.5-flash"
-npx supabase secrets set GEMINI_MAX_OUTPUT_TOKENS="1200"
-npx supabase functions deploy gemini_generate
-```
-
-## Portal do Cliente e Convites
-
-O portal do cliente usa Supabase Auth e fluxo de Magic Link para convite.
-
-Template versionado:
-
-```text
-supabase/templates/client_portal_magic_link.html
-```
-
-Enquanto SMTP proprio nao estiver configurado, o remetente pode aparecer como Supabase/Auth e ha limites baixos de envio. Para uso comercial em volume, configurar SMTP proprio com dominio validado e prioridade operacional.
-
-Mais detalhes:
-
-```text
-docs/client_portal_email_setup.md
-```
-
-## Granith Mobile
-
-O mobile e o complemento operacional do ERP, focado em Android e rotinas de campo. Ele nao replica toda a administracao web; o objetivo e coletar dados e sincronizar informacoes relevantes para colaboradores.
-
-Frentes previstas:
-
-- Minha rota hoje.
-- Tracking de rota.
-- Evidencias de entrega/coleta.
-- Estoque mobile simples.
-- Checklist de veiculo.
-- Medicoes com evidencia de campo.
-- Notificacoes push/local.
-- Consulta offline de documentos.
-- Assistente local/offline para apoio de campo.
+O que falta antes de producao comercial ampla e menos "feature" e mais maturidade operacional: seguranca fina, observabilidade, backup, auditoria, homologacao de regras fiscais/trabalhistas e validacao com usuarios reais.
 
 ## Roadmap
 
-1. Hardening final de seguranca e RLS.
-2. DRE consolidado com alta confiabilidade.
-3. IA via backend seguro com auditoria e controle de custo.
-4. Mobile de campo com rotas, geofencing, diario, evidencias e notificacoes.
-5. Custo real de mao de obra por obra.
-6. Logistica de compras, entregas, motoristas e frota.
-7. Portal do cliente com documentos e acompanhamento tecnico.
-8. Polimento visual e UX para pilotos comerciais.
+1. Hardening final de RLS, storage e auditoria.
+2. Refinamento do fluxo compras -> financeiro -> estoque por obra.
+3. Dashboards executivos mais enxutos.
+4. Notificacoes entre ERP e Mobile em eventos criticos.
+5. Relatorios PDF por obra, coordenador e mao de obra.
+6. Polimento final de UX em telas densas.
+7. Piloto controlado com dados reais.
 
-## Posicionamento
+## Licenca
 
-O Granith ERP e uma base real de produto, nao apenas um prototipo. Ele ja possui amplitude de ERP, modulos integrados, banco versionado, testes e deploy automatizado.
-
-O posicionamento atual mais honesto e: **ERP vertical para construtoras em beta avancado, pronto para demonstracao e pilotos controlados, com fluxo ponta a ponta implementado e roadmap claro para producao.**
+Projeto em desenvolvimento ativo. Antes de uso comercial, revise licenciamento, credenciais, termos de terceiros e politicas de dados.
