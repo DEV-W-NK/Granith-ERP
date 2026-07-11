@@ -291,6 +291,28 @@ class _MainLayoutState extends State<MainLayout> {
           aliases: 'geofencing cercas coordenadas mapa localizacao obra ponto',
         ),
         NavigationModule(
+          index: 21,
+          title: pageTitles[21],
+          section: 'Administrativo',
+          icon: pageIcons[21],
+          aliases: 'permissoes clientes acesso usuarios portal',
+        ),
+        NavigationModule(
+          index: 27,
+          title: pageTitles[27],
+          section: 'Administrativo',
+          icon: pageIcons[27],
+          aliases: 'configuracoes ajustes sistema preferencias',
+        ),
+        NavigationModule(
+          index: 28,
+          title: pageTitles[28],
+          section: 'Administrativo',
+          icon: pageIcons[28],
+          aliases:
+              'resultado administrativo despesas lucro rentabilidade periodo obra',
+        ),
+        NavigationModule(
           index: 17,
           title: pageTitles[17],
           section: 'Financeiro',
@@ -317,13 +339,6 @@ class _MainLayoutState extends State<MainLayout> {
           section: 'Financeiro',
           icon: pageIcons[20],
           aliases: 'dre relatorio gerencial resultados',
-        ),
-        NavigationModule(
-          index: 21,
-          title: pageTitles[21],
-          section: 'Administrativo',
-          icon: pageIcons[21],
-          aliases: 'permissoes clientes acesso usuarios portal',
         ),
         NavigationModule(
           index: 22,
@@ -359,21 +374,6 @@ class _MainLayoutState extends State<MainLayout> {
           section: 'I.A',
           icon: pageIcons[26],
           aliases: 'ia administrativa configuracoes acessos uso plataforma',
-        ),
-        NavigationModule(
-          index: 27,
-          title: pageTitles[27],
-          section: 'Administrativo',
-          icon: pageIcons[27],
-          aliases: 'configuracoes ajustes sistema preferencias',
-        ),
-        NavigationModule(
-          index: 28,
-          title: pageTitles[28],
-          section: 'Administrativo',
-          icon: pageIcons[28],
-          aliases:
-              'resultado administrativo despesas lucro rentabilidade periodo obra',
         ),
       ];
 

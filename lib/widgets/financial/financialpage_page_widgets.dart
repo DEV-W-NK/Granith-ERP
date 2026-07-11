@@ -107,7 +107,6 @@ class _FinancialPageViewState extends State<FinancialPageView>
     final size = MediaQuery.sizeOf(context);
     final width = size.width;
     final isDesktop = width > 900;
-    final compactHeight = size.height < 720;
     final padding = ResponsiveLayout.pagePadding(width);
     final baseTransactions = ctrl.transactions;
     final visibleTransactions = _applyLocalFilters(baseTransactions);
@@ -139,64 +138,33 @@ class _FinancialPageViewState extends State<FinancialPageView>
                       children: [
                         _FinancialHeader(isDesktop: isDesktop),
                         SizedBox(height: isDesktop ? 14 : 10),
-                        _FinancialCommandCenter(
-                          showStats: !compactHeight,
-                          controller: ctrl,
-                          visibleCount: visibleTransactions.length,
-                          totalCount: baseTransactions.length,
-                          queryController: _searchCtrl,
-                          query: _searchCtrl.text,
-                          statusFilter: _statusFilter,
-                          sort: _sort,
-                          onQueryChanged: (_) => setState(() {}),
-                          onClearQuery: () {
-                            _searchCtrl.clear();
-                            setState(() {});
-                          },
-                          onStatusChanged:
-                              (value) => setState(() => _statusFilter = value),
-                          onSortChanged: (value) {
-                            if (value == null) return;
-                            setState(() => _sort = value);
-                          },
-                          onSelectIncome: () => _tabController.animateTo(1),
-                          onSelectExpense: () => _tabController.animateTo(2),
-                        ),
-                        const SizedBox(height: 10),
-                        _FinancialTabs(
-                          tabController: _tabController,
-                          isDesktop: isDesktop,
-                          allCount: visibleTransactions.length,
-                          incomeCount: incomeTransactions.length,
-                          expenseCount: expenseTransactions.length,
-                        ),
-                        const SizedBox(height: 10),
                         Expanded(
-                          child: TabBarView(
-                            controller: _tabController,
-                            children: [
-                              _TransactionList(
-                                transactions: visibleTransactions,
-                                emptyLabel:
-                                    _searchCtrl.text.trim().isEmpty
-                                        ? 'Nenhuma movimentacao encontrada'
-                                        : 'Nenhuma movimentacao para a busca',
-                              ),
-                              _TransactionList(
-                                transactions: incomeTransactions,
-                                emptyLabel:
-                                    _searchCtrl.text.trim().isEmpty
-                                        ? 'Nenhuma entrada encontrada'
-                                        : 'Nenhuma entrada para a busca',
-                              ),
-                              _TransactionList(
-                                transactions: expenseTransactions,
-                                emptyLabel:
-                                    _searchCtrl.text.trim().isEmpty
-                                        ? 'Nenhuma saida encontrada'
-                                        : 'Nenhuma saida para a busca',
-                              ),
-                            ],
+                          child: _FinancialWorkspace(
+                            isDesktop: isDesktop,
+                            tabController: _tabController,
+                            controller: ctrl,
+                            visibleTransactions: visibleTransactions,
+                            incomeTransactions: incomeTransactions,
+                            expenseTransactions: expenseTransactions,
+                            totalCount: baseTransactions.length,
+                            queryController: _searchCtrl,
+                            query: _searchCtrl.text,
+                            statusFilter: _statusFilter,
+                            sort: _sort,
+                            onQueryChanged: (_) => setState(() {}),
+                            onClearQuery: () {
+                              _searchCtrl.clear();
+                              setState(() {});
+                            },
+                            onStatusChanged:
+                                (value) =>
+                                    setState(() => _statusFilter = value),
+                            onSortChanged: (value) {
+                              if (value == null) return;
+                              setState(() => _sort = value);
+                            },
+                            onSelectIncome: () => _tabController.animateTo(1),
+                            onSelectExpense: () => _tabController.animateTo(2),
                           ),
                         ),
                       ],
@@ -357,10 +325,13 @@ class _FinancialHeader extends StatelessWidget {
   }
 }
 
-class _FinancialCommandCenter extends StatelessWidget {
-  final bool showStats;
+class _FinancialWorkspace extends StatelessWidget {
+  final bool isDesktop;
+  final TabController tabController;
   final FinancialController controller;
-  final int visibleCount;
+  final List<FinancialTransactionModel> visibleTransactions;
+  final List<FinancialTransactionModel> incomeTransactions;
+  final List<FinancialTransactionModel> expenseTransactions;
   final int totalCount;
   final TextEditingController queryController;
   final String query;
@@ -373,10 +344,13 @@ class _FinancialCommandCenter extends StatelessWidget {
   final VoidCallback onSelectIncome;
   final VoidCallback onSelectExpense;
 
-  const _FinancialCommandCenter({
-    required this.showStats,
+  const _FinancialWorkspace({
+    required this.isDesktop,
+    required this.tabController,
     required this.controller,
-    required this.visibleCount,
+    required this.visibleTransactions,
+    required this.incomeTransactions,
+    required this.expenseTransactions,
     required this.totalCount,
     required this.queryController,
     required this.query,
@@ -402,15 +376,21 @@ class _FinancialCommandCenter extends StatelessWidget {
       query: query,
       statusFilter: statusFilter,
       sort: sort,
-      visibleCount: visibleCount,
+      visibleCount: visibleTransactions.length,
       totalCount: totalCount,
       onQueryChanged: onQueryChanged,
       onClearQuery: onClearQuery,
       onStatusChanged: onStatusChanged,
       onSortChanged: onSortChanged,
     );
-
-    if (!showStats) return filters;
+    final ledger = _FinancialLedgerPanel(
+      tabController: tabController,
+      isDesktop: isDesktop,
+      visibleTransactions: visibleTransactions,
+      incomeTransactions: incomeTransactions,
+      expenseTransactions: expenseTransactions,
+      query: query,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -418,15 +398,38 @@ class _FinancialCommandCenter extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: overview),
-              const SizedBox(width: 12),
-              SizedBox(width: 520, child: filters),
+              SizedBox(
+                width: 430,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [overview, const SizedBox(height: 12), filters],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: ledger),
             ],
           );
         }
 
+        final topPanelMaxHeight =
+            constraints.maxHeight < 840
+                ? constraints.maxHeight * 0.38
+                : constraints.maxHeight * 0.45;
+
         return Column(
-          children: [overview, const SizedBox(height: 10), filters],
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: topPanelMaxHeight),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [overview, const SizedBox(height: 10), filters],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Expanded(child: ledger),
+          ],
         );
       },
     );
@@ -1341,6 +1344,225 @@ class _ResultCounter extends StatelessWidget {
   }
 }
 
+class _FinancialLedgerPanel extends StatelessWidget {
+  final TabController tabController;
+  final bool isDesktop;
+  final List<FinancialTransactionModel> visibleTransactions;
+  final List<FinancialTransactionModel> incomeTransactions;
+  final List<FinancialTransactionModel> expenseTransactions;
+  final String query;
+
+  const _FinancialLedgerPanel({
+    required this.tabController,
+    required this.isDesktop,
+    required this.visibleTransactions,
+    required this.incomeTransactions,
+    required this.expenseTransactions,
+    required this.query,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.58),
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 760;
+                final title = Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: AppDecorations.iconTile(AppColors.accentGold),
+                      child: const Icon(
+                        Icons.format_list_bulleted_rounded,
+                        color: AppColors.accentGold,
+                        size: 21,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Extrato financeiro',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _ledgerSubtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+                final tabs = _FinancialTabs(
+                  tabController: tabController,
+                  isDesktop: isDesktop,
+                  allCount: visibleTransactions.length,
+                  incomeCount: incomeTransactions.length,
+                  expenseCount: expenseTransactions.length,
+                );
+
+                if (compact) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      title,
+                      const SizedBox(height: 12),
+                      SizedBox(width: double.infinity, child: tabs),
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: title),
+                    const SizedBox(width: 14),
+                    SizedBox(width: 430, child: tabs),
+                  ],
+                );
+              },
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Divider(height: 1, color: Colors.white10),
+          ),
+          const SizedBox(height: 8),
+          if (isDesktop) ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: _LedgerTableHeader(),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Expanded(
+            child: TabBarView(
+              controller: tabController,
+              children: [
+                _TransactionList(
+                  transactions: visibleTransactions,
+                  emptyLabel:
+                      query.trim().isEmpty
+                          ? 'Nenhuma movimentacao encontrada'
+                          : 'Nenhuma movimentacao para a busca',
+                ),
+                _TransactionList(
+                  transactions: incomeTransactions,
+                  emptyLabel:
+                      query.trim().isEmpty
+                          ? 'Nenhuma entrada encontrada'
+                          : 'Nenhuma entrada para a busca',
+                ),
+                _TransactionList(
+                  transactions: expenseTransactions,
+                  emptyLabel:
+                      query.trim().isEmpty
+                          ? 'Nenhuma saida encontrada'
+                          : 'Nenhuma saida para a busca',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _ledgerSubtitle {
+    if (visibleTransactions.isEmpty) {
+      return 'Sem lancamentos no filtro atual';
+    }
+    return '${visibleTransactions.length} registro(s) filtrado(s), com leitura por data e status';
+  }
+}
+
+class _LedgerTableHeader extends StatelessWidget {
+  const _LedgerTableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.30),
+        ),
+      ),
+      child: const Row(
+        children: [
+          SizedBox(width: 46),
+          Expanded(flex: 9, child: _LedgerHeaderText('Descricao')),
+          SizedBox(width: 14),
+          SizedBox(width: 118, child: _LedgerHeaderText('Origem')),
+          SizedBox(width: 132, child: _LedgerHeaderText('Categoria')),
+          SizedBox(width: 104, child: _LedgerHeaderText('Vencimento')),
+          SizedBox(width: 104, child: _LedgerHeaderText('Status')),
+          Expanded(
+            flex: 3,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: _LedgerHeaderText('Valor'),
+            ),
+          ),
+          SizedBox(width: 28),
+        ],
+      ),
+    );
+  }
+}
+
+class _LedgerHeaderText extends StatelessWidget {
+  final String label;
+
+  const _LedgerHeaderText(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        color: AppColors.textMuted,
+        fontSize: 9,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0.6,
+      ),
+    );
+  }
+}
+
 class _FinancialTabs extends StatelessWidget {
   final TabController tabController;
   final bool isDesktop;
@@ -1391,137 +1613,6 @@ class _FinancialTabs extends StatelessWidget {
   }
 }
 
-/*
-class _LegacyFinancialPageViewMethods {
-  const _LegacyFinancialPageViewMethods();
-
-  Widget buildHeader(BuildContext context, bool isDesktop) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Gestão Financeira',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
-                'Fluxo de caixa, contas a pagar e receber',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-        if (isDesktop)
-          ElevatedButton.icon(
-            onPressed: () => TransactionFormDialog.show(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentGold,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            ),
-            icon: const Icon(Icons.add, color: AppColors.primaryDark, size: 18),
-            label: const Text(
-              'Nova Transação',
-              style: TextStyle(
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildStatCards(FinancialController ctrl) {
-    return SizedBox(
-      height: 120,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          FinancialStatCard(
-            title: 'Saldo em caixa',
-            value: ctrl.balance,
-            icon: Icons.account_balance_wallet_outlined,
-            color:
-                ctrl.balance >= 0 ? AppColors.accentBlue : AppColors.accentRed,
-          ),
-          const SizedBox(width: 12),
-          FinancialStatCard(
-            title: 'Receitas recebidas',
-            value: ctrl.totalIncome,
-            icon: Icons.arrow_upward,
-            color: AppColors.accentGreen,
-            onTap: () => _tabController.animateTo(1),
-          ),
-          const SizedBox(width: 12),
-          FinancialStatCard(
-            title: 'Despesas pagas',
-            value: ctrl.totalExpense,
-            icon: Icons.arrow_downward,
-            color: AppColors.accentRed,
-            onTap: () => _tabController.animateTo(2),
-          ),
-          const SizedBox(width: 12),
-          FinancialStatCard(
-            title: 'A pagar (pendente)',
-            value: ctrl.totalPendingExpense,
-            icon: Icons.schedule_outlined,
-            color: Colors.orangeAccent,
-            onTap: () => _tabController.animateTo(2),
-          ),
-          const SizedBox(width: 12),
-          FinancialStatCard(
-            title: 'Vencidos',
-            value: ctrl.totalOverdueExpense,
-            icon: Icons.warning_amber_rounded,
-            color: AppColors.accentRed,
-            badgeCount: ctrl.overdueTransactions.length,
-            onTap: () => _tabController.animateTo(2),
-          ),
-          const SizedBox(width: 12),
-          FinancialStatCard(
-            title: 'A receber',
-            value: ctrl.totalPendingIncome,
-            icon: Icons.hourglass_bottom_outlined,
-            color: Colors.lightGreenAccent,
-            onTap: () => _tabController.animateTo(1),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar(bool isDesktop) {
-    return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white10)),
-      ),
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: AppColors.accentGold,
-        labelColor: AppColors.accentGold,
-        unselectedLabelColor: AppColors.textMuted,
-        dividerColor: Colors.transparent,
-        isScrollable: !isDesktop,
-        tabs: const [
-          Tab(text: 'Todas'),
-          Tab(text: 'Entradas'),
-          Tab(text: 'Saídas'),
-        ],
-      ),
-    );
-  }
-}
-
-*/
 class _TransactionList extends StatelessWidget {
   final List<FinancialTransactionModel> transactions;
   final String emptyLabel;
@@ -1533,143 +1624,297 @@ class _TransactionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final incomeCount =
-        transactions.where((t) => t.type == TransactionType.income).length;
-    final expenseCount = transactions.length - incomeCount;
+    if (transactions.isEmpty) {
+      return _EmptyLedgerState(emptyLabel: emptyLabel);
+    }
+
+    final groups = _buildGroups(transactions);
+
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 18),
+      itemCount: groups.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) {
+        final group = groups[index];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _TransactionDateHeader(group: group),
+            const SizedBox(height: 8),
+            ...group.transactions.map(
+              (transaction) => TransactionListItem(transaction: transaction),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  List<_TransactionGroup> _buildGroups(
+    List<FinancialTransactionModel> transactions,
+  ) {
+    final map = <DateTime, List<FinancialTransactionModel>>{};
+    for (final transaction in transactions) {
+      final key = DateTime(
+        transaction.dueDate.year,
+        transaction.dueDate.month,
+        transaction.dueDate.day,
+      );
+      map.putIfAbsent(key, () => []).add(transaction);
+    }
+
+    final groups =
+        map.entries.map((entry) {
+          final rows = entry.value;
+          final income = rows
+              .where((row) => row.type == TransactionType.income)
+              .fold<double>(0, (sum, row) => sum + row.amount);
+          final expense = rows
+              .where((row) => row.type == TransactionType.expense)
+              .fold<double>(0, (sum, row) => sum + row.amount);
+          return _TransactionGroup(
+            date: entry.key,
+            transactions: rows,
+            income: income,
+            expense: expense,
+          );
+        }).toList();
+
+    groups.sort((a, b) => a.date.compareTo(b.date));
+    return groups;
+  }
+}
+
+class _TransactionGroup {
+  final DateTime date;
+  final List<FinancialTransactionModel> transactions;
+  final double income;
+  final double expense;
+
+  const _TransactionGroup({
+    required this.date,
+    required this.transactions,
+    required this.income,
+    required this.expense,
+  });
+
+  double get result => income - expense;
+}
+
+class _TransactionDateHeader extends StatelessWidget {
+  final _TransactionGroup group;
+
+  const _TransactionDateHeader({required this.group});
+
+  @override
+  Widget build(BuildContext context) {
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final result = group.result;
+    final color = result >= 0 ? AppColors.accentGreen : AppColors.accentRed;
 
     return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.34),
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.primaryDark.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.52),
+          color: AppColors.borderColor.withValues(alpha: 0.38),
         ),
       ),
-      child: Column(
+      child: Row(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
-            child: Row(
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: AppDecorations.iconTile(AppColors.accentGold),
-                  child: const Icon(
-                    Icons.receipt_long_rounded,
-                    color: AppColors.accentGold,
-                    size: 18,
+                Text(
+                  _dateLabel(group.date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Lancamentos financeiros',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '$incomeCount entrada(s) | $expenseCount saida(s)',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 2),
+                Text(
+                  '${group.transactions.length} lancamento(s)',
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                _ListCountPill(count: transactions.length),
               ],
             ),
           ),
-          Divider(
-            height: 1,
-            color: AppColors.borderColor.withValues(alpha: 0.42),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                currency.format(result),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'E ${currency.format(group.income)} | S ${currency.format(group.expense)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-          Expanded(child: _buildContent()),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
-    if (transactions.isEmpty) {
-      return Center(
-        child: Container(
-          margin: const EdgeInsets.all(18),
-          padding: const EdgeInsets.all(24),
-          decoration: AppDecorations.formHintPanel(color: AppColors.accentBlue),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.manage_search_rounded,
-                size: 54,
-                color: AppColors.accentBlue.withValues(alpha: 0.72),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                emptyLabel,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'Ajuste os filtros ou crie um novo lancamento.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
-      itemCount: transactions.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 2),
-      itemBuilder: (_, i) => TransactionListItem(transaction: transactions[i]),
-    );
+  String _dateLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final normalized = DateTime(date.year, date.month, date.day);
+    final difference = normalized.difference(today).inDays;
+    if (difference == 0) return 'Hoje';
+    if (difference == 1) return 'Amanha';
+    if (difference == -1) return 'Ontem';
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+    return '$day/$month/${date.year}';
   }
 }
 
-class _ListCountPill extends StatelessWidget {
-  final int count;
+class _EmptyLedgerState extends StatelessWidget {
+  final String emptyLabel;
 
-  const _ListCountPill({required this.count});
+  const _EmptyLedgerState({required this.emptyLabel});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-      decoration: BoxDecoration(
-        color: AppColors.accentGold.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.26)),
-      ),
-      child: Text(
-        '$count item${count == 1 ? '' : 's'}',
-        style: const TextStyle(
-          color: AppColors.accentGold,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxHeight < 320 || constraints.maxWidth < 520;
+        final iconSize = compact ? 38.0 : 58.0;
+
+        return Center(
+          child: Container(
+            margin: EdgeInsets.all(compact ? 8 : 22),
+            constraints: const BoxConstraints(maxWidth: 420),
+            padding: EdgeInsets.all(compact ? 12 : 26),
+            decoration: BoxDecoration(
+              color: AppColors.primaryDark.withValues(alpha: 0.32),
+              borderRadius: BorderRadius.circular(compact ? 14 : 18),
+              border: Border.all(
+                color: AppColors.accentBlue.withValues(alpha: 0.22),
+              ),
+            ),
+            child:
+                compact
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: iconSize,
+                          height: iconSize,
+                          decoration: AppDecorations.iconTile(
+                            AppColors.accentBlue,
+                          ),
+                          child: const Icon(
+                            Icons.manage_search_rounded,
+                            color: AppColors.accentBlue,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                emptyLabel,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              const Text(
+                                'Ajuste os filtros ou crie um lancamento.',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    )
+                    : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: iconSize,
+                          height: iconSize,
+                          decoration: AppDecorations.iconTile(
+                            AppColors.accentBlue,
+                          ),
+                          child: const Icon(
+                            Icons.manage_search_rounded,
+                            color: AppColors.accentBlue,
+                            size: 28,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          emptyLabel,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        const Text(
+                          'Ajuste os filtros ou crie um novo lancamento.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ),
+          ),
+        );
+      },
     );
   }
 }
