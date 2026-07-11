@@ -41,7 +41,7 @@ class TransactionListItem extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('Lancamento marcado como pago'),
+                content: Text('Marcado como pago'),
                 backgroundColor: Colors.green,
                 duration: Duration(seconds: 2),
               ),
@@ -180,7 +180,7 @@ class TransactionListItem extends StatelessWidget {
           (ctx) => AlertDialog(
             backgroundColor: AppColors.surfaceDark,
             title: const Text(
-              'Cancelar lancamento?',
+              'Cancelar transacao?',
               style: TextStyle(color: AppColors.textPrimary),
             ),
             content: const Text(
@@ -195,7 +195,7 @@ class TransactionListItem extends StatelessWidget {
               TextButton(
                 onPressed: () => Navigator.of(ctx).pop(true),
                 child: const Text(
-                  'Cancelar lancamento',
+                  'Cancelar transacao',
                   style: TextStyle(color: AppColors.accentRed),
                 ),
               ),
@@ -212,10 +212,10 @@ class TransactionListItem extends StatelessWidget {
   };
 
   String _statusLabel(TransactionStatus status) => switch (status) {
-    TransactionStatus.paid => 'Pago',
-    TransactionStatus.overdue => 'Atrasado',
-    TransactionStatus.cancelled => 'Cancelado',
-    TransactionStatus.pending => 'Pendente',
+    TransactionStatus.paid => 'PAGO',
+    TransactionStatus.overdue => 'ATRASADO',
+    TransactionStatus.cancelled => 'CANCELADO',
+    TransactionStatus.pending => 'PENDENTE',
   };
 
   String _categoryLabel(TransactionCategory category) => switch (category) {
