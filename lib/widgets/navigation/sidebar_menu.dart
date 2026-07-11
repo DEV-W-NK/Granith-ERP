@@ -71,119 +71,12 @@ class SidebarMenu extends StatelessWidget {
               settings.workspaceTagline,
               settings.compactNavigation,
             ),
-            if (isExpanded) _buildModuleSearch(),
             Expanded(
               child: isExpanded ? _buildExpandedList() : _buildCollapsedRail(),
             ),
             _buildFooter(context, auth.user?.email ?? ''),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildModuleSearch() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-      child: Autocomplete<NavigationModule>(
-        displayStringForOption: (module) => module.title,
-        optionsBuilder: (textEditingValue) {
-          final query = textEditingValue.text.trim().toLowerCase();
-          if (query.isEmpty) {
-            return const Iterable<NavigationModule>.empty();
-          }
-          return modules.where((module) => module.matches(query)).take(8);
-        },
-        onSelected: (module) => onItemSelected(module.index),
-        fieldViewBuilder: (
-          context,
-          textEditingController,
-          focusNode,
-          onFieldSubmitted,
-        ) {
-          return TextField(
-            controller: textEditingController,
-            focusNode: focusNode,
-            textInputAction: TextInputAction.search,
-            style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
-            decoration: const InputDecoration(
-              isDense: true,
-              hintText: 'Pesquisar modulo',
-              prefixIcon: Icon(
-                Icons.search_rounded,
-                color: AppColors.textMuted,
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 11,
-              ),
-            ),
-            onSubmitted: (_) => onFieldSubmitted(),
-          );
-        },
-        optionsViewBuilder: (context, onSelected, options) {
-          final entries = options.toList();
-
-          return Align(
-            alignment: Alignment.topLeft,
-            child: Material(
-              color: Colors.transparent,
-              child: Container(
-                width: isExpanded ? 244 : 0,
-                constraints: const BoxConstraints(maxHeight: 320),
-                margin: const EdgeInsets.only(top: 8),
-                decoration: BoxDecoration(
-                  gradient: AppColors.pageSurfaceGradient,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.borderColor.withValues(alpha: 0.85),
-                  ),
-                  boxShadow: AppColors.glowShadows(AppColors.accentBlue),
-                ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  itemCount: entries.length,
-                  separatorBuilder:
-                      (_, __) => Divider(
-                        height: 1,
-                        color: AppColors.borderColor.withValues(alpha: 0.35),
-                      ),
-                  itemBuilder: (context, index) {
-                    final module = entries[index];
-                    final isSelected = module.index == selectedIndex;
-                    return ListTile(
-                      dense: true,
-                      leading: Icon(
-                        module.icon,
-                        color:
-                            isSelected
-                                ? AppColors.accentBlue
-                                : AppColors.textSecondary,
-                      ),
-                      title: Text(
-                        _sidebarTitle(module),
-                        style: TextStyle(
-                          color:
-                              isSelected
-                                  ? AppColors.textPrimary
-                                  : AppColors.textSecondary,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                      subtitle: Text(
-                        module.section,
-                        style: const TextStyle(color: AppColors.textMuted),
-                      ),
-                      onTap: () => onSelected(module),
-                    );
-                  },
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -344,7 +237,7 @@ class SidebarMenu extends StatelessWidget {
           color: AppColors.textMuted,
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          letterSpacing: 0,
+          letterSpacing: 1.1,
         ),
       ),
     );
@@ -356,65 +249,37 @@ class SidebarMenu extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: InkWell(
         onTap: () => onItemSelected(module.index),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          height: 46,
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: _itemDecoration(isSelected),
-          child: Stack(
-            fit: StackFit.expand,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (isSelected)
-                Positioned(
-                  left: 0,
-                  top: 10,
-                  bottom: 10,
-                  child: Container(
-                    width: 3,
-                    decoration: BoxDecoration(
-                      color: AppColors.accentBlue,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
+              SizedBox(
+                width: 28,
+                child: Icon(
+                  module.icon,
+                  size: 23,
+                  color:
+                      isSelected
+                          ? AppColors.accentBlue
+                          : AppColors.textSecondary,
                 ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 22,
-                      height: 46,
-                      child: Icon(
-                        module.icon,
-                        size: 20,
-                        color:
-                            isSelected
-                                ? AppColors.accentBlue
-                                : AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _sidebarTitle(module),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color:
-                                isSelected
-                                    ? Colors.white
-                                    : AppColors.textSecondary,
-                            fontSize: 13,
-                            height: 1,
-                            fontWeight:
-                                isSelected ? FontWeight.w700 : FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _sidebarTitle(module),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  ),
                 ),
               ),
             ],
@@ -433,14 +298,14 @@ class SidebarMenu extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: InkWell(
           onTap: () => onItemSelected(module.index),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: Container(
-            width: 56,
-            height: 48,
+            width: 60,
+            height: 52,
             decoration: _itemDecoration(isSelected),
             child: Icon(
               module.icon,
-              size: 21,
+              size: 24,
               color:
                   isSelected ? AppColors.accentBlue : AppColors.textSecondary,
             ),
@@ -452,25 +317,17 @@ class SidebarMenu extends StatelessWidget {
 
   BoxDecoration _itemDecoration(bool isSelected) {
     return BoxDecoration(
-      color: isSelected ? null : Colors.white.withValues(alpha: 0.018),
-      borderRadius: BorderRadius.circular(14),
+      color:
+          isSelected
+              ? AppColors.accentBlue.withValues(alpha: 0.12)
+              : Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       border: Border.all(
         color:
             isSelected
-                ? AppColors.accentBlue.withValues(alpha: 0.55)
-                : Colors.white.withValues(alpha: 0.03),
+                ? AppColors.accentBlue.withValues(alpha: 0.58)
+                : Colors.transparent,
       ),
-      gradient:
-          isSelected
-              ? LinearGradient(
-                colors: [
-                  AppColors.accentBlue.withValues(alpha: 0.18),
-                  AppColors.auraCyan.withValues(alpha: 0.08),
-                ],
-              )
-              : null,
-      boxShadow:
-          isSelected ? AppColors.auraShadows(AppColors.accentBlue) : null,
     );
   }
 
@@ -606,6 +463,7 @@ class SidebarMenu extends StatelessWidget {
       ],
     );
   }
+
   String _sidebarTitle(NavigationModule module) {
     switch (module.index) {
       case 2:
@@ -626,6 +484,8 @@ class SidebarMenu extends StatelessWidget {
         return 'DRE';
       case 21:
         return 'Acessos';
+      case 28:
+        return 'Resultado Adm.';
       default:
         return module.title;
     }

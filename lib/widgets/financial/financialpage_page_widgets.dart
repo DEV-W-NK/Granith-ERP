@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/constants/permission_constants.dart';
 
 // Imports dos componentes que você já possui
 import 'package:project_granith/widgets/financial/FinancialFilterBar.dart';
-import 'package:project_granith/widgets/financial/FinancialStatCard.dart';
 import 'package:project_granith/widgets/financial/TransactionListItem.dart';
 import 'package:project_granith/widgets/financial/transactionformdialog.dart';
 
@@ -392,7 +392,7 @@ class _FinancialCommandCenter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stats = _FinancialStatsStrip(
+    final overview = _FinancialOverviewPanel(
       controller: controller,
       onSelectIncome: onSelectIncome,
       onSelectExpense: onSelectExpense,
@@ -418,25 +418,27 @@ class _FinancialCommandCenter extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: stats),
+              Expanded(child: overview),
               const SizedBox(width: 12),
               SizedBox(width: 520, child: filters),
             ],
           );
         }
 
-        return Column(children: [stats, const SizedBox(height: 10), filters]);
+        return Column(
+          children: [overview, const SizedBox(height: 10), filters],
+        );
       },
     );
   }
 }
 
-class _FinancialStatsStrip extends StatelessWidget {
+class _FinancialOverviewPanel extends StatelessWidget {
   final FinancialController controller;
   final VoidCallback onSelectIncome;
   final VoidCallback onSelectExpense;
 
-  const _FinancialStatsStrip({
+  const _FinancialOverviewPanel({
     required this.controller,
     required this.onSelectIncome,
     required this.onSelectExpense,
@@ -444,76 +446,507 @@ class _FinancialStatsStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cards = [
-      FinancialStatCard(
-        title: 'Saldo em caixa',
-        value: controller.balance,
-        icon: Icons.account_balance_wallet_outlined,
-        color:
-            controller.balance >= 0
-                ? AppColors.accentBlue
-                : AppColors.accentRed,
-        width: 190,
-        compact: true,
-      ),
-      FinancialStatCard(
-        title: 'Entradas recebidas',
-        value: controller.totalIncome,
-        icon: Icons.arrow_upward,
-        color: AppColors.accentGreen,
-        width: 190,
-        compact: true,
-        onTap: onSelectIncome,
-      ),
-      FinancialStatCard(
-        title: 'Saidas pagas',
-        value: controller.totalExpense,
-        icon: Icons.arrow_downward,
-        color: AppColors.accentRed,
-        width: 190,
-        compact: true,
-        onTap: onSelectExpense,
-      ),
-      FinancialStatCard(
-        title: 'A pagar',
-        value: controller.totalPendingExpense,
-        icon: Icons.schedule_outlined,
-        color: Colors.orangeAccent,
-        width: 190,
-        compact: true,
-        onTap: onSelectExpense,
-      ),
-      FinancialStatCard(
-        title: 'Vencidos',
-        value: controller.totalOverdueExpense,
-        icon: Icons.warning_amber_rounded,
-        color: AppColors.accentRed,
-        badgeCount: controller.overdueTransactions.length,
-        width: 190,
-        compact: true,
-        onTap: onSelectExpense,
-      ),
-      FinancialStatCard(
-        title: 'A receber',
-        value: controller.totalPendingIncome,
-        icon: Icons.hourglass_bottom_outlined,
-        color: Colors.lightGreenAccent,
-        width: 190,
-        compact: true,
-        onTap: onSelectIncome,
-      ),
-    ];
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+    final balance = controller.balance;
+    final income = controller.totalIncome;
+    final expense = controller.totalExpense;
+    final pendingIncome = controller.totalPendingIncome;
+    final pendingExpense = controller.totalPendingExpense;
+    final overdue = controller.totalOverdueExpense;
+    final margin = income <= 0 ? 0.0 : balance / income;
+    final expensePressure =
+        income <= 0 ? (expense > 0 ? 1.0 : 0.0) : expense / income;
+    final resultColor =
+        balance >= 0 ? AppColors.accentGreen : AppColors.accentRed;
 
-    return SizedBox(
-      height: 100,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cards.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) => cards[index],
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardSurface(
+        accent: resultColor,
+        emphasized: true,
+        radius: 22,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
+          final hero = _FinancialBalanceHero(
+            balance: balance,
+            margin: margin,
+            resultColor: resultColor,
+            currency: currency,
+          );
+          final metrics = _FinancialMetricCluster(
+            income: income,
+            expense: expense,
+            pendingIncome: pendingIncome,
+            pendingExpense: pendingExpense,
+            overdue: overdue,
+            overdueCount: controller.overdueTransactions.length,
+            expensePressure: expensePressure,
+            currency: currency,
+            onSelectIncome: onSelectIncome,
+            onSelectExpense: onSelectExpense,
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [hero, const SizedBox(height: 14), metrics],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: 5, child: hero),
+              const SizedBox(width: 14),
+              Expanded(flex: 7, child: metrics),
+            ],
+          );
+        },
       ),
     );
   }
+}
+
+class _FinancialBalanceHero extends StatelessWidget {
+  final double balance;
+  final double margin;
+  final Color resultColor;
+  final NumberFormat currency;
+
+  const _FinancialBalanceHero({
+    required this.balance,
+    required this.margin,
+    required this.resultColor,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final positive = balance >= 0;
+
+    return Container(
+      constraints: const BoxConstraints(minHeight: 198),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            resultColor.withValues(alpha: 0.16),
+            AppColors.surfaceElevated.withValues(alpha: 0.76),
+            AppColors.primaryDark.withValues(alpha: 0.78),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: resultColor.withValues(alpha: 0.28)),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -34,
+            top: -40,
+            child: IgnorePointer(
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: resultColor.withValues(alpha: 0.08),
+                ),
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: AppDecorations.iconTile(resultColor),
+                    child: Icon(
+                      positive
+                          ? Icons.trending_up_rounded
+                          : Icons.trending_down_rounded,
+                      color: resultColor,
+                    ),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Saldo operacional',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          positive ? 'Fluxo positivo' : 'Fluxo em atencao',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: resultColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 22),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: balance),
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      currency.format(value),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 34,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              _FinancialPulseBar(value: margin, color: resultColor),
+              const SizedBox(height: 9),
+              Text(
+                'Margem sobre entradas recebidas: ${(margin * 100).toStringAsFixed(1)}%',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialMetricCluster extends StatelessWidget {
+  final double income;
+  final double expense;
+  final double pendingIncome;
+  final double pendingExpense;
+  final double overdue;
+  final int overdueCount;
+  final double expensePressure;
+  final NumberFormat currency;
+  final VoidCallback onSelectIncome;
+  final VoidCallback onSelectExpense;
+
+  const _FinancialMetricCluster({
+    required this.income,
+    required this.expense,
+    required this.pendingIncome,
+    required this.pendingExpense,
+    required this.overdue,
+    required this.overdueCount,
+    required this.expensePressure,
+    required this.currency,
+    required this.onSelectIncome,
+    required this.onSelectExpense,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final metrics = [
+      _FinancialMiniMetric(
+        label: 'Entradas recebidas',
+        value: currency.format(income),
+        icon: Icons.south_west_rounded,
+        color: AppColors.accentGreen,
+        onTap: onSelectIncome,
+      ),
+      _FinancialMiniMetric(
+        label: 'Saidas pagas',
+        value: currency.format(expense),
+        icon: Icons.north_east_rounded,
+        color: AppColors.accentRed,
+        onTap: onSelectExpense,
+      ),
+      _FinancialMiniMetric(
+        label: 'A receber',
+        value: currency.format(pendingIncome),
+        icon: Icons.hourglass_bottom_outlined,
+        color: AppColors.accentBlue,
+        onTap: onSelectIncome,
+      ),
+      _FinancialMiniMetric(
+        label: 'A pagar',
+        value: currency.format(pendingExpense),
+        icon: Icons.schedule_outlined,
+        color: Colors.orangeAccent,
+        onTap: onSelectExpense,
+      ),
+    ];
+
+    return Column(
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 520 ? 2 : 1;
+            const gap = 10.0;
+            final itemWidth =
+                (constraints.maxWidth - (gap * (columns - 1))) / columns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: metrics
+                  .map(
+                    (metric) => SizedBox(
+                      width: itemWidth,
+                      child: _FinancialMiniMetricCard(metric: metric),
+                    ),
+                  )
+                  .toList(growable: false),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        _FinancialRiskBand(
+          overdue: overdue,
+          overdueCount: overdueCount,
+          expensePressure: expensePressure,
+          currency: currency,
+        ),
+      ],
+    );
+  }
+}
+
+class _FinancialMiniMetricCard extends StatelessWidget {
+  final _FinancialMiniMetric metric;
+
+  const _FinancialMiniMetricCard({required this.metric});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: metric.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          height: 80,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.primaryDark.withValues(alpha: 0.32),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: metric.color.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: AppDecorations.iconTile(metric.color),
+                child: Icon(metric.icon, color: metric.color, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      metric.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        metric.value,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: metric.color,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FinancialRiskBand extends StatelessWidget {
+  final double overdue;
+  final int overdueCount;
+  final double expensePressure;
+  final NumberFormat currency;
+
+  const _FinancialRiskBand({
+    required this.overdue,
+    required this.overdueCount,
+    required this.expensePressure,
+    required this.currency,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final riskColor =
+        overdue > 0 || expensePressure >= 0.9
+            ? AppColors.accentRed
+            : expensePressure >= 0.65
+            ? Colors.orangeAccent
+            : AppColors.accentGreen;
+    final pressure = expensePressure.clamp(0.0, 1.35);
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: riskColor.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: riskColor.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            overdue > 0
+                ? Icons.warning_amber_rounded
+                : Icons.health_and_safety_outlined,
+            color: riskColor,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  overdue > 0
+                      ? '$overdueCount titulo(s) vencido(s)'
+                      : 'Pressao das saidas controlada',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: riskColor,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: LinearProgressIndicator(
+                    value: pressure.clamp(0.0, 1.0),
+                    minHeight: 6,
+                    backgroundColor: AppColors.primaryDark.withValues(
+                      alpha: 0.58,
+                    ),
+                    color: riskColor,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  overdue > 0
+                      ? 'Vencidos: ${currency.format(overdue)}'
+                      : 'Saidas equivalem a ${(expensePressure * 100).toStringAsFixed(1)}% das entradas.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialPulseBar extends StatelessWidget {
+  final double value;
+  final Color color;
+
+  const _FinancialPulseBar({required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = ((value + 1) / 2).clamp(0.0, 1.0);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: Stack(
+        children: [
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: AppColors.primaryDark.withValues(alpha: 0.62),
+            ),
+          ),
+          FractionallySizedBox(
+            widthFactor: normalized,
+            child: Container(
+              height: 8,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.45), color],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialMiniMetric {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _FinancialMiniMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
 }
 
 class _FinancialFiltersPanel extends StatelessWidget {
@@ -544,8 +977,12 @@ class _FinancialFiltersPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: AppDecorations.cardInnerSurface(radius: 14),
+      padding: const EdgeInsets.all(14),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 620;
@@ -607,6 +1044,50 @@ class _FinancialFiltersPanel extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: AppDecorations.iconTile(AppColors.accentBlue),
+                    child: const Icon(
+                      Icons.tune_rounded,
+                      color: AppColors.accentBlue,
+                      size: 17,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Filtros da movimentacao',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Periodo, obra, status e ordenacao.',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
               if (compact) ...[
                 search,
                 const SizedBox(height: 9),
@@ -1052,25 +1533,143 @@ class _TransactionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final incomeCount =
+        transactions.where((t) => t.type == TransactionType.income).length;
+    final expenseCount = transactions.length - incomeCount;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceDark.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.52),
+        ),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: AppDecorations.iconTile(AppColors.accentGold),
+                  child: const Icon(
+                    Icons.receipt_long_rounded,
+                    color: AppColors.accentGold,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Lancamentos financeiros',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$incomeCount entrada(s) | $expenseCount saida(s)',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _ListCountPill(count: transactions.length),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: AppColors.borderColor.withValues(alpha: 0.42),
+          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
     if (transactions.isEmpty) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.receipt_long_rounded,
-              size: 56,
-              color: AppColors.textMuted.withValues(alpha: 0.2),
-            ),
-            const SizedBox(height: 14),
-            Text(emptyLabel, style: TextStyle(color: AppColors.textMuted)),
-          ],
+        child: Container(
+          margin: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(24),
+          decoration: AppDecorations.formHintPanel(color: AppColors.accentBlue),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.manage_search_rounded,
+                size: 54,
+                color: AppColors.accentBlue.withValues(alpha: 0.72),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                emptyLabel,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Ajuste os filtros ou crie um novo lancamento.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+              ),
+            ],
+          ),
         ),
       );
     }
-    return ListView.builder(
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 18),
       itemCount: transactions.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 2),
       itemBuilder: (_, i) => TransactionListItem(transaction: transactions[i]),
+    );
+  }
+}
+
+class _ListCountPill extends StatelessWidget {
+  final int count;
+
+  const _ListCountPill({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.accentGold.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.26)),
+      ),
+      child: Text(
+        '$count item${count == 1 ? '' : 's'}',
+        style: const TextStyle(
+          color: AppColors.accentGold,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     );
   }
 }

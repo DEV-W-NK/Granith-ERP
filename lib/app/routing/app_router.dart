@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/screens/access_management_page.dart';
+import 'package:project_granith/screens/administrative_profit_page.dart';
 import 'package:project_granith/screens/client_portal_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/login_page.dart';
@@ -104,6 +105,14 @@ class AppRouter {
           allow:
               (auth) =>
                   auth.isAdminUser || auth.hasPermission('settings.manage'),
+        );
+      case '/administrative-results':
+        return _guardedRoute(
+          settings,
+          const AdministrativeProfitPage(),
+          allow:
+              (auth) =>
+                  auth.isAdminUser || auth.hasPermission('financial.read'),
         );
       case '/reports':
         return _guardedRoute(

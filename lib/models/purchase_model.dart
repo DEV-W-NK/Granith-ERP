@@ -155,9 +155,9 @@ class Purchase {
     return {
       'itemId': itemId,
       'itemName': itemName,
-      'supplierId': supplierId,
+      'supplierId': _nullableText(supplierId),
       'supplierName': supplierName,
-      'projectId': projectId,
+      'projectId': _nullableText(projectId),
       'projectName': projectName,
       'deliveryAddress': deliveryAddress,
       'fulfillmentType': fulfillmentType.name,
@@ -169,8 +169,8 @@ class Purchase {
       'purchaseDate': DbValue.toPrimitive(purchaseDate),
       'deliveryDate': DbValue.toPrimitive(deliveryDate),
       'expectedDeliveryDate': DbValue.toPrimitive(expectedDeliveryDate),
-      'requisitionId': requisitionId,
-      'financialTransactionId': financialTransactionId,
+      'requisitionId': _nullableText(requisitionId),
+      'financialTransactionId': _nullableText(financialTransactionId),
       'receivedBy': receivedBy,
       'invoiceNumber': invoiceNumber,
       'invoiceAccessKey': invoiceAccessKey,
@@ -334,5 +334,10 @@ class Purchase {
       );
     }
     return PurchaseFulfillmentType.delivery;
+  }
+
+  static String? _nullableText(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 }

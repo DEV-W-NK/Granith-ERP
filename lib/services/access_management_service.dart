@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:http/http.dart' show ClientException;
 import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
@@ -229,6 +230,16 @@ class AccessManagementService {
       }
       throw InternalUserProvisionException(
         error.reasonPhrase ?? 'Nao foi possivel gerenciar o usuario interno.',
+      );
+    } on ClientException {
+      throw const InternalUserProvisionException(
+        'Nao foi possivel acessar a Edge Function de usuarios internos. '
+        'Confirme se manage_internal_user foi implantada no Supabase e se o ERP esta usando o projeto correto.',
+      );
+    } on TimeoutException {
+      throw const InternalUserProvisionException(
+        'A Edge Function de usuarios internos demorou para responder. '
+        'Tente novamente em instantes.',
       );
     }
   }

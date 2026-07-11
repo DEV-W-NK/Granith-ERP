@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:provider/provider.dart' as provider;
 
 import 'package:project_granith/app/state/app_state_providers.dart';
+import 'package:project_granith/controllers/administrative_profit_controller.dart';
 import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/controllers/job_role_controller.dart';
@@ -50,6 +51,9 @@ class AppProviders extends riverpod.ConsumerWidget {
         ),
         provider.ChangeNotifierProvider(create: (_) => JobRoleController()),
         provider.ChangeNotifierProvider(create: (_) => ReportsController()),
+        provider.ChangeNotifierProvider(
+          create: (_) => AdministrativeProfitController(),
+        ),
         provider.ChangeNotifierProvider<MaterialRequisitionController>.value(
           value: materialRequisitionController,
         ),

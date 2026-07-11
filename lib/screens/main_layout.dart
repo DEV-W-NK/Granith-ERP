@@ -3,6 +3,7 @@ import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/models/ai_assistant_models.dart';
 import 'package:project_granith/screens/access_management_page.dart';
+import 'package:project_granith/screens/administrative_profit_page.dart';
 import 'package:project_granith/screens/ai_assistant_page.dart';
 import 'package:project_granith/screens/FinancialPage.dart';
 import 'package:project_granith/screens/HrPage.dart';
@@ -96,6 +97,7 @@ class _MainLayoutState extends State<MainLayout> {
         const AiAssistantPage(area: AiAssistantArea.supplies),
         const AiAssistantPage(area: AiAssistantArea.administrative),
         const SystemSettingsPage(),
+        const AdministrativeProfitPage(),
       ];
 
   late final List<String> pageTitles =
@@ -129,6 +131,7 @@ class _MainLayoutState extends State<MainLayout> {
         'IA Suprimentos',
         'IA Administrativa',
         'Configuracoes',
+        'Resultado Administrativo',
       ];
 
   late final List<IconData> pageIcons =
@@ -162,6 +165,7 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.inventory_2_rounded,
         Icons.account_tree_rounded,
         Icons.settings_rounded,
+        Icons.query_stats_rounded,
       ];
 
   late final List<NavigationModule> _navigationModules =
@@ -362,6 +366,14 @@ class _MainLayoutState extends State<MainLayout> {
           section: 'Administrativo',
           icon: pageIcons[27],
           aliases: 'configuracoes ajustes sistema preferencias',
+        ),
+        NavigationModule(
+          index: 28,
+          title: pageTitles[28],
+          section: 'Administrativo',
+          icon: pageIcons[28],
+          aliases:
+              'resultado administrativo despesas lucro rentabilidade periodo obra',
         ),
       ];
 

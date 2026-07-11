@@ -2,11 +2,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/models/requisition_quote_model.dart';
 import 'package:provider/provider.dart';
 import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/ViewModels/MaterialRequisitionViewModel.dart';
 import 'package:project_granith/models/requisition_model.dart';
+import 'package:project_granith/services/material_requisition_service.dart';
 import 'package:project_granith/services/requisition_quote_service.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -1461,6 +1463,7 @@ class _RequisitionQuotesDialog extends StatefulWidget {
 
 class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
   final _quoteService = RequisitionQuoteService();
+  final _requisitionService = MaterialRequisitionService();
   final _supplierService = SupplierService();
   final _totalCtrl = TextEditingController();
   final _freightCtrl = TextEditingController();
@@ -1471,11 +1474,16 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
   late Future<List<Supplier>> _suppliersFuture;
   Supplier? _selectedSupplier;
   bool _saving = false;
+  bool _purchaseGenerated = false;
+  String? _creatingPurchaseQuoteId;
 
   @override
   void initState() {
     super.initState();
     _suppliersFuture = _supplierService.getSuppliers();
+    _purchaseGenerated =
+        widget.requisition.status == RequisitionStatus.purchased ||
+        widget.requisition.purchaseId?.trim().isNotEmpty == true;
   }
 
   @override
@@ -1759,7 +1767,12 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
                           return _QuoteCard(
                             quote: quote,
                             rank: index + 1,
+                            purchaseGenerated: _purchaseGenerated,
+                            isGeneratingPurchase:
+                                _creatingPurchaseQuoteId == quote.id,
                             onSelect: () => _selectQuote(quote),
+                            onGeneratePurchase:
+                                () => _generatePurchaseOrder(quote),
                           );
                         },
                       ),
@@ -1829,6 +1842,39 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
     }
   }
 
+  Future<void> _generatePurchaseOrder(RequisitionSupplierQuote quote) async {
+    final auth = context.read<AuthViewModel?>();
+    final user = auth?.user;
+    final createdBy = user?.uid ?? '';
+    final createdByName =
+        user?.displayName?.trim().isNotEmpty == true
+            ? user!.displayName!.trim()
+            : user?.email;
+
+    setState(() => _creatingPurchaseQuoteId = quote.id);
+    try {
+      final purchaseIds = await _requisitionService.convertQuoteToPurchaseOrder(
+        requisition: widget.requisition,
+        quote: quote,
+        createdBy: createdBy,
+        createdByName: createdByName,
+      );
+      if (!mounted) return;
+      setState(() => _purchaseGenerated = true);
+      _showSnack(
+        purchaseIds.length == 1
+            ? 'Pedido de compra gerado e enviado para aprovacao.'
+            : '${purchaseIds.length} pedidos de compra gerados para aprovacao.',
+        false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack('Erro ao gerar pedido de compra: $e', true);
+    } finally {
+      if (mounted) setState(() => _creatingPurchaseQuoteId = null);
+    }
+  }
+
   void _showSnack(String message, bool error) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -1842,12 +1888,18 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
 class _QuoteCard extends StatelessWidget {
   final RequisitionSupplierQuote quote;
   final int rank;
+  final bool purchaseGenerated;
+  final bool isGeneratingPurchase;
   final VoidCallback onSelect;
+  final VoidCallback onGeneratePurchase;
 
   const _QuoteCard({
     required this.quote,
     required this.rank,
+    required this.purchaseGenerated,
+    required this.isGeneratingPurchase,
     required this.onSelect,
+    required this.onGeneratePurchase,
   });
 
   @override
@@ -1972,6 +2024,28 @@ class _QuoteCard extends StatelessWidget {
                 const _MiniInfo(
                   icon: Icons.verified_outlined,
                   label: 'Melhor negociacao selecionada',
+                ),
+              if (!purchaseGenerated)
+                FilledButton.icon(
+                  onPressed: isGeneratingPurchase ? null : onGeneratePurchase,
+                  icon:
+                      isGeneratingPurchase
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.add_shopping_cart_rounded),
+                  label: Text(
+                    quote.isSelected
+                        ? 'Gerar pedido de compra'
+                        : 'Selecionar e gerar pedido',
+                  ),
+                )
+              else
+                const _MiniInfo(
+                  icon: Icons.shopping_cart_checkout_outlined,
+                  label: 'Pedido de compra gerado',
                 ),
             ],
           ),
