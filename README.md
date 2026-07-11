@@ -1,16 +1,57 @@
-# Granith ERP
+<p align="center">
+  <img src="assets/branding/granith_logo_wordmark.png" alt="Granith" width="430">
+</p>
 
-[![CI/CD Firebase Hosting](https://github.com/DEV-W-NK/Granith-ERP/actions/workflows/firebase-hosting.yml/badge.svg)](https://github.com/DEV-W-NK/Granith-ERP/actions/workflows/firebase-hosting.yml)
+![Granith ERP](https://capsule-render.vercel.app/api?type=waving&height=210&section=header&color=0:070A0B,45:10201D,100:E3B84A&text=Granith%20ERP&fontColor=F4E6C8&fontSize=46&fontAlignY=34&desc=ERP%20vertical%20para%20construtoras%20%7C%20Flutter%20Web%20%2B%20Supabase%20%2B%20Firebase&descAlignY=57&descSize=15&animation=fadeIn)
+
+<p align="center">
+  <a href="https://github.com/DEV-W-NK/Granith-ERP/actions/workflows/firebase-hosting.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/DEV-W-NK/Granith-ERP/firebase-hosting.yml?branch=main&style=for-the-badge&label=CI%2FCD&logo=githubactions&logoColor=white&color=E3B84A&labelColor=080B0D" alt="CI/CD Firebase Hosting">
+  </a>
+  <a href="https://granith-skyforge.web.app/">
+    <img src="https://img.shields.io/badge/Live-Firebase%20Hosting-E3B84A?style=for-the-badge&logo=firebase&logoColor=080B0D&labelColor=080B0D" alt="Firebase Hosting">
+  </a>
+  <img src="https://img.shields.io/badge/Status-Beta%20avancado-2FD18B?style=for-the-badge&labelColor=080B0D" alt="Status">
+  <img src="https://img.shields.io/badge/Stack-Flutter%20Web-2DD4BF?style=for-the-badge&logo=flutter&logoColor=white&labelColor=080B0D" alt="Flutter Web">
+</p>
+
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Inter&weight=700&size=22&duration=2800&pause=800&color=E3B84A&center=true&vCenter=true&width=900&lines=ERP+web+quase+completo+para+construtoras;Obras%2C+compras%2C+estoque%2C+financeiro+e+RH+em+um+fluxo;Supabase+%2B+Firebase+%2B+Flutter+Web+%2B+Mobile" alt="Granith ERP animated headline">
+</p>
+
+<p align="center">
+  <a href="#produto">Produto</a> |
+  <a href="#cobertura-atual">Cobertura</a> |
+  <a href="#destaques-tecnicos">Stack</a> |
+  <a href="#integracao-erp--mobile">Mobile</a> |
+  <a href="#firebase-hosting-e-cicd">CI/CD</a> |
+  <a href="#estado-do-produto">Status</a>
+</p>
+
+---
+
+# Granith ERP
 
 ERP web vertical para construtoras, obras e operacoes de campo. O Granith centraliza o fluxo entre comercial, projetos, medicoes, requisicoes, compras, estoque, financeiro, RH, frota, clientes, relatorios e mobile.
 
 > Status: beta avancado com fluxo ponta a ponta implementado. O sistema ja cobre a maior parte da operacao real de uma empresa de obras e esta pronto para demonstracao, validacao com usuarios e pilotos controlados. Para producao ampla, ainda exige hardening final de seguranca, RLS, infraestrutura e politicas operacionais.
 
-Deploy publico:
-
 ```text
-https://granith-skyforge.web.app/
+Deploy publico: https://granith-skyforge.web.app/
 ```
+
+<table>
+  <tr>
+    <td><strong>Operacao</strong><br>Projetos, medicoes, diario, requisicoes e compras.</td>
+    <td><strong>Financeiro</strong><br>Entradas, saidas, compras a pagar, DRE e custo de mao de obra.</td>
+    <td><strong>Campo</strong><br>Geofence, rotas, notificacoes e app Android integrado.</td>
+  </tr>
+  <tr>
+    <td><strong>Cliente</strong><br>Portal com obras, detalhes e medicoes aprovadas.</td>
+    <td><strong>IA</strong><br>Assistentes por area via Edge Function protegida.</td>
+    <td><strong>Entrega</strong><br>Firebase Hosting, GitHub Actions e testes automatizados.</td>
+  </tr>
+</table>
 
 ## Produto
 
