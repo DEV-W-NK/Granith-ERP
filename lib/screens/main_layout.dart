@@ -30,6 +30,7 @@ import 'package:project_granith/screens/vehicles_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:project_granith/widgets/navigation/mobile_drawer.dart';
+import 'package:project_granith/widgets/navigation/navigation_access_policy.dart';
 import 'package:project_granith/widgets/navigation/sidebar_menu.dart';
 import 'package:provider/provider.dart';
 
@@ -400,6 +401,12 @@ class _MainLayoutState extends State<MainLayout> {
     final moduleAccentEnd = _moduleAccentEnd(activeModule.section);
     final workspaceName =
         context.watch<SystemSettingsViewModel>().settings.workspaceName;
+    final auth = context.watch<AuthViewModel>();
+    final availableModules = NavigationAccessPolicy.availableModules(
+      _navigationModules,
+      auth.user,
+    );
+    final selectedPage = _selectedPage(availableModules);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -409,7 +416,7 @@ class _MainLayoutState extends State<MainLayout> {
                 children: [
                   SidebarMenu(
                     selectedIndex: selectedIndex,
-                    modules: _navigationModules,
+                    modules: availableModules,
                     isExpanded: _isSidebarExpanded,
                     onItemSelected: _selectModule,
                     onToggle:
@@ -445,7 +452,7 @@ class _MainLayoutState extends State<MainLayout> {
                             child: GranithPageBackground(
                               child: _ModulePageSwitcher(
                                 selectedIndex: selectedIndex,
-                                child: pages[selectedIndex],
+                                child: selectedPage,
                               ),
                             ),
                           ),
@@ -499,7 +506,7 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
                 drawer: MobileDrawer(
                   selectedIndex: selectedIndex,
-                  modules: _navigationModules,
+                  modules: availableModules,
                   onItemSelected: (index) {
                     _selectModule(index);
                     Navigator.pop(context);
@@ -519,7 +526,7 @@ class _MainLayoutState extends State<MainLayout> {
                     child: GranithPageBackground(
                       child: _ModulePageSwitcher(
                         selectedIndex: selectedIndex,
-                        child: pages[selectedIndex],
+                        child: selectedPage,
                       ),
                     ),
                   ),
@@ -540,6 +547,18 @@ class _MainLayoutState extends State<MainLayout> {
       icon: pageIcons[selectedIndex],
       aliases: '',
     );
+  }
+
+  Widget _selectedPage(List<NavigationModule> availableModules) {
+    if (selectedIndex == 0 && widget.pagesOverride == null) {
+      return HomePage(
+        modules: availableModules
+            .where((module) => module.index != 0)
+            .toList(growable: false),
+        onModuleSelected: _selectModule,
+      );
+    }
+    return pages[selectedIndex];
   }
 
   Color _moduleAccent(String section) => switch (section) {

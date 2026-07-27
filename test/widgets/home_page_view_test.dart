@@ -4,6 +4,8 @@ import 'package:project_granith/ViewModels/HomeViewModel.dart';
 import 'package:project_granith/ViewModels/SystemSettingsViewModel.dart';
 import 'package:project_granith/models/system_settings_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/QuickActionsGrid.dart';
+import 'package:project_granith/widgets/RecentActivityList.dart';
 import 'package:project_granith/widgets/home_page/home_page_view.dart';
 import 'package:provider/provider.dart';
 
@@ -159,6 +161,10 @@ void main() {
         expect(find.text('Obra fechada com sucesso'), findsOneWidget);
         expect(find.textContaining('Pulso positivo'), findsNothing);
         expect(find.text('Uso da plataforma'), findsNothing);
+        expect(
+          tester.getTopLeft(find.byType(QuickActionsGrid)).dy,
+          greaterThan(tester.getBottomLeft(find.byType(RecentActivityList)).dy),
+        );
         expect(homeViewModel.loadCalls, 1);
       },
     );

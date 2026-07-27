@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/granith_task.dart';
@@ -10,18 +11,21 @@ import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/widgets/components/GranitCard.dart';
 import 'package:project_granith/widgets/components/GranitSectionHeader.dart';
 import 'package:project_granith/widgets/components/GranitStatCard.dart';
+import 'package:provider/provider.dart';
 
 class TasksPage extends StatefulWidget {
-  const TasksPage({super.key});
+  const TasksPage({super.key, this.service});
+
+  final GranithTaskService? service;
 
   @override
   State<TasksPage> createState() => _TasksPageState();
 }
 
 class _TasksPageState extends State<TasksPage> {
-  final _service = GranithTaskService();
+  late final GranithTaskService _service;
   late final Stream<List<GranithTask>> _tasksStream;
-  late final Future<_TaskResources> _resources;
+  late Future<_TaskResources> _resources;
   String _query = '';
   GranithTaskStatus? _status;
   bool _busy = false;
@@ -29,6 +33,7 @@ class _TasksPageState extends State<TasksPage> {
   @override
   void initState() {
     super.initState();
+    _service = widget.service ?? GranithTaskService();
     _tasksStream = _service.watchTasks();
     _resources = _loadResources();
   }
@@ -50,6 +55,7 @@ class _TasksPageState extends State<TasksPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthViewModel>();
     return StreamBuilder<List<GranithTask>>(
       stream: _tasksStream,
       builder: (context, snapshot) {
@@ -91,6 +97,18 @@ class _TasksPageState extends State<TasksPage> {
           builder: (context, resourcesSnapshot) {
             final resources = resourcesSnapshot.data;
             final currentEmployeeId = resources?.currentEmployee?.id;
+            final canManagePeople =
+                auth.isAdminUser || auth.hasPermission('people.manage');
+            final canManageAllTasks =
+                canManagePeople ||
+                (resources?.currentEmployee?.role.level ?? 0) >=
+                    EmployeeRole.coordenador.level;
+            final canCreateTask =
+                resources != null &&
+                (canManagePeople ||
+                    (resources.currentEmployee?.role.isSupervisorOrAbove ??
+                        false));
+            final canAssignAnySupervisor = canManageAllTasks;
             final active =
                 tasks
                     .where(
@@ -112,19 +130,35 @@ class _TasksPageState extends State<TasksPage> {
                     iconColor: AppColors.accentBlue,
                     trailing: FilledButton.icon(
                       onPressed:
-                          resources == null ||
-                                  resources.currentEmployee == null ||
-                                  !resources
-                                      .currentEmployee!
-                                      .role
-                                      .isSupervisorOrAbove
-                              ? null
-                              : () => _openEditor(resources),
+                          canCreateTask
+                              ? () => _openEditor(
+                                resources,
+                                canAssignAnySupervisor: canAssignAnySupervisor,
+                              )
+                              : null,
                       icon: const Icon(Icons.add_task_rounded),
                       label: const Text('Nova tarefa'),
                     ),
                   ),
                   const SizedBox(height: 18),
+                  if (resourcesSnapshot.hasError) ...[
+                    _TaskAccessNotice(
+                      message:
+                          'Nao foi possivel carregar os funcionarios e vinculos '
+                          'necessarios para criar tarefas. '
+                          '${_friendlyError(resourcesSnapshot.error!)}',
+                      onRetry: _reloadResources,
+                    ),
+                    const SizedBox(height: 18),
+                  ] else if (resources != null && !canCreateTask) ...[
+                    const _TaskAccessNotice(
+                      message:
+                          'Para criar tarefas, vincule esta conta a um '
+                          'funcionario supervisor ou conceda a permissao '
+                          'people.manage.',
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                   if (active != null) ...[
                     _ActiveTaskPanel(
                       task: active,
@@ -254,13 +288,9 @@ class _TasksPageState extends State<TasksPage> {
                                       resources?.currentEmployee?.id ==
                                       task.assigneeId,
                                   canManage:
+                                      canManageAllTasks ||
                                       resources?.currentEmployee?.id ==
-                                          task.supervisorId ||
-                                      (resources
-                                              ?.currentEmployee
-                                              ?.role
-                                              .isManager ??
-                                          false),
+                                          task.supervisorId,
                                   busy: _busy,
                                   onStart: () => _setTimer(task, 'start'),
                                   onPause: () => _setTimer(task, 'pause'),
@@ -271,6 +301,8 @@ class _TasksPageState extends State<TasksPage> {
                                           : () => _openEditor(
                                             resources,
                                             task: task,
+                                            canAssignAnySupervisor:
+                                                canAssignAnySupervisor,
                                           ),
                                   onCancel: () => _cancelTask(task),
                                 ),
@@ -308,11 +340,17 @@ class _TasksPageState extends State<TasksPage> {
   Future<void> _openEditor(
     _TaskResources resources, {
     GranithTask? task,
+    required bool canAssignAnySupervisor,
   }) async {
     final result = await showDialog<_TaskDraft>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => _TaskEditorDialog(resources: resources, task: task),
+      builder:
+          (context) => _TaskEditorDialog(
+            resources: resources,
+            task: task,
+            canAssignAnySupervisor: canAssignAnySupervisor,
+          ),
     );
     if (result == null) return;
 
@@ -388,6 +426,10 @@ class _TasksPageState extends State<TasksPage> {
     }
   }
 
+  void _reloadResources() {
+    setState(() => _resources = _loadResources());
+  }
+
   String _friendlyError(Object error) {
     final text = error.toString();
     if (text.contains('granith_tasks') || text.contains('PGRST205')) {
@@ -395,6 +437,13 @@ class _TasksPageState extends State<TasksPage> {
     }
     if (text.contains('single_active') || text.contains('23505')) {
       return 'Pause a tarefa atual antes de iniciar outra.';
+    }
+    if (text.contains('42501') ||
+        text.contains('row-level security') ||
+        text.toLowerCase().contains('permission denied')) {
+      return 'Sua conta nao tem permissao para esta operacao. Verifique o '
+          'vinculo com o funcionario, o cargo de supervisao ou a permissao '
+          'people.manage.';
     }
     return text.replaceFirst('Exception: ', '');
   }
@@ -736,9 +785,14 @@ class _ActiveTaskPanel extends StatelessWidget {
 }
 
 class _TaskEditorDialog extends StatefulWidget {
-  const _TaskEditorDialog({required this.resources, this.task});
+  const _TaskEditorDialog({
+    required this.resources,
+    required this.canAssignAnySupervisor,
+    this.task,
+  });
 
   final _TaskResources resources;
+  final bool canAssignAnySupervisor;
   final GranithTask? task;
 
   @override
@@ -799,9 +853,17 @@ class _TaskEditorDialogState extends State<_TaskEditorDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final supervisors = widget.resources.employees
-        .where((employee) => employee.role.isSupervisorOrAbove)
-        .toList(growable: false);
+    final supervisors =
+        widget.canAssignAnySupervisor
+            ? widget.resources.employees
+                .where((employee) => employee.role.isSupervisorOrAbove)
+                .toList(growable: false)
+            : widget.resources.employees
+                .where(
+                  (employee) =>
+                      employee.id == widget.resources.currentEmployee?.id,
+                )
+                .toList(growable: false);
     return AlertDialog(
       insetPadding: const EdgeInsets.all(18),
       title: Text(widget.task == null ? 'Nova tarefa' : 'Editar tarefa'),
@@ -1214,6 +1276,44 @@ class _FormLabel extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w800,
         ),
+      ),
+    );
+  }
+}
+
+class _TaskAccessNotice extends StatelessWidget {
+  const _TaskAccessNotice({required this.message, this.onRetry});
+
+  final String message;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return GranitCard(
+      accentColor: AppColors.accentGold,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline_rounded, color: AppColors.accentGold),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(width: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+        ],
       ),
     );
   }

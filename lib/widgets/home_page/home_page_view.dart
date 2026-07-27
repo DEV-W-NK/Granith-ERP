@@ -8,10 +8,18 @@ import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/animations/home_header.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:project_granith/widgets/home_page/stats_grid.dart';
+import 'package:project_granith/widgets/navigation/sidebar_menu.dart';
 import 'package:provider/provider.dart';
 
 class HomePageView extends StatefulWidget {
-  const HomePageView({super.key});
+  const HomePageView({
+    super.key,
+    this.modules = const <NavigationModule>[],
+    this.onModuleSelected,
+  });
+
+  final List<NavigationModule> modules;
+  final ValueChanged<int>? onModuleSelected;
 
   @override
   State<HomePageView> createState() => _HomePageViewState();
@@ -77,45 +85,20 @@ class _HomePageViewState extends State<HomePageView>
                     ),
                   ),
                   const SizedBox(height: 14),
-                  if (isDesktop)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: GranithReveal(
-                            delay: const Duration(milliseconds: 300),
-                            child: RecentActivityList(
-                              activities: viewModel.recentActivities,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          flex: 1,
-                          child: GranithReveal(
-                            delay: Duration(milliseconds: 380),
-                            child: QuickActionsGrid(),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: [
-                        GranithReveal(
-                          delay: const Duration(milliseconds: 300),
-                          child: RecentActivityList(
-                            activities: viewModel.recentActivities,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        const GranithReveal(
-                          delay: Duration(milliseconds: 380),
-                          child: QuickActionsGrid(),
-                        ),
-                      ],
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 300),
+                    child: RecentActivityList(
+                      activities: viewModel.recentActivities,
                     ),
+                  ),
+                  const SizedBox(height: 18),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 380),
+                    child: QuickActionsGrid(
+                      modules: widget.modules,
+                      onModuleSelected: widget.onModuleSelected,
+                    ),
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),
