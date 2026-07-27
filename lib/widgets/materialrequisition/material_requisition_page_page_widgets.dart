@@ -75,7 +75,6 @@ class _MaterialRequisitionPageViewState
     final viewModel = context.watch<MaterialRequisitionViewModel>();
     final size = MediaQuery.sizeOf(context);
     final width = size.width;
-    final isDesktop = width > ResponsiveLayout.compact;
     final compactHeight = size.height < 700;
     final summary = _RequisitionSummary.from(viewModel.allRequisitions);
     final all = _filterAndSort(viewModel.allRequisitions);
@@ -118,7 +117,6 @@ class _MaterialRequisitionPageViewState
                 const SizedBox(height: 10),
                 _Tabs(
                   tabController: _tabController,
-                  isDesktop: isDesktop,
                   allCount: all.length,
                   pendingCount: pending.length,
                   approvedCount: approved.length,
@@ -370,30 +368,35 @@ class _HeaderHighlight extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
       decoration: AppDecorations.cardInnerSurface(accent: color, radius: 12),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: color, size: 17),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -403,7 +406,6 @@ class _HeaderHighlight extends StatelessWidget {
 
 class _Tabs extends StatelessWidget {
   final TabController tabController;
-  final bool isDesktop;
   final int allCount;
   final int pendingCount;
   final int approvedCount;
@@ -411,7 +413,6 @@ class _Tabs extends StatelessWidget {
 
   const _Tabs({
     required this.tabController,
-    required this.isDesktop,
     required this.allCount,
     required this.pendingCount,
     required this.approvedCount,
@@ -447,7 +448,8 @@ class _Tabs extends StatelessWidget {
         dividerColor: Colors.transparent,
         labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12),
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
-        isScrollable: !isDesktop,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
         tabs: [
           _RequisitionTab(
             icon: Icons.grid_view_rounded,

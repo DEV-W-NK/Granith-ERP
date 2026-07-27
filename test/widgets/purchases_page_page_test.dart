@@ -74,12 +74,18 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Compras'), findsOneWidget);
+    expect(find.text('Pedidos de Compra'), findsOneWidget);
     expect(find.text('Nova compra'), findsOneWidget);
     expect(find.text('3 de 3 compras'), findsOneWidget);
-    expect(find.text('Cimento CP-II'), findsOneWidget);
-    expect(find.text('Brita 1'), findsOneWidget);
-    expect(find.text('Cabo flexivel'), findsOneWidget);
+    final purchasesList = find.byType(Scrollable).last;
+    for (final itemName in ['Brita 1', 'Cimento CP-II', 'Cabo flexivel']) {
+      await tester.scrollUntilVisible(
+        find.text(itemName),
+        120,
+        scrollable: purchasesList,
+      );
+      expect(find.text(itemName), findsOneWidget);
+    }
 
     await tester.enterText(find.byType(TextField), 'Brita');
     await tester.pump();

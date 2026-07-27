@@ -104,10 +104,10 @@ void main() {
 
       await pumpPage(tester, controller: controller);
 
-      expect(find.text('Entradas e Saidas'), findsOneWidget);
+      expect(find.text('Entradas e Saídas'), findsOneWidget);
       expect(find.text('Todas (2)'), findsOneWidget);
       expect(find.text('Entradas (1)'), findsOneWidget);
-      expect(find.text('Saidas (1)'), findsOneWidget);
+      expect(find.text('Saídas (1)'), findsOneWidget);
       expect(find.text('Recebimento contrato'), findsOneWidget);
       expect(find.text('Compra de concreto'), findsOneWidget);
     });
@@ -198,7 +198,7 @@ void main() {
         find.textContaining('permissao para acessar o financeiro geral'),
         findsOneWidget,
       );
-      expect(find.text('Entradas e Saidas'), findsNothing);
+      expect(find.text('Entradas e Saídas'), findsNothing);
     });
   });
 }

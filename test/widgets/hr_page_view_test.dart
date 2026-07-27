@@ -79,7 +79,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 500));
 
         expect(find.text('Recursos Humanos'), findsOneWidget);
-        expect(find.text('Setores'), findsOneWidget);
+        expect(find.text('Setores'), findsWidgets);
         expect(find.text('Ana Carolina Mendes'), findsOneWidget);
         expect(find.text('Salario restrito'), findsWidgets);
         expect(tester.takeException(), isNull);

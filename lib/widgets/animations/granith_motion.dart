@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' show PathMetric;
 
@@ -32,6 +33,7 @@ class _GranithRevealState extends State<GranithReveal>
   late final Animation<double> _opacity;
   late final Animation<Offset> _slide;
   late final Animation<double> _scale;
+  Timer? _delayTimer;
 
   @override
   void initState() {
@@ -45,15 +47,20 @@ class _GranithRevealState extends State<GranithReveal>
     ).animate(curved);
     _scale = Tween<double>(begin: widget.beginScale, end: 1).animate(curved);
 
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      _delayTimer = Timer(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

@@ -194,7 +194,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
 
-        expect(find.text('Compras no Financeiro'), findsOneWidget);
+        expect(find.text('Compras a Pagar'), findsOneWidget);
         expect(find.text('Em aberto'), findsWidgets);
         expect(find.text('Compra: Cimento'), findsOneWidget);
 

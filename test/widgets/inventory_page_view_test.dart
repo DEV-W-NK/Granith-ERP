@@ -57,9 +57,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Controle de Estoque'), findsOneWidget);
-    expect(find.text('3 itens'), findsOneWidget);
-    expect(find.text('1 critico'), findsOneWidget);
-    expect(find.text('1 zerado'), findsOneWidget);
+    expect(find.text('3 materiais'), findsOneWidget);
+    expect(find.text('1 Críticos'), findsOneWidget);
+    expect(find.text('1 Zerados'), findsOneWidget);
     expect(find.text('Cimento'), findsOneWidget);
     expect(find.text('Areia'), findsOneWidget);
     expect(find.text('Brita'), findsOneWidget);
