@@ -9,6 +9,7 @@ import 'package:project_granith/models/vehicle_model.dart';
 import 'package:project_granith/services/team_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class VehiclesPageView extends StatelessWidget {
@@ -51,25 +52,54 @@ class _VehiclesContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _FleetHeader(width: width),
+              GranithReveal(
+                delay: const Duration(milliseconds: 40),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: AppDecorations.cardSurface(
+                    accent: AppColors.accentBlue,
+                    emphasized: true,
+                    radius: 22,
+                  ),
+                  child: _FleetHeader(width: width),
+                ),
+              ),
               const SizedBox(height: 14),
-              _FleetStats(width: width),
+              GranithReveal(
+                delay: const Duration(milliseconds: 100),
+                child: _FleetStats(width: width),
+              ),
               const SizedBox(height: 14),
-              _FleetFilters(width: width),
+              GranithReveal(
+                delay: const Duration(milliseconds: 150),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: AppDecorations.cardSurface(
+                    elevated: false,
+                    radius: 18,
+                  ),
+                  child: _FleetFilters(width: width),
+                ),
+              ),
               const SizedBox(height: 14),
               Expanded(
-                child:
-                    controller.isLoading
-                        ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColors.accentGold,
-                          ),
-                        )
-                        : vehicles.isEmpty
-                        ? _EmptyFleetState(
-                          hasFilters: controller.vehicles.isNotEmpty,
-                        )
-                        : _VehicleGrid(vehicles: vehicles),
+                child: GranithReveal(
+                  delay: const Duration(milliseconds: 210),
+                  child:
+                      controller.isLoading
+                          ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.accentGold,
+                            ),
+                          )
+                          : vehicles.isEmpty
+                          ? _EmptyFleetState(
+                            hasFilters: controller.vehicles.isNotEmpty,
+                          )
+                          : _VehicleGrid(vehicles: vehicles),
+                ),
               ),
             ],
           ),
@@ -299,7 +329,14 @@ class _VehicleGrid extends StatelessWidget {
           return ListView.separated(
             itemCount: vehicles.length,
             separatorBuilder: (_, __) => SizedBox(height: gap),
-            itemBuilder: (_, index) => _VehicleCard(vehicle: vehicles[index]),
+            itemBuilder:
+                (_, index) => GranithReveal(
+                  delay: Duration(
+                    milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                  ),
+                  duration: const Duration(milliseconds: 400),
+                  child: _VehicleCard(vehicle: vehicles[index]),
+                ),
           );
         }
 
@@ -311,7 +348,14 @@ class _VehicleGrid extends StatelessWidget {
             mainAxisSpacing: gap,
             mainAxisExtent: 320,
           ),
-          itemBuilder: (_, index) => _VehicleCard(vehicle: vehicles[index]),
+          itemBuilder:
+              (_, index) => GranithReveal(
+                delay: Duration(
+                  milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                ),
+                duration: const Duration(milliseconds: 400),
+                child: _VehicleCard(vehicle: vehicles[index]),
+              ),
         );
       },
     );
@@ -339,7 +383,7 @@ class _VehicleCard extends StatelessWidget {
       onTap: () => _VehicleFormDialog.show(context, vehicle: vehicle),
       child: Container(
         padding: const EdgeInsets.all(16),
-        decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
+        decoration: AppDecorations.cardSurface(accent: accent, radius: 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -5,6 +5,7 @@ import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/purchase_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:project_granith/widgets/purchases/purchase_card.dart';
 import 'package:project_granith/widgets/purchases/purchase_form_dialog.dart';
@@ -431,7 +432,6 @@ class _PurchasesHeader extends StatelessWidget {
     final approvedCount = _countStatus(purchases, PurchaseStatus.pending);
     final orderedCount = _countStatus(purchases, PurchaseStatus.ordered);
     final deliveredCount = _countStatus(purchases, PurchaseStatus.delivered);
-    final cancelledCount = _countStatus(purchases, PurchaseStatus.cancelled);
     final openValue = purchases
         .where(
           (purchase) =>
@@ -440,47 +440,65 @@ class _PurchasesHeader extends StatelessWidget {
         )
         .fold<double>(0, (total, purchase) => total + purchase.totalValue);
     final overdueCount = purchases.where(_isOverduePurchase).length;
-    final lastPurchaseDate = _latestDate(
-      purchases.map((purchase) => purchase.purchaseDate),
-    );
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentGold,
-        elevated: false,
-        radius: 16,
+        emphasized: true,
+        radius: 20,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < ResponsiveLayout.compact;
+          final compact = constraints.maxWidth < 760;
           final title = Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (!compact) ...[
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: AppDecorations.iconTile(AppColors.accentGold),
-                  child: const Icon(
-                    Icons.shopping_cart_checkout_rounded,
-                    color: AppColors.accentGold,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.accentGold.withValues(alpha: 0.24),
+                      AppColors.accentBlue.withValues(alpha: 0.10),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: AppColors.accentGold.withValues(alpha: 0.44),
+                  ),
+                  boxShadow: AppColors.auraShadows(AppColors.accentGold),
                 ),
-                const SizedBox(width: 12),
-              ],
+                child: const Icon(
+                  Icons.shopping_cart_checkout_rounded,
+                  color: AppColors.accentGold,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Compras',
+                      'COMPRAS E SUPRIMENTOS',
+                      style: TextStyle(
+                        color: AppColors.accentBlue,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Pedidos de Compra',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 24,
+                        fontSize: 25,
                         fontWeight: FontWeight.w900,
                         height: 1.05,
                       ),
@@ -488,12 +506,12 @@ class _PurchasesHeader extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       purchases.isEmpty
-                          ? 'Solicitacoes, aprovacao e recebimento'
-                          : '${_plural(purchases.length, 'compra', 'compras')} no historico, ${_formatCurrency(openValue)} em aberto',
+                          ? 'Aprovação, consolidação e recebimento em um único fluxo.'
+                          : '${_plural(purchases.length, 'compra', 'compras')} no histórico operacional',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColors.textSecondary,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -505,53 +523,30 @@ class _PurchasesHeader extends StatelessWidget {
           );
 
           final metrics = Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: 10,
+            runSpacing: 10,
             alignment: compact ? WrapAlignment.start : WrapAlignment.end,
             children: [
-              _PurchaseHeaderMetric(
-                icon: Icons.hourglass_top_rounded,
-                label: '$awaitingCount aguardando',
+              _PurchaseHeroMetric(
+                label: 'Valor em aberto',
+                value: _formatCurrency(openValue),
+                icon: Icons.account_balance_wallet_outlined,
+                color: AppColors.accentGold,
+              ),
+              _PurchaseHeroMetric(
+                label: 'Aguardando aprovação',
+                value: awaitingCount.toString(),
+                icon: Icons.approval_outlined,
                 color: Colors.purpleAccent,
               ),
-              _PurchaseHeaderMetric(
-                icon: Icons.verified_outlined,
-                label: '$approvedCount aprovadas',
-                color: Colors.orange,
-              ),
-              _PurchaseHeaderMetric(
-                icon: Icons.receipt_long_outlined,
-                label: '$orderedCount consolidadas',
-                color: AppColors.accentBlue,
-              ),
-              _PurchaseHeaderMetric(
-                icon: Icons.local_shipping_outlined,
-                label: '$deliveredCount entregues',
-                color: AppColors.accentGreen,
-              ),
-              _PurchaseHeaderMetric(
+              _PurchaseHeroMetric(
+                label: 'Entregas atrasadas',
+                value: overdueCount.toString(),
                 icon: Icons.warning_amber_rounded,
-                label: '$overdueCount atrasadas',
                 color:
                     overdueCount == 0
-                        ? AppColors.textSecondary
+                        ? AppColors.accentGreen
                         : AppColors.accentRed,
-              ),
-              _PurchaseHeaderMetric(
-                icon: Icons.cancel_outlined,
-                label: '$cancelledCount canceladas',
-                color:
-                    cancelledCount == 0
-                        ? AppColors.textSecondary
-                        : AppColors.accentRed,
-              ),
-              _PurchaseHeaderMetric(
-                icon: Icons.event_available_outlined,
-                label:
-                    lastPurchaseDate == null
-                        ? 'sem compras'
-                        : 'ultima ${_formatShortDate(lastPurchaseDate)}',
-                color: AppColors.accentGold,
               ),
             ],
           );
@@ -562,33 +557,282 @@ class _PurchasesHeader extends StatelessWidget {
             label: const Text('Nova compra'),
           );
 
-          if (compact) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                title,
-                const SizedBox(height: 14),
-                metrics,
-                const SizedBox(height: 14),
-                actions,
-              ],
-            );
-          }
+          final top =
+              compact
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      title,
+                      const SizedBox(height: 14),
+                      metrics,
+                      const SizedBox(height: 14),
+                      actions,
+                    ],
+                  )
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 5, child: title),
+                      const SizedBox(width: 18),
+                      Flexible(flex: 5, child: metrics),
+                      const SizedBox(width: 14),
+                      actions,
+                    ],
+                  );
 
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [title, const SizedBox(height: 14), metrics],
-                ),
+              top,
+              const SizedBox(height: 16),
+              Divider(
+                height: 1,
+                color: AppColors.borderColor.withValues(alpha: 0.55),
               ),
-              const SizedBox(width: 16),
-              actions,
+              const SizedBox(height: 14),
+              _PurchasePipeline(
+                awaitingCount: awaitingCount,
+                approvedCount: approvedCount,
+                orderedCount: orderedCount,
+                deliveredCount: deliveredCount,
+              ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _PurchaseHeroMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _PurchaseHeroMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 142),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: AppDecorations.cardInnerSurface(accent: color, radius: 13),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 17),
+          ),
+          const SizedBox(width: 9),
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PurchasePipeline extends StatelessWidget {
+  final int awaitingCount;
+  final int approvedCount;
+  final int orderedCount;
+  final int deliveredCount;
+
+  const _PurchasePipeline({
+    required this.awaitingCount,
+    required this.approvedCount,
+    required this.orderedCount,
+    required this.deliveredCount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = [
+      _PurchasePipelineData(
+        label: 'Aguardando',
+        caption: 'Aprovação do setor',
+        count: awaitingCount,
+        icon: Icons.hourglass_top_rounded,
+        color: Colors.purpleAccent,
+      ),
+      _PurchasePipelineData(
+        label: 'Aprovadas',
+        caption: 'Liberadas para compra',
+        count: approvedCount,
+        icon: Icons.verified_outlined,
+        color: Colors.orange,
+      ),
+      _PurchasePipelineData(
+        label: 'Consolidadas',
+        caption: 'Pedido realizado',
+        count: orderedCount,
+        icon: Icons.receipt_long_outlined,
+        color: AppColors.accentBlue,
+      ),
+      _PurchasePipelineData(
+        label: 'Entregues',
+        caption: 'Recebimento concluído',
+        count: deliveredCount,
+        icon: Icons.inventory_2_outlined,
+        color: AppColors.accentGreen,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 820) {
+          return SizedBox(
+            height: 68,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: steps.length,
+              separatorBuilder:
+                  (_, __) => const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.textMuted,
+                      size: 18,
+                    ),
+                  ),
+              itemBuilder:
+                  (context, index) => SizedBox(
+                    width: 184,
+                    child: _PurchasePipelineStep(data: steps[index]),
+                  ),
+            ),
+          );
+        }
+
+        return Row(
+          children: [
+            for (var index = 0; index < steps.length; index++) ...[
+              Expanded(child: _PurchasePipelineStep(data: steps[index])),
+              if (index != steps.length - 1)
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 7),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.textMuted,
+                    size: 18,
+                  ),
+                ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PurchasePipelineData {
+  final String label;
+  final String caption;
+  final int count;
+  final IconData icon;
+  final Color color;
+
+  const _PurchasePipelineData({
+    required this.label,
+    required this.caption,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _PurchasePipelineStep extends StatelessWidget {
+  final _PurchasePipelineData data;
+
+  const _PurchasePipelineStep({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 68,
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: data.color,
+        radius: 13,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: data.color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(data.icon, color: data.color, size: 18),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${data.count} ${data.label}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  data.caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -658,7 +902,11 @@ class _PurchaseToolbar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 840;
@@ -980,10 +1228,15 @@ class _PurchasesBody extends StatelessWidget {
         }
 
         final purchase = visiblePurchases[index];
-        return PurchaseCard(
-          purchase: purchase,
-          purchaseService: purchaseService,
-          onTap: () => onOpenDetails(purchase),
+        return GranithReveal(
+          delay: Duration(milliseconds: 24 * (index % 8)),
+          duration: const Duration(milliseconds: 420),
+          beginOffset: const Offset(0, 0.025),
+          child: PurchaseCard(
+            purchase: purchase,
+            purchaseService: purchaseService,
+            onTap: () => onOpenDetails(purchase),
+          ),
         );
       },
     );
@@ -1168,43 +1421,6 @@ class _PurchaseStatusChip extends StatelessWidget {
             selected
                 ? color.withValues(alpha: 0.7)
                 : AppColors.borderColor.withValues(alpha: 0.55),
-      ),
-    );
-  }
-}
-
-class _PurchaseHeaderMetric extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _PurchaseHeaderMetric({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-      decoration: AppDecorations.cardInnerSurface(accent: color),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 7),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1606,13 +1822,6 @@ bool _isOverduePurchase(Purchase purchase) {
   final todayOnly = DateTime(today.year, today.month, today.day);
   final expectedOnly = DateTime(expected.year, expected.month, expected.day);
   return expectedOnly.isBefore(todayOnly);
-}
-
-DateTime? _latestDate(Iterable<DateTime> dates) {
-  final sorted = dates.toList();
-  if (sorted.isEmpty) return null;
-  sorted.sort((left, right) => right.compareTo(left));
-  return sorted.first;
 }
 
 String _formatShortDate(DateTime date) {

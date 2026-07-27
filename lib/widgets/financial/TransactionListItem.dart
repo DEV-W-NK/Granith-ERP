@@ -106,6 +106,8 @@ class TransactionListItem extends StatelessWidget {
             child: InkWell(
               onTap: () => TransactionFormDialog.show(context, initial: t),
               borderRadius: BorderRadius.circular(14),
+              hoverColor: accent.withValues(alpha: 0.055),
+              splashColor: accent.withValues(alpha: 0.09),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,
@@ -117,13 +119,13 @@ class TransactionListItem extends StatelessWidget {
                   color:
                       t.isOverdue
                           ? AppColors.accentRed.withValues(alpha: 0.055)
-                          : AppColors.primaryDark.withValues(alpha: 0.22),
+                          : accent.withValues(alpha: 0.025),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color:
                         t.isOverdue
                             ? AppColors.accentRed.withValues(alpha: 0.32)
-                            : AppColors.borderColor.withValues(alpha: 0.30),
+                            : accent.withValues(alpha: 0.20),
                   ),
                 ),
                 child: content,

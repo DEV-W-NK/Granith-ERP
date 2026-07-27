@@ -9,6 +9,7 @@ import 'package:project_granith/services/item_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/ViewModels/ItemsViewModel.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/items/item_form_dialog.dart';
 
 class ItemsPageView extends StatelessWidget {
@@ -22,7 +23,7 @@ class ItemsPageView extends StatelessWidget {
     return ChangeNotifierProvider<ItemsViewModel>(
       create: (_) => viewModel ?? ItemsViewModel(ItemService()),
       child: Scaffold(
-        backgroundColor: AppColors.backgroundDark,
+        backgroundColor: Colors.transparent,
         body: SafeArea(child: _ItemsCatalogBody(itemsStream: itemsStream)),
       ),
     );
@@ -75,25 +76,34 @@ class _ItemsCatalogBodyState extends State<_ItemsCatalogBody> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _CatalogHeader(items: allItems),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 40),
+                    child: _CatalogHeader(items: allItems),
+                  ),
                   const SizedBox(height: 10),
-                  _ItemsToolbar(
-                    visibleCount: filteredItems.length,
-                    totalCount: allItems.length,
-                    onCreate: () => _openItemDialog(context),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 100),
+                    child: _ItemsToolbar(
+                      visibleCount: filteredItems.length,
+                      totalCount: allItems.length,
+                      onCreate: () => _openItemDialog(context),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Expanded(
-                    child:
-                        snapshot.hasError
-                            ? const _ErrorState()
-                            : !snapshot.hasData
-                            ? const _LoadingState()
-                            : filteredItems.isEmpty
-                            ? _EmptyState(
-                              isSearch: viewModel.searchQuery.isNotEmpty,
-                            )
-                            : _ItemsGrid(items: filteredItems),
+                    child: GranithReveal(
+                      delay: const Duration(milliseconds: 160),
+                      child:
+                          snapshot.hasError
+                              ? const _ErrorState()
+                              : !snapshot.hasData
+                              ? const _LoadingState()
+                              : filteredItems.isEmpty
+                              ? _EmptyState(
+                                isSearch: viewModel.searchQuery.isNotEmpty,
+                              )
+                              : _ItemsGrid(items: filteredItems),
+                    ),
                   ),
                 ],
               ),
@@ -191,13 +201,11 @@ class _CatalogHeader extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.only(bottom: 10),
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.borderColor.withValues(alpha: 0.35),
-              ),
-            ),
+          padding: const EdgeInsets.all(18),
+          decoration: AppDecorations.cardSurface(
+            accent: AppColors.accentGold,
+            emphasized: true,
+            radius: 22,
           ),
           child:
               compact
@@ -377,7 +385,14 @@ class _ItemsGrid extends StatelessWidget {
             mainAxisExtent: constraints.maxWidth < 420 ? 238 : 218,
           ),
           itemCount: items.length,
-          itemBuilder: (context, index) => _ItemCard(item: items[index]),
+          itemBuilder:
+              (context, index) => GranithReveal(
+                delay: Duration(
+                  milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                ),
+                duration: const Duration(milliseconds: 400),
+                child: _ItemCard(item: items[index]),
+              ),
         );
       },
     );
@@ -747,6 +762,7 @@ class _ToolbarSurface extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
         elevated: false,
+        radius: 18,
       ),
       child: child,
     );

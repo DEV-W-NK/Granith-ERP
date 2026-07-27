@@ -8,6 +8,7 @@ import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/services/HrService.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class BenefitsPageView extends StatefulWidget {
   const BenefitsPageView({super.key});
@@ -44,22 +45,28 @@ class _BenefitsPageViewState extends State<BenefitsPageView>
             : 10.0;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: EdgeInsets.all(pagePadding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _BenefitsTopBar(tabController: _tabController),
+            GranithReveal(
+              delay: const Duration(milliseconds: 40),
+              child: _BenefitsTopBar(tabController: _tabController),
+            ),
             SizedBox(height: width < 480 ? 10 : 12),
             Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _CatalogTab(service: _service),
-                  _CategoriesTab(service: _service),
-                  _EmployeeBenefitsTab(service: _service),
-                ],
+              child: GranithReveal(
+                delay: const Duration(milliseconds: 120),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _CatalogTab(service: _service),
+                    _CategoriesTab(service: _service),
+                    _EmployeeBenefitsTab(service: _service),
+                  ],
+                ),
               ),
             ),
           ],
@@ -650,10 +657,14 @@ class _BenefitsGrid extends StatelessWidget {
           itemCount: benefits.length,
           itemBuilder: (context, index) {
             final benefit = benefits[index];
-            return _BenefitCard(
-              benefit: benefit,
-              onEdit: () => onEdit(benefit),
-              onToggle: () => onToggle(benefit),
+            return GranithReveal(
+              delay: Duration(milliseconds: 35 * ((index > 6 ? 6 : index) + 1)),
+              duration: const Duration(milliseconds: 420),
+              child: _BenefitCard(
+                benefit: benefit,
+                onEdit: () => onEdit(benefit),
+                onToggle: () => onToggle(benefit),
+              ),
             );
           },
         );
@@ -958,46 +969,55 @@ class _EmployeeBenefitWorkspace extends StatelessWidget {
         employees.where((employee) => !employee.isDismissed).toList();
     final selectedEmployee = _findEmployee(activeEmployees, selectedEmployeeId);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 900;
-        final selector = _EmployeeBenefitSelectorPanel(
-          employees: activeEmployees,
-          assignments: assignments,
-          selectedEmployeeId: selectedEmployee?.id,
-          searchController: employeeSearchController,
-          query: employeeQuery,
-          onSelect: onSelectEmployee,
-        );
-        final detail = _EmployeeBenefitDetailPanel(
-          employee: selectedEmployee,
-          employees: employees,
-          benefits: benefits,
-          assignments: assignments,
-          onCreate: onCreateForEmployee,
-          onEdit: onEdit,
-          onRemove: onRemove,
-        );
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 22,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 900;
+          final selector = _EmployeeBenefitSelectorPanel(
+            employees: activeEmployees,
+            assignments: assignments,
+            selectedEmployeeId: selectedEmployee?.id,
+            searchController: employeeSearchController,
+            query: employeeQuery,
+            onSelect: onSelectEmployee,
+          );
+          final detail = _EmployeeBenefitDetailPanel(
+            employee: selectedEmployee,
+            employees: employees,
+            benefits: benefits,
+            assignments: assignments,
+            onCreate: onCreateForEmployee,
+            onEdit: onEdit,
+            onRemove: onRemove,
+          );
 
-        if (compact) {
-          return Column(
+          if (compact) {
+            return Column(
+              children: [
+                SizedBox(height: 300, child: selector),
+                const SizedBox(height: 12),
+                Expanded(child: detail),
+              ],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: 300, child: selector),
-              const SizedBox(height: 12),
+              SizedBox(width: 360, child: selector),
+              const SizedBox(width: 14),
               Expanded(child: detail),
             ],
           );
-        }
-
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(width: 360, child: selector),
-            const SizedBox(width: 14),
-            Expanded(child: detail),
-          ],
-        );
-      },
+        },
+      ),
     );
   }
 
@@ -2703,7 +2723,7 @@ class _SurfaceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
+      decoration: AppDecorations.cardSurface(accent: accent, radius: 18),
       child: child,
     );
   }

@@ -77,5 +77,27 @@ void main() {
       expect(updated.itemName, 'Tijolo');
       expect(updated.projectId, 'project-1');
     });
+
+    test('toMap normaliza campos obrigatorios de compra sem nota fiscal', () {
+      final purchase = Purchase(
+        id: '',
+        itemId: '',
+        itemName: 'Cimento',
+        supplierId: 'supplier-1',
+        supplierName: 'Fornecedor C',
+        projectId: 'project-1',
+        projectName: 'Obra Beta',
+        deliveryAddress: 'SP',
+        totalValue: 950,
+        purchaseDate: DateTime(2026, 7, 16),
+      );
+
+      final map = purchase.toMap();
+
+      expect(map['invoiceNumber'], '');
+      expect(map['invoiceAccessKey'], '');
+      expect(map['notes'], '');
+      expect(map['approvalSector'], 'Geral');
+    });
   });
 }

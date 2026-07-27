@@ -5,6 +5,7 @@ import 'package:project_granith/models/purchase_delivery_route_model.dart';
 import 'package:project_granith/services/purchase_delivery_route_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 enum _RouteStatusFilter {
   active,
@@ -146,12 +147,20 @@ class _PurchaseLogisticsPageViewState extends State<PurchaseLogisticsPageView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _LogisticsHeader(routes: routes),
+        GranithReveal(
+          delay: const Duration(milliseconds: 40),
+          child: _LogisticsHeader(routes: routes),
+        ),
         SizedBox(height: gap),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.only(bottom: 12),
-            children: [routesPanel],
+            children: [
+              GranithReveal(
+                delay: const Duration(milliseconds: 120),
+                child: routesPanel,
+              ),
+            ],
           ),
         ),
       ],
@@ -258,8 +267,8 @@ class _LogisticsHeader extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentGold,
-        elevated: false,
-        radius: 16,
+        emphasized: true,
+        radius: 22,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -488,9 +497,18 @@ class _RoutesPanel extends StatelessWidget {
                       );
                     }
 
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _RouteCard(route: routes[index], service: service),
+                    return GranithReveal(
+                      delay: Duration(
+                        milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                      ),
+                      duration: const Duration(milliseconds: 400),
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _RouteCard(
+                          route: routes[index],
+                          service: service,
+                        ),
+                      ),
                     );
                   },
                 ),
@@ -710,7 +728,7 @@ class _RouteCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(15),
-      decoration: AppDecorations.cardSurface(accent: statusAccent, radius: 14),
+      decoration: AppDecorations.cardSurface(accent: statusAccent, radius: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1016,7 +1034,7 @@ class _Surface extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+      decoration: AppDecorations.cardSurface(elevated: false, radius: 18),
       child: child,
     );
   }

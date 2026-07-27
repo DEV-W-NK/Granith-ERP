@@ -6,6 +6,7 @@ import 'package:project_granith/models/budget_model.dart';
 import 'package:project_granith/services/service_orcamentos.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/budgets/budget_card.dart';
 import 'package:project_granith/widgets/budgets/budget_form_dialog.dart';
 
@@ -64,56 +65,65 @@ class _BudgetsPageContentState extends State<_BudgetsPageContent> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _BudgetsHeader(
-                    budgets: viewModel.allBudgets,
-                    isUpdating: viewModel.isUpdatingExpired,
-                    onRefresh: () => _refreshExpiredBudgets(context),
-                    onCreate: () => _openBudgetForm(context),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 40),
+                    child: _BudgetsHeader(
+                      budgets: viewModel.allBudgets,
+                      isUpdating: viewModel.isUpdatingExpired,
+                      onRefresh: () => _refreshExpiredBudgets(context),
+                      onCreate: () => _openBudgetForm(context),
+                    ),
                   ),
                   const SizedBox(height: 14),
-                  _BudgetsToolbar(
-                    controller: _searchController,
-                    sortOption: _sortOption,
-                    onSearchChanged: (value) {
-                      viewModel.setSearchQuery(value);
-                      _resetVisibleCount();
-                    },
-                    onClearSearch: () {
-                      _searchController.clear();
-                      viewModel.setSearchQuery('');
-                      _resetVisibleCount();
-                    },
-                    onStatusChanged: (status) {
-                      if (status == null) {
-                        viewModel.clearFilters();
-                      } else {
-                        viewModel.setFilterStatus(status);
-                      }
-                      _resetVisibleCount();
-                    },
-                    onSortChanged: (option) {
-                      setState(() {
-                        _sortOption = option;
-                        _visibleCount = _initialVisibleItems;
-                      });
-                    },
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 100),
+                    child: _BudgetsToolbar(
+                      controller: _searchController,
+                      sortOption: _sortOption,
+                      onSearchChanged: (value) {
+                        viewModel.setSearchQuery(value);
+                        _resetVisibleCount();
+                      },
+                      onClearSearch: () {
+                        _searchController.clear();
+                        viewModel.setSearchQuery('');
+                        _resetVisibleCount();
+                      },
+                      onStatusChanged: (status) {
+                        if (status == null) {
+                          viewModel.clearFilters();
+                        } else {
+                          viewModel.setFilterStatus(status);
+                        }
+                        _resetVisibleCount();
+                      },
+                      onSortChanged: (option) {
+                        setState(() {
+                          _sortOption = option;
+                          _visibleCount = _initialVisibleItems;
+                        });
+                      },
+                    ),
                   ),
                   const SizedBox(height: 14),
                   Expanded(
-                    child: _BudgetsBody(
-                      viewModel: viewModel,
-                      budgets: visibleBudgets,
-                      totalFilteredCount: sortedBudgets.length,
-                      hasMore: hasMore,
-                      onLoadMore: () {
-                        setState(() {
-                          _visibleCount += _visibleItemsStep;
-                        });
-                      },
-                      onEdit: (budget) => _openBudgetForm(context, budget),
-                      onDelete: (budget) => _deleteBudget(context, budget),
-                      onApprove: (budget) => _approveBudget(context, budget),
-                      onReject: (budget) => _rejectBudget(context, budget),
+                    child: GranithReveal(
+                      delay: const Duration(milliseconds: 160),
+                      child: _BudgetsBody(
+                        viewModel: viewModel,
+                        budgets: visibleBudgets,
+                        totalFilteredCount: sortedBudgets.length,
+                        hasMore: hasMore,
+                        onLoadMore: () {
+                          setState(() {
+                            _visibleCount += _visibleItemsStep;
+                          });
+                        },
+                        onEdit: (budget) => _openBudgetForm(context, budget),
+                        onDelete: (budget) => _deleteBudget(context, budget),
+                        onApprove: (budget) => _approveBudget(context, budget),
+                        onReject: (budget) => _rejectBudget(context, budget),
+                      ),
                     ),
                   ),
                 ],
@@ -347,13 +357,11 @@ class _BudgetsHeader extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.borderColor.withValues(alpha: 0.35),
-          ),
-        ),
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 22,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -523,7 +531,7 @@ class _BudgetsToolbar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+      decoration: AppDecorations.cardSurface(elevated: false, radius: 18),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 760;
@@ -706,14 +714,18 @@ class _BudgetsBody extends StatelessWidget {
         final isApproving = viewModel.approvingIds.contains(budget.id);
         final pending = _effectiveStatus(budget) == BudgetStatus.pending;
 
-        return BudgetCard(
-          budget: budget,
-          isApproving: isApproving,
-          onTap: () => onEdit(budget),
-          onEdit: () => onEdit(budget),
-          onDelete: () => onDelete(budget),
-          onApprove: pending && !isApproving ? () => onApprove(budget) : null,
-          onReject: pending && !isApproving ? () => onReject(budget) : null,
+        return GranithReveal(
+          delay: Duration(milliseconds: 28 * ((index > 7 ? 7 : index) + 1)),
+          duration: const Duration(milliseconds: 400),
+          child: BudgetCard(
+            budget: budget,
+            isApproving: isApproving,
+            onTap: () => onEdit(budget),
+            onEdit: () => onEdit(budget),
+            onDelete: () => onDelete(budget),
+            onApprove: pending && !isApproving ? () => onApprove(budget) : null,
+            onReject: pending && !isApproving ? () => onReject(budget) : null,
+          ),
         );
       },
     );

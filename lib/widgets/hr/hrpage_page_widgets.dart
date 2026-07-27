@@ -64,9 +64,9 @@ class _HrPageViewState extends State<HrPageView>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const _HrHeader(),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     _HrTabBar(tabController: _tabController),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     Expanded(
                       child: TabBarView(
                         controller: _tabController,
@@ -97,40 +97,108 @@ class _HrHeader extends StatelessWidget {
       builder: (context, controller, _) {
         final employees = controller.employees;
         final total = employees.length;
+        final active = employees.where((employee) => employee.isActive).length;
+        final onLeave =
+            employees.where((employee) => employee.isOnLeave).length;
+        final dismissed =
+            employees.where((employee) => employee.isDismissed).length;
+        final sectors =
+            employees
+                .map((employee) => employee.sector.trim())
+                .where((sector) => sector.isNotEmpty)
+                .toSet()
+                .length;
+
         return LayoutBuilder(
           builder: (context, constraints) {
             final compact = constraints.maxWidth < ResponsiveLayout.compact;
+            final metrics = [
+              _HrHeroMetricData(
+                label: 'Colaboradores',
+                value: '$total',
+                icon: Icons.groups_2_rounded,
+                color: AppColors.accentGold,
+              ),
+              _HrHeroMetricData(
+                label: 'Ativos',
+                value: '$active',
+                icon: Icons.verified_user_rounded,
+                color: AppColors.accentGreen,
+              ),
+              _HrHeroMetricData(
+                label: 'Ferias/Afast.',
+                value: '$onLeave',
+                icon: Icons.event_available_rounded,
+                color: AppColors.accentBlue,
+              ),
+              _HrHeroMetricData(
+                label: 'Setores',
+                value: '$sectors',
+                icon: Icons.apartment_rounded,
+                color: AppColors.purple,
+              ),
+            ];
 
             return Container(
               width: double.infinity,
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 2 : 0,
-                vertical: compact ? 2 : 4,
-              ),
+              padding: EdgeInsets.all(compact ? 16 : 20),
               decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: AppColors.borderColor.withValues(alpha: 0.35),
-                  ),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.accentGold.withValues(alpha: 0.12),
+                    AppColors.surfaceElevated.withValues(alpha: 0.90),
+                    AppColors.backgroundMid.withValues(alpha: 0.96),
+                  ],
+                  stops: const [0.0, 0.36, 1.0],
                 ),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(
+                  color: AppColors.accentGold.withValues(alpha: 0.24),
+                ),
+                boxShadow: AppColors.glowShadows(AppColors.accentGold),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (!compact) ...[
-                    const _HeaderIcon(),
-                    const SizedBox(width: 12),
-                  ],
-                  Expanded(child: _HeaderTitle(compact: compact)),
-                  if (!compact) ...[
-                    _HeaderStatusPill(
-                      label: '$total colaboradores',
-                      icon: Icons.groups_2_rounded,
-                      color: AppColors.accentGold,
-                    ),
-                  ],
-                ],
-              ),
+              child:
+                  compact
+                      ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Row(
+                            children: [
+                              _HeaderIcon(),
+                              SizedBox(width: 12),
+                              Expanded(child: _HeaderTitle(compact: true)),
+                            ],
+                          ),
+                          const SizedBox(height: 14),
+                          _HrMetricsGrid(metrics: metrics, compact: true),
+                        ],
+                      )
+                      : Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const _HeaderIcon(),
+                          const SizedBox(width: 14),
+                          const Expanded(child: _HeaderTitle(compact: false)),
+                          const SizedBox(width: 18),
+                          Flexible(
+                            flex: 2,
+                            child: _HrMetricsGrid(
+                              metrics: metrics,
+                              compact: constraints.maxWidth < 1180,
+                            ),
+                          ),
+                          if (dismissed > 0) ...[
+                            const SizedBox(width: 12),
+                            _HeaderStatusPill(
+                              label: '$dismissed desligado(s)',
+                              icon: Icons.person_off_rounded,
+                              color: AppColors.accentRed,
+                            ),
+                          ],
+                        ],
+                      ),
             );
           },
         );
@@ -477,24 +545,29 @@ class _EmployeesToolbar extends StatelessWidget {
         }
 
         if (!roomy) {
-          return Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [searchField, statusField, resultChip, createButton],
+          return _ToolbarSurface(
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [searchField, statusField, resultChip, createButton],
+            ),
           );
         }
 
-        return Row(
-          children: [
-            searchField,
-            const SizedBox(width: 10),
-            statusField,
-            const SizedBox(width: 10),
-            resultChip,
-            const Spacer(),
-            createButton,
-          ],
+        return _ToolbarSurface(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              searchField,
+              const SizedBox(width: 10),
+              statusField,
+              const SizedBox(width: 10),
+              resultChip,
+              const Spacer(),
+              createButton,
+            ],
+          ),
         );
       },
     );
@@ -621,20 +694,32 @@ class _InlineError extends StatelessWidget {
 
 class _ToolbarSurface extends StatelessWidget {
   final Widget child;
+  final EdgeInsetsGeometry padding;
 
-  const _ToolbarSurface({required this.child});
+  const _ToolbarSurface({
+    required this.child,
+    this.padding = const EdgeInsets.all(12),
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: padding,
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.56),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.62),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.surfaceDark.withValues(alpha: 0.80),
+            AppColors.backgroundMid.withValues(alpha: 0.70),
+          ],
         ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.70),
+        ),
+        boxShadow: AppColors.auraShadows(AppColors.accentBlue),
       ),
       child: child,
     );
@@ -694,6 +779,116 @@ class _ToolbarCountChip extends StatelessWidget {
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HrHeroMetricData {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _HrHeroMetricData({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _HrMetricsGrid extends StatelessWidget {
+  final List<_HrHeroMetricData> metrics;
+  final bool compact;
+
+  const _HrMetricsGrid({required this.metrics, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    if (compact) {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: metrics.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          mainAxisExtent: 74,
+        ),
+        itemBuilder: (context, index) => _HrHeroMetric(metric: metrics[index]),
+      );
+    }
+
+    return Row(
+      children: [
+        for (var index = 0; index < metrics.length; index++) ...[
+          Expanded(child: _HrHeroMetric(metric: metrics[index])),
+          if (index < metrics.length - 1) const SizedBox(width: 10),
+        ],
+      ],
+    );
+  }
+}
+
+class _HrHeroMetric extends StatelessWidget {
+  final _HrHeroMetricData metric;
+
+  const _HrHeroMetric({required this.metric});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundDark.withValues(alpha: 0.34),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: metric.color.withValues(alpha: 0.22)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: metric.color.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(metric.icon, color: metric.color, size: 18),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  metric.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  metric.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1772,12 +1967,15 @@ class _SectionToolbar extends StatelessWidget {
           );
         }
 
-        return Row(
-          children: [
-            Expanded(child: heading),
-            const SizedBox(width: 16),
-            button,
-          ],
+        return _ToolbarSurface(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              Expanded(child: heading),
+              const SizedBox(width: 16),
+              button,
+            ],
+          ),
         );
       },
     );
@@ -2007,17 +2205,25 @@ class _HeaderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 50,
+      height: 50,
       decoration: BoxDecoration(
-        color: AppColors.accentGold.withValues(alpha: 0.09),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.18)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.accentGold.withValues(alpha: 0.24),
+            AppColors.accentBlue.withValues(alpha: 0.10),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.accentGold.withValues(alpha: 0.30)),
+        boxShadow: AppColors.auraShadows(AppColors.accentGold),
       ),
       child: const Icon(
         Icons.people_alt_rounded,
         color: AppColors.accentGold,
-        size: 18,
+        size: 24,
       ),
     );
   }
@@ -2039,25 +2245,84 @@ class _HeaderTitle extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: TextStyle(
             color: AppColors.textPrimary,
-            fontSize: compact ? 18 : 20,
-            fontWeight: FontWeight.w800,
+            fontSize: compact ? 20 : 26,
+            fontWeight: FontWeight.w900,
             height: 1.05,
           ),
         ),
+        const SizedBox(height: 6),
+        Text(
+          compact
+              ? 'Pessoas, cargos e setores'
+              : 'Visao de pessoas, estrutura de cargos e setores operacionais',
+          maxLines: compact ? 2 : 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            height: 1.35,
+          ),
+        ),
         if (!compact) ...[
-          const SizedBox(height: 2),
-          const Text(
-            'Colaboradores, cargos e setores',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: const [
+              _HeaderMiniTag(
+                icon: Icons.badge_rounded,
+                label: 'cadastro funcional',
+              ),
+              SizedBox(width: 8),
+              _HeaderMiniTag(
+                icon: Icons.admin_panel_settings_rounded,
+                label: 'permissoes salariais',
+              ),
+            ],
           ),
         ],
       ],
+    );
+  }
+}
+
+class _HeaderMiniTag extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _HeaderMiniTag({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Flexible(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundDark.withValues(alpha: 0.28),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: AppColors.borderColor.withValues(alpha: 0.45),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: AppColors.accentGold, size: 13),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2073,30 +2338,45 @@ class _HrTabBar extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.48),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.surfaceDark.withValues(alpha: 0.72),
+            AppColors.backgroundMid.withValues(alpha: 0.62),
+          ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.borderColor.withValues(alpha: 0.58),
+        ),
+        boxShadow: AppColors.auraShadows(AppColors.accentGold),
       ),
-      padding: const EdgeInsets.all(3),
+      padding: const EdgeInsets.all(4),
       child: TabBar(
         controller: tabController,
         indicator: BoxDecoration(
-          color: AppColors.accentGold.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: AppColors.accentGold.withValues(alpha: 0.22),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accentGold.withValues(alpha: 0.18),
+              AppColors.accentGold.withValues(alpha: 0.07),
+            ],
           ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.accentGold.withValues(alpha: 0.34),
+          ),
+          boxShadow: AppColors.auraShadows(AppColors.accentGold),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         labelColor: AppColors.accentGold,
         unselectedLabelColor: AppColors.textMuted,
+        overlayColor: WidgetStatePropertyAll(
+          AppColors.accentGold.withValues(alpha: 0.06),
+        ),
         labelPadding: const EdgeInsets.symmetric(horizontal: 6),
         labelStyle: TextStyle(
           fontSize: compact ? 12 : 13,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w900,
         ),
         unselectedLabelStyle: TextStyle(
           fontSize: compact ? 12 : 13,
@@ -2124,7 +2404,7 @@ class _HrTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tab(
-      height: 38,
+      height: 42,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [

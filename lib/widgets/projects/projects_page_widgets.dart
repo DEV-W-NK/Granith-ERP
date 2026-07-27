@@ -6,6 +6,7 @@ import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/projects/project_card.dart';
 import 'package:project_granith/widgets/projects/project_filters.dart';
 import 'package:project_granith/helpers/projects_helpers.dart';
@@ -24,7 +25,7 @@ class ProjectsPageView extends StatelessWidget {
             ProjectsPageConstants.desktopBreakpoint;
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundDark,
+          backgroundColor: Colors.transparent,
           body: RefreshIndicator(
             onRefresh: () => controller.loadProjects(forceRefresh: true),
             backgroundColor: AppColors.surfaceDark,
@@ -61,56 +62,67 @@ class _ProjectsHeader extends StatelessWidget {
 
     return Consumer<ProjectsController>(
       builder: (context, controller, child) {
-        return Container(
+        return Padding(
           padding: EdgeInsets.fromLTRB(
-            isDesktop ? 24 : (phone ? 14 : 18),
-            isDesktop ? 16 : (phone ? 12 : 14),
-            isDesktop ? 24 : (phone ? 14 : 18),
-            isDesktop ? 14 : (phone ? 10 : 14),
+            isDesktop ? 22 : (phone ? 12 : 16),
+            isDesktop ? 18 : (phone ? 12 : 14),
+            isDesktop ? 22 : (phone ? 12 : 16),
+            0,
           ),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundMid.withOpacity(0.72),
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.borderColor.withOpacity(0.36),
-                width: 1,
-              ),
+          child: Container(
+            padding: EdgeInsets.fromLTRB(
+              isDesktop ? 20 : (phone ? 14 : 16),
+              isDesktop ? 18 : (phone ? 14 : 16),
+              isDesktop ? 20 : (phone ? 14 : 16),
+              isDesktop ? 18 : (phone ? 14 : 16),
             ),
-          ),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final title = _HeaderTitle(
-                isDesktop: isDesktop,
-                projectCount: controller.projects.length,
-                isLoading: controller.isLoading,
-              );
-              final actions = _HeaderActions(isDesktop: isDesktop);
+            decoration: AppDecorations.cardSurface(
+              accent: AppColors.accentBlue,
+              emphasized: isDesktop,
+              radius: phone ? 18 : 22,
+            ).copyWith(
+              border: Border.all(color: AppColors.accentBlue.withOpacity(0.32)),
+            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final title = _HeaderTitle(
+                  isDesktop: isDesktop,
+                  projectCount: controller.projects.length,
+                  isLoading: controller.isLoading,
+                );
+                final actions = _HeaderActions(isDesktop: isDesktop);
 
-              final compact = constraints.maxWidth < ResponsiveLayout.compact;
-              final phoneLayout = constraints.maxWidth < 600;
+                final compact = constraints.maxWidth < ResponsiveLayout.compact;
+                final phoneLayout = constraints.maxWidth < 600;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (phoneLayout)
-                    title
-                  else if (compact)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [title, const SizedBox(height: 12), actions],
-                    )
-                  else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(child: title),
-                        const SizedBox(width: 18),
-                        actions,
-                      ],
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (phoneLayout)
+                      title
+                    else if (compact)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [title, const SizedBox(height: 12), actions],
+                      )
+                    else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(child: title),
+                          const SizedBox(width: 18),
+                          actions,
+                        ],
+                      ),
+                    SizedBox(height: phoneLayout ? 12 : 16),
+                    _ProjectHeroStats(
+                      projects: controller.projects,
+                      compact: phoneLayout,
                     ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         );
       },
@@ -144,12 +156,14 @@ class _HeaderTitle extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const _ProjectHeroKicker(label: 'Obras e contratos'),
+          const SizedBox(height: 5),
           Text(
             'Projetos',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: AppColors.textPrimary,
-              fontWeight: FontWeight.w800,
-              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              fontSize: 21,
               letterSpacing: 0,
             ),
           ),
@@ -177,9 +191,18 @@ class _HeaderTitle extends StatelessWidget {
           width: iconSize,
           height: iconSize,
           decoration: BoxDecoration(
-            color: AppColors.accentGold.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.accentGold.withOpacity(0.28)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accentGold.withOpacity(0.24),
+                AppColors.accentBlue.withOpacity(0.14),
+                AppColors.surfaceDark.withOpacity(0.80),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: AppColors.accentGold.withOpacity(0.34)),
+            boxShadow: AppColors.auraShadows(AppColors.accentGold),
           ),
           child: Icon(
             Icons.account_tree_rounded,
@@ -192,11 +215,13 @@ class _HeaderTitle extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const _ProjectHeroKicker(label: 'Obras e contratos'),
+              const SizedBox(height: 4),
               Text(
                 'Projetos',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w900,
                   fontSize: isDesktop ? 24 : (phone ? 20 : 22),
                   letterSpacing: 0,
                 ),
@@ -219,6 +244,210 @@ class _HeaderTitle extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ProjectHeroKicker extends StatelessWidget {
+  final String label;
+
+  const _ProjectHeroKicker({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label.toUpperCase(),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        color: AppColors.accentGold.withOpacity(0.86),
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+class _ProjectHeroStats extends StatelessWidget {
+  final List<Project> projects;
+  final bool compact;
+
+  const _ProjectHeroStats({required this.projects, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    final active =
+        projects
+            .where((project) => project.status == ProjectStatus.inProgress)
+            .length;
+    final planning =
+        projects
+            .where((project) => project.status == ProjectStatus.planning)
+            .length;
+    final completed =
+        projects
+            .where((project) => project.status == ProjectStatus.completed)
+            .length;
+    final risks =
+        projects
+            .where((project) => project.isOverdue || project.isOverBudget)
+            .length;
+    final geofences = projects.where((project) => project.hasGeofence).length;
+    final coordinators =
+        projects
+            .where((project) => (project.coordinatorId ?? '').trim().isNotEmpty)
+            .length;
+
+    final stats = [
+      _ProjectHeroMetricData(
+        icon: Icons.play_circle_rounded,
+        label: 'em execucao',
+        value: active.toString(),
+        detail: '$planning em planejamento',
+        color: AppColors.accentBlue,
+      ),
+      _ProjectHeroMetricData(
+        icon: Icons.verified_rounded,
+        label: 'concluidas',
+        value: completed.toString(),
+        detail: '${projects.length} no total',
+        color: AppColors.accentGreen,
+      ),
+      _ProjectHeroMetricData(
+        icon: Icons.map_rounded,
+        label: 'com cerca',
+        value: geofences.toString(),
+        detail: '$coordinators com coordenador',
+        color: AppColors.accentGold,
+      ),
+      _ProjectHeroMetricData(
+        icon: Icons.warning_amber_rounded,
+        label: 'pontos de atencao',
+        value: risks.toString(),
+        detail: 'prazo ou orcamento',
+        color: risks == 0 ? AppColors.textMuted : AppColors.accentRed,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth =
+            compact
+                ? ((constraints.maxWidth - 10) / 2).clamp(118.0, 220.0)
+                : ((constraints.maxWidth - 30) / 4).clamp(148.0, 240.0);
+
+        return Wrap(
+          spacing: compact ? 8 : 10,
+          runSpacing: compact ? 8 : 10,
+          children: [
+            for (final stat in stats)
+              SizedBox(
+                width: cardWidth.toDouble(),
+                child: _ProjectHeroMetric(stat: stat, compact: compact),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProjectHeroMetricData {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final Color color;
+
+  const _ProjectHeroMetricData({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    required this.color,
+  });
+}
+
+class _ProjectHeroMetric extends StatelessWidget {
+  final _ProjectHeroMetricData stat;
+  final bool compact;
+
+  const _ProjectHeroMetric({required this.stat, required this.compact});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 10 : 12,
+        vertical: compact ? 10 : 12,
+      ),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: stat.color,
+        radius: compact ? 14 : 16,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 32 : 36,
+            height: compact ? 32 : 36,
+            decoration: AppDecorations.iconTile(
+              stat.color,
+            ).copyWith(borderRadius: BorderRadius.circular(compact ? 11 : 12)),
+            child: Icon(stat.icon, color: stat.color, size: compact ? 17 : 19),
+          ),
+          SizedBox(width: compact ? 8 : 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  stat.label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColors.textMuted.withOpacity(0.92),
+                    fontSize: compact ? 8 : 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      stat.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: stat.color,
+                        fontSize: compact ? 18 : 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        stat.detail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textSecondary.withOpacity(0.78),
+                          fontSize: compact ? 9 : 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -813,19 +1042,18 @@ class _ProjectsFilters extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         phone ? 12 : 20,
-        phone ? 8 : 10,
+        phone ? 10 : 12,
         phone ? 12 : 20,
         0,
       ),
       child: Container(
         padding: EdgeInsets.all(phone ? 10 : 12),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceDark.withOpacity(0.42),
-          borderRadius: BorderRadius.circular(phone ? 14 : 16),
-          border: Border.all(
-            color: AppColors.borderColor.withOpacity(0.42),
-            width: 1,
-          ),
+        decoration: AppDecorations.cardSurface(
+          accent: AppColors.accentGold,
+          elevated: false,
+          radius: phone ? 16 : 18,
+        ).copyWith(
+          border: Border.all(color: AppColors.accentGold.withOpacity(0.20)),
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -1154,9 +1382,9 @@ class _SearchFieldState extends State<_SearchField> {
             decoration: BoxDecoration(
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+                  color: Colors.black.withOpacity(0.12),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
@@ -1204,7 +1432,7 @@ class _SearchFieldState extends State<_SearchField> {
                         )
                         : null,
                 filled: true,
-                fillColor: AppColors.surfaceDark,
+                fillColor: AppColors.backgroundDark.withOpacity(0.58),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(compact ? 14 : 16),
                   borderSide: BorderSide(
@@ -1631,9 +1859,10 @@ class _ProjectsGrid extends StatelessWidget {
             ),
             itemCount: projects.length,
             itemBuilder: (context, index) {
-              return AnimatedContainer(
-                duration: Duration(milliseconds: 200 + (index % 3) * 100),
-                curve: Curves.easeOutBack,
+              return GranithReveal(
+                delay: Duration(milliseconds: 24 * (index % 8)),
+                duration: const Duration(milliseconds: 420),
+                beginOffset: const Offset(0, 0.025),
                 child: _ProjectCardWrapper(
                   project: projects[index],
                   budgetService: budgetService,
@@ -1661,9 +1890,10 @@ class _ProjectsListView extends StatelessWidget {
       itemBuilder: (context, index) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: AnimatedContainer(
-            duration: Duration(milliseconds: 200 + (index % 3) * 100),
-            curve: Curves.easeOutBack,
+          child: GranithReveal(
+            delay: Duration(milliseconds: 24 * (index % 8)),
+            duration: const Duration(milliseconds: 420),
+            beginOffset: const Offset(0, 0.025),
             child: _ProjectCardWrapper(
               project: projects[index],
               isListView: true,

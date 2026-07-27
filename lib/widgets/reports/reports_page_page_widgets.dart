@@ -6,6 +6,7 @@ import 'package:project_granith/controllers/reports_controller.dart';
 import 'package:project_granith/models/reports_chart_models.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class ReportsPageView extends StatefulWidget {
   const ReportsPageView({super.key});
@@ -43,7 +44,7 @@ class _ReportsPageViewState extends State<ReportsPageView> {
         final report = controller.dreReport;
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundDark,
+          backgroundColor: Colors.transparent,
           body: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -65,10 +66,13 @@ class _ReportsPageViewState extends State<ReportsPageView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _Header(
-                          controller: controller,
-                          report: report,
-                          onReload: controller.loadDreReport,
+                        GranithReveal(
+                          duration: const Duration(milliseconds: 520),
+                          child: _Header(
+                            controller: controller,
+                            report: report,
+                            onReload: controller.loadDreReport,
+                          ),
                         ),
                         const SizedBox(height: 18),
                         if (controller.error != null)
@@ -88,11 +92,26 @@ class _ReportsPageViewState extends State<ReportsPageView> {
                             ),
                           ),
                         ] else ...[
-                          _ExecutiveSignal(report: report, compact: false),
+                          GranithReveal(
+                            delay: const Duration(milliseconds: 70),
+                            duration: const Duration(milliseconds: 520),
+                            child: _ExecutiveSignal(
+                              report: report,
+                              compact: false,
+                            ),
+                          ),
                           const SizedBox(height: 16),
-                          _KpiGrid(report: report, compact: false),
+                          GranithReveal(
+                            delay: const Duration(milliseconds: 120),
+                            duration: const Duration(milliseconds: 540),
+                            child: _KpiGrid(report: report, compact: false),
+                          ),
                           SizedBox(height: gap),
-                          _DreWorkspace(report: report, gap: gap),
+                          GranithReveal(
+                            delay: const Duration(milliseconds: 175),
+                            duration: const Duration(milliseconds: 560),
+                            child: _DreWorkspace(report: report, gap: gap),
+                          ),
                         ],
                       ],
                     ),
@@ -216,125 +235,164 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 760;
-        final title = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'DRE Gerencial',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 22,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
+          final title = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: AppDecorations.iconTile(AppColors.accentGold),
+                child: const Icon(
+                  Icons.analytics_rounded,
+                  color: AppColors.accentGold,
+                  size: 22,
+                ),
               ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              report?.periodLabel ??
-                  'Receitas, custos, materiais e operacao da empresa',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            if (report != null) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _HeaderSnapshotChip(
-                    icon: Icons.payments_rounded,
-                    label: 'Receita liquida',
-                    value: _formatCurrency(report!.netRevenue),
-                    color: AppColors.accentBlue,
-                  ),
-                  _HeaderSnapshotChip(
-                    icon:
-                        report!.operatingResult >= 0
-                            ? Icons.trending_up_rounded
-                            : Icons.trending_down_rounded,
-                    label: 'Resultado',
-                    value: _formatCurrency(report!.operatingResult),
-                    color:
-                        report!.operatingResult >= 0
-                            ? AppColors.accentGreen
-                            : AppColors.accentRed,
-                  ),
-                  _HeaderSnapshotChip(
-                    icon: Icons.percent_rounded,
-                    label: 'Margem',
-                    value: _formatPercent(report!.operatingMargin),
-                    color:
-                        report!.operatingMargin >= 0.12
-                            ? AppColors.accentGreen
-                            : AppColors.orange,
-                  ),
-                ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'CONTROLADORIA  /  RESULTADO',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.accentGold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'DRE Gerencial',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      report?.periodLabel ??
+                          'Receitas, custos, materiais e operacao da empresa',
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (report != null) ...[
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _HeaderSnapshotChip(
+                            icon: Icons.payments_rounded,
+                            label: 'Receita liquida',
+                            value: _formatCurrency(report!.netRevenue),
+                            color: AppColors.accentBlue,
+                          ),
+                          _HeaderSnapshotChip(
+                            icon:
+                                report!.operatingResult >= 0
+                                    ? Icons.trending_up_rounded
+                                    : Icons.trending_down_rounded,
+                            label: 'Resultado',
+                            value: _formatCurrency(report!.operatingResult),
+                            color:
+                                report!.operatingResult >= 0
+                                    ? AppColors.accentGreen
+                                    : AppColors.accentRed,
+                          ),
+                          _HeaderSnapshotChip(
+                            icon: Icons.percent_rounded,
+                            label: 'Margem',
+                            value: _formatPercent(report!.operatingMargin),
+                            color:
+                                report!.operatingMargin >= 0.12
+                                    ? AppColors.accentGreen
+                                    : AppColors.orange,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ],
-          ],
-        );
-
-        final actions = Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _PeriodButton(
-              label: 'Mes',
-              icon: Icons.calendar_view_month_rounded,
-              selected: _controllerPeriodIsCurrentMonth(controller),
-              onPressed: () {
-                controller.setCurrentMonth();
-                controller.loadDreReport();
-              },
-            ),
-            _PeriodButton(
-              label: 'Ano',
-              icon: Icons.date_range_rounded,
-              selected: _controllerPeriodIsCurrentYear(controller),
-              onPressed: () {
-                controller.setCurrentYear();
-                controller.loadDreReport();
-              },
-            ),
-            _PeriodButton(
-              label: 'Historico',
-              icon: Icons.all_inclusive_rounded,
-              selected:
-                  controller.periodFrom == null && controller.periodTo == null,
-              onPressed: () {
-                controller.clearPeriod();
-                controller.loadDreReport();
-              },
-            ),
-            IconButton.filledTonal(
-              tooltip: 'Atualizar DRE',
-              onPressed: onReload,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-          ],
-        );
-
-        if (compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [title, const SizedBox(height: 12), actions],
           );
-        }
 
-        return Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: title),
-            const SizedBox(width: 16),
-            actions,
-          ],
-        );
-      },
+          final actions = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _PeriodButton(
+                label: 'Mes',
+                icon: Icons.calendar_view_month_rounded,
+                selected: _controllerPeriodIsCurrentMonth(controller),
+                onPressed: () {
+                  controller.setCurrentMonth();
+                  controller.loadDreReport();
+                },
+              ),
+              _PeriodButton(
+                label: 'Ano',
+                icon: Icons.date_range_rounded,
+                selected: _controllerPeriodIsCurrentYear(controller),
+                onPressed: () {
+                  controller.setCurrentYear();
+                  controller.loadDreReport();
+                },
+              ),
+              _PeriodButton(
+                label: 'Historico',
+                icon: Icons.all_inclusive_rounded,
+                selected:
+                    controller.periodFrom == null &&
+                    controller.periodTo == null,
+                onPressed: () {
+                  controller.clearPeriod();
+                  controller.loadDreReport();
+                },
+              ),
+              IconButton.filledTonal(
+                tooltip: 'Atualizar DRE',
+                onPressed: onReload,
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+            ],
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [title, const SizedBox(height: 12), actions],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: title),
+              const SizedBox(width: 16),
+              actions,
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -376,7 +434,7 @@ class _PeriodButton extends StatelessWidget {
               backgroundColor: AppColors.accentGold,
               foregroundColor: AppColors.primaryDark,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
             )
             : OutlinedButton.styleFrom(
@@ -385,7 +443,7 @@ class _PeriodButton extends StatelessWidget {
                 color: AppColors.borderColor.withValues(alpha: 0.72),
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
             );
 
@@ -2248,7 +2306,7 @@ class _Panel extends StatelessWidget {
       padding: padding,
       decoration: AppDecorations.cardSurface(
         accent: accent ?? AppColors.accentBlue,
-        radius: 12,
+        radius: 18,
       ),
       child: child,
     );
@@ -2273,7 +2331,16 @@ class _PanelTitle extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: AppColors.accentGold, size: compact ? 16 : 19),
+        Container(
+          width: compact ? 30 : 34,
+          height: compact ? 30 : 34,
+          decoration: AppDecorations.iconTile(AppColors.accentGold),
+          child: Icon(
+            icon,
+            color: AppColors.accentGold,
+            size: compact ? 15 : 17,
+          ),
+        ),
         SizedBox(width: compact ? 7 : 9),
         Expanded(
           child: Column(

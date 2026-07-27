@@ -8,6 +8,7 @@ import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/purchase_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class PurchaseCard extends StatelessWidget {
@@ -41,166 +42,334 @@ class PurchaseCard extends StatelessWidget {
             ? AppColors.accentRed
             : AppColors.accentBlue;
 
-    return GestureDetector(
+    return GranithPressable(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppDecorations.cardSurface(
-          accent: statusAccent,
-          emphasized: isAwaiting,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < 420;
-                final title = Text(
-                  p.itemName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                  maxLines: compact ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                );
-                final status = _StatusBadge(status: p.status);
+      premium: true,
+      premiumColor: statusAccent,
+      hoverScale: 1.004,
+      borderRadius: BorderRadius.circular(18),
+      builder:
+          (context, state) => AnimatedContainer(
+            duration: const Duration(milliseconds: 190),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.all(16),
+            decoration: AppDecorations.cardSurface(
+              accent: statusAccent,
+              emphasized: isAwaiting || state.active,
+              radius: 18,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 420;
+                    final statusIcon = switch (p.status) {
+                      PurchaseStatus.awaitingApproval =>
+                        Icons.hourglass_top_rounded,
+                      PurchaseStatus.pending => Icons.verified_outlined,
+                      PurchaseStatus.ordered => Icons.receipt_long_outlined,
+                      PurchaseStatus.delivered => Icons.inventory_2_outlined,
+                      PurchaseStatus.cancelled => Icons.cancel_outlined,
+                    };
+                    final title = Row(
+                      children: [
+                        SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: GranithPremiumIconTile(
+                            icon: statusIcon,
+                            color: statusAccent,
+                            active: state.active,
+                            progress: state.glowProgress,
+                            size: 38,
+                            iconSize: 18,
+                            radius: 11,
+                          ),
+                        ),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.itemName,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
+                                ),
+                                maxLines: compact ? 2 : 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                p.supplierName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                    final status = _StatusBadge(status: p.status);
 
-                if (compact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [title, const SizedBox(height: 8), status],
-                  );
-                }
+                    if (compact) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [title, const SizedBox(height: 8), status],
+                      );
+                    }
 
-                return Row(
+                    return Row(
+                      children: [
+                        Expanded(child: title),
+                        const SizedBox(width: 10),
+                        status,
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 6,
                   children: [
-                    Expanded(child: title),
-                    const SizedBox(width: 10),
-                    status,
+                    if (p.requisitionId?.trim().isNotEmpty == true)
+                      const _Meta(
+                        icon: Icons.assignment_turned_in_outlined,
+                        label: 'Originada por requisição',
+                        color: AppColors.accentBlue,
+                      ),
+                    _Meta(
+                      icon: p.fulfillmentType.icon,
+                      label: p.fulfillmentType.label,
+                      color:
+                          p.fulfillmentType == PurchaseFulfillmentType.pickup
+                              ? AppColors.accentGold
+                              : Colors.lightBlueAccent,
+                    ),
+                    if (p.fulfillmentType == PurchaseFulfillmentType.pickup &&
+                        p.pickupAddress.trim().isNotEmpty)
+                      _Meta(
+                        icon: Icons.place_outlined,
+                        label: 'Coleta: ${p.pickupAddress.trim()}',
+                        color: AppColors.accentGold,
+                      ),
+                    _Meta(icon: Icons.folder_outlined, label: p.projectName),
+                    _Meta(
+                      icon: Icons.domain_outlined,
+                      label: 'Setor: ${_sectorLabel(p)}',
+                    ),
+                    _Meta(
+                      icon: Icons.numbers_outlined,
+                      label:
+                          'Qtd: ${p.quantity.toStringAsFixed(p.quantity % 1 == 0 ? 0 : 1)}',
+                    ),
+                    _Meta(
+                      icon: Icons.calendar_today_outlined,
+                      label: dateFormat.format(p.purchaseDate),
+                    ),
+                    if (p.expectedDeliveryDate != null)
+                      _Meta(
+                        icon: Icons.event_available_outlined,
+                        label:
+                            'Prev. ${dateFormat.format(p.expectedDeliveryDate!)}',
+                        color: Colors.lightBlueAccent,
+                      ),
+                    if (p.invoiceNumber?.trim().isNotEmpty == true)
+                      _Meta(
+                        icon: Icons.receipt_long_outlined,
+                        label: 'NF ${p.invoiceNumber}',
+                        color: AppColors.accentGold,
+                      ),
+                    if (p.deliveryDate != null)
+                      _Meta(
+                        icon: Icons.local_shipping_outlined,
+                        label: 'Entregue ${dateFormat.format(p.deliveryDate!)}',
+                        color: Colors.greenAccent,
+                      ),
+                    if (p.routeId?.trim().isNotEmpty == true)
+                      const _Meta(
+                        icon: Icons.route_outlined,
+                        label: 'Em rota',
+                        color: Colors.tealAccent,
+                      ),
                   ],
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 10,
-              runSpacing: 6,
-              children: [
-                _Meta(icon: Icons.store_outlined, label: p.supplierName),
-                _Meta(
-                  icon: p.fulfillmentType.icon,
-                  label: p.fulfillmentType.label,
-                  color:
-                      p.fulfillmentType == PurchaseFulfillmentType.pickup
-                          ? AppColors.accentGold
-                          : Colors.lightBlueAccent,
                 ),
-                if (p.fulfillmentType == PurchaseFulfillmentType.pickup &&
-                    p.pickupAddress.trim().isNotEmpty)
-                  _Meta(
-                    icon: Icons.place_outlined,
-                    label: 'Coleta: ${p.pickupAddress.trim()}',
-                    color: AppColors.accentGold,
+                if (!isCancelled) ...[
+                  const SizedBox(height: 13),
+                  _PurchaseStageStrip(status: p.status),
+                ],
+                if (p.notes?.trim().isNotEmpty == true) ...[
+                  const SizedBox(height: 8),
+                  _MessageBox(
+                    icon: Icons.sticky_note_2_outlined,
+                    text: p.notes!.trim(),
+                    color: AppColors.textMuted,
                   ),
-                _Meta(icon: Icons.folder_outlined, label: p.projectName),
-                _Meta(
-                  icon: Icons.domain_outlined,
-                  label: 'Setor: ${_sectorLabel(p)}',
+                ],
+                if (isAwaiting && !canApprove) ...[
+                  const SizedBox(height: 10),
+                  _MessageBox(
+                    icon: Icons.lock_clock_outlined,
+                    text: 'Aguardando coordenacao de ${_sectorLabel(p)}',
+                    color: Colors.purpleAccent,
+                  ),
+                ],
+                if (isCancelled && p.rejectionReason != null) ...[
+                  const SizedBox(height: 8),
+                  _MessageBox(
+                    icon: Icons.cancel_outlined,
+                    text: 'Recusado: ${p.rejectionReason}',
+                    color: Colors.redAccent,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 11,
+                        vertical: 8,
+                      ),
+                      decoration: AppDecorations.cardInnerSurface(
+                        accent: AppColors.accentGold,
+                        radius: 11,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.payments_outlined,
+                            color: AppColors.accentGold,
+                            size: 17,
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'VALOR TOTAL',
+                                style: TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                currency.format(p.totalValue),
+                                style: const TextStyle(
+                                  color: AppColors.accentGold,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isAwaiting && canApprove)
+                      _SectorApprovalButton(
+                        purchase: p,
+                        purchaseService: purchaseService,
+                      )
+                    else if (!isAwaiting && !isDelivered && !isCancelled)
+                      _PurchaseActionButton(
+                        purchase: p,
+                        purchaseService: purchaseService,
+                      ),
+                    if (hasFinancialLink && !isCancelled)
+                      _FinancialLinkBadge(isDelivered: isDelivered),
+                  ],
                 ),
-                _Meta(
-                  icon: Icons.numbers_outlined,
-                  label:
-                      'Qtd: ${p.quantity.toStringAsFixed(p.quantity % 1 == 0 ? 0 : 1)}',
-                ),
-                _Meta(
-                  icon: Icons.calendar_today_outlined,
-                  label: dateFormat.format(p.purchaseDate),
-                ),
-                if (p.expectedDeliveryDate != null)
-                  _Meta(
-                    icon: Icons.event_available_outlined,
-                    label:
-                        'Prev. ${dateFormat.format(p.expectedDeliveryDate!)}',
-                    color: Colors.lightBlueAccent,
-                  ),
-                if (p.invoiceNumber?.trim().isNotEmpty == true)
-                  _Meta(
-                    icon: Icons.receipt_long_outlined,
-                    label: 'NF ${p.invoiceNumber}',
-                    color: AppColors.accentGold,
-                  ),
-                if (p.deliveryDate != null)
-                  _Meta(
-                    icon: Icons.local_shipping_outlined,
-                    label: 'Entregue ${dateFormat.format(p.deliveryDate!)}',
-                    color: Colors.greenAccent,
-                  ),
-                if (p.routeId?.trim().isNotEmpty == true)
-                  const _Meta(
-                    icon: Icons.route_outlined,
-                    label: 'Em rota',
-                    color: Colors.tealAccent,
-                  ),
               ],
             ),
-            if (p.notes?.trim().isNotEmpty == true) ...[
-              const SizedBox(height: 8),
-              _MessageBox(
-                icon: Icons.sticky_note_2_outlined,
-                text: p.notes!.trim(),
-                color: AppColors.textMuted,
-              ),
-            ],
-            if (isAwaiting && !canApprove) ...[
-              const SizedBox(height: 10),
-              _MessageBox(
-                icon: Icons.lock_clock_outlined,
-                text: 'Aguardando coordenacao de ${_sectorLabel(p)}',
-                color: Colors.purpleAccent,
-              ),
-            ],
-            if (isCancelled && p.rejectionReason != null) ...[
-              const SizedBox(height: 8),
-              _MessageBox(
-                icon: Icons.cancel_outlined,
-                text: 'Recusado: ${p.rejectionReason}',
-                color: Colors.redAccent,
-              ),
-            ],
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 10,
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Text(
-                  currency.format(p.totalValue),
-                  style: const TextStyle(
-                    color: AppColors.accentGold,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+          ),
+      child: const SizedBox.shrink(),
+    );
+  }
+}
+
+class _PurchaseStageStrip extends StatelessWidget {
+  final PurchaseStatus status;
+
+  const _PurchaseStageStrip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentStage = switch (status) {
+      PurchaseStatus.awaitingApproval => 0,
+      PurchaseStatus.pending => 1,
+      PurchaseStatus.ordered => 2,
+      PurchaseStatus.delivered => 3,
+      PurchaseStatus.cancelled => -1,
+    };
+    final stages = [
+      ('Aprovação', Colors.purpleAccent),
+      ('Liberada', Colors.orange),
+      ('Pedido', AppColors.accentBlue),
+      ('Entrega', AppColors.accentGreen),
+    ];
+
+    return Row(
+      children: [
+        for (var index = 0; index < stages.length; index++) ...[
+          Expanded(
+            child: Semantics(
+              label:
+                  '${stages[index].$1}: ${index <= currentStage ? 'concluída' : 'pendente'}',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    stages[index].$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color:
+                          index <= currentStage
+                              ? AppColors.textSecondary
+                              : AppColors.textMuted,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                if (isAwaiting && canApprove)
-                  _SectorApprovalButton(
-                    purchase: p,
-                    purchaseService: purchaseService,
-                  )
-                else if (!isAwaiting && !isDelivered && !isCancelled)
-                  _PurchaseActionButton(
-                    purchase: p,
-                    purchaseService: purchaseService,
+                  const SizedBox(height: 5),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeOutCubic,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color:
+                          index <= currentStage
+                              ? stages[index].$2
+                              : AppColors.borderColor.withValues(alpha: 0.46),
+                      borderRadius: BorderRadius.circular(999),
+                      boxShadow:
+                          index == currentStage
+                              ? AppColors.glowShadows(stages[index].$2)
+                              : null,
+                    ),
                   ),
-                if (hasFinancialLink && !isCancelled)
-                  _FinancialLinkBadge(isDelivered: isDelivered),
-              ],
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+          if (index != stages.length - 1) const SizedBox(width: 6),
+        ],
+      ],
     );
   }
 }

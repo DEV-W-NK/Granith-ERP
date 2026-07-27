@@ -227,7 +227,6 @@ class ServiceProjetos {
             'createdBy': _currentUser?.id ?? 'anonymous',
             'created_by': _currentUser?.id ?? 'anonymous',
             'creationTimestamp': now,
-            'creation_timestamp': now,
           }),
         );
 

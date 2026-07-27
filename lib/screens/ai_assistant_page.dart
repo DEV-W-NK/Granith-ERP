@@ -4,6 +4,7 @@ import 'package:project_granith/controllers/ai_assistant_controller.dart';
 import 'package:project_granith/models/ai_assistant_models.dart';
 import 'package:project_granith/models/user_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
 class AiAssistantPage extends StatelessWidget {
@@ -78,14 +79,25 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
           padding: const EdgeInsets.all(18),
           child: Column(
             children: [
-              _AiHeader(area: widget.area),
+              GranithReveal(
+                delay: const Duration(milliseconds: 40),
+                child: _AiHeader(area: widget.area),
+              ),
               const SizedBox(height: 14),
-              Expanded(child: _buildBody(controller)),
+              Expanded(
+                child: GranithReveal(
+                  delay: const Duration(milliseconds: 110),
+                  child: _buildBody(controller),
+                ),
+              ),
               const SizedBox(height: 12),
-              _AiComposer(
-                controller: _messageController,
-                isSending: controller.isSending,
-                onSend: () => _send(user),
+              GranithReveal(
+                delay: const Duration(milliseconds: 170),
+                child: _AiComposer(
+                  controller: _messageController,
+                  isSending: controller.isSending,
+                  onSend: () => _send(user),
+                ),
               ),
             ],
           ),
@@ -104,12 +116,10 @@ class _AiAssistantViewState extends State<_AiAssistantView> {
     final messages = controller.messages;
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.55),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
       ),
       child: Column(
         children: [
@@ -166,10 +176,10 @@ class _AiHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.50),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.accentBlue.withValues(alpha: 0.20)),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        emphasized: true,
+        radius: 22,
       ),
       child: Row(
         children: [
@@ -343,35 +353,44 @@ class _AiComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: controller,
-            minLines: 1,
-            maxLines: 4,
-            enabled: !isSending,
-            decoration: const InputDecoration(
-              labelText: 'Pergunte dentro do escopo deste modulo',
-              prefixIcon: Icon(Icons.lock_outline_rounded),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              minLines: 1,
+              maxLines: 4,
+              enabled: !isSending,
+              decoration: const InputDecoration(
+                labelText: 'Pergunte dentro do escopo deste modulo',
+                prefixIcon: Icon(Icons.lock_outline_rounded),
+              ),
+              onSubmitted: (_) => onSend(),
             ),
-            onSubmitted: (_) => onSend(),
           ),
-        ),
-        const SizedBox(width: 10),
-        IconButton.filled(
-          tooltip: 'Enviar',
-          onPressed: isSending ? null : onSend,
-          icon:
-              isSending
-                  ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                  : const Icon(Icons.send_rounded),
-        ),
-      ],
+          const SizedBox(width: 10),
+          IconButton.filled(
+            tooltip: 'Enviar',
+            onPressed: isSending ? null : onSend,
+            icon:
+                isSending
+                    ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.send_rounded),
+          ),
+        ],
+      ),
     );
   }
 }

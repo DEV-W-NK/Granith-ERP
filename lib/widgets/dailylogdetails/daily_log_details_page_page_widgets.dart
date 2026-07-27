@@ -5,6 +5,7 @@ import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/daily_log_card/daily_log_card.dart';
 import 'package:project_granith/widgets/daily_log_card/daily_log_form_dialog.dart';
 import 'package:provider/provider.dart';
@@ -142,40 +143,56 @@ class _DailyLogsPageContentState extends State<_DailyLogsPageContent> {
     final filteredLogs = _filteredLogs(logs);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: Padding(
         padding: ResponsiveLayout.pagePadding(width),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _DailyLogsHeader(
-              isDesktop: isDesktop,
-              onNewLog: () => _openForm(context),
+            GranithReveal(
+              duration: const Duration(milliseconds: 520),
+              child: _DailyLogsHeader(
+                isDesktop: isDesktop,
+                onNewLog: () => _openForm(context),
+              ),
             ),
             if (!isDesktop) ...[
-              const SizedBox(height: 16),
-              const _AiInsightsButton(fullWidth: true),
+              const SizedBox(height: 12),
+              const GranithReveal(
+                delay: Duration(milliseconds: 55),
+                duration: Duration(milliseconds: 500),
+                child: _AiInsightsButton(fullWidth: true),
+              ),
             ],
-            SizedBox(height: isDesktop ? 24 : 18),
-            _DailyLogsSummaryStrip(logs: logs),
+            SizedBox(height: isDesktop ? 14 : 12),
+            GranithReveal(
+              delay: const Duration(milliseconds: 90),
+              duration: const Duration(milliseconds: 520),
+              child: _DailyLogsSummaryStrip(logs: logs),
+            ),
             const SizedBox(height: 14),
-            _DailyLogsFilters(
-              projectValue: _selectedProjectId,
-              projectItems: _projectItems(logs),
-              dateValue: _selectedDate,
-              signatureValue: _signatureFilter,
-              onProjectChanged: (value) {
-                setState(() => _selectedProjectId = value ?? _allProjects);
-              },
-              onDateChanged: (value) {
-                setState(() => _selectedDate = value);
-              },
-              onSignatureChanged: (value) {
-                setState(
-                  () =>
-                      _signatureFilter = value ?? _DailyLogSignatureFilter.all,
-                );
-              },
+            GranithReveal(
+              delay: const Duration(milliseconds: 135),
+              duration: const Duration(milliseconds: 540),
+              child: _DailyLogsFilters(
+                projectValue: _selectedProjectId,
+                projectItems: _projectItems(logs),
+                dateValue: _selectedDate,
+                signatureValue: _signatureFilter,
+                onProjectChanged: (value) {
+                  setState(() => _selectedProjectId = value ?? _allProjects);
+                },
+                onDateChanged: (value) {
+                  setState(() => _selectedDate = value);
+                },
+                onSignatureChanged: (value) {
+                  setState(
+                    () =>
+                        _signatureFilter =
+                            value ?? _DailyLogSignatureFilter.all,
+                  );
+                },
+              ),
             ),
             const SizedBox(height: 16),
             Expanded(
@@ -195,17 +212,23 @@ class _DailyLogsPageContentState extends State<_DailyLogsPageContent> {
                         separatorBuilder: (_, __) => const SizedBox(height: 16),
                         itemBuilder: (context, index) {
                           final log = filteredLogs[index];
-                          return DailyLogCard(
-                            log: log,
-                            onEdit:
-                                log.isSigned
-                                    ? null
-                                    : () => _openForm(context, log: log),
-                            onSign:
-                                log.isPendingSignature
-                                    ? () => _signLog(context, log)
-                                    : null,
-                            isSigning: _signingLogIds.contains(log.id),
+                          final revealIndex = index > 6 ? 6 : index;
+                          return GranithReveal(
+                            delay: Duration(milliseconds: 35 * revealIndex),
+                            duration: const Duration(milliseconds: 460),
+                            beginOffset: const Offset(0, 0.025),
+                            child: DailyLogCard(
+                              log: log,
+                              onEdit:
+                                  log.isSigned
+                                      ? null
+                                      : () => _openForm(context, log: log),
+                              onSign:
+                                  log.isPendingSignature
+                                      ? () => _signLog(context, log)
+                                      : null,
+                              isSigning: _signingLogIds.contains(log.id),
+                            ),
                           );
                         },
                       ),
@@ -233,61 +256,107 @@ class _DailyLogsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Column(
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isDesktop ? 18 : 14),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 22,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final title = Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Diário de Obras',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              Container(
+                width: isDesktop ? 50 : 44,
+                height: isDesktop ? 50 : 44,
+                decoration: AppDecorations.iconTile(AppColors.accentGold),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: AppColors.accentGold,
+                  size: 22,
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Registro diario, assinatura do coordenador e liberacao para o cliente',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: isDesktop ? 16 : 14,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'OBRAS  /  REGISTRO DE CAMPO',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.accentGold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Diário de Obras',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: isDesktop ? 25 : 22,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Registro diário, assinatura do coordenador e liberação para o cliente.',
+                      maxLines: isDesktop ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: isDesktop ? 13 : 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
-          ),
-        ),
-        if (isDesktop)
-          Row(
+          );
+
+          if (!isDesktop) return title;
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _AiInsightsButton(),
-              const SizedBox(width: 16),
-              ElevatedButton.icon(
-                onPressed: onNewLog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.accentGold,
-                  foregroundColor: AppColors.primaryDark,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 20,
+              Expanded(child: title),
+              const SizedBox(width: 18),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  const _AiInsightsButton(),
+                  FilledButton.icon(
+                    onPressed: onNewLog,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.accentGold,
+                      foregroundColor: AppColors.primaryDark,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 17,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: const Text(
+                      'Novo registro',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
                   ),
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.add_rounded, size: 22),
-                label: const Text(
-                  'Novo Registro',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                ),
+                ],
               ),
             ],
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 }
@@ -305,42 +374,67 @@ class _DailyLogsSummaryStrip extends StatelessWidget {
     final withoutCoordinator =
         logs.where((log) => !log.hasCoordinator && !log.isSigned).length;
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
+    final cards = <Widget>[
+      _SummaryCard(
+        label: 'Registros',
+        value: logs.length.toString(),
+        color: AppColors.accentBlue,
+        icon: Icons.menu_book_rounded,
+      ),
+      _SummaryCard(
+        label: 'Assinados',
+        value: signed.toString(),
+        color: AppColors.accentGreen,
+        icon: Icons.verified_rounded,
+      ),
+      _SummaryCard(
+        label: 'Pendentes',
+        value: pending.toString(),
+        color: AppColors.accentGold,
+        icon: Icons.pending_actions_rounded,
+      ),
+      _SummaryCard(
+        label: 'Editaveis',
+        value: unlocked.toString(),
+        color: AppColors.auraCyan,
+        icon: Icons.edit_note_rounded,
+      ),
+      if (withoutCoordinator > 0)
         _SummaryCard(
-          label: 'Registros',
-          value: logs.length.toString(),
-          color: AppColors.accentBlue,
-          icon: Icons.menu_book_rounded,
+          label: 'Sem coordenador',
+          value: withoutCoordinator.toString(),
+          color: AppColors.accentRed,
+          icon: Icons.person_off_rounded,
         ),
-        _SummaryCard(
-          label: 'Assinados',
-          value: signed.toString(),
-          color: AppColors.accentGreen,
-          icon: Icons.verified_rounded,
-        ),
-        _SummaryCard(
-          label: 'Pendentes',
-          value: pending.toString(),
-          color: AppColors.accentGold,
-          icon: Icons.pending_actions_rounded,
-        ),
-        _SummaryCard(
-          label: 'Editaveis',
-          value: unlocked.toString(),
-          color: AppColors.auraCyan,
-          icon: Icons.edit_note_rounded,
-        ),
-        if (withoutCoordinator > 0)
-          _SummaryCard(
-            label: 'Sem coordenador',
-            value: withoutCoordinator.toString(),
-            color: AppColors.accentRed,
-            icon: Icons.person_off_rounded,
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth >= 820) {
+          return SizedBox(
+            height: 78,
+            child: Row(
+              children: [
+                for (var index = 0; index < cards.length; index++) ...[
+                  if (index > 0) const SizedBox(width: 10),
+                  Expanded(child: cards[index]),
+                ],
+              ],
+            ),
+          );
+        }
+
+        return SizedBox(
+          height: 78,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: cards.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder:
+                (context, index) => SizedBox(width: 176, child: cards[index]),
           ),
-      ],
+        );
+      },
     );
   }
 }
@@ -361,9 +455,11 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
+      height: 78,
       constraints: const BoxConstraints(minWidth: 150),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: AppDecorations.statCardSurface(color, radius: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -425,12 +521,10 @@ class _DailyLogsFilters extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.46),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -604,13 +698,13 @@ class _AiInsightsButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF9C27B0).withValues(alpha: 0.8),
-            const Color(0xFF673AB7).withValues(alpha: 0.8),
+            AppColors.accentBlue.withValues(alpha: 0.78),
+            AppColors.accentGold.withValues(alpha: 0.72),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF673AB7).withValues(alpha: 0.4),
+            color: AppColors.accentGold.withValues(alpha: 0.18),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),

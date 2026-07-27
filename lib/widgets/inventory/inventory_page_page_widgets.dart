@@ -6,6 +6,7 @@ import 'package:project_granith/models/inventory_model.dart';
 import 'package:project_granith/services/inventory_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/inventory/inventory_action_dialog.dart';
 
 enum _InventoryStatusFilter { all, healthy, lowStock, outOfStock }
@@ -130,21 +131,53 @@ class _InventoryPageViewState extends State<InventoryPageView>
         ),
         const SizedBox(height: 14),
         Container(
-          decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+          padding: const EdgeInsets.all(4),
+          decoration: AppDecorations.cardInnerSurface(
+            accent: AppColors.accentGold,
+            radius: 14,
+          ),
           child: TabBar(
             controller: _tabController,
-            indicatorColor: AppColors.accentGold,
-            labelColor: AppColors.textPrimary,
+            indicator: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.accentGold.withValues(alpha: 0.20),
+                  AppColors.accentGreen.withValues(alpha: 0.08),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppColors.accentGold.withValues(alpha: 0.46),
+              ),
+              boxShadow: AppColors.glowShadows(AppColors.accentGold),
+            ),
+            indicatorSize: TabBarIndicatorSize.tab,
+            labelColor: AppColors.accentGold,
             unselectedLabelColor: AppColors.textMuted,
             dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w800),
             tabs: [
               const Tab(
-                icon: Icon(Icons.inventory_2_outlined, size: 18),
-                text: 'Estoque',
+                height: 44,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.inventory_2_outlined, size: 17),
+                    SizedBox(width: 8),
+                    Text('Estoque'),
+                  ],
+                ),
               ),
               Tab(
-                icon: const Icon(Icons.warning_amber_outlined, size: 18),
-                text: 'Alertas ($alertCount)',
+                height: 44,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.warning_amber_outlined, size: 17),
+                    const SizedBox(width: 8),
+                    Text('Alertas ($alertCount)'),
+                  ],
+                ),
               ),
             ],
           ),
@@ -223,9 +256,14 @@ class _InventoryPageViewState extends State<InventoryPageView>
           );
         }
 
-        return _InventoryCard(
-          item: visibleItems[index],
-          onAction: _openInventoryAction,
+        return GranithReveal(
+          delay: Duration(milliseconds: 24 * (index % 8)),
+          duration: const Duration(milliseconds: 420),
+          beginOffset: const Offset(0, 0.025),
+          child: _InventoryCard(
+            item: visibleItems[index],
+            onAction: _openInventoryAction,
+          ),
         );
       },
     );
@@ -345,111 +383,139 @@ class _InventoryHeader extends StatelessWidget {
         items.where((item) => !item.isLowStock && !item.isOutOfStock).length;
     final lastEntry = _lastEntryDate(items);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxWidth < ResponsiveLayout.compact;
-            final title = Row(
-              children: [
-                if (!compact) ...[
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: AppDecorations.iconTile(AppColors.accentGold),
-                    child: const Icon(
-                      Icons.inventory_2_rounded,
-                      color: AppColors.accentGold,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Controle de Estoque',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          height: 1.05,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Saldos, alertas e movimentacoes de materiais',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGreen,
+        emphasized: true,
+        radius: 20,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 700;
+          final title = Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.accentGreen.withValues(alpha: 0.22),
+                      AppColors.accentBlue.withValues(alpha: 0.10),
                     ],
                   ),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(
+                    color: AppColors.accentGreen.withValues(alpha: 0.42),
+                  ),
+                  boxShadow: AppColors.auraShadows(AppColors.accentGreen),
                 ),
-              ],
-            );
-            final chips = Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              alignment: compact ? WrapAlignment.start : WrapAlignment.end,
-              children: [
-                _InventoryContextChip(
-                  icon: Icons.inventory_2_rounded,
-                  label: _plural(items.length, 'item', 'itens'),
-                  color: AppColors.accentBlue,
-                ),
-                _InventoryContextChip(
-                  icon: Icons.health_and_safety_outlined,
-                  label: _plural(healthyCount, 'saudavel', 'saudaveis'),
+                child: const Icon(
+                  Icons.inventory_2_rounded,
                   color: AppColors.accentGreen,
+                  size: 24,
                 ),
-                _InventoryContextChip(
-                  icon: Icons.warning_amber_rounded,
-                  label: _plural(lowStockCount, 'critico', 'criticos'),
-                  color: AppColors.accentGold,
+              ),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'MATERIAIS E SUPRIMENTOS',
+                      style: TextStyle(
+                        color: AppColors.accentBlue,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Controle de Estoque',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        height: 1.05,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Saldos, alertas e movimentações de materiais.',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                _InventoryContextChip(
-                  icon: Icons.remove_shopping_cart_outlined,
-                  label: _plural(outOfStockCount, 'zerado', 'zerados'),
-                  color: AppColors.accentRed,
-                ),
-                _InventoryContextChip(
-                  icon: Icons.event_available_outlined,
-                  label:
-                      lastEntry == null
-                          ? 'sem entrada'
-                          : 'ultima entrada ${_formatShortDate(lastEntry)}',
-                  color: AppColors.textSecondary,
-                ),
-              ],
-            );
+              ),
+            ],
+          );
+          final contextChips = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+            children: [
+              _InventoryContextChip(
+                icon: Icons.category_outlined,
+                label: _plural(items.length, 'material', 'materiais'),
+                color: AppColors.accentBlue,
+              ),
+              _InventoryContextChip(
+                icon: Icons.event_available_outlined,
+                label:
+                    lastEntry == null
+                        ? 'Sem entrada registrada'
+                        : 'Entrada em ${_formatShortDate(lastEntry)}',
+                color: AppColors.accentGold,
+              ),
+            ],
+          );
 
-            if (compact) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [title, const SizedBox(height: 12), chips],
-              );
-            }
+          final top =
+              compact
+                  ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [title, const SizedBox(height: 13), contextChips],
+                  )
+                  : Row(
+                    children: [
+                      Expanded(flex: 5, child: title),
+                      const SizedBox(width: 18),
+                      Flexible(flex: 4, child: contextChips),
+                    ],
+                  );
 
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: title),
-                const SizedBox(width: 16),
-                Flexible(child: chips),
-              ],
-            );
-          },
-        ),
-      ],
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              top,
+              const SizedBox(height: 15),
+              Divider(
+                height: 1,
+                color: AppColors.borderColor.withValues(alpha: 0.55),
+              ),
+              const SizedBox(height: 13),
+              _InventoryHealthOverview(
+                total: items.length,
+                healthy: healthyCount,
+                lowStock: lowStockCount,
+                outOfStock: outOfStockCount,
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -459,6 +525,177 @@ class _InventoryHeader extends StatelessWidget {
     if (dates.isEmpty) return null;
     dates.sort((left, right) => right.compareTo(left));
     return dates.first;
+  }
+}
+
+class _InventoryHealthOverview extends StatelessWidget {
+  final int total;
+  final int healthy;
+  final int lowStock;
+  final int outOfStock;
+
+  const _InventoryHealthOverview({
+    required this.total,
+    required this.healthy,
+    required this.lowStock,
+    required this.outOfStock,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final segments = [
+      _InventoryHealthData(
+        label: 'Saudáveis',
+        caption: 'Saldo acima do mínimo',
+        count: healthy,
+        icon: Icons.health_and_safety_outlined,
+        color: AppColors.accentGreen,
+      ),
+      _InventoryHealthData(
+        label: 'Críticos',
+        caption: 'Reposição recomendada',
+        count: lowStock,
+        icon: Icons.warning_amber_rounded,
+        color: AppColors.accentGold,
+      ),
+      _InventoryHealthData(
+        label: 'Zerados',
+        caption: 'Sem saldo disponível',
+        count: outOfStock,
+        icon: Icons.remove_shopping_cart_outlined,
+        color: AppColors.accentRed,
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 680) {
+          return SizedBox(
+            height: 74,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: segments.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 9),
+              itemBuilder:
+                  (context, index) => SizedBox(
+                    width: 205,
+                    child: _InventoryHealthCard(
+                      data: segments[index],
+                      total: total,
+                    ),
+                  ),
+            ),
+          );
+        }
+
+        return Row(
+          children: [
+            for (var index = 0; index < segments.length; index++) ...[
+              Expanded(
+                child: _InventoryHealthCard(
+                  data: segments[index],
+                  total: total,
+                ),
+              ),
+              if (index != segments.length - 1) const SizedBox(width: 10),
+            ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _InventoryHealthData {
+  final String label;
+  final String caption;
+  final int count;
+  final IconData icon;
+  final Color color;
+
+  const _InventoryHealthData({
+    required this.label,
+    required this.caption,
+    required this.count,
+    required this.icon,
+    required this.color,
+  });
+}
+
+class _InventoryHealthCard extends StatelessWidget {
+  final _InventoryHealthData data;
+  final int total;
+
+  const _InventoryHealthCard({required this.data, required this.total});
+
+  @override
+  Widget build(BuildContext context) {
+    final percentage = total == 0 ? 0 : (data.count / total * 100).round();
+
+    return Container(
+      height: 74,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: data.color,
+        radius: 13,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: data.color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(data.icon, color: data.color, size: 19),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${data.count} ${data.label}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '$percentage%',
+                      style: TextStyle(
+                        color: data.color,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  data.caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 10,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -488,7 +725,11 @@ class _InventoryToolbar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 720;
@@ -547,14 +788,14 @@ class _InventoryToolbar extends StatelessWidget {
                     () => onStatusFilterChanged(_InventoryStatusFilter.all),
               ),
               _InventoryFilterChip(
-                label: 'Saudaveis',
+                label: 'Saudáveis',
                 selected: statusFilter == _InventoryStatusFilter.healthy,
                 color: AppColors.accentGreen,
                 onSelected:
                     () => onStatusFilterChanged(_InventoryStatusFilter.healthy),
               ),
               _InventoryFilterChip(
-                label: 'Criticos',
+                label: 'Críticos',
                 selected: statusFilter == _InventoryStatusFilter.lowStock,
                 color: AppColors.accentGold,
                 onSelected:
@@ -617,9 +858,9 @@ class _InventoryToolbar extends StatelessWidget {
       case _InventorySortOption.quantityDesc:
         return 'Maior saldo';
       case _InventorySortOption.updatedDesc:
-        return 'Atualizacao recente';
+        return 'Atualização recente';
       case _InventorySortOption.lastEntryDesc:
-        return 'Ultima entrada';
+        return 'Última entrada';
     }
   }
 }
@@ -634,7 +875,7 @@ class _InventoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusColor = _stockColor(item);
     final healthPct =
-        (item.stockHealthPercent / 100).clamp(0.0, 1.0).toDouble();
+        (item.stockHealthPercent / 200).clamp(0.0, 1.0).toDouble();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -642,7 +883,7 @@ class _InventoryCard extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: statusColor,
         emphasized: item.isLowStock || item.isOutOfStock,
-        radius: 16,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -784,6 +1025,29 @@ class _InventoryCard extends StatelessWidget {
                 ),
               if (item.minQuantity > 0) ...[
                 const SizedBox(height: 14),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Cobertura do estoque',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${(healthPct * 100).round()}% da faixa ideal',
+                      style: TextStyle(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(999),
                   child: LinearProgressIndicator(

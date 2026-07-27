@@ -39,6 +39,12 @@ class AppRouter {
           const MainLayout(initialIndex: 4),
           allow: _canAccessInternalApp,
         );
+      case '/tasks':
+        return _guardedRoute(
+          settings,
+          const MainLayout(initialIndex: 29),
+          allow: _canAccessInternalApp,
+        );
       case '/hr':
         return _guardedRoute(
           settings,

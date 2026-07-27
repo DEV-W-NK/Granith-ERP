@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
@@ -6,6 +8,7 @@ import 'package:project_granith/models/inventory_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/inventory_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 class InventoryActionDialog extends StatefulWidget {
   final InventoryItem item;
@@ -80,198 +83,245 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
     final isTransfer = widget.type == InventoryMovementType.transfer;
     final isAdjustment = widget.type == InventoryMovementType.adjustment;
     final color = _dialogColor;
+    final size = MediaQuery.sizeOf(context);
+    final dialogWidth = math.min(560.0, size.width * 0.94);
+    final dialogHeight = math.min(620.0, size.height * 0.86);
 
-    return AlertDialog(
-      backgroundColor: AppColors.surfaceDark,
-      title: Text(
-        _dialogTitle,
-        style: TextStyle(color: color, fontWeight: FontWeight.bold),
-      ),
-      content:
-          _isLoading
-              ? const SizedBox(
-                height: 100,
-                child: Center(child: CircularProgressIndicator()),
-              )
-              : SingleChildScrollView(
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Item: ${widget.item.name}',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Disponivel: ${widget.item.quantity.toStringAsFixed(2)} ${widget.item.unit}',
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (isAdjustment) ...[
-                        const SizedBox(height: 4),
-                        const Text(
-                          'Informe o novo saldo total do material.',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 24),
-                      if (_needsProjectPicker) ...[
-                        DropdownButtonFormField<Project>(
-                          dropdownColor: AppColors.secondaryDark,
-                          style: const TextStyle(color: AppColors.textPrimary),
-                          decoration: InputDecoration(
-                            labelText:
-                                isTransfer
-                                    ? 'Para qual obra? (destino)'
-                                    : 'Utilizado em qual obra?',
-                            labelStyle: const TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
-                            filled: true,
-                            fillColor: AppColors.backgroundDark,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          items:
-                              _projects
-                                  .map(
-                                    (project) => DropdownMenuItem(
-                                      value: project,
-                                      child: Text(project.name),
+    return GranithDialogSurface(
+      width: dialogWidth,
+      maxHeight: dialogHeight,
+      accentColor: color,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+      child: SizedBox(
+        height: dialogHeight,
+        child: Column(
+          children: [
+            GranithDialogHeader(
+              icon: _dialogIcon,
+              title: _dialogTitle,
+              subtitle:
+                  '${widget.item.name} • Disponível: ${widget.item.quantity.toStringAsFixed(2)} ${widget.item.unit}',
+              accentColor: color,
+              onClose: () => Navigator.pop(context),
+            ),
+            Expanded(
+              child:
+                  _isLoading
+                      ? Center(child: CircularProgressIndicator(color: color))
+                      : SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Form(
+                          key: _formKey,
+                          child: GranithFormSection(
+                            title: 'Dados da movimentação',
+                            icon: _dialogIcon,
+                            accentColor: color,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (isAdjustment) ...[
+                                  Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.all(11),
+                                    decoration: AppDecorations.formHintPanel(
+                                      color: color,
                                     ),
-                                  )
-                                  .toList(),
-                          onChanged:
-                              (project) =>
-                                  setState(() => _selectedProject = project),
-                          validator:
-                              isTransfer
-                                  ? (project) =>
-                                      project == null
-                                          ? 'Selecione a obra de destino'
-                                          : null
-                                  : null,
-                        ),
-                        if (!isTransfer)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 4, left: 4),
-                            child: Text(
-                              'Deixe vazio para baixar como uso geral/perda do deposito.',
-                              style: TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: 11,
-                              ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(
+                                          Icons.info_outline_rounded,
+                                          size: 17,
+                                          color: AppColors.accentGold,
+                                        ),
+                                        SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            'Informe o novo saldo total do material.',
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                                if (_needsProjectPicker) ...[
+                                  DropdownButtonFormField<Project>(
+                                    isExpanded: true,
+                                    dropdownColor: AppColors.secondaryDark,
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                    ),
+                                    decoration: granithInputDecoration(
+                                      label:
+                                          isTransfer
+                                              ? 'Obra de destino'
+                                              : 'Obra de utilização',
+                                      hint:
+                                          isTransfer
+                                              ? 'Selecione a obra de destino'
+                                              : 'Selecione uma obra, se aplicável',
+                                      icon: Icons.business_outlined,
+                                      accentColor: color,
+                                    ),
+                                    items:
+                                        _projects
+                                            .map(
+                                              (project) => DropdownMenuItem(
+                                                value: project,
+                                                child: Text(
+                                                  project.name,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            )
+                                            .toList(),
+                                    onChanged:
+                                        (project) => setState(
+                                          () => _selectedProject = project,
+                                        ),
+                                    validator:
+                                        isTransfer
+                                            ? (project) =>
+                                                project == null
+                                                    ? 'Selecione a obra de destino'
+                                                    : null
+                                            : null,
+                                  ),
+                                  if (!isTransfer)
+                                    const Padding(
+                                      padding: EdgeInsets.only(top: 6, left: 4),
+                                      child: Text(
+                                        'Sem obra, a baixa será registrada como uso geral ou perda do depósito.',
+                                        style: TextStyle(
+                                          color: AppColors.textMuted,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 14),
+                                ],
+                                TextFormField(
+                                  controller: _qtdController,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9,.]'),
+                                    ),
+                                  ],
+                                  decoration: granithInputDecoration(
+                                    label:
+                                        isAdjustment
+                                            ? 'Novo saldo (${widget.item.unit})'
+                                            : 'Quantidade (${widget.item.unit})',
+                                    hint:
+                                        isAdjustment
+                                            ? 'Informe o saldo atualizado'
+                                            : 'Informe a quantidade movimentada',
+                                    icon: Icons.straighten_outlined,
+                                    accentColor: color,
+                                  ),
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return isAdjustment
+                                          ? 'Informe o novo saldo'
+                                          : 'Informe a quantidade';
+                                    }
+                                    final quantity = double.tryParse(
+                                      value.replaceAll(',', '.'),
+                                    );
+                                    if (quantity == null) {
+                                      return 'Valor inválido';
+                                    }
+                                    if (isAdjustment) {
+                                      return quantity < 0
+                                          ? 'Informe saldo igual ou maior que zero'
+                                          : null;
+                                    }
+                                    if (quantity <= 0) return 'Valor inválido';
+                                    if (quantity > widget.item.quantity) {
+                                      return 'Saldo insuficiente';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 14),
+                                TextFormField(
+                                  controller: _notesController,
+                                  maxLines: 3,
+                                  style: const TextStyle(
+                                    color: AppColors.textPrimary,
+                                  ),
+                                  decoration: granithInputDecoration(
+                                    label:
+                                        isAdjustment
+                                            ? 'Justificativa'
+                                            : 'Observações',
+                                    hint:
+                                        isAdjustment
+                                            ? 'Descreva o motivo do ajuste'
+                                            : 'Adicione um contexto para a movimentação',
+                                    icon: Icons.sticky_note_2_outlined,
+                                    accentColor: color,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        const SizedBox(height: 16),
-                      ],
-                      TextFormField(
-                        controller: _qtdController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(RegExp(r'[0-9,.]')),
-                        ],
-                        decoration: InputDecoration(
-                          labelText:
-                              isAdjustment
-                                  ? 'Novo saldo (${widget.item.unit})'
-                                  : 'Quantidade (${widget.item.unit})',
-                          labelStyle: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.backgroundDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return isAdjustment
-                                ? 'Informe o novo saldo'
-                                : 'Informe a quantidade';
-                          }
-                          final quantity = double.tryParse(
-                            value.replaceAll(',', '.'),
-                          );
-                          if (quantity == null) return 'Valor invalido';
-                          if (isAdjustment) {
-                            return quantity < 0
-                                ? 'Informe saldo igual ou maior que zero'
-                                : null;
-                          }
-                          if (quantity <= 0) return 'Valor invalido';
-                          if (quantity > widget.item.quantity) {
-                            return 'Saldo insuficiente';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _notesController,
-                        style: const TextStyle(color: AppColors.textPrimary),
-                        decoration: InputDecoration(
-                          labelText:
-                              isAdjustment
-                                  ? 'Justificativa (opcional)'
-                                  : 'Observacoes (opcional)',
-                          labelStyle: const TextStyle(
-                            color: AppColors.textSecondary,
-                          ),
-                          filled: true,
-                          fillColor: AppColors.backgroundDark,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
                         ),
                       ),
-                    ],
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDark.withValues(alpha: 0.28),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.borderColor.withValues(alpha: 0.58),
                   ),
                 ),
               ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cancelar',
-            style: TextStyle(color: AppColors.textMuted),
-          ),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: color),
-          onPressed: _isSaving ? null : _submit,
-          child:
-              _isSaving
-                  ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                  : const Text(
-                    'Confirmar',
-                    style: TextStyle(color: Colors.white),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    onPressed: _isSaving ? null : () => Navigator.pop(context),
+                    child: const Text('Cancelar'),
                   ),
+                  const SizedBox(width: 10),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: color,
+                      foregroundColor: AppColors.primaryDark,
+                    ),
+                    onPressed: _isSaving ? null : _submit,
+                    icon:
+                        _isSaving
+                            ? const SizedBox(
+                              width: 17,
+                              height: 17,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : Icon(_dialogIcon, size: 18),
+                    label: const Text('Confirmar'),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -346,6 +396,19 @@ class _InventoryActionDialogState extends State<InventoryActionDialog> {
         return 'Transferir para obra';
       case InventoryMovementType.adjustment:
         return 'Ajustar saldo';
+    }
+  }
+
+  IconData get _dialogIcon {
+    switch (widget.type) {
+      case InventoryMovementType.inbound:
+        return Icons.add_box_outlined;
+      case InventoryMovementType.outbound:
+        return Icons.call_made_rounded;
+      case InventoryMovementType.transfer:
+        return Icons.swap_horiz_rounded;
+      case InventoryMovementType.adjustment:
+        return Icons.tune_rounded;
     }
   }
 

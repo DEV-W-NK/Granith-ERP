@@ -62,7 +62,7 @@ class GranitCard extends StatelessWidget {
       return GranithPressable(
         onTap: onTap,
         premium: true,
-        premiumColor: AppColors.accentGold,
+        premiumColor: accentColor ?? AppColors.accentGold,
         borderRadius: radius,
         hoverScale: 1.01,
         child: content,

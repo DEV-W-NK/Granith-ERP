@@ -7,6 +7,7 @@ import 'package:project_granith/models/budget_type.dart';
 import 'package:project_granith/services/budget_type_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_card.dart';
 import 'package:project_granith/widgets/budget_type/budget_type_form_dialog.dart';
 
@@ -35,12 +36,23 @@ class _BudgetTypesPageContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          _BudgetTypesCommandHeader(),
-          _BudgetTypesControls(),
-          Expanded(child: _BudgetTypesBody()),
+          GranithReveal(
+            delay: Duration(milliseconds: 40),
+            child: _BudgetTypesCommandHeader(),
+          ),
+          GranithReveal(
+            delay: Duration(milliseconds: 100),
+            child: _BudgetTypesControls(),
+          ),
+          Expanded(
+            child: GranithReveal(
+              delay: Duration(milliseconds: 160),
+              child: _BudgetTypesBody(),
+            ),
+          ),
         ],
       ),
     );
@@ -776,9 +788,15 @@ class _BudgetTypesBody extends StatelessWidget {
             ),
             itemCount: budgetTypes.length,
             itemBuilder:
-                (context, index) => _BudgetTypeTile(
-                  budgetType: budgetTypes[index],
-                  isListView: false,
+                (context, index) => GranithReveal(
+                  delay: Duration(
+                    milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                  ),
+                  duration: const Duration(milliseconds: 400),
+                  child: _BudgetTypeTile(
+                    budgetType: budgetTypes[index],
+                    isListView: false,
+                  ),
                 ),
           );
         }
@@ -793,9 +811,15 @@ class _BudgetTypesBody extends StatelessWidget {
           itemCount: budgetTypes.length,
           separatorBuilder: (_, __) => SizedBox(height: gap),
           itemBuilder:
-              (context, index) => _BudgetTypeTile(
-                budgetType: budgetTypes[index],
-                isListView: true,
+              (context, index) => GranithReveal(
+                delay: Duration(
+                  milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                ),
+                duration: const Duration(milliseconds: 400),
+                child: _BudgetTypeTile(
+                  budgetType: budgetTypes[index],
+                  isListView: true,
+                ),
               ),
         );
       },

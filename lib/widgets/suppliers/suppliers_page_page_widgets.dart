@@ -7,6 +7,7 @@ import 'package:project_granith/models/supplier_model.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:project_granith/widgets/supplier/cnpj_lookup_dialog.dart';
 import 'package:project_granith/widgets/supplier/supplier_card.dart';
@@ -86,74 +87,84 @@ class _SuppliersPageContentState extends State<_SuppliersPageContent> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SuppliersHeader(
-                    isDesktop: isDesktop,
-                    onAddSupplier: () => _openSupplierForm(context),
-                    onLookupCnpj: () => _openCnpjLookup(context),
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 40),
+                    child: SuppliersHeader(
+                      isDesktop: isDesktop,
+                      onAddSupplier: () => _openSupplierForm(context),
+                      onLookupCnpj: () => _openCnpjLookup(context),
+                    ),
                   ),
                   const SizedBox(height: 14),
-                  _SupplierToolbar(
-                    searchController: _searchController,
-                    searchQuery: controller.searchQuery,
-                    selectedFilter: controller.selectedFilter,
-                    sortOption: _sortOption,
-                    totalFilteredCount: sortedSuppliers.length,
-                    totalCount: controller.suppliers.length,
-                    hasActiveFilters: controller.hasActiveFilters,
-                    onSearchChanged: (value) {
-                      controller.updateSearchQuery(value);
-                      _resetVisibleCount();
-                    },
-                    onClearSearch: () {
-                      _searchController.clear();
-                      controller.updateSearchQuery('');
-                      _resetVisibleCount();
-                    },
-                    onFilterChanged: (filter) {
-                      controller.updateFilter(filter);
-                      _resetVisibleCount();
-                    },
-                    onClearFilters: () {
-                      _searchController.clear();
-                      controller.clearFilters();
-                      _resetVisibleCount();
-                    },
-                    onSortChanged: (option) {
-                      setState(() {
-                        _sortOption = option;
-                        _visibleCount = _initialVisibleItems;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Expanded(
-                    child: _SuppliersBody(
-                      controller: controller,
-                      suppliers: visibleSuppliers,
+                  GranithReveal(
+                    delay: const Duration(milliseconds: 100),
+                    child: _SupplierToolbar(
+                      searchController: _searchController,
+                      searchQuery: controller.searchQuery,
+                      selectedFilter: controller.selectedFilter,
+                      sortOption: _sortOption,
                       totalFilteredCount: sortedSuppliers.length,
-                      hasMore: hasMore,
-                      onLoadMore: () {
-                        setState(() {
-                          _visibleCount += _visibleItemsStep;
-                        });
+                      totalCount: controller.suppliers.length,
+                      hasActiveFilters: controller.hasActiveFilters,
+                      onSearchChanged: (value) {
+                        controller.updateSearchQuery(value);
+                        _resetVisibleCount();
                       },
-                      onCreate: () => _openSupplierForm(context),
+                      onClearSearch: () {
+                        _searchController.clear();
+                        controller.updateSearchQuery('');
+                        _resetVisibleCount();
+                      },
+                      onFilterChanged: (filter) {
+                        controller.updateFilter(filter);
+                        _resetVisibleCount();
+                      },
                       onClearFilters: () {
                         _searchController.clear();
                         controller.clearFilters();
                         _resetVisibleCount();
                       },
-                      onRefresh:
-                          () => controller.loadSuppliers(forceRefresh: true),
-                      onView:
-                          (supplier) => _openSupplierDetails(context, supplier),
-                      onEdit:
-                          (supplier) => _openSupplierForm(context, supplier),
-                      onDelete:
-                          (supplier) => _deleteSupplier(context, supplier),
-                      onToggleStatus:
-                          (supplier) =>
-                              _toggleSupplierStatus(context, supplier),
+                      onSortChanged: (option) {
+                        setState(() {
+                          _sortOption = option;
+                          _visibleCount = _initialVisibleItems;
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Expanded(
+                    child: GranithReveal(
+                      delay: const Duration(milliseconds: 160),
+                      child: _SuppliersBody(
+                        controller: controller,
+                        suppliers: visibleSuppliers,
+                        totalFilteredCount: sortedSuppliers.length,
+                        hasMore: hasMore,
+                        onLoadMore: () {
+                          setState(() {
+                            _visibleCount += _visibleItemsStep;
+                          });
+                        },
+                        onCreate: () => _openSupplierForm(context),
+                        onClearFilters: () {
+                          _searchController.clear();
+                          controller.clearFilters();
+                          _resetVisibleCount();
+                        },
+                        onRefresh:
+                            () => controller.loadSuppliers(forceRefresh: true),
+                        onView:
+                            (supplier) =>
+                                _openSupplierDetails(context, supplier),
+                        onEdit:
+                            (supplier) => _openSupplierForm(context, supplier),
+                        onDelete:
+                            (supplier) => _deleteSupplier(context, supplier),
+                        onToggleStatus:
+                            (supplier) =>
+                                _toggleSupplierStatus(context, supplier),
+                      ),
                     ),
                   ),
                 ],
@@ -316,7 +327,7 @@ class _SupplierToolbar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
-      decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+      decoration: AppDecorations.cardSurface(elevated: false, radius: 18),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 760;
@@ -536,13 +547,19 @@ class _SuppliersBody extends StatelessWidget {
             slivers: [
               SliverGrid(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) => SupplierCard(
-                    supplier: suppliers[index],
-                    isListView: false,
-                    onTap: () => onView(suppliers[index]),
-                    onEdit: () => onEdit(suppliers[index]),
-                    onDelete: () => onDelete(suppliers[index]),
-                    onToggleStatus: () => onToggleStatus(suppliers[index]),
+                  (context, index) => GranithReveal(
+                    delay: Duration(
+                      milliseconds: 30 * ((index > 7 ? 7 : index) + 1),
+                    ),
+                    duration: const Duration(milliseconds: 400),
+                    child: SupplierCard(
+                      supplier: suppliers[index],
+                      isListView: false,
+                      onTap: () => onView(suppliers[index]),
+                      onEdit: () => onEdit(suppliers[index]),
+                      onDelete: () => onDelete(suppliers[index]),
+                      onToggleStatus: () => onToggleStatus(suppliers[index]),
+                    ),
                   ),
                   childCount: suppliers.length,
                 ),
@@ -580,13 +597,17 @@ class _SuppliersBody extends StatelessWidget {
             }
 
             final supplier = suppliers[index];
-            return SupplierCard(
-              supplier: supplier,
-              isListView: true,
-              onTap: () => onView(supplier),
-              onEdit: () => onEdit(supplier),
-              onDelete: () => onDelete(supplier),
-              onToggleStatus: () => onToggleStatus(supplier),
+            return GranithReveal(
+              delay: Duration(milliseconds: 30 * ((index > 7 ? 7 : index) + 1)),
+              duration: const Duration(milliseconds: 400),
+              child: SupplierCard(
+                supplier: supplier,
+                isListView: true,
+                onTap: () => onView(supplier),
+                onEdit: () => onEdit(supplier),
+                onDelete: () => onDelete(supplier),
+                onToggleStatus: () => onToggleStatus(supplier),
+              ),
             );
           },
         );
@@ -710,7 +731,7 @@ class _SupplierEmptyState extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
-        decoration: AppDecorations.cardSurface(elevated: false, radius: 16),
+        decoration: AppDecorations.cardSurface(elevated: false, radius: 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -13,6 +13,7 @@ import 'package:project_granith/services/requisition_quote_service.dart';
 import 'package:project_granith/services/supplier_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 
 enum _RequisitionSort { priority, newest, oldest, project, itemCount }
@@ -83,18 +84,16 @@ class _MaterialRequisitionPageViewState
     final completed = _filterAndSort(viewModel.completed);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.appBackgroundGradient,
-        ),
+        color: Colors.transparent,
         child: SafeArea(
           child: Padding(
             padding: ResponsiveLayout.pagePadding(width),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _Header(),
+                _Header(summary: summary),
                 const SizedBox(height: 10),
                 _SummaryFilterRow(
                   showStats: !compactHeight,
@@ -231,34 +230,173 @@ class _MaterialRequisitionPageViewState
 // ─── COMPONENTES PRIVADOS ───────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  const _Header();
+  final _RequisitionSummary summary;
+
+  const _Header({required this.summary});
 
   @override
   Widget build(BuildContext context) {
-    // Aqui você pode expandir para o header oficial se já existir em outro arquivo
-    final compact = MediaQuery.sizeOf(context).width < 420;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final compact = MediaQuery.sizeOf(context).width < 680;
+    final title = Row(
       children: [
-        Text(
-          'Requisições de Materiais',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: compact ? 22 : 26,
-            fontWeight: FontWeight.bold,
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accentGold.withValues(alpha: 0.22),
+                AppColors.accentBlue.withValues(alpha: 0.10),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: AppColors.accentGold.withValues(alpha: 0.42),
+            ),
+            boxShadow: AppColors.auraShadows(AppColors.accentGold),
           ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+          child: const Icon(
+            Icons.assignment_outlined,
+            color: AppColors.accentGold,
+            size: 23,
+          ),
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Acompanhe e gerencie pedidos de materiais para as obras.',
-          style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'SUPRIMENTOS E OBRAS',
+                style: TextStyle(
+                  color: AppColors.accentBlue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Requisições de Materiais',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: compact ? 21 : 25,
+                  fontWeight: FontWeight.w900,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 3),
+              const Text(
+                'Priorize solicitações, acompanhe aprovações e prepare a compra.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ],
+    );
+
+    final highlights = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: compact ? WrapAlignment.start : WrapAlignment.end,
+      children: [
+        _HeaderHighlight(
+          label: 'Total',
+          value: summary.total.toString(),
+          icon: Icons.inventory_2_outlined,
+          color: AppColors.accentBlue,
+        ),
+        _HeaderHighlight(
+          label: 'Aguardando',
+          value: summary.pending.toString(),
+          icon: Icons.hourglass_top_rounded,
+          color: AppColors.accentGold,
+        ),
+        _HeaderHighlight(
+          label: 'Críticas',
+          value: summary.highPriority.toString(),
+          icon: Icons.priority_high_rounded,
+          color: AppColors.accentRed,
+        ),
+      ],
+    );
+
+    return Container(
+      padding: EdgeInsets.all(compact ? 14 : 16),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: !compact,
+        radius: compact ? 18 : 20,
+      ),
+      child:
+          compact
+              ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [title, const SizedBox(height: 14), highlights],
+              )
+              : Row(
+                children: [
+                  Expanded(flex: 5, child: title),
+                  const SizedBox(width: 20),
+                  Flexible(flex: 4, child: highlights),
+                ],
+              ),
+    );
+  }
+}
+
+class _HeaderHighlight extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  const _HeaderHighlight({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 104),
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: AppDecorations.cardInnerSurface(accent: color, radius: 12),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 17),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -284,19 +422,24 @@ class _Tabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.48),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentGold,
+        radius: 14,
       ),
       child: TabBar(
         controller: tabController,
         indicator: BoxDecoration(
-          color: AppColors.accentGold.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(
-            color: AppColors.accentGold.withValues(alpha: 0.35),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accentGold.withValues(alpha: 0.20),
+              AppColors.accentBlue.withValues(alpha: 0.08),
+            ],
           ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: AppColors.accentGold.withValues(alpha: 0.48),
+          ),
+          boxShadow: AppColors.glowShadows(AppColors.accentGold),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: AppColors.accentGold,
@@ -306,10 +449,53 @@ class _Tabs extends StatelessWidget {
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
         isScrollable: !isDesktop,
         tabs: [
-          Tab(text: 'Todas ($allCount)'),
-          Tab(text: 'Pendentes ($pendingCount)'),
-          Tab(text: 'Aprovadas ($approvedCount)'),
-          Tab(text: 'Concluidas ($completedCount)'),
+          _RequisitionTab(
+            icon: Icons.grid_view_rounded,
+            label: 'Todas',
+            count: allCount,
+          ),
+          _RequisitionTab(
+            icon: Icons.hourglass_top_rounded,
+            label: 'Pendentes',
+            count: pendingCount,
+          ),
+          _RequisitionTab(
+            icon: Icons.verified_outlined,
+            label: 'Aprovadas',
+            count: approvedCount,
+          ),
+          _RequisitionTab(
+            icon: Icons.task_alt_rounded,
+            label: 'Concluídas',
+            count: completedCount,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RequisitionTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int count;
+
+  const _RequisitionTab({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      height: 42,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 7),
+          Text('$label ($count)'),
         ],
       ),
     );
@@ -334,7 +520,13 @@ class _RequisitionList extends StatelessWidget {
       itemCount: requisitions.length,
       padding: const EdgeInsets.only(top: 4, bottom: 22),
       separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => _CardWrapper(requisition: requisitions[i]),
+      itemBuilder:
+          (_, i) => GranithReveal(
+            delay: Duration(milliseconds: 26 * (i % 8)),
+            duration: const Duration(milliseconds: 420),
+            beginOffset: const Offset(0, 0.025),
+            child: _CardWrapper(requisition: requisitions[i]),
+          ),
     );
   }
 }
@@ -346,68 +538,82 @@ class _CardWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd/MM/yyyy');
+    void openQuotes() {
+      showDialog<void>(
+        context: context,
+        builder: (_) => _RequisitionQuotesDialog(requisition: requisition),
+      );
+    }
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: AppDecorations.cardSurface(
-        accent: requisition.status.color,
-        emphasized: requisition.status == RequisitionStatus.pending,
-        radius: 16,
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = constraints.maxWidth < 820;
-          final main = _RequisitionCardMain(
-            requisition: requisition,
-            dateFormat: dateFormat,
-          );
-          final actionPanel = _RequisitionActionPanel(
-            requisition: requisition,
-            onOpenQuotes:
-                () => showDialog<void>(
-                  context: context,
-                  builder:
-                      (_) => _RequisitionQuotesDialog(requisition: requisition),
-                ),
-          );
+    return GranithPressable(
+      onTap: openQuotes,
+      premium: true,
+      premiumColor: requisition.status.color,
+      hoverScale: 1.004,
+      borderRadius: BorderRadius.circular(18),
+      builder: (context, state) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 190),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.all(18),
+          decoration: AppDecorations.cardSurface(
+            accent: requisition.status.color,
+            emphasized:
+                requisition.status == RequisitionStatus.pending || state.active,
+            radius: 18,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final compact = constraints.maxWidth < 820;
+              final main = _RequisitionCardMain(
+                requisition: requisition,
+                dateFormat: dateFormat,
+              );
+              final actionPanel = _RequisitionActionPanel(
+                requisition: requisition,
+                onOpenQuotes: openQuotes,
+              );
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _StatusBadge(status: requisition.status),
-                  _PriorityBadge(priority: requisition.priority),
-                  if (requisition.status == RequisitionStatus.pending &&
-                      _priorityRank(requisition.priority) >= 3)
-                    const _SoftBadge(
-                      label: 'Revisar primeiro',
-                      icon: Icons.bolt_outlined,
-                      color: AppColors.accentGold,
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      _StatusBadge(status: requisition.status),
+                      _PriorityBadge(priority: requisition.priority),
+                      if (requisition.status == RequisitionStatus.pending &&
+                          _priorityRank(requisition.priority) >= 3)
+                        const _SoftBadge(
+                          label: 'Revisar primeiro',
+                          icon: Icons.bolt_outlined,
+                          color: AppColors.accentGold,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (compact) ...[
+                    main,
+                    const SizedBox(height: 14),
+                    actionPanel,
+                  ] else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: main),
+                        const SizedBox(width: 18),
+                        SizedBox(width: 258, child: actionPanel),
+                      ],
                     ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              if (compact) ...[
-                main,
-                const SizedBox(height: 14),
-                actionPanel,
-              ] else
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: main),
-                    const SizedBox(width: 18),
-                    SizedBox(width: 258, child: actionPanel),
-                  ],
-                ),
-            ],
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
+      child: const SizedBox.shrink(),
     );
   }
 }
@@ -660,23 +866,32 @@ class _SummaryFilterRow extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth >= 1180) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _StatsRow(summary: summary)),
-              const SizedBox(width: 12),
-              SizedBox(width: 520, child: toolbar),
-            ],
-          );
-        }
+        final content =
+            constraints.maxWidth >= 1180
+                ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(child: _StatsRow(summary: summary)),
+                    const SizedBox(width: 12),
+                    SizedBox(width: 520, child: toolbar),
+                  ],
+                )
+                : Column(
+                  children: [
+                    _StatsRow(summary: summary),
+                    const SizedBox(height: 10),
+                    toolbar,
+                  ],
+                );
 
-        return Column(
-          children: [
-            _StatsRow(summary: summary),
-            const SizedBox(height: 10),
-            toolbar,
-          ],
+        return Container(
+          padding: const EdgeInsets.all(10),
+          decoration: AppDecorations.cardSurface(
+            accent: AppColors.accentBlue,
+            elevated: false,
+            radius: 18,
+          ),
+          child: content,
         );
       },
     );
@@ -787,8 +1002,11 @@ class _Toolbar extends StatelessWidget {
         );
 
         return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: AppDecorations.cardInnerSurface(radius: 14),
+          padding: const EdgeInsets.all(8),
+          decoration: AppDecorations.cardInnerSurface(
+            accent: AppColors.accentGold,
+            radius: 14,
+          ),
           child:
               compact
                   ? Column(
@@ -1500,72 +1718,89 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final dialogWidth = math.min(980.0, size.width * 0.94);
+    final dialogHeight = math.min(720.0, size.height * 0.88);
 
-    return AlertDialog(
-      backgroundColor: AppColors.surfaceDark,
-      title: Row(
-        children: [
-          const Icon(Icons.request_quote_outlined, color: AppColors.accentGold),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              'Orcamentos da requisicao',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white),
+    return GranithDialogSurface(
+      width: dialogWidth,
+      maxHeight: dialogHeight,
+      accentColor: AppColors.accentGold,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+      child: SizedBox(
+        height: dialogHeight,
+        child: Column(
+          children: [
+            GranithDialogHeader(
+              icon: Icons.request_quote_outlined,
+              title: 'Cotações da requisição',
+              subtitle:
+                  '${widget.requisition.projectName} • ${widget.requisition.itemCount} itens',
+              accentColor: AppColors.accentGold,
+              onClose: () => Navigator.of(context).pop(),
             ),
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: math.min(920.0, size.width * 0.90),
-        height: math.min(640.0, size.height * 0.78),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final desktop = constraints.maxWidth >= 760;
-            final form = _buildQuoteForm();
-            final quotes = _buildQuotesList();
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final desktop = constraints.maxWidth >= 760;
+                    final form = _buildQuoteForm();
+                    final quotes = _buildQuotesList();
 
-            if (!desktop) {
-              return SingleChildScrollView(
-                child: Column(
-                  children: [
-                    form,
-                    const SizedBox(height: 14),
-                    SizedBox(height: 360, child: quotes),
-                  ],
+                    if (!desktop) {
+                      return SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            form,
+                            const SizedBox(height: 14),
+                            SizedBox(height: 360, child: quotes),
+                          ],
+                        ),
+                      );
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(width: 330, child: form),
+                        const SizedBox(width: 16),
+                        Expanded(child: quotes),
+                      ],
+                    );
+                  },
                 ),
-              );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: 330, child: form),
-                const SizedBox(width: 16),
-                Expanded(child: quotes),
-              ],
-            );
-          },
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+              decoration: BoxDecoration(
+                color: AppColors.primaryDark.withValues(alpha: 0.28),
+                border: Border(
+                  top: BorderSide(
+                    color: AppColors.borderColor.withValues(alpha: 0.58),
+                  ),
+                ),
+              ),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: const Text('Fechar'),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Fechar'),
-        ),
-      ],
     );
   }
 
   Widget _buildQuoteForm() {
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.primaryDark.withValues(alpha: 0.34),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.7)),
-      ),
+      decoration: AppDecorations.formPanel(borderColor: AppColors.accentGold),
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1764,15 +1999,20 @@ class _RequisitionQuotesDialogState extends State<_RequisitionQuotesDialog> {
                         separatorBuilder: (_, __) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
                           final quote = quotes[index];
-                          return _QuoteCard(
-                            quote: quote,
-                            rank: index + 1,
-                            purchaseGenerated: _purchaseGenerated,
-                            isGeneratingPurchase:
-                                _creatingPurchaseQuoteId == quote.id,
-                            onSelect: () => _selectQuote(quote),
-                            onGeneratePurchase:
-                                () => _generatePurchaseOrder(quote),
+                          return GranithReveal(
+                            delay: Duration(milliseconds: 24 * (index % 6)),
+                            duration: const Duration(milliseconds: 360),
+                            beginOffset: const Offset(0, 0.02),
+                            child: _QuoteCard(
+                              quote: quote,
+                              rank: index + 1,
+                              purchaseGenerated: _purchaseGenerated,
+                              isGeneratingPurchase:
+                                  _creatingPurchaseQuoteId == quote.id,
+                              onSelect: () => _selectQuote(quote),
+                              onGeneratePurchase:
+                                  () => _generatePurchaseOrder(quote),
+                            ),
                           );
                         },
                       ),

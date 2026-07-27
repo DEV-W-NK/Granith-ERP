@@ -50,6 +50,7 @@ class AppDataRefreshBus {
   static const salaryHistory = 'salary_history';
   static const suppliers = 'suppliers';
   static const teams = 'teams';
+  static const tasks = 'granith_tasks';
   static const vehicles = 'vehicles';
   static const vehicleFuelLogs = 'vehicle_fuel_logs';
 

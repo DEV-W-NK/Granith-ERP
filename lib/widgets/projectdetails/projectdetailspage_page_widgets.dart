@@ -18,6 +18,7 @@ import 'package:project_granith/widgets/projects/project_image.dart';
 import 'package:project_granith/helpers/projects_helpers.dart';
 import 'package:project_granith/ViewModels/ProjectDetailsViewModel.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/projectdetails/project_labor_cost_analysis_tab.dart';
 
 class ProjectDetailsPageView extends StatefulWidget {
@@ -51,7 +52,7 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
     final isDesktop = width > 900;
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: NestedScrollView(
         headerSliverBuilder: (_, __) => [_buildAppBar(context, p, isDesktop)],
         body: Column(
@@ -61,11 +62,26 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _ResumoTab(project: p),
-                  _FinanceiroTab(project: p),
-                  ProjectLaborCostAnalysisTab(project: p),
-                  _DiarioTab(project: p),
-                  _EquipeTab(project: p),
+                  GranithReveal(
+                    duration: const Duration(milliseconds: 480),
+                    child: _ResumoTab(project: p),
+                  ),
+                  GranithReveal(
+                    duration: const Duration(milliseconds: 480),
+                    child: _FinanceiroTab(project: p),
+                  ),
+                  GranithReveal(
+                    duration: const Duration(milliseconds: 480),
+                    child: ProjectLaborCostAnalysisTab(project: p),
+                  ),
+                  GranithReveal(
+                    duration: const Duration(milliseconds: 480),
+                    child: _DiarioTab(project: p),
+                  ),
+                  GranithReveal(
+                    duration: const Duration(milliseconds: 480),
+                    child: _EquipeTab(project: p),
+                  ),
                 ],
               ),
             ),
@@ -77,9 +93,11 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
 
   SliverAppBar _buildAppBar(BuildContext context, Project p, bool isDesktop) {
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: isDesktop ? 244 : 218,
       pinned: true,
       backgroundColor: AppColors.primaryDark,
+      surfaceTintColor: Colors.transparent,
+      scrolledUnderElevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
         onPressed: () => Navigator.of(context).pop(),
@@ -95,9 +113,11 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black38,
+                    AppColors.accentBlue.withValues(alpha: 0.08),
+                    Colors.black.withValues(alpha: 0.36),
                     AppColors.primaryDark.withValues(alpha: 0.95),
                   ],
+                  stops: const [0, 0.42, 1],
                 ),
               ),
             ),
@@ -160,38 +180,71 @@ class _ProjectDetailsPageViewState extends State<ProjectDetailsPageView>
         ),
       ),
       actions: [
-        IconButton(
+        IconButton.filledTonal(
+          tooltip: 'Editar projeto',
           icon: const Icon(Icons.edit_rounded, color: AppColors.accentGold),
           onPressed: () => showProjectDialog(context, project: p),
         ),
+        const SizedBox(width: 10),
       ],
     );
   }
 
   Widget _buildTabBar() {
     return Container(
-      color: AppColors.primaryDark,
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: AppColors.accentGold,
-        labelColor: AppColors.accentGold,
-        unselectedLabelColor: AppColors.textMuted,
-        dividerColor: Colors.transparent,
-        isScrollable:
-            MediaQuery.sizeOf(context).width < ResponsiveLayout.compact,
-        tabs: const [
-          Tab(icon: Icon(Icons.dashboard_outlined, size: 18), text: 'Resumo'),
-          Tab(
-            icon: Icon(Icons.account_balance_outlined, size: 18),
-            text: 'Financeiro',
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: AppColors.primaryDark.withValues(alpha: 0.94),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.accentGold.withValues(alpha: 0.16),
           ),
-          Tab(
-            icon: Icon(Icons.engineering_outlined, size: 18),
-            text: 'Mao de obra',
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: AppDecorations.cardInnerSurface(
+          accent: AppColors.accentGold,
+          radius: 16,
+        ),
+        child: TabBar(
+          controller: _tabController,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicator: BoxDecoration(
+            color: AppColors.accentGold.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.accentGold.withValues(alpha: 0.42),
+            ),
+            boxShadow: AppColors.auraShadows(AppColors.accentGold),
           ),
-          Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'Diário'),
-          Tab(icon: Icon(Icons.groups_outlined, size: 18), text: 'Equipe'),
-        ],
+          labelColor: AppColors.accentGold,
+          unselectedLabelColor: AppColors.textMuted,
+          dividerColor: Colors.transparent,
+          labelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w800,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+          isScrollable:
+              MediaQuery.sizeOf(context).width < ResponsiveLayout.compact,
+          tabs: const [
+            Tab(icon: Icon(Icons.dashboard_outlined, size: 18), text: 'Resumo'),
+            Tab(
+              icon: Icon(Icons.account_balance_outlined, size: 18),
+              text: 'Financeiro',
+            ),
+            Tab(
+              icon: Icon(Icons.engineering_outlined, size: 18),
+              text: 'Mão de obra',
+            ),
+            Tab(icon: Icon(Icons.menu_book_outlined, size: 18), text: 'Diário'),
+            Tab(icon: Icon(Icons.groups_outlined, size: 18), text: 'Equipe'),
+          ],
+        ),
       ),
     );
   }
@@ -210,46 +263,59 @@ class _ResumoTab extends StatelessWidget {
     return ListView(
       padding: ResponsiveLayout.pagePadding(MediaQuery.sizeOf(context).width),
       children: [
-        ProjectBudgetSummary(
-          project: project,
-          compact: false,
-          showBreakdown: true,
-        ),
-        const SizedBox(height: 16),
-        _Section(
-          title: 'Informações Gerais',
-          child: Column(
-            children: [
-              _InfoRow(
-                icon: Icons.description_outlined,
-                label: 'Descrição',
-                value:
-                    project.description.isEmpty
-                        ? 'Sem descrição'
-                        : project.description,
-              ),
-              _InfoRow(
-                icon: Icons.person_outline,
-                label: 'Cliente',
-                value: project.client,
-              ),
-              _InfoRow(
-                icon: Icons.attach_money,
-                label: 'Budget Previsto',
-                value: currency.format(project.budget),
-              ),
-              _InfoRow(
-                icon: Icons.calendar_today,
-                label: 'Início',
-                value: DateFormat('dd/MM/yyyy').format(project.startDate),
-              ),
-            ],
+        GranithReveal(
+          duration: const Duration(milliseconds: 500),
+          child: ProjectBudgetSummary(
+            project: project,
+            compact: false,
+            showBreakdown: true,
           ),
         ),
         const SizedBox(height: 16),
-        _Section(
-          title: 'Últimas Compras',
-          child: _RecentPurchasesPreview(projectId: project.id),
+        GranithReveal(
+          delay: const Duration(milliseconds: 70),
+          duration: const Duration(milliseconds: 520),
+          child: _Section(
+            icon: Icons.info_outline_rounded,
+            title: 'Informações Gerais',
+            child: Column(
+              children: [
+                _InfoRow(
+                  icon: Icons.description_outlined,
+                  label: 'Descrição',
+                  value:
+                      project.description.isEmpty
+                          ? 'Sem descrição'
+                          : project.description,
+                ),
+                _InfoRow(
+                  icon: Icons.person_outline,
+                  label: 'Cliente',
+                  value: project.client,
+                ),
+                _InfoRow(
+                  icon: Icons.attach_money,
+                  label: 'Budget Previsto',
+                  value: currency.format(project.budget),
+                ),
+                _InfoRow(
+                  icon: Icons.calendar_today,
+                  label: 'Início',
+                  value: DateFormat('dd/MM/yyyy').format(project.startDate),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        GranithReveal(
+          delay: const Duration(milliseconds: 120),
+          duration: const Duration(milliseconds: 540),
+          child: _Section(
+            icon: Icons.shopping_bag_outlined,
+            title: 'Últimas Compras',
+            child: _RecentPurchasesPreview(projectId: project.id),
+          ),
         ),
       ],
     );
@@ -302,54 +368,71 @@ class _FinanceiroTab extends StatelessWidget {
           itemBuilder: (context, i) {
             final t = transactions[i];
             final isIncome = t.type == TransactionType.income;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                    color:
-                        isIncome ? AppColors.accentGreen : AppColors.accentRed,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          t.description,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          DateFormat('dd/MM/yy').format(t.dueDate),
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+            final color =
+                isIncome ? AppColors.accentGreen : AppColors.accentRed;
+            return GranithReveal(
+              delay: Duration(milliseconds: 30 * (i > 6 ? 6 : i)),
+              duration: const Duration(milliseconds: 460),
+              beginOffset: const Offset(0, 0.025),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: AppDecorations.cardSurface(
+                  accent: color,
+                  elevated: false,
+                  radius: 18,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: AppDecorations.iconTile(color),
+                      child: Icon(
+                        isIncome
+                            ? Icons.south_west_rounded
+                            : Icons.north_east_rounded,
+                        color: color,
+                        size: 18,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${isIncome ? "+" : "-"} R\$ ${t.amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: isIncome ? AppColors.accentGreen : Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.description,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            DateFormat('dd/MM/yy').format(t.dueDate),
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Text(
+                      '${isIncome ? "+" : "-"} R\$ ${t.amount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: color,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -413,125 +496,158 @@ class _DiarioTabState extends State<_DiarioTab> {
           itemBuilder: (context, i) {
             final log = logs[i];
             final isSigning = _signingLogIds.contains(log.id);
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        DateFormat(
-                          'dd/MM/yyyy — EEEE',
-                          'pt_BR',
-                        ).format(log.date),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
+            final color =
+                log.isSigned
+                    ? AppColors.accentGreen
+                    : log.isPendingSignature
+                    ? AppColors.accentGold
+                    : AppColors.accentBlue;
+            return GranithReveal(
+              delay: Duration(milliseconds: 30 * (i > 6 ? 6 : i)),
+              duration: const Duration(milliseconds: 460),
+              beginOffset: const Offset(0, 0.025),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: AppDecorations.cardSurface(
+                  accent: color,
+                  elevated: false,
+                  radius: 18,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 34,
+                          height: 34,
+                          decoration: AppDecorations.iconTile(color),
+                          child: Icon(
+                            Icons.menu_book_outlined,
+                            color: color,
+                            size: 17,
+                          ),
                         ),
-                      ),
-                      const Icon(
-                        Icons.wb_sunny_outlined,
-                        size: 14,
-                        color: Colors.amber,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    log.activitiesDescription,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            DateFormat(
+                              'dd/MM/yyyy — EEEE',
+                              'pt_BR',
+                            ).format(log.date),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.wb_sunny_outlined,
+                          size: 15,
+                          color: Colors.amber,
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _DailyLogSignaturePill(log: log),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _dailyLogSignatureDescription(log, widget.project),
-                          style: const TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
+                    const SizedBox(height: 10),
+                    Text(
+                      log.activitiesDescription,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                        height: 1.35,
                       ),
-                      if (log.isPendingSignature)
-                        TextButton.icon(
-                          onPressed:
-                              isSigning
-                                  ? null
-                                  : () async {
-                                    setState(() {
-                                      _signingLogIds.add(log.id);
-                                    });
-                                    try {
-                                      await _dailyLogService
-                                          .signLogAsCurrentCoordinator(log);
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Diario assinado pelo coordenador.',
-                                          ),
-                                          backgroundColor:
-                                              AppColors.accentGreen,
-                                        ),
-                                      );
-                                    } catch (error) {
-                                      if (!context.mounted) return;
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            'Erro ao assinar diario: $error',
-                                          ),
-                                          backgroundColor: AppColors.accentRed,
-                                        ),
-                                      );
-                                    } finally {
-                                      if (mounted) {
-                                        setState(() {
-                                          _signingLogIds.remove(log.id);
-                                        });
-                                      }
-                                    }
-                                  },
-                          icon:
-                              isSigning
-                                  ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: AppColors.accentGold,
-                                    ),
-                                  )
-                                  : const Icon(Icons.draw_outlined, size: 16),
-                          label: const Text('Assinar relatorio'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.accentGold,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _DailyLogSignaturePill(log: log),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 520),
+                          child: Text(
+                            _dailyLogSignatureDescription(log, widget.project),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                    ],
-                  ),
-                ],
+                        if (log.isPendingSignature)
+                          TextButton.icon(
+                            onPressed:
+                                isSigning
+                                    ? null
+                                    : () async {
+                                      setState(() {
+                                        _signingLogIds.add(log.id);
+                                      });
+                                      try {
+                                        await _dailyLogService
+                                            .signLogAsCurrentCoordinator(log);
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Diario assinado pelo coordenador.',
+                                            ),
+                                            backgroundColor:
+                                                AppColors.accentGreen,
+                                          ),
+                                        );
+                                      } catch (error) {
+                                        if (!context.mounted) return;
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              'Erro ao assinar diario: $error',
+                                            ),
+                                            backgroundColor:
+                                                AppColors.accentRed,
+                                          ),
+                                        );
+                                      } finally {
+                                        if (mounted) {
+                                          setState(() {
+                                            _signingLogIds.remove(log.id);
+                                          });
+                                        }
+                                      }
+                                    },
+                            icon:
+                                isSigning
+                                    ? const SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.accentGold,
+                                      ),
+                                    )
+                                    : const Icon(Icons.draw_outlined, size: 16),
+                            label: const Text('Assinar relatorio'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.accentGold,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -645,34 +761,62 @@ class _EquipeTab extends StatelessWidget {
           itemCount: teams.length,
           itemBuilder: (context, i) {
             final team = teams[i];
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    team.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+            return GranithReveal(
+              delay: Duration(milliseconds: 35 * (i > 6 ? 6 : i)),
+              duration: const Duration(milliseconds: 460),
+              beginOffset: const Offset(0, 0.025),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: AppDecorations.cardSurface(
+                  accent: AppColors.accentBlue,
+                  elevated: false,
+                  radius: 18,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: AppDecorations.iconTile(AppColors.accentBlue),
+                      child: const Icon(
+                        Icons.groups_2_outlined,
+                        color: AppColors.accentBlue,
+                        size: 20,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${team.memberIds.length} membros ativos',
-                    style: const TextStyle(
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            team.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${team.memberIds.length} membros ativos',
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
                       color: AppColors.textMuted,
-                      fontSize: 12,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -685,30 +829,49 @@ class _EquipeTab extends StatelessWidget {
 // ─── COMPONENTES AUXILIARES ─────────────────────────────────────────────────
 
 class _Section extends StatelessWidget {
+  final IconData icon;
   final String title;
   final Widget child;
-  const _Section({required this.title, required this.child});
+  const _Section({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        elevated: false,
+        radius: 18,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-            ),
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: AppDecorations.iconTile(AppColors.accentGold),
+                child: Icon(icon, color: AppColors.accentGold, size: 17),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           child,
         ],
       ),
@@ -843,15 +1006,41 @@ class _RecentPurchasesPreview extends StatelessWidget {
           children:
               purchases
                   .map(
-                    (p) => ListTile(
-                      dense: true,
-                      title: Text(
-                        p.itemName,
-                        style: const TextStyle(color: Colors.white),
-                      ),
-                      trailing: Text(
-                        'R\$ ${p.totalValue}',
-                        style: const TextStyle(color: AppColors.accentGold),
+                    (p) => Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        dense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                        ),
+                        leading: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: AppDecorations.iconTile(
+                            AppColors.accentGold,
+                          ),
+                          child: const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: AppColors.accentGold,
+                            size: 16,
+                          ),
+                        ),
+                        title: Text(
+                          p.itemName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        trailing: Text(
+                          'R\$ ${p.totalValue}',
+                          style: const TextStyle(
+                            color: AppColors.accentGold,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                     ),
                   )
@@ -870,20 +1059,36 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: 48,
-            color: AppColors.textMuted.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-          ),
-        ],
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 440),
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        decoration: AppDecorations.cardSurface(
+          accent: AppColors.accentBlue,
+          elevated: false,
+          radius: 18,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: AppDecorations.iconTile(AppColors.accentBlue),
+              child: Icon(icon, size: 25, color: AppColors.accentBlue),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

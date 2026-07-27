@@ -147,16 +147,26 @@ class AppDecorations {
     Color? accent,
     bool emphasized = false,
     bool elevated = true,
-    double radius = 16,
+    double radius = 18,
   }) {
     final resolvedAccent = accent ?? AppColors.accentBlue;
     final borderColor = accent ?? AppColors.borderColor;
 
     return BoxDecoration(
-      gradient: AppColors.cardGradient,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          resolvedAccent.withValues(alpha: accent == null ? 0.05 : 0.10),
+          AppColors.surfaceElevated.withValues(alpha: 0.90),
+          AppColors.backgroundMid.withValues(alpha: 0.94),
+          AppColors.primaryDark.withValues(alpha: 0.90),
+        ],
+        stops: const [0.0, 0.28, 0.72, 1.0],
+      ),
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
-        color: borderColor.withValues(alpha: accent == null ? 0.62 : 0.34),
+        color: borderColor.withValues(alpha: accent == null ? 0.54 : 0.38),
       ),
       boxShadow:
           elevated
@@ -212,11 +222,19 @@ class AppDecorations {
 
   static BoxDecoration cardInnerSurface({Color? accent, double radius = 12}) =>
       BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.46),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            (accent ?? AppColors.accentBlue).withValues(alpha: 0.08),
+            AppColors.surfaceDark.withValues(alpha: 0.54),
+            AppColors.primaryDark.withValues(alpha: 0.34),
+          ],
+        ),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
           color: (accent ?? AppColors.borderColor).withValues(
-            alpha: accent == null ? 0.48 : 0.24,
+            alpha: accent == null ? 0.46 : 0.28,
           ),
         ),
       );

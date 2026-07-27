@@ -27,32 +27,34 @@ class GranitSectionHeader extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < ResponsiveLayout.compact;
+        final accent = iconColor ?? AppColors.accentGold;
         final leadingAndText = Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
-                color:
-                    iconBg ??
-                    (iconColor ?? AppColors.accentGold).withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: (iconColor ?? AppColors.accentGold).withValues(
-                    alpha: 0.28,
-                  ),
-                ),
-                boxShadow: AppColors.auraShadows(
-                  iconColor ?? AppColors.accentGold,
-                ),
+                color: iconBg,
+                gradient:
+                    iconBg == null
+                        ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            accent.withValues(alpha: 0.20),
+                            AppColors.surfaceDark.withValues(alpha: 0.78),
+                          ],
+                        )
+                        : null,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: accent.withValues(alpha: 0.36)),
+                boxShadow: AppColors.auraShadows(accent),
               ),
-              child: Icon(
-                icon,
-                color: iconColor ?? AppColors.accentGold,
-                size: 20,
-              ),
+              child: Icon(icon, color: accent, size: 22),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,10 +63,13 @@ class GranitSectionHeader extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GranitTokens.headingStyle,
+                    style: GranitTokens.headingStyle.copyWith(
+                      fontSize: compact ? 16 : 18,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle!,
                       maxLines: 2,

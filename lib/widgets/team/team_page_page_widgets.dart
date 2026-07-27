@@ -7,6 +7,7 @@ import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/models/team_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class TeamPageView extends StatefulWidget {
   const TeamPageView({super.key});
@@ -42,16 +43,19 @@ class _TeamPageViewState extends State<TeamPageView> {
         final canManage = _canManageTeams(auth, currentEmployee);
 
         return Scaffold(
-          backgroundColor: AppColors.backgroundDark,
+          backgroundColor: Colors.transparent,
           body: Padding(
             padding: EdgeInsets.all(pagePadding),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TeamHeader(
-                  controller: controller,
-                  canManage: canManage,
-                  onCreate: canManage ? () => _openTeamDialog(context) : null,
+                GranithReveal(
+                  delay: const Duration(milliseconds: 40),
+                  child: _TeamHeader(
+                    controller: controller,
+                    canManage: canManage,
+                    onCreate: canManage ? () => _openTeamDialog(context) : null,
+                  ),
                 ),
                 if (!canManage) ...[
                   const SizedBox(height: 14),
@@ -66,27 +70,32 @@ class _TeamPageViewState extends State<TeamPageView> {
                 ],
                 const SizedBox(height: 16),
                 Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child:
-                        controller.isLoading && controller.teams.isEmpty
-                            ? const _LoadingState()
-                            : controller.teams.isEmpty
-                            ? _EmptyTeamsState(
-                              canManage: canManage,
-                              onCreate:
-                                  canManage
-                                      ? () => _openTeamDialog(context)
-                                      : null,
-                            )
-                            : _TeamsGrid(
-                              controller: controller,
-                              canManage: canManage,
-                              onEdit: (team) => _openTeamDialog(context, team),
-                              onManageMembers:
-                                  (team) => _openMembersDialog(context, team),
-                              onDelete: (team) => _confirmDelete(context, team),
-                            ),
+                  child: GranithReveal(
+                    delay: const Duration(milliseconds: 120),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child:
+                          controller.isLoading && controller.teams.isEmpty
+                              ? const _LoadingState()
+                              : controller.teams.isEmpty
+                              ? _EmptyTeamsState(
+                                canManage: canManage,
+                                onCreate:
+                                    canManage
+                                        ? () => _openTeamDialog(context)
+                                        : null,
+                              )
+                              : _TeamsGrid(
+                                controller: controller,
+                                canManage: canManage,
+                                onEdit:
+                                    (team) => _openTeamDialog(context, team),
+                                onManageMembers:
+                                    (team) => _openMembersDialog(context, team),
+                                onDelete:
+                                    (team) => _confirmDelete(context, team),
+                              ),
+                    ),
                   ),
                 ),
               ],
@@ -239,76 +248,85 @@ class _TeamHeader extends StatelessWidget {
             .where((team) => team.projectId?.trim().isNotEmpty == true)
             .length;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final compact = constraints.maxWidth < 820;
-        final title = Row(
-          children: [
-            const _HeaderIcon(),
-            const SizedBox(width: 14),
-            const Expanded(child: _HeaderTitle()),
-          ],
-        );
-        final stats = Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _StatPill(
-              label: 'Equipes',
-              value: '${controller.teams.length}',
-              color: AppColors.accentBlue,
-            ),
-            _StatPill(
-              label: 'Membros',
-              value: '$assignedMembers',
-              color: AppColors.accentGreen,
-            ),
-            _StatPill(
-              label: 'Disponiveis',
-              value: '$unassigned',
-              color: AppColors.accentGold,
-            ),
-            _StatPill(
-              label: 'Com obra',
-              value: '$linkedProjects',
-              color: AppColors.textSecondary,
-            ),
-          ],
-        );
-        final button = ElevatedButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.group_add_rounded, size: 18),
-          label: const Text('Nova equipe'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.accentGold,
-            foregroundColor: AppColors.primaryDark,
-          ),
-        );
-
-        if (compact) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        emphasized: true,
+        radius: 22,
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 820;
+          final title = Row(
             children: [
-              title,
-              const SizedBox(height: 14),
-              stats,
-              if (canManage) ...[
-                const SizedBox(height: 12),
-                SizedBox(width: double.infinity, child: button),
-              ],
+              const _HeaderIcon(),
+              const SizedBox(width: 14),
+              const Expanded(child: _HeaderTitle()),
             ],
           );
-        }
+          final stats = Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _StatPill(
+                label: 'Equipes',
+                value: '${controller.teams.length}',
+                color: AppColors.accentBlue,
+              ),
+              _StatPill(
+                label: 'Membros',
+                value: '$assignedMembers',
+                color: AppColors.accentGreen,
+              ),
+              _StatPill(
+                label: 'Disponiveis',
+                value: '$unassigned',
+                color: AppColors.accentGold,
+              ),
+              _StatPill(
+                label: 'Com obra',
+                value: '$linkedProjects',
+                color: AppColors.textSecondary,
+              ),
+            ],
+          );
+          final button = ElevatedButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.group_add_rounded, size: 18),
+            label: const Text('Nova equipe'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.accentGold,
+              foregroundColor: AppColors.primaryDark,
+            ),
+          );
 
-        return Row(
-          children: [
-            Expanded(child: title),
-            const SizedBox(width: 18),
-            stats,
-            if (canManage) ...[const SizedBox(width: 14), button],
-          ],
-        );
-      },
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                title,
+                const SizedBox(height: 14),
+                stats,
+                if (canManage) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(width: double.infinity, child: button),
+                ],
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: title),
+              const SizedBox(width: 18),
+              stats,
+              if (canManage) ...[const SizedBox(width: 14), button],
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -353,15 +371,19 @@ class _TeamsGrid extends StatelessWidget {
             final members = controller.getMembersOfTeam(team);
             final leader = _employeeById(controller.employees, team.leaderId);
             final project = controller.getProjectById(team.projectId);
-            return _TeamCard(
-              team: team,
-              members: members,
-              leader: leader,
-              project: project,
-              canManage: canManage,
-              onEdit: () => onEdit(team),
-              onManageMembers: () => onManageMembers(team),
-              onDelete: () => onDelete(team),
+            return GranithReveal(
+              delay: Duration(milliseconds: 35 * ((index > 6 ? 6 : index) + 1)),
+              duration: const Duration(milliseconds: 420),
+              child: _TeamCard(
+                team: team,
+                members: members,
+                leader: leader,
+                project: project,
+                canManage: canManage,
+                onEdit: () => onEdit(team),
+                onManageMembers: () => onManageMembers(team),
+                onDelete: () => onDelete(team),
+              ),
             );
           },
         );
@@ -1272,7 +1294,7 @@ class _SurfaceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
+      decoration: AppDecorations.cardSurface(accent: accent, radius: 18),
       child: child,
     );
   }

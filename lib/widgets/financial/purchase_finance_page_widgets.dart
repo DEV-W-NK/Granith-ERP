@@ -7,6 +7,7 @@ import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 enum _PurchaseFinanceFilter { open, paid, cancelled, all }
 
@@ -59,7 +60,7 @@ class _PurchaseFinancePageViewState extends State<PurchaseFinancePageView> {
     final summary = _PurchaseFinanceSummary.from(purchaseTransactions);
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body:
           ctrl.isLoading
               ? const Center(
@@ -74,37 +75,48 @@ class _PurchaseFinancePageViewState extends State<PurchaseFinancePageView> {
                           constraints.maxHeight < 760 ||
                           constraints.maxWidth < 720;
                       final headerAndTools = <Widget>[
-                        _Header(
-                          isDesktop: isDesktop,
-                          summary: summary,
-                          visibleCount: transactions.length,
-                          canManage: canManage,
+                        GranithReveal(
+                          duration: const Duration(milliseconds: 520),
+                          child: _Header(
+                            isDesktop: isDesktop,
+                            summary: summary,
+                            visibleCount: transactions.length,
+                            canManage: canManage,
+                          ),
                         ),
                         SizedBox(height: isDesktop ? 10 : 8),
-                        _Toolbar(
-                          searchController: _searchCtrl,
-                          filter: _filter,
-                          sort: _sort,
-                          visibleCount: transactions.length,
-                          totalCount: purchaseTransactions.length,
-                          onSearchChanged:
-                              (value) => setState(() => _query = value),
-                          onClearSearch:
-                              _query.isEmpty
-                                  ? null
-                                  : () {
-                                    setState(() {
-                                      _searchCtrl.clear();
-                                      _query = '';
-                                    });
-                                  },
-                          onFilterChanged:
-                              (value) => setState(() => _filter = value),
-                          onSortChanged:
-                              (value) => setState(() => _sort = value),
+                        GranithReveal(
+                          delay: const Duration(milliseconds: 70),
+                          duration: const Duration(milliseconds: 520),
+                          child: _Toolbar(
+                            searchController: _searchCtrl,
+                            filter: _filter,
+                            sort: _sort,
+                            visibleCount: transactions.length,
+                            totalCount: purchaseTransactions.length,
+                            onSearchChanged:
+                                (value) => setState(() => _query = value),
+                            onClearSearch:
+                                _query.isEmpty
+                                    ? null
+                                    : () {
+                                      setState(() {
+                                        _searchCtrl.clear();
+                                        _query = '';
+                                      });
+                                    },
+                            onFilterChanged:
+                                (value) => setState(() => _filter = value),
+                            onSortChanged:
+                                (value) => setState(() => _sort = value),
+                          ),
                         ),
                         SizedBox(height: isDesktop ? 10 : 8),
-                        _StatsRow(summary: summary),
+                        GranithReveal(
+                          delay: const Duration(milliseconds: 120),
+                          duration: const Duration(milliseconds: 540),
+                          child: _StatsRow(summary: summary),
+                        ),
                         const SizedBox(height: 10),
                       ];
 
@@ -209,6 +221,7 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
     final title = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           width: isDesktop ? 50 : 42,
@@ -225,7 +238,18 @@ class _Header extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Compras no Financeiro',
+                'FINANCEIRO  /  CONTAS A PAGAR',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: AppColors.accentGold,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Compras a Pagar',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -285,20 +309,30 @@ class _Header extends StatelessWidget {
       ],
     );
 
-    if (!isDesktop) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [title, const SizedBox(height: 12), badges],
-      );
-    }
+    final content =
+        !isDesktop
+            ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [title, const SizedBox(height: 12), badges],
+            )
+            : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: title),
+                const SizedBox(width: 18),
+                Flexible(child: badges),
+              ],
+            );
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: title),
-        const SizedBox(width: 18),
-        Flexible(child: badges),
-      ],
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(isDesktop ? 18 : 14),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        emphasized: true,
+        radius: 20,
+      ),
+      child: content,
     );
   }
 }
@@ -449,7 +483,7 @@ class _StatTile extends StatelessWidget {
     return Container(
       height: 94,
       padding: const EdgeInsets.all(10),
-      decoration: AppDecorations.statCardSurface(color, radius: 12),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Row(
         children: [
           Container(
@@ -566,11 +600,18 @@ class _PayablesList extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       itemCount: transactions.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder:
-          (context, index) => _PurchasePayableCard(
+      itemBuilder: (context, index) {
+        final revealIndex = index > 6 ? 6 : index;
+        return GranithReveal(
+          delay: Duration(milliseconds: 35 * revealIndex),
+          duration: const Duration(milliseconds: 460),
+          beginOffset: const Offset(0, 0.025),
+          child: _PurchasePayableCard(
             transaction: transactions[index],
             canManage: canManage,
           ),
+        );
+      },
     );
   }
 }
@@ -603,9 +644,10 @@ class _Toolbar extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(9),
-      decoration: AppDecorations.cardInnerSurface(
+      decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
-        radius: 12,
+        elevated: false,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -744,7 +786,8 @@ class _PurchasePayableCard extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: statusColor,
         emphasized: transaction.isOverdue,
-        radius: 12,
+        elevated: transaction.isOverdue,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1100,7 +1143,7 @@ class _AmountAndActions extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: AppDecorations.cardInnerSurface(
         accent: statusColor,
-        radius: 8,
+        radius: 12,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

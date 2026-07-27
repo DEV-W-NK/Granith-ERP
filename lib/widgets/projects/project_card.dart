@@ -4,6 +4,7 @@ import 'package:project_granith/models/project_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/projects/project_image.dart';
 
 class ProjectCard extends StatelessWidget {
@@ -36,38 +37,51 @@ class ProjectCard extends StatelessWidget {
             ? AppColors.accentRed
             : AppColors.accentBlue;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      decoration: AppDecorations.cardSurface(
-        accent: cardAccent,
-        emphasized: !compactScreen,
-        elevated: !compactScreen,
-        radius: 18,
-      ).copyWith(
-        border: Border.all(
-          color: alertColor.withOpacity(compactScreen ? 0.40 : 0.58),
-          width: 1,
-        ),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          splashColor: AppColors.accentGold.withOpacity(0.10),
-          highlightColor: AppColors.accentGold.withOpacity(0.05),
-          child:
-              isListView
-                  ? LayoutBuilder(
-                    builder:
-                        (context, constraints) =>
-                            constraints.maxWidth < ResponsiveLayout.compact
-                                ? _buildCompactListContent()
-                                : _buildListContent(),
-                  )
-                  : _buildGridContent(),
-        ),
-      ),
+    return GranithPressable(
+      onTap: onTap,
+      premium: true,
+      premiumColor: cardAccent,
+      hoverScale: compactScreen ? 1 : 1.006,
+      borderRadius: BorderRadius.circular(18),
+      builder: (context, state) {
+        final active = state.active;
+
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          decoration: AppDecorations.cardSurface(
+            accent: cardAccent,
+            emphasized: !compactScreen || active,
+            elevated: !compactScreen,
+            radius: 18,
+          ).copyWith(
+            border: Border.all(
+              color:
+                  active
+                      ? cardAccent.withOpacity(0.72)
+                      : alertColor.withOpacity(compactScreen ? 0.40 : 0.58),
+              width: active ? 1.2 : 1,
+            ),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Material(
+              color: Colors.transparent,
+              child:
+                  isListView
+                      ? LayoutBuilder(
+                        builder:
+                            (context, constraints) =>
+                                constraints.maxWidth < ResponsiveLayout.compact
+                                    ? _buildCompactListContent()
+                                    : _buildListContent(),
+                      )
+                      : _buildGridContent(),
+            ),
+          ),
+        );
+      },
+      child: const SizedBox.shrink(),
     );
   }
 

@@ -25,11 +25,12 @@ class DailyLogCard extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: signatureColor,
         emphasized: log.isPendingSignature,
+        radius: 18,
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: () {
             Navigator.push(
               context,

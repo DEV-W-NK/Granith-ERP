@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -7,6 +7,7 @@ import 'package:project_granith/models/geofence_model.dart';
 import 'package:project_granith/services/google_maps_web_loader.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
 typedef GeofenceMapBuilder =
@@ -55,7 +56,19 @@ class _GeofencingContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _GeofenceHeader(width: width),
+              GranithReveal(
+                delay: const Duration(milliseconds: 40),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: AppDecorations.cardSurface(
+                    accent: AppColors.accentBlue,
+                    emphasized: true,
+                    radius: 22,
+                  ),
+                  child: _GeofenceHeader(width: width),
+                ),
+              ),
               SizedBox(height: gap),
               Expanded(
                 child:
@@ -65,19 +78,33 @@ class _GeofencingContent extends StatelessWidget {
                           children: [
                             const SizedBox(
                               width: 420,
-                              child: _GeofenceSidePanel(expandedList: true),
+                              child: GranithReveal(
+                                delay: Duration(milliseconds: 110),
+                                child: _GeofenceSidePanel(expandedList: true),
+                              ),
                             ),
                             SizedBox(width: gap),
-                            Expanded(child: _MapPanel(mapBuilder: mapBuilder)),
+                            Expanded(
+                              child: GranithReveal(
+                                delay: const Duration(milliseconds: 170),
+                                child: _MapPanel(mapBuilder: mapBuilder),
+                              ),
+                            ),
                           ],
                         )
                         : ListView(
                           children: [
-                            const _GeofenceSidePanel(expandedList: false),
+                            const GranithReveal(
+                              delay: Duration(milliseconds: 110),
+                              child: _GeofenceSidePanel(expandedList: false),
+                            ),
                             SizedBox(height: gap),
                             SizedBox(
                               height: width < 520 ? 360 : 460,
-                              child: _MapPanel(mapBuilder: mapBuilder),
+                              child: GranithReveal(
+                                delay: const Duration(milliseconds: 170),
+                                child: _MapPanel(mapBuilder: mapBuilder),
+                              ),
                             ),
                           ],
                         ),
@@ -373,7 +400,12 @@ class _GeofenceList extends StatelessWidget {
     return ListView.separated(
       itemCount: items.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, index) => _GeofenceCard(geofence: items[index]),
+      itemBuilder:
+          (context, index) => GranithReveal(
+            delay: Duration(milliseconds: 30 * ((index > 7 ? 7 : index) + 1)),
+            duration: const Duration(milliseconds: 400),
+            child: _GeofenceCard(geofence: items[index]),
+          ),
     );
   }
 }
@@ -399,6 +431,7 @@ class _GeofenceCard extends StatelessWidget {
           decoration: AppDecorations.cardSurface(
             accent: color,
             emphasized: selected,
+            radius: 18,
           ).copyWith(border: Border.all(color: color.withValues(alpha: 0.45))),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -844,7 +877,7 @@ class _ToolSurface extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
         elevated: false,
-        radius: 16,
+        radius: 18,
       ),
       child: child,
     );

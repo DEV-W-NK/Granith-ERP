@@ -24,6 +24,7 @@ import 'package:project_granith/screens/purchases_page.dart';
 import 'package:project_granith/screens/reports_page.dart';
 import 'package:project_granith/screens/system_settings_page.dart';
 import 'package:project_granith/screens/suppliers_page.dart';
+import 'package:project_granith/screens/tasks_page.dart';
 import 'package:project_granith/screens/team_page.dart';
 import 'package:project_granith/screens/vehicles_page.dart';
 import 'package:project_granith/themes/app_theme.dart';
@@ -98,6 +99,7 @@ class _MainLayoutState extends State<MainLayout> {
         const AiAssistantPage(area: AiAssistantArea.administrative),
         const SystemSettingsPage(),
         const AdministrativeProfitPage(),
+        const TasksPage(),
       ];
 
   late final List<String> pageTitles =
@@ -132,6 +134,7 @@ class _MainLayoutState extends State<MainLayout> {
         'IA Administrativa',
         'Configuracoes',
         'Resultado Administrativo',
+        'Tarefas',
       ];
 
   late final List<IconData> pageIcons =
@@ -166,6 +169,7 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.account_tree_rounded,
         Icons.settings_rounded,
         Icons.query_stats_rounded,
+        Icons.task_alt_rounded,
       ];
 
   late final List<NavigationModule> _navigationModules =
@@ -205,6 +209,14 @@ class _MainLayoutState extends State<MainLayout> {
           section: 'Operacional',
           icon: pageIcons[4],
           aliases: 'materiais requisicoes pedidos internos',
+        ),
+        NavigationModule(
+          index: 29,
+          title: pageTitles[29],
+          section: 'Operacional',
+          icon: pageIcons[29],
+          aliases:
+              'tarefas atividades cronometro prioridade responsavel supervisor executor',
         ),
         NavigationModule(
           index: 5,
@@ -383,6 +395,9 @@ class _MainLayoutState extends State<MainLayout> {
     final isDesktop = screenWidth >= _desktopBreakpoint;
     final desktopPadding = screenWidth >= 1280 ? 18.0 : 12.0;
     final contentRadius = screenWidth >= 1280 ? 28.0 : 22.0;
+    final activeModule = _selectedModule;
+    final moduleAccent = _moduleAccent(activeModule.section);
+    final moduleAccentEnd = _moduleAccentEnd(activeModule.section);
     final workspaceName =
         context.watch<SystemSettingsViewModel>().settings.workspaceName;
 
@@ -413,16 +428,25 @@ class _MainLayoutState extends State<MainLayout> {
                             gradient: AppColors.pageSurfaceGradient,
                             borderRadius: BorderRadius.circular(contentRadius),
                             border: Border.all(
-                              color: AppColors.borderColor.withValues(
-                                alpha: 0.72,
-                              ),
+                              color: moduleAccent.withValues(alpha: 0.34),
                             ),
-                            boxShadow: AppColors.glowShadows(),
+                            boxShadow: AppColors.glowShadows(moduleAccent),
                           ),
-                          child: GranithPageBackground(
-                            child: _ModulePageSwitcher(
-                              selectedIndex: selectedIndex,
-                              child: pages[selectedIndex],
+                          child: _ModuleAmbientFrame(
+                            section: activeModule.section,
+                            title:
+                                selectedIndex == 0
+                                    ? workspaceName
+                                    : activeModule.title,
+                            icon: activeModule.icon,
+                            accent: moduleAccent,
+                            accentEnd: moduleAccentEnd,
+                            showBadge: screenWidth >= 1360,
+                            child: GranithPageBackground(
+                              child: _ModulePageSwitcher(
+                                selectedIndex: selectedIndex,
+                                child: pages[selectedIndex],
+                              ),
                             ),
                           ),
                         ),
@@ -484,16 +508,63 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
                 body: SafeArea(
                   top: false,
-                  child: GranithPageBackground(
-                    child: _ModulePageSwitcher(
-                      selectedIndex: selectedIndex,
-                      child: pages[selectedIndex],
+                  child: _ModuleAmbientFrame(
+                    section: activeModule.section,
+                    title:
+                        selectedIndex == 0 ? workspaceName : activeModule.title,
+                    icon: activeModule.icon,
+                    accent: moduleAccent,
+                    accentEnd: moduleAccentEnd,
+                    showBadge: false,
+                    child: GranithPageBackground(
+                      child: _ModulePageSwitcher(
+                        selectedIndex: selectedIndex,
+                        child: pages[selectedIndex],
+                      ),
                     ),
                   ),
                 ),
               ),
     );
   }
+
+  NavigationModule get _selectedModule {
+    for (final module in _navigationModules) {
+      if (module.index == selectedIndex) return module;
+    }
+
+    return NavigationModule(
+      index: selectedIndex,
+      title: pageTitles[selectedIndex],
+      section: 'Sistema',
+      icon: pageIcons[selectedIndex],
+      aliases: '',
+    );
+  }
+
+  Color _moduleAccent(String section) => switch (section) {
+    'Inicio' => AppColors.accentGold,
+    'Operacional' => AppColors.accentBlue,
+    'Recursos Humanos' => AppColors.purple,
+    'Comercial' => AppColors.orange,
+    'Suprimentos' => AppColors.accentGreen,
+    'Administrativo' => AppColors.duskBlue,
+    'Financeiro' => AppColors.accentGold,
+    'I.A' => AppColors.auraCyan,
+    _ => AppColors.accentBlue,
+  };
+
+  Color _moduleAccentEnd(String section) => switch (section) {
+    'Inicio' => AppColors.auraCyan,
+    'Operacional' => AppColors.duskBlue,
+    'Recursos Humanos' => AppColors.accentGold,
+    'Comercial' => AppColors.accentGold,
+    'Suprimentos' => AppColors.auraCyan,
+    'Administrativo' => AppColors.accentBlue,
+    'Financeiro' => AppColors.accentGreen,
+    'I.A' => AppColors.purple,
+    _ => AppColors.accentGold,
+  };
 
   void _selectModule(int index) {
     if (index < 0 || index >= pages.length) return;
@@ -586,6 +657,221 @@ class _ModulePageSwitcher extends StatelessWidget {
         );
       },
       child: KeyedSubtree(key: ValueKey<int>(selectedIndex), child: child),
+    );
+  }
+}
+
+class _ModuleAmbientFrame extends StatelessWidget {
+  final Widget child;
+  final String section;
+  final String title;
+  final IconData icon;
+  final Color accent;
+  final Color accentEnd;
+  final bool showBadge;
+
+  const _ModuleAmbientFrame({
+    required this.child,
+    required this.section,
+    required this.title,
+    required this.icon,
+    required this.accent,
+    required this.accentEnd,
+    required this.showBadge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        child,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned(
+                  top: -190,
+                  right: -120,
+                  width: 430,
+                  height: 430,
+                  child: _ModuleGlow(color: accent),
+                ),
+                Positioned(
+                  left: -160,
+                  bottom: -210,
+                  width: 440,
+                  height: 440,
+                  child: _ModuleGlow(color: accentEnd),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  height: 3,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          accent.withValues(alpha: 0.18),
+                          accent.withValues(alpha: 0.92),
+                          accentEnd.withValues(alpha: 0.70),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.22, 0.58, 1.0],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 2,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          accent.withValues(alpha: 0.72),
+                          accentEnd.withValues(alpha: 0.18),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (showBadge)
+          Positioned(
+            top: 12,
+            right: 14,
+            child: IgnorePointer(
+              child: _ModuleContextBadge(
+                section: section,
+                title: title,
+                icon: icon,
+                accent: accent,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ModuleGlow extends StatelessWidget {
+  final Color color;
+
+  const _ModuleGlow({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.16),
+              color.withValues(alpha: 0.05),
+              Colors.transparent,
+            ],
+            stops: const [0.0, 0.38, 1.0],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ModuleContextBadge extends StatelessWidget {
+  final String section;
+  final String title;
+  final IconData icon;
+  final Color accent;
+
+  const _ModuleContextBadge({
+    required this.section,
+    required this.title,
+    required this.icon,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+      constraints: const BoxConstraints(maxWidth: 255),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryDark.withValues(alpha: 0.78),
+            AppColors.surfaceDark.withValues(alpha: 0.62),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.26)),
+        boxShadow: AppColors.auraShadows(accent),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: AppDecorations.iconTile(
+              accent,
+            ).copyWith(borderRadius: BorderRadius.circular(11)),
+            child: Icon(icon, color: accent, size: 17),
+          ),
+          const SizedBox(width: 9),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  section.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

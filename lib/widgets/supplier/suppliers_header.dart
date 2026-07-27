@@ -32,8 +32,8 @@ class SuppliersHeader extends StatelessWidget {
           padding: const EdgeInsets.all(18),
           decoration: AppDecorations.cardSurface(
             accent: AppColors.accentBlue,
-            elevated: false,
-            radius: 16,
+            emphasized: true,
+            radius: 22,
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {

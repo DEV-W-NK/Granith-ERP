@@ -613,10 +613,10 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.42),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentBlue,
+        emphasized: true,
+        radius: 22,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -781,7 +781,7 @@ class _ConfigSectionCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: AppDecorations.cardSurface(accent: accent, radius: 14),
+      decoration: AppDecorations.cardSurface(accent: accent, radius: 18),
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

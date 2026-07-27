@@ -8,6 +8,7 @@ import 'package:project_granith/services/client_account_service.dart';
 import 'package:project_granith/services/client_portal_access_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 class _PermissionOption {
   final String code;
@@ -856,47 +857,100 @@ class _AccessManagementPageState extends State<AccessManagementPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Permissoes e Clientes',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Controle quem acessa cada area do ERP e acompanhe o cadastro dos clientes com acesso ao portal.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.cardGradient,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: AppColors.borderColor.withValues(alpha: 0.65),
+              GranithReveal(
+                delay: const Duration(milliseconds: 40),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(18),
+                  decoration: AppDecorations.cardSurface(
+                    accent: AppColors.accentBlue,
+                    emphasized: true,
+                    radius: 22,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: AppDecorations.iconTile(
+                              AppColors.accentBlue,
+                            ),
+                            child: const Icon(
+                              Icons.admin_panel_settings_rounded,
+                              color: AppColors.accentBlue,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Permissoes e Clientes',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w900),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Controle acessos do ERP e contas vinculadas ao portal do cliente.',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        decoration: AppDecorations.cardInnerSurface(
+                          accent: AppColors.accentBlue,
+                          radius: 14,
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: width < ResponsiveLayout.compact,
+                          tabAlignment:
+                              width < ResponsiveLayout.compact
+                                  ? TabAlignment.start
+                                  : null,
+                          indicator: BoxDecoration(
+                            color: AppColors.accentBlue.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.accentBlue.withValues(
+                                alpha: 0.35,
+                              ),
+                            ),
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelColor: AppColors.textPrimary,
+                          unselectedLabelColor: AppColors.textMuted,
+                          tabs: const [
+                            Tab(text: 'Usuarios e acessos'),
+                            Tab(text: 'Clientes do portal'),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: TabBar(
-                  controller: _tabController,
-                  isScrollable: width < ResponsiveLayout.compact,
-                  tabAlignment:
-                      width < ResponsiveLayout.compact
-                          ? TabAlignment.start
-                          : null,
-                  indicatorColor: AppColors.accentBlue,
-                  labelColor: AppColors.textPrimary,
-                  unselectedLabelColor: AppColors.textMuted,
-                  tabs: const [
-                    Tab(text: 'Usuarios e acessos'),
-                    Tab(text: 'Clientes do portal'),
-                  ],
-                ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 14),
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [_buildUsersTab(), _buildClientsTab()],
+                child: GranithReveal(
+                  delay: const Duration(milliseconds: 120),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [_buildUsersTab(), _buildClientsTab()],
+                  ),
                 ),
               ),
             ],
@@ -944,8 +998,14 @@ class _AccessManagementPageState extends State<AccessManagementPage>
                 onClear: _clearUserFilters,
               )
             else ...[
-              for (final user in visibleUsers) ...[
-                _buildUserAccessCard(user),
+              for (var index = 0; index < visibleUsers.length; index++) ...[
+                GranithReveal(
+                  delay: Duration(
+                    milliseconds: 24 * ((index > 7 ? 7 : index) + 1),
+                  ),
+                  duration: const Duration(milliseconds: 380),
+                  child: _buildUserAccessCard(visibleUsers[index]),
+                ),
                 const SizedBox(height: 14),
               ],
               if (hasMoreUsers)
@@ -1009,8 +1069,12 @@ class _AccessManagementPageState extends State<AccessManagementPage>
             onClear: _clearClientFilters,
           )
         else ...[
-          for (final client in visibleClients) ...[
-            _buildClientAccountCard(client),
+          for (var index = 0; index < visibleClients.length; index++) ...[
+            GranithReveal(
+              delay: Duration(milliseconds: 24 * ((index > 7 ? 7 : index) + 1)),
+              duration: const Duration(milliseconds: 380),
+              child: _buildClientAccountCard(visibleClients[index]),
+            ),
             const SizedBox(height: 14),
           ],
           if (hasMoreClients)

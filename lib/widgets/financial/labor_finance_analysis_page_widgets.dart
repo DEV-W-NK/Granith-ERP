@@ -12,6 +12,7 @@ import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
@@ -139,54 +140,85 @@ class _LaborFinanceAnalysisPageViewState
                   child: ListView(
                     padding: padding,
                     children: [
-                      _LaborFinanceHeader(summary: summary, period: _period),
+                      GranithReveal(
+                        duration: const Duration(milliseconds: 520),
+                        child: _LaborFinanceHeader(
+                          summary: summary,
+                          period: _period,
+                        ),
+                      ),
                       const SizedBox(height: 14),
                       if (_eventsError != null || _employeesError != null) ...[
-                        _LaborFinanceNotice(
-                          icon: Icons.cloud_off_rounded,
-                          color: Colors.orangeAccent,
-                          text:
-                              'Parte dos dados nao carregou agora. A analise usa o que estiver disponivel e atualiza ao recarregar.',
+                        GranithReveal(
+                          delay: const Duration(milliseconds: 55),
+                          duration: const Duration(milliseconds: 500),
+                          child: _LaborFinanceNotice(
+                            icon: Icons.cloud_off_rounded,
+                            color: Colors.orangeAccent,
+                            text:
+                                'Parte dos dados nao carregou agora. A analise usa o que estiver disponivel e atualiza ao recarregar.',
+                          ),
                         ),
                         const SizedBox(height: 14),
                       ],
-                      _LaborFinanceFilters(
-                        controller: _searchCtrl,
-                        period: _period,
-                        options: filterOptions,
-                        selectedEmployeeKey: selectedEmployeeFilter,
-                        selectedProjectKey: selectedProjectFilter,
-                        exceptionsOnly: _exceptionsOnly,
-                        exportingPdf: _exportingPdf,
-                        onQueryChanged: (_) => setState(() {}),
-                        onClear: () {
-                          _searchCtrl.clear();
-                          setState(() {});
-                        },
-                        onPeriodChanged: (value) {
-                          if (value == null) return;
-                          setState(() => _period = value);
-                        },
-                        onEmployeeChanged: (value) {
-                          if (value == null) return;
-                          setState(() => _employeeFilter = value);
-                        },
-                        onProjectChanged: (value) {
-                          if (value == null) return;
-                          setState(() => _projectFilter = value);
-                        },
-                        onExceptionsOnlyChanged:
-                            (value) => setState(() => _exceptionsOnly = value),
-                        onExportPdf: () => _exportPdf(summary),
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 80),
+                        duration: const Duration(milliseconds: 520),
+                        child: _LaborFinanceFilters(
+                          controller: _searchCtrl,
+                          period: _period,
+                          options: filterOptions,
+                          selectedEmployeeKey: selectedEmployeeFilter,
+                          selectedProjectKey: selectedProjectFilter,
+                          exceptionsOnly: _exceptionsOnly,
+                          exportingPdf: _exportingPdf,
+                          onQueryChanged: (_) => setState(() {}),
+                          onClear: () {
+                            _searchCtrl.clear();
+                            setState(() {});
+                          },
+                          onPeriodChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _period = value);
+                          },
+                          onEmployeeChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _employeeFilter = value);
+                          },
+                          onProjectChanged: (value) {
+                            if (value == null) return;
+                            setState(() => _projectFilter = value);
+                          },
+                          onExceptionsOnlyChanged:
+                              (value) =>
+                                  setState(() => _exceptionsOnly = value),
+                          onExportPdf: () => _exportPdf(summary),
+                        ),
                       ),
                       const SizedBox(height: 14),
-                      _LaborFinanceMetricGrid(summary: summary),
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 130),
+                        duration: const Duration(milliseconds: 540),
+                        child: _LaborFinanceMetricGrid(summary: summary),
+                      ),
                       const SizedBox(height: 14),
-                      _LaborFinanceDiagnosticsPanel(summary: summary),
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 170),
+                        duration: const Duration(milliseconds: 540),
+                        child: _LaborFinanceDiagnosticsPanel(summary: summary),
+                      ),
                       const SizedBox(height: 14),
-                      _LaborFinanceContentGrid(summary: summary),
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 210),
+                        duration: const Duration(milliseconds: 560),
+                        child: _LaborFinanceContentGrid(summary: summary),
+                      ),
                       const SizedBox(height: 14),
-                      _LaborRecentExceptionsPanel(summary: summary),
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 250),
+                        duration: const Duration(milliseconds: 560),
+                        child: _LaborRecentExceptionsPanel(summary: summary),
+                      ),
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -447,48 +479,66 @@ class _LaborFinanceHeader extends StatelessWidget {
         emphasized: true,
         radius: 22,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: _accentIconSurface(AppColors.accentGold, radius: 16),
-            child: const Icon(
-              Icons.price_check_rounded,
-              color: AppColors.accentGold,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Ponto e Custos',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
+          final title = Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: _accentIconSurface(
+                  AppColors.accentGold,
+                  radius: 16,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Analise financeira de horas trabalhadas, custo estimado e excecoes de cerca no app mobile.',
-                  style: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.92),
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
+                child: const Icon(
+                  Icons.price_check_rounded,
+                  color: AppColors.accentGold,
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Wrap(
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'FINANCEIRO  /  FORCA DE TRABALHO',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.accentGold,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Ponto e Custos',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Horas trabalhadas, custo estimado e excecoes de cerca sincronizadas pelo app mobile.',
+                      style: TextStyle(
+                        color: AppColors.textSecondary.withValues(alpha: 0.92),
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+          final badges = Wrap(
             spacing: 8,
             runSpacing: 8,
-            alignment: WrapAlignment.end,
+            alignment: compact ? WrapAlignment.start : WrapAlignment.end,
             children: [
               _LaborHeaderBadge(
                 icon: Icons.calendar_month_rounded,
@@ -501,8 +551,24 @@ class _LaborFinanceHeader extends StatelessWidget {
                 color: AppColors.accentGold,
               ),
             ],
-          ),
-        ],
+          );
+
+          if (compact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [title, const SizedBox(height: 14), badges],
+            );
+          }
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: title),
+              const SizedBox(width: 16),
+              Flexible(child: badges),
+            ],
+          );
+        },
       ),
     );
   }
@@ -548,7 +614,7 @@ class _LaborFinanceFilters extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
         elevated: false,
-        radius: 18,
+        radius: 20,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1136,7 +1202,7 @@ class _LaborPanel extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
         elevated: false,
-        radius: 20,
+        radius: 18,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

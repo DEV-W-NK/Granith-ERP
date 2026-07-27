@@ -14,6 +14,7 @@ import 'package:project_granith/controllers/financial_controller.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 
 enum _FinancialStatusFilter { all, open, paid, overdue, cancelled }
 
@@ -120,11 +121,9 @@ class _FinancialPageViewState extends State<FinancialPageView>
             .toList();
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: AppColors.appBackgroundGradient,
-        ),
+        color: Colors.transparent,
         child:
             ctrl.isLoading
                 ? const Center(
@@ -245,12 +244,26 @@ class _FinancialHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final title = Row(
       children: [
         Container(
-          width: isDesktop ? 52 : 46,
-          height: isDesktop ? 52 : 46,
-          decoration: AppDecorations.iconTile(AppColors.accentGold),
+          width: isDesktop ? 50 : 46,
+          height: isDesktop ? 50 : 46,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.accentGold.withValues(alpha: 0.24),
+                AppColors.accentGreen.withValues(alpha: 0.09),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(
+              color: AppColors.accentGold.withValues(alpha: 0.44),
+            ),
+            boxShadow: AppColors.auraShadows(AppColors.accentGold),
+          ),
           child: const Icon(
             Icons.account_balance_wallet_outlined,
             color: AppColors.accentGold,
@@ -263,10 +276,19 @@ class _FinancialHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Entradas e Saidas',
+                'FINANCEIRO E CONTROLADORIA',
+                style: TextStyle(
+                  color: AppColors.accentBlue,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Entradas e Saídas',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 26,
+                  fontSize: 25,
                   fontWeight: FontWeight.w900,
                 ),
                 maxLines: 1,
@@ -275,52 +297,76 @@ class _FinancialHeader extends StatelessWidget {
               SizedBox(height: 3),
               Text(
                 'Fluxo de caixa, contas a pagar e contas a receber.',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
         ),
-        if (isDesktop) ...[
-          const SizedBox(width: 12),
-          FilledButton.icon(
-            onPressed:
-                () => TransactionFormDialog.show(
-                  context,
-                  forceType: TransactionType.income,
-                ),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accentGreen,
-              foregroundColor: AppColors.primaryDark,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(Icons.arrow_upward, size: 17),
-            label: const Text('Nova entrada'),
-          ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed:
-                () => TransactionFormDialog.show(
-                  context,
-                  forceType: TransactionType.expense,
-                ),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accentGold,
-              foregroundColor: AppColors.primaryDark,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            icon: const Icon(Icons.arrow_downward, size: 17),
-            label: const Text('Nova saida'),
-          ),
-        ],
       ],
+    );
+
+    final actions = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.end,
+      children: [
+        FilledButton.icon(
+          onPressed:
+              () => TransactionFormDialog.show(
+                context,
+                forceType: TransactionType.income,
+              ),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.accentGreen,
+            foregroundColor: AppColors.primaryDark,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(11),
+            ),
+          ),
+          icon: const Icon(Icons.north_east_rounded, size: 17),
+          label: const Text('Nova entrada'),
+        ),
+        FilledButton.icon(
+          onPressed:
+              () => TransactionFormDialog.show(
+                context,
+                forceType: TransactionType.expense,
+              ),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.accentGold,
+            foregroundColor: AppColors.primaryDark,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(11),
+            ),
+          ),
+          icon: const Icon(Icons.south_west_rounded, size: 17),
+          label: const Text('Nova saída'),
+        ),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        elevated: false,
+        radius: 18,
+      ),
+      child:
+          isDesktop
+              ? Row(
+                children: [
+                  Expanded(child: title),
+                  const SizedBox(width: 18),
+                  actions,
+                ],
+              )
+              : title,
     );
   }
 }
@@ -545,101 +591,83 @@ class _FinancialBalanceHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: resultColor.withValues(alpha: 0.28)),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -34,
-            top: -40,
-            child: IgnorePointer(
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: resultColor.withValues(alpha: 0.08),
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: AppDecorations.iconTile(resultColor),
+                child: Icon(
+                  positive
+                      ? Icons.trending_up_rounded
+                      : Icons.trending_down_rounded,
+                  color: resultColor,
                 ),
               ),
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: AppDecorations.iconTile(resultColor),
-                    child: Icon(
-                      positive
-                          ? Icons.trending_up_rounded
-                          : Icons.trending_down_rounded,
-                      color: resultColor,
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Saldo operacional',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 11),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Saldo operacional',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        Text(
-                          positive ? 'Fluxo positivo' : 'Fluxo em atencao',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: resultColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: balance),
-                duration: const Duration(milliseconds: 650),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) {
-                  return FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      currency.format(value),
+                    Text(
+                      positive ? 'Fluxo positivo' : 'Fluxo em atencao',
                       maxLines: 1,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 34,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: resultColor,
+                        fontSize: 13,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-              _FinancialPulseBar(value: margin, color: resultColor),
-              const SizedBox(height: 9),
-              Text(
-                'Margem sobre entradas recebidas: ${(margin * 100).toStringAsFixed(1)}%',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                  ],
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 22),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: balance),
+            duration: const Duration(milliseconds: 650),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) {
+              return FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  currency.format(value),
+                  maxLines: 1,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 34,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          _FinancialPulseBar(value: margin, color: resultColor),
+          const SizedBox(height: 9),
+          Text(
+            'Margem sobre entradas recebidas: ${(margin * 100).toStringAsFixed(1)}%',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1364,12 +1392,10 @@ class _FinancialLedgerPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.borderColor.withValues(alpha: 0.58),
-        ),
+      decoration: AppDecorations.cardSurface(
+        accent: AppColors.accentGold,
+        elevated: false,
+        radius: 22,
       ),
       child: Column(
         children: [
@@ -1582,19 +1608,24 @@ class _FinancialTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark.withValues(alpha: 0.48),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderColor.withValues(alpha: 0.5)),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentGold,
+        radius: 13,
       ),
       child: TabBar(
         controller: tabController,
         indicator: BoxDecoration(
-          color: AppColors.accentGold.withValues(alpha: 0.14),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.accentGold.withValues(alpha: 0.20),
+              AppColors.accentBlue.withValues(alpha: 0.08),
+            ],
+          ),
           borderRadius: BorderRadius.circular(9),
           border: Border.all(
-            color: AppColors.accentGold.withValues(alpha: 0.35),
+            color: AppColors.accentGold.withValues(alpha: 0.44),
           ),
+          boxShadow: AppColors.glowShadows(AppColors.accentGold),
         ),
         indicatorSize: TabBarIndicatorSize.tab,
         labelColor: AppColors.accentGold,
@@ -1604,9 +1635,48 @@ class _FinancialTabs extends StatelessWidget {
         unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700),
         isScrollable: !isDesktop,
         tabs: [
-          Tab(text: 'Todas ($allCount)'),
-          Tab(text: 'Entradas ($incomeCount)'),
-          Tab(text: 'Saidas ($expenseCount)'),
+          _FinancialTab(
+            icon: Icons.swap_vert_rounded,
+            label: 'Todas',
+            count: allCount,
+          ),
+          _FinancialTab(
+            icon: Icons.north_east_rounded,
+            label: 'Entradas',
+            count: incomeCount,
+          ),
+          _FinancialTab(
+            icon: Icons.south_west_rounded,
+            label: 'Saídas',
+            count: expenseCount,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FinancialTab extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final int count;
+
+  const _FinancialTab({
+    required this.icon,
+    required this.label,
+    required this.count,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      height: 40,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15),
+          const SizedBox(width: 6),
+          Text('$label ($count)'),
         ],
       ),
     );
@@ -1636,15 +1706,20 @@ class _TransactionList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
         final group = groups[index];
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TransactionDateHeader(group: group),
-            const SizedBox(height: 8),
-            ...group.transactions.map(
-              (transaction) => TransactionListItem(transaction: transaction),
-            ),
-          ],
+        return GranithReveal(
+          delay: Duration(milliseconds: 28 * (index % 7)),
+          duration: const Duration(milliseconds: 420),
+          beginOffset: const Offset(0, 0.022),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _TransactionDateHeader(group: group),
+              const SizedBox(height: 8),
+              ...group.transactions.map(
+                (transaction) => TransactionListItem(transaction: transaction),
+              ),
+            ],
+          ),
         );
       },
     );

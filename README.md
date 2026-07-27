@@ -160,6 +160,10 @@ test/            cobertura automatizada
 docs/            auditorias e guias tecnicos
 ```
 
+O fluxo funcional completo, incluindo herança de dados, permissões, compras,
+rotas, ponto, tarefas, notificações e offline first, está documentado em
+[`docs/fluxo_completo_granith.md`](docs/fluxo_completo_granith.md).
+
 ## Integracao ERP + Mobile
 
 O ERP e a fonte principal de cadastro, aprovacao, analise e gestao. O app mobile coleta dados de campo e sincroniza com o mesmo banco:

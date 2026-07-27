@@ -7,6 +7,7 @@ import 'package:project_granith/services/project_measurement_service.dart';
 import 'package:project_granith/services/service_projetos.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:project_granith/widgets/project_measurements/project_measurement_form_dialog.dart';
 import 'package:provider/provider.dart';
 
@@ -191,7 +192,7 @@ class _ProjectMeasurementsPageViewState
     );
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundDark,
+      backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: () => _loadData(showLoader: false),
         color: AppColors.accentBlue,
@@ -206,36 +207,57 @@ class _ProjectMeasurementsPageViewState
                     width,
                   ).add(const EdgeInsets.only(bottom: 68)),
                   children: [
-                    _buildHeader(context, summary),
+                    GranithReveal(
+                      duration: const Duration(milliseconds: 520),
+                      child: _buildHeader(context, summary),
+                    ),
                     const SizedBox(height: 12),
-                    _buildToolbar(filteredMeasurements.length),
+                    GranithReveal(
+                      delay: const Duration(milliseconds: 70),
+                      duration: const Duration(milliseconds: 520),
+                      child: _buildToolbar(filteredMeasurements.length),
+                    ),
                     const SizedBox(height: 12),
-                    _buildSummaryStrip(summary),
+                    GranithReveal(
+                      delay: const Duration(milliseconds: 120),
+                      duration: const Duration(milliseconds: 540),
+                      child: _buildSummaryStrip(summary),
+                    ),
                     const SizedBox(height: 14),
                     if (_errorMessage != null) ...[
-                      _buildMessageCard(
-                        title: 'Falha ao consultar medicoes',
-                        message: _errorMessage!,
-                        color: AppColors.accentRed,
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 155),
+                        child: _buildMessageCard(
+                          title: 'Falha ao consultar medicoes',
+                          message: _errorMessage!,
+                          color: AppColors.accentRed,
+                        ),
                       ),
                       const SizedBox(height: 14),
                     ],
                     if (filteredMeasurements.isEmpty)
-                      _buildMessageCard(
-                        title: 'Nenhuma medicao registrada',
-                        message:
-                            _projectSearchQuery.trim().isEmpty &&
-                                    _statusFilter ==
-                                        _MeasurementStatusFilter.all
-                                ? 'Cadastre a primeira medicao para transformar valor executado em progresso estimado da obra.'
-                                : 'Nenhuma medicao foi encontrada para os filtros atuais.',
-                        color: AppColors.accentGold,
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 175),
+                        child: _buildMessageCard(
+                          title: 'Nenhuma medicao registrada',
+                          message:
+                              _projectSearchQuery.trim().isEmpty &&
+                                      _statusFilter ==
+                                          _MeasurementStatusFilter.all
+                                  ? 'Cadastre a primeira medicao para transformar valor executado em progresso estimado da obra.'
+                                  : 'Nenhuma medicao foi encontrada para os filtros atuais.',
+                          color: AppColors.accentGold,
+                        ),
                       )
                     else
-                      _MeasurementsBoard(
-                        measurements: filteredMeasurements,
-                        onEdit: _openMeasurementDialog,
-                        onDelete: _deleteMeasurement,
+                      GranithReveal(
+                        delay: const Duration(milliseconds: 175),
+                        duration: const Duration(milliseconds: 560),
+                        child: _MeasurementsBoard(
+                          measurements: filteredMeasurements,
+                          onEdit: _openMeasurementDialog,
+                          onDelete: _deleteMeasurement,
+                        ),
                       ),
                   ],
                 ),
@@ -268,7 +290,8 @@ class _ProjectMeasurementsPageViewState
       padding: const EdgeInsets.all(16),
       decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
-        radius: 14,
+        emphasized: true,
+        radius: 22,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -385,9 +408,10 @@ class _ProjectMeasurementsPageViewState
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(10),
-      decoration: AppDecorations.cardInnerSurface(
+      decoration: AppDecorations.cardSurface(
         accent: AppColors.accentBlue,
-        radius: 12,
+        elevated: false,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -915,10 +939,15 @@ class _MeasurementsBoard extends StatelessWidget {
             children: [
               for (var index = 0; index < measurements.length; index++) ...[
                 if (index > 0) const SizedBox(height: 12),
-                _MeasurementCard(
-                  measurement: measurements[index],
-                  onEdit: () => onEdit(measurements[index]),
-                  onDelete: () => onDelete(measurements[index]),
+                GranithReveal(
+                  delay: Duration(milliseconds: 30 * (index > 6 ? 6 : index)),
+                  duration: const Duration(milliseconds: 460),
+                  beginOffset: const Offset(0, 0.025),
+                  child: _MeasurementCard(
+                    measurement: measurements[index],
+                    onEdit: () => onEdit(measurements[index]),
+                    onDelete: () => onDelete(measurements[index]),
+                  ),
                 ),
               ],
             ],
@@ -930,13 +959,18 @@ class _MeasurementsBoard extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            for (final measurement in measurements)
+            for (var index = 0; index < measurements.length; index++)
               SizedBox(
                 width: cardWidth,
-                child: _MeasurementCard(
-                  measurement: measurement,
-                  onEdit: () => onEdit(measurement),
-                  onDelete: () => onDelete(measurement),
+                child: GranithReveal(
+                  delay: Duration(milliseconds: 30 * (index > 6 ? 6 : index)),
+                  duration: const Duration(milliseconds: 460),
+                  beginOffset: const Offset(0, 0.025),
+                  child: _MeasurementCard(
+                    measurement: measurements[index],
+                    onEdit: () => onEdit(measurements[index]),
+                    onDelete: () => onDelete(measurements[index]),
+                  ),
                 ),
               ),
           ],
@@ -977,7 +1011,7 @@ class _MeasurementCard extends StatelessWidget {
       decoration: AppDecorations.cardSurface(
         accent: measurement.status.color,
         emphasized: measurement.status != ProjectMeasurementStatus.paid,
-        radius: 12,
+        radius: 18,
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1221,7 +1255,7 @@ class _SummaryCard extends StatelessWidget {
       width: double.infinity,
       height: 94,
       padding: const EdgeInsets.all(11),
-      decoration: AppDecorations.statCardSurface(color, radius: 12),
+      decoration: AppDecorations.statCardSurface(color, radius: 18),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,

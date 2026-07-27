@@ -172,10 +172,10 @@ class Purchase {
       'requisitionId': _nullableText(requisitionId),
       'financialTransactionId': _nullableText(financialTransactionId),
       'receivedBy': receivedBy,
-      'invoiceNumber': invoiceNumber,
-      'invoiceAccessKey': invoiceAccessKey,
-      'notes': notes,
-      'approvalSector': approvalSector,
+      'invoiceNumber': _requiredText(invoiceNumber),
+      'invoiceAccessKey': _requiredText(invoiceAccessKey),
+      'notes': _requiredText(notes),
+      'approvalSector': _requiredText(approvalSector, fallback: 'Geral'),
       'quotedBy': quotedBy,
       'quotedByName': quotedByName,
       'quotedAt': DbValue.toPrimitive(quotedAt),
@@ -339,5 +339,10 @@ class Purchase {
   static String? _nullableText(String? value) {
     final trimmed = value?.trim();
     return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  static String _requiredText(String? value, {String fallback = ''}) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? fallback : trimmed;
   }
 }

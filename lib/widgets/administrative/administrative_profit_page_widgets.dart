@@ -7,6 +7,7 @@ import 'package:project_granith/controllers/administrative_profit_controller.dar
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/animations/granith_motion.dart';
 import 'package:provider/provider.dart';
 
 class AdministrativeProfitPageView extends StatefulWidget {
@@ -59,13 +60,21 @@ class _AdministrativeProfitPageViewState
                       child: ListView(
                         padding: padding,
                         children: [
-                          _AdministrativeProfitHeader(
-                            summary: summary,
-                            isLoading: controller.isLoading,
-                            onRefresh: controller.load,
+                          GranithReveal(
+                            delay: const Duration(milliseconds: 40),
+                            child: _AdministrativeProfitHeader(
+                              summary: summary,
+                              isLoading: controller.isLoading,
+                              onRefresh: controller.load,
+                            ),
                           ),
                           const SizedBox(height: 14),
-                          _AdministrativeProfitFilters(controller: controller),
+                          GranithReveal(
+                            delay: const Duration(milliseconds: 100),
+                            child: _AdministrativeProfitFilters(
+                              controller: controller,
+                            ),
+                          ),
                           if (controller.error != null) ...[
                             const SizedBox(height: 14),
                             _NoticeBanner(
@@ -87,9 +96,19 @@ class _AdministrativeProfitPageViewState
                               ),
                             ),
                           ] else ...[
-                            _AdministrativeMetricGrid(summary: summary),
+                            GranithReveal(
+                              delay: const Duration(milliseconds: 160),
+                              child: _AdministrativeMetricGrid(
+                                summary: summary,
+                              ),
+                            ),
                             const SizedBox(height: 14),
-                            _AdministrativeProfitWorkspace(summary: summary),
+                            GranithReveal(
+                              delay: const Duration(milliseconds: 220),
+                              child: _AdministrativeProfitWorkspace(
+                                summary: summary,
+                              ),
+                            ),
                           ],
                           const SizedBox(height: 20),
                         ],
