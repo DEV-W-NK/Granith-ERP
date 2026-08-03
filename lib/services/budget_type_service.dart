@@ -2,9 +2,11 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_type.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class BudgetTypeService {
   final String _collection = 'budget_types';
+  final ArchiveService _archiveService = ArchiveService();
 
   Future<String> createBudgetType(BudgetType budgetType) async {
     try {
@@ -40,7 +42,11 @@ class BudgetTypeService {
 
   Future<void> deleteBudgetType(String id) async {
     try {
-      await AppSupabase.client.from(_collection).delete().eq('id', id);
+      await _archiveService.archive(
+        table: _collection,
+        id: id,
+        reason: 'Tipo de orcamento removido pelo usuario.',
+      );
       _notifyBudgetTypesChanged();
     } catch (e) {
       throw Exception('Erro ao deletar tipo de orcamento: $e');

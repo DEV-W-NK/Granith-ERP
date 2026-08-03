@@ -176,8 +176,18 @@ O ERP e a fonte principal de cadastro, aprovacao, analise e gestao. O app mobile
 | Controla requisicoes e compras | Funcionario solicita material e acompanha status |
 | Consolida financeiro e DRE | Mobile envia eventos de campo e evidencias |
 | Gerencia notificacoes | App recebe push e sincroniza dados locais |
+| Publica documentos e relatorios tecnicos | Confirma entregas ou solicita revisao, inclusive offline |
+
+O P4 do Granith Engenharia adiciona entregas tecnicas, relatorios PDF,
+publicacao no portal do cliente, Realtime, cache offline e auditoria
+correlacionada entre os tres aplicativos. O contrato completo esta em
+[`docs/engineering_ecosystem_integration.md`](docs/engineering_ecosystem_integration.md).
 
 ## Seguranca
+
+O levantamento P0 mais recente, os controles aplicados e o roteiro de
+publicacao estao em
+[`docs/security/p0_security_hardening_2026-07-28.md`](docs/security/p0_security_hardening_2026-07-28.md).
 
 Base atual:
 
@@ -322,12 +332,24 @@ Comandos:
 npx supabase login
 npx supabase link --project-ref SEU_PROJECT_REF
 npx supabase db push
-npx supabase functions deploy dispatch_mobile_push
+npx supabase functions deploy dispatch_mobile_push --no-verify-jwt
 npx supabase functions deploy manage_internal_user
 npx supabase functions deploy gemini_generate
+npx supabase functions deploy engineering_pades --no-verify-jwt
 ```
 
 Secrets server-side ficam em Supabase Secrets, nunca no Flutter Web.
+O scheduler, o retry por dispositivo e o checklist de ativacao do push estao
+documentados em [docs/mobile_push_notifications.md](docs/mobile_push_notifications.md).
+O workflow de revisões, assinatura PAdES e publicação no portal está
+documentado em
+[docs/engineering_document_workflow.md](docs/engineering_document_workflow.md).
+O worker local, a escala obrigatória, os pacotes de regras e a revisão humana
+das plantas estão documentados em
+[docs/engineering_drawing_analysis.md](docs/engineering_drawing_analysis.md).
+O fluxo de quantitativos, catálogo, memória de cálculo, orçamento e requisição
+está documentado em
+[docs/engineering_quantity_takeoffs.md](docs/engineering_quantity_takeoffs.md).
 
 ## Testes
 

@@ -2,9 +2,11 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/job_role_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class JobRoleService {
   static const _collection = 'job_roles';
+  final ArchiveService _archiveService = ArchiveService();
 
   Stream<List<JobRoleModel>> getJobRoles() {
     return AppSupabase.client
@@ -39,7 +41,11 @@ class JobRoleService {
   }
 
   Future<void> deleteJobRole(String id) async {
-    await AppSupabase.client.from(_collection).delete().eq('id', id);
+    await _archiveService.archive(
+      table: _collection,
+      id: id,
+      reason: 'Cargo removido pelo usuario.',
+    );
     _notifyJobRolesChanged();
   }
 

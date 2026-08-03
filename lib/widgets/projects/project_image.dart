@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/storage/private_storage_image.dart';
 
 class ProjectImageWidget extends StatelessWidget {
   final String? imageUrl;
@@ -41,41 +42,24 @@ class ProjectImageWidget extends StatelessWidget {
       return _buildPlaceholder();
     }
 
-    // Verificar se a URL é válida
-    if (!_isValidUrl(imageUrl!)) {
-      return _buildPlaceholder();
-    }
-
-    return Image.network(
-      imageUrl!,
+    return PrivateStorageImage(
+      reference: imageUrl,
       width: width,
       height: height,
       fit: fit,
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-
-        return Center(
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child: CircularProgressIndicator(
-              value:
-                  loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-              strokeWidth: 2,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.accentGold,
-              ),
+      loading: Center(
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              AppColors.accentGold,
             ),
           ),
-        );
-      },
-      errorBuilder: (context, error, stackTrace) {
-        print('Erro ao carregar imagem do projeto: $error');
-        return _buildErrorPlaceholder();
-      },
+        ),
+      ),
+      error: _buildErrorPlaceholder(),
     );
   }
 
@@ -91,14 +75,14 @@ class ProjectImageWidget extends StatelessWidget {
             Icon(
               placeholderIcon,
               size: (height != null && height! < 100) ? 24 : 40,
-              color: AppColors.textMuted.withOpacity(0.5),
+              color: AppColors.textMuted.withValues(alpha: 0.5),
             ),
             if (height == null || height! >= 80) ...[
               const SizedBox(height: 8),
               Text(
                 'Sem imagem',
                 style: TextStyle(
-                  color: AppColors.textMuted.withOpacity(0.7),
+                  color: AppColors.textMuted.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -121,14 +105,14 @@ class ProjectImageWidget extends StatelessWidget {
             Icon(
               Icons.broken_image,
               size: (height != null && height! < 100) ? 24 : 40,
-              color: AppColors.accentRed.withOpacity(0.7),
+              color: AppColors.accentRed.withValues(alpha: 0.7),
             ),
             if (height == null || height! >= 80) ...[
               const SizedBox(height: 8),
               Text(
                 'Erro ao carregar',
                 style: TextStyle(
-                  color: AppColors.accentRed.withOpacity(0.7),
+                  color: AppColors.accentRed.withValues(alpha: 0.7),
                   fontSize: 12,
                 ),
               ),
@@ -137,17 +121,6 @@ class ProjectImageWidget extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  bool _isValidUrl(String url) {
-    try {
-      final uri = Uri.parse(url);
-      return uri.isAbsolute &&
-          (uri.scheme == 'http' || uri.scheme == 'https') &&
-          uri.host.isNotEmpty;
-    } catch (e) {
-      return false;
-    }
   }
 }
 

@@ -6,11 +6,13 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/vehicle_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 class VehicleService {
   static const _table = 'vehicles';
   static const _fuelLogsTable = 'vehicle_fuel_logs';
+  final ArchiveService _archiveService = ArchiveService();
 
   Stream<List<Vehicle>> watchVehicles() {
     return AppSupabase.client
@@ -79,7 +81,11 @@ class VehicleService {
   }
 
   Future<void> deleteVehicle(String id) async {
-    await AppSupabase.client.from(_table).delete().eq('id', id);
+    await _archiveService.archive(
+      table: _table,
+      id: id,
+      reason: 'Veiculo removido pelo usuario.',
+    );
     _notifyVehiclesChanged();
   }
 

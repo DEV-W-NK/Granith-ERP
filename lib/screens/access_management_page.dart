@@ -94,6 +94,16 @@ class _AccessManagementPageState extends State<AccessManagementPage>
       description: 'Permite registrar entradas, saidas e ajustes.',
     ),
     _PermissionOption(
+      code: PermissionCodes.purchasesRead,
+      label: 'Visualizar compras',
+      description: 'Permite consultar requisicoes, cotacoes e pedidos.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.purchasesWrite,
+      label: 'Gerenciar compras',
+      description: 'Permite criar e alterar requisicoes, cotacoes e pedidos.',
+    ),
+    _PermissionOption(
       code: PermissionCodes.purchasesApprove,
       label: 'Aprovar orcamentos de compra',
       description:
@@ -118,6 +128,26 @@ class _AccessManagementPageState extends State<AccessManagementPage>
           'Permite quitar ou cancelar contas a pagar originadas por compras.',
     ),
     _PermissionOption(
+      code: PermissionCodes.fleetRead,
+      label: 'Visualizar frota',
+      description: 'Permite consultar veiculos, abastecimentos e motoristas.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.fleetManage,
+      label: 'Gerenciar frota',
+      description: 'Permite cadastrar veiculos e registrar operacoes da frota.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.logisticsRead,
+      label: 'Visualizar logistica',
+      description: 'Permite consultar rotas, coletas e entregas.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.logisticsManage,
+      label: 'Gerenciar logistica',
+      description: 'Permite planejar rotas, coletas e entregas.',
+    ),
+    _PermissionOption(
       code: 'people.manage',
       label: 'Gerenciar pessoas',
       description: 'Permite administrar colaboradores, cargos e beneficios.',
@@ -132,6 +162,11 @@ class _AccessManagementPageState extends State<AccessManagementPage>
       code: 'access.manage',
       label: 'Gerenciar acessos',
       description: 'Permite alterar papeis, permissoes e acessos de clientes.',
+    ),
+    _PermissionOption(
+      code: PermissionCodes.auditRead,
+      label: 'Consultar auditoria',
+      description: 'Permite consultar o historico imutavel de alteracoes.',
     ),
     _PermissionOption(
       code: 'settings.manage',

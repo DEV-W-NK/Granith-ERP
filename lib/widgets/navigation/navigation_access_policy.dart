@@ -13,10 +13,12 @@ abstract final class NavigationAccessPolicy {
 
   static bool canAccess(int moduleIndex, UserModel? user) {
     if (moduleIndex == 0) return true;
-    if (user == null || user.isAdmin) return true;
+    if (user == null) return false;
+    if (user.isAdmin) return true;
 
     final permissions = user.permissions.toSet();
-    if (permissions.isEmpty || permissions.contains('admin')) return true;
+    if (permissions.contains('admin')) return true;
+    if (permissions.isEmpty) return false;
 
     return switch (moduleIndex) {
       1 => _hasAny(permissions, const [

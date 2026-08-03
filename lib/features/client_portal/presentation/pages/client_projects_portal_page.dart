@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/features/client_portal/data/client_engineering_document_service.dart';
 import 'package:project_granith/features/client_portal/presentation/viewmodels/client_projects_portal_view_model.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/project_measurement_model.dart';
@@ -9,6 +12,8 @@ import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/chrome/granith_app_backdrop.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ClientProjectsPortalPage extends StatelessWidget {
   const ClientProjectsPortalPage({
@@ -36,15 +41,78 @@ class _ClientProjectsPortalView extends StatefulWidget {
 }
 
 class _ClientProjectsPortalViewState extends State<_ClientProjectsPortalView> {
+  RealtimeChannel? _realtimeChannel;
+  Timer? _refreshDebounce;
+  bool _realtimeStarted = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<ClientProjectsPortalViewModel>().load(
-        context.read<AuthViewModel>(),
+      final auth = context.read<AuthViewModel>();
+      unawaited(context.read<ClientProjectsPortalViewModel>().load(auth));
+      _startRealtime();
+    });
+  }
+
+  void _startRealtime() {
+    if (_realtimeStarted) return;
+    try {
+      final client = Supabase.instance.client;
+      final channel = client
+          .channel('client-engineering-publications')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'engineering_client_document_publications',
+            callback: (_) => _scheduleRealtimeRefresh(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'engineering_client_report_publications',
+            callback: (_) => _scheduleRealtimeRefresh(),
+          )
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'engineering_ecosystem_events',
+            callback: (_) => _scheduleRealtimeRefresh(),
+          );
+      channel.subscribe();
+      _realtimeChannel = channel;
+      _realtimeStarted = true;
+    } on AssertionError {
+      // Widget tests can exercise the portal without Supabase initialization.
+    }
+  }
+
+  void _scheduleRealtimeRefresh() {
+    _refreshDebounce?.cancel();
+    _refreshDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      unawaited(
+        context.read<ClientProjectsPortalViewModel>().load(
+          context.read<AuthViewModel>(),
+          force: true,
+        ),
       );
     });
+  }
+
+  @override
+  void dispose() {
+    _refreshDebounce?.cancel();
+    final channel = _realtimeChannel;
+    if (channel != null) {
+      try {
+        unawaited(Supabase.instance.client.removeChannel(channel));
+      } on AssertionError {
+        // No initialized client in isolated widget tests.
+      }
+    }
+    super.dispose();
   }
 
   @override
@@ -132,6 +200,20 @@ class _ClientProjectsPortalViewState extends State<_ClientProjectsPortalView> {
                                                 .approvedMeasurementsForProject(
                                                   project.id,
                                                 ),
+                                            engineeringDocuments: viewModel
+                                                .engineeringDocumentsForProject(
+                                                  project.id,
+                                                ),
+                                            engineeringReports: viewModel
+                                                .engineeringReportsForProject(
+                                                  project.id,
+                                                ),
+                                            onOpenEngineeringDocument:
+                                                viewModel
+                                                    .createEngineeringDocumentUri,
+                                            onOpenEngineeringReport:
+                                                viewModel
+                                                    .createEngineeringReportUri,
                                           ),
                                         ),
                                       )
@@ -336,6 +418,18 @@ class _ProjectsSummaryStrip extends StatelessWidget {
           subtitle: 'liberadas para consulta',
           color: AppColors.auraCyan,
         ),
+        _SummaryCard(
+          title: 'Documentos tecnicos',
+          value: viewModel.totalEngineeringDocuments.toString(),
+          subtitle: 'revisoes aprovadas e publicadas',
+          color: AppColors.accentGold,
+        ),
+        _SummaryCard(
+          title: 'Relatorios tecnicos',
+          value: viewModel.totalEngineeringReports.toString(),
+          subtitle: 'PDFs aprovados e publicados',
+          color: AppColors.accentBlue,
+        ),
       ],
     );
   }
@@ -346,11 +440,21 @@ class _ClientProjectProgressCard extends StatelessWidget {
     required this.project,
     required this.signedLogs,
     required this.approvedMeasurements,
+    required this.engineeringDocuments,
+    required this.engineeringReports,
+    required this.onOpenEngineeringDocument,
+    required this.onOpenEngineeringReport,
   });
 
   final Project project;
   final List<DailyLogModel> signedLogs;
   final List<ProjectMeasurement> approvedMeasurements;
+  final List<ClientEngineeringDocument> engineeringDocuments;
+  final List<ClientEngineeringReport> engineeringReports;
+  final Future<Uri> Function(ClientEngineeringDocument document)
+  onOpenEngineeringDocument;
+  final Future<Uri> Function(ClientEngineeringReport report)
+  onOpenEngineeringReport;
 
   @override
   Widget build(BuildContext context) {
@@ -468,6 +572,20 @@ class _ClientProjectProgressCard extends StatelessWidget {
           if (approvedMeasurements.isNotEmpty) ...[
             const SizedBox(height: 18),
             _ClientMeasurementsPreview(measurements: approvedMeasurements),
+          ],
+          if (engineeringDocuments.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _ClientEngineeringDocumentsPreview(
+              documents: engineeringDocuments,
+              onOpen: onOpenEngineeringDocument,
+            ),
+          ],
+          if (engineeringReports.isNotEmpty) ...[
+            const SizedBox(height: 18),
+            _ClientEngineeringReportsPreview(
+              reports: engineeringReports,
+              onOpen: onOpenEngineeringReport,
+            ),
           ],
           if (signedLogs.isNotEmpty) ...[
             const SizedBox(height: 18),
@@ -707,6 +825,256 @@ class _MeasurementLine extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ClientEngineeringDocumentsPreview extends StatelessWidget {
+  const _ClientEngineeringDocumentsPreview({
+    required this.documents,
+    required this.onOpen,
+  });
+
+  final List<ClientEngineeringDocument> documents;
+  final Future<Uri> Function(ClientEngineeringDocument document) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleDocuments = documents.take(6).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentGold,
+        radius: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PortalSectionTitle(
+            icon: Icons.architecture_rounded,
+            title: 'Documentos tecnicos publicados (${documents.length})',
+          ),
+          const SizedBox(height: 12),
+          ...visibleDocuments.map(
+            (document) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _openDocument(context, document),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: AppDecorations.cardInnerSurface(radius: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: AppDecorations.iconTile(
+                            document.digitallySigned
+                                ? AppColors.accentGreen
+                                : AppColors.accentGold,
+                          ),
+                          child: Icon(
+                            document.digitallySigned
+                                ? Icons.verified_user_outlined
+                                : Icons.picture_as_pdf_outlined,
+                            color:
+                                document.digitallySigned
+                                    ? AppColors.accentGreen
+                                    : AppColors.accentGold,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                document.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${document.discipline} · ${document.revisionCode}'
+                                '${document.pageCount > 0 ? ' · ${document.pageCount} pag.' : ''}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.open_in_new_rounded,
+                          color: AppColors.textSecondary,
+                          size: 19,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDocument(
+    BuildContext context,
+    ClientEngineeringDocument document,
+  ) async {
+    try {
+      final uri = await onOpen(document);
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw StateError('browser_rejected');
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Nao foi possivel abrir o documento tecnico neste momento.',
+          ),
+        ),
+      );
+    }
+  }
+}
+
+class _ClientEngineeringReportsPreview extends StatelessWidget {
+  const _ClientEngineeringReportsPreview({
+    required this.reports,
+    required this.onOpen,
+  });
+
+  final List<ClientEngineeringReport> reports;
+  final Future<Uri> Function(ClientEngineeringReport report) onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final visibleReports = reports.take(6).toList();
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.cardInnerSurface(
+        accent: AppColors.accentBlue,
+        radius: 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _PortalSectionTitle(
+            icon: Icons.analytics_outlined,
+            title: 'Relatorios tecnicos publicados (${reports.length})',
+          ),
+          const SizedBox(height: 12),
+          ...visibleReports.map(
+            (report) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => _openReport(context, report),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: AppDecorations.cardInnerSurface(radius: 12),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: AppDecorations.iconTile(
+                            AppColors.accentBlue,
+                          ),
+                          child: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            color: AppColors.accentBlue,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                report.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Versao ${report.version} · '
+                                '${dateFormat.format(report.publishedAt)} · '
+                                '${(report.sizeBytes / 1024).toStringAsFixed(0)} KB',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          Icons.open_in_new_rounded,
+                          color: AppColors.textSecondary,
+                          size: 19,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openReport(
+    BuildContext context,
+    ClientEngineeringReport report,
+  ) async {
+    try {
+      final uri = await onOpen(report);
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened) throw StateError('browser_rejected');
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Nao foi possivel abrir o relatorio tecnico neste momento.',
+          ),
+        ),
+      );
+    }
   }
 }
 

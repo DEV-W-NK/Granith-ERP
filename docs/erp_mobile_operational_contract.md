@@ -59,8 +59,11 @@ antigos.
 ### Mobile
 
 - Registrar token FCM e manter o vinculo com usuario/funcionario.
-- Persistir notificacoes e fila de sync no SQLite.
-- Reprocessar sync pendente com backoff quando o app voltar ao primeiro plano.
+- Persistir notificacoes, confirmacoes de leitura/dispensa e fila de sync no
+  SQLite.
+- Reprocessar sync pendente com backoff no retorno ao primeiro plano e na
+  primeira conexao disponivel.
+- Abrir o modulo indicado por `actionRoute` quando o usuario tocar no alerta.
 - Gravar eventos de campo com estado claro: pendente, sincronizado, falhou.
 - Mostrar para o funcionario apenas a operacao e resumo proprio; analise
   gerencial deve ficar no ERP.

@@ -10,9 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  checks: write
   contents: read
-  pull-requests: write
 
 concurrency:
   group: firebase-hosting-${{ github.ref }}
@@ -30,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: ${{ env.FLUTTER_CHANNEL }}
           cache: true
@@ -48,6 +46,7 @@ jobs:
         run: flutter test
 
       - name: Check deploy secrets
+        if: github.event_name != 'pull_request'
         id: deploy_secrets
         shell: bash
         env:
@@ -72,13 +71,31 @@ jobs:
           fi
 
       - name: Generate web runtime environment
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         run: |
           node -e "const fs = require('fs'); fs.writeFileSync('web/env.js', 'window.GRANITH_ENV = ' + JSON.stringify({ GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY || '' }) + ';\\n');"
 
-      - name: Build Flutter Web
+      - name: Generate placeholder web environment
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          node -e "const fs = require('fs'); fs.writeFileSync('web/env.js', 'window.GRANITH_ENV = { GOOGLE_MAPS_API_KEY: \"\" };\\n');"
+
+      - name: Build Flutter Web for pull request
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          flutter build web --release \
+            --dart-define=SUPABASE_URL="https://example.supabase.co" \
+            --dart-define=SUPABASE_PUBLISHABLE_KEY="placeholder" \
+            --dart-define=GOOGLE_MAPS_API_KEY="" \
+            --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID=""
+
+      - name: Build Flutter Web for deploy
+        if: github.event_name != 'pull_request'
         shell: bash
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -94,25 +111,10 @@ jobs:
             --dart-define=GOOGLE_MAPS_API_KEY="${GOOGLE_MAPS_API_KEY:-}" \
             --dart-define=GOOGLE_OAUTH_WEB_CLIENT_ID="${GOOGLE_OAUTH_WEB_CLIENT_ID:-}"
 
-      - name: Deploy preview to Firebase Hosting
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && steps.deploy_secrets.outputs.ready == 'true'
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
-          projectId: ${{ env.FIREBASE_PROJECT_ID }}
-          channelId: pr-${{ github.event.pull_request.number }}
-          expires: 7d
-
-      - name: Skip Firebase preview deploy
-        if: github.event_name == 'pull_request' && steps.deploy_secrets.outputs.ready != 'true'
-        run: echo "Firebase preview deploy skipped because GitHub Actions secrets are not fully configured."
-
       - name: Deploy to Firebase Hosting
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.deploy_secrets.outputs.ready == 'true'
-        uses: FirebaseExtended/action-hosting-deploy@v0
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a # v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GRANITH_SKYFORGE }}
           channelId: live
           projectId: ${{ env.FIREBASE_PROJECT_ID }}

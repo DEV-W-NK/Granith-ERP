@@ -5,6 +5,7 @@ import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/employee_model.dart';
 import 'package:project_granith/models/team_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 import 'package:project_granith/services/mobile_push_dispatch_service.dart';
 
 class EmployeeSchemaException implements Exception {
@@ -19,6 +20,7 @@ class EmployeeSchemaException implements Exception {
 class TeamService {
   static const _employees = 'employees';
   static const _teams = 'teams';
+  final ArchiveService _archiveService = ArchiveService();
 
   Stream<List<EmployeeModel>> getEmployees() {
     return AppSupabase.client
@@ -77,26 +79,11 @@ class TeamService {
   }
 
   Future<void> deleteEmployee(String id) async {
-    await AppSupabase.client.from(_employees).delete().eq('id', id);
-
-    final teamsWithMember = await AppSupabase.client
-        .from(_teams)
-        .select()
-        .contains('memberIds', [id]);
-
-    for (final row in teamsWithMember as List) {
-      final team = Map<String, dynamic>.from(row as Map);
-      final members = List<String>.from(team['memberIds'] ?? []);
-      members.remove(id);
-
-      await AppSupabase.client
-          .from(_teams)
-          .update({
-            'memberIds': members,
-            'updatedAt': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', team['id']);
-    }
+    await _archiveService.archive(
+      table: _employees,
+      id: id,
+      reason: 'Funcionario removido pelo usuario.',
+    );
     _notifyEmployeesChanged(extraScopes: const [AppDataRefreshBus.teams]);
   }
 

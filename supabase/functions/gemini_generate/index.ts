@@ -1,6 +1,6 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.101.1';
 
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders, withCors } from '../_shared/cors.ts';
 
 type GeminiRole = 'user' | 'model';
 
@@ -15,7 +15,7 @@ const maxSystemChars = 60_000;
 const maxHistoryItems = 12;
 const maxHistoryItemChars = 8_000;
 
-Deno.serve(async (request) => {
+Deno.serve((request) => withCors(request, async () => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -28,7 +28,8 @@ Deno.serve(async (request) => {
   }
 
   try {
-    await authorizeRequest(request);
+    const userClient = await authorizeRequest(request);
+    await enforceRateLimit(userClient);
 
     const body = await readBody(request);
     const action = normalizeText(body.action) || 'generate';
@@ -66,7 +67,7 @@ Deno.serve(async (request) => {
 
     return jsonResponse(response, 500);
   }
-});
+}));
 
 async function authorizeRequest(request: Request) {
   const authHeader = request.headers.get('Authorization');
@@ -88,6 +89,81 @@ async function authorizeRequest(request: Request) {
 
   if (error || !user) {
     throw new HttpError(401, 'invalid_session', 'Sessao invalida.');
+  }
+
+  const profileById = await userClient
+    .from('users')
+    .select('role,status')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileById.error) {
+    throw new HttpError(
+      403,
+      'profile_not_authorized',
+      'Perfil sem acesso ao assistente de IA.',
+    );
+  }
+
+  let profile = profileById.data;
+  if (!profile && user.email) {
+    const profileByEmail = await userClient
+      .from('users')
+      .select('role,status')
+      .eq('email', user.email.trim().toLowerCase())
+      .maybeSingle();
+    if (profileByEmail.error) {
+      throw new HttpError(
+        403,
+        'profile_not_authorized',
+        'Perfil sem acesso ao assistente de IA.',
+      );
+    }
+    profile = profileByEmail.data;
+  }
+
+  if (!profile) {
+    throw new HttpError(
+      403,
+      'profile_not_authorized',
+      'Perfil sem acesso ao assistente de IA.',
+    );
+  }
+
+  const role = normalizeText(profile.role);
+  const status = normalizeText(profile.status);
+  if (!['admin', 'employee'].includes(role) || status !== 'ativo') {
+    throw new HttpError(
+      403,
+      'profile_not_authorized',
+      'Apenas usuarios internos ativos podem usar o assistente de IA.',
+    );
+  }
+
+  return userClient;
+}
+
+async function enforceRateLimit(
+  userClient: ReturnType<typeof createClient<any, 'public'>>,
+) {
+  const { data, error } = await userClient.rpc(
+    'consume_edge_rate_limit',
+    { p_scope: 'gemini_generate' },
+  );
+
+  if (error) {
+    throw new HttpError(
+      503,
+      'rate_limit_unavailable',
+      'Nao foi possivel validar o limite de uso da IA.',
+    );
+  }
+  if (data !== true) {
+    throw new HttpError(
+      429,
+      'rate_limit_exceeded',
+      'Limite temporario de chamadas da IA atingido. Tente novamente em alguns minutos.',
+    );
   }
 }
 

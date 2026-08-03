@@ -14,6 +14,7 @@ import 'package:project_granith/themes/app_theme.dart';
 import '../../models/project_model.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
 import 'package:project_granith/widgets/projects/keep_alive.dart';
+import 'package:project_granith/widgets/projects/project_image.dart';
 
 class ProjectFormDialog extends StatefulWidget {
   final Project? project;
@@ -994,14 +995,11 @@ class _ProjectFormDialogState extends State<ProjectFormDialog>
         fit: BoxFit.cover,
       );
     } else if (widget.project?.imageUrl != null) {
-      return Image.network(
-        widget.project!.imageUrl!,
+      return ProjectImageWidget(
+        imageUrl: widget.project!.imageUrl!,
         height: imageHeight,
         width: double.infinity,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildPlaceholderImage(imageHeight, isError: true);
-        },
       );
     } else {
       return _buildPlaceholderImage(imageHeight);

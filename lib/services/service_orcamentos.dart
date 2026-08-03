@@ -2,11 +2,11 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/budget_model.dart';
-import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class ServiceOrcamentos {
   final String _collectionName = 'budgets';
-  final String _projectsTable = 'projects';
+  final ArchiveService _archiveService = ArchiveService();
 
   Future<void> addBudget(Budget budget) async {
     try {
@@ -33,7 +33,11 @@ class ServiceOrcamentos {
 
   Future<void> deleteBudget(String id) async {
     try {
-      await AppSupabase.client.from(_collectionName).delete().eq('id', id);
+      await _archiveService.archive(
+        table: _collectionName,
+        id: id,
+        reason: 'Orcamento removido pelo usuario.',
+      );
       _notifyBudgetsChanged();
     } catch (e) {
       throw Exception('Erro ao deletar orçamento: $e');
@@ -298,65 +302,15 @@ class ServiceOrcamentos {
       return budget.projectId!;
     }
 
-    final now = DateTime.now();
-    final projectPayload = DbValue.normalizeMap({
-      'name': budget.projectName,
-      'client': budget.clientName,
-      'description': budget.description,
-      'status': ProjectStatus.planning.name,
-      'startDate': now,
-      'endDate': budget.expirationDate,
-      'budget': budget.totalValue,
-      'currentCost': 0,
-      'location': '',
-      'tags': const ['Gerado por orçamento'],
-      'teamSize': 0,
-      'sourceBudgetId': budget.id,
-      'createdAt': now,
-      'created_at': now,
-      'updatedAt': now,
-      'updated_at': now,
-      'projectKey':
-          '${budget.projectName.trim().toLowerCase()}_${budget.clientName.trim().toLowerCase()}',
-      'clientAccountId': budget.clientAccountId,
-      'client_account_id': budget.clientAccountId,
-      'clientAccountName': budget.clientAccountName,
-      'client_account_name': budget.clientAccountName,
-    });
-
     try {
-      final existingProject =
-          await AppSupabase.client
-              .from(_projectsTable)
-              .select('id')
-              .eq('sourceBudgetId', budget.id)
-              .maybeSingle();
-
-      final String projectId;
-
-      if (existingProject != null) {
-        projectId = existingProject['id'].toString();
-      } else {
-        final projectRow =
-            await AppSupabase.client
-                .from(_projectsTable)
-                .insert(projectPayload)
-                .select('id')
-                .single();
-        projectId = projectRow['id'].toString();
+      final result = await AppSupabase.client.rpc(
+        'approve_budget_atomic',
+        params: {'p_budget_id': budget.id},
+      );
+      final projectId = result?.toString() ?? '';
+      if (projectId.isEmpty) {
+        throw StateError('A aprovacao nao retornou o projeto criado.');
       }
-
-      await AppSupabase.client
-          .from(_collectionName)
-          .update({
-            'status': BudgetStatus.approved.index,
-            'projectId': projectId,
-            'clientAccountId': budget.clientAccountId,
-            'client_account_id': budget.clientAccountId,
-            'clientAccountName': budget.clientAccountName,
-            'client_account_name': budget.clientAccountName,
-          })
-          .eq('id', budget.id);
 
       _notifyBudgetsChanged(extraScopes: const [AppDataRefreshBus.projects]);
       return projectId;

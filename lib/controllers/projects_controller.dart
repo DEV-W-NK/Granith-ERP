@@ -108,39 +108,44 @@ class ProjectsController extends ChangeNotifier {
     unawaited(_startProjectsStream(forceReload: forceReload));
   }
 
-  Future<void> _startProjectsStream({bool forceReload = false}) {
-    if (_initialized && !forceReload) return Future<void>.value();
+  Future<void> _startProjectsStream({bool forceReload = false}) async {
+    if (_initialized && !forceReload) return;
 
     _initialized = true;
-    _projectsSubscription?.cancel();
-    final initialLoad = Completer<void>();
+    await _projectsSubscription?.cancel();
+    _projectsSubscription = null;
 
     _setLoading(true);
     _setError(null);
+
+    try {
+      final projects = await _serviceProjects.getProjects();
+      _projects = projects;
+      _applyFilters();
+    } catch (error) {
+      debugPrint('Erro na carga inicial de projetos: $error');
+      if (_projects.isEmpty) {
+        _filteredProjects = [];
+        _setError(error.toString());
+      }
+    } finally {
+      _setLoading(false);
+    }
 
     _projectsSubscription = _serviceProjects.watchProjects().listen(
       (projects) {
         _projects = projects;
         _applyFilters();
         _setError(null);
-        _setLoading(false);
-        if (!initialLoad.isCompleted) {
-          initialLoad.complete();
-        }
       },
       onError: (error) {
-        _setError(error.toString());
+        debugPrint('Realtime de projetos indisponível: $error');
         if (_projects.isEmpty) {
           _filteredProjects = [];
-        }
-        _setLoading(false);
-        if (!initialLoad.isCompleted) {
-          initialLoad.complete();
+          _setError(error.toString());
         }
       },
     );
-
-    return initialLoad.future;
   }
 
   // Carregar projetos

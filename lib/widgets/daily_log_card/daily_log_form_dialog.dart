@@ -11,6 +11,7 @@ import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/controllers/projects_controller.dart';
 import 'package:project_granith/widgets/components/granith_dialog.dart';
+import 'package:project_granith/widgets/storage/private_storage_image.dart';
 
 // Widget utilitário para manter o estado das páginas do PageView
 class PageKeepAlive extends StatefulWidget {
@@ -1197,26 +1198,26 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
                           if (index < _existingPhotoUrls.length) {
                             // Foto Existente
                             return _buildPhotoTile(
-                              imageProvider: NetworkImage(
-                                _existingPhotoUrls[index],
+                              image: PrivateStorageImage(
+                                reference: _existingPhotoUrls[index],
+                                fit: BoxFit.cover,
                               ),
                               onDelete: () => _removeExistingPhoto(index),
-                              isNetwork: true,
                             );
                           } else {
                             // Nova Foto
                             final newIndex = index - _existingPhotoUrls.length;
                             final file = _newPhotos[newIndex];
                             return _buildPhotoTile(
-                              imageProvider:
-                                  kIsWeb
-                                      ? NetworkImage(
-                                        file.path,
-                                      ) // Em web XFile path funciona como URL blob
-                                      : FileImage(File(file.path))
-                                          as ImageProvider,
+                              image: Image(
+                                image:
+                                    kIsWeb
+                                        ? NetworkImage(file.path)
+                                        : FileImage(File(file.path))
+                                            as ImageProvider,
+                                fit: BoxFit.cover,
+                              ),
                               onDelete: () => _removeNewPhoto(newIndex),
-                              isNetwork: false,
                             );
                           }
                         },
@@ -1410,16 +1411,15 @@ class _DailyLogFormDialogState extends State<DailyLogFormDialog>
   }
 
   Widget _buildPhotoTile({
-    required ImageProvider imageProvider,
+    required Widget image,
     required VoidCallback onDelete,
-    required bool isNetwork,
   }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image(image: imageProvider, fit: BoxFit.cover),
+          image,
           DecoratedBox(
             decoration: BoxDecoration(
               border: Border.all(

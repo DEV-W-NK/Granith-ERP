@@ -2,9 +2,11 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/item_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class ItemService {
   final String _collection = 'items';
+  final ArchiveService _archiveService = ArchiveService();
 
   Future<String> addItem(Item item) async {
     try {
@@ -40,7 +42,11 @@ class ItemService {
 
   Future<void> deleteItem(String id) async {
     try {
-      await AppSupabase.client.from(_collection).delete().eq('id', id);
+      await _archiveService.archive(
+        table: _collection,
+        id: id,
+        reason: 'Item removido pelo usuario.',
+      );
       _notifyItemsChanged();
     } catch (e) {
       throw Exception('Erro ao deletar item: $e');

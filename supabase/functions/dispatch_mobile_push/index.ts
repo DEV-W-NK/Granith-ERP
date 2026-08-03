@@ -1,6 +1,8 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.101.1';
 
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders, withCors } from '../_shared/cors.ts';
+
+type UntypedSupabaseClient = ReturnType<typeof createClient<any, 'public'>>;
 
 type MobilePushNotification = {
   id: string;
@@ -14,6 +16,7 @@ type MobilePushNotification = {
   priority: string;
   attempts: number;
   maxAttempts: number;
+  processingBy?: string | null;
 };
 
 type MobileDeviceToken = {
@@ -23,197 +26,432 @@ type MobileDeviceToken = {
   employeeId: string | null;
 };
 
+type MobilePushDelivery = {
+  id: string;
+  notificationId: string;
+  deviceTokenId: string | null;
+  status: 'pending' | 'sent' | 'failed';
+  attempts: number;
+  maxAttempts: number;
+  nextAttemptAt: string | null;
+};
+
 type FirebaseConfig = {
   projectId: string;
   clientEmail: string;
   privateKey: string;
 };
 
-Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+Deno.serve((request) =>
+  withCors(request, async () => {
+    if (request.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders });
+    }
 
-  if (request.method !== 'POST') {
-    return jsonResponse(
-      { error: 'method_not_allowed', message: 'Use POST para despachar pushes.' },
-      405,
+    if (request.method !== 'POST') {
+      return jsonResponse(
+        {
+          error: 'method_not_allowed',
+          message: 'Use POST para despachar pushes.',
+        },
+        405,
+      );
+    }
+
+    try {
+      const supabaseUrl = requireEnv('SUPABASE_URL');
+      const serviceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+
+      await authorizeDispatch(request, adminClient);
+
+      const body = await readBody(request);
+      const limit = clampNumber(Number(body.limit ?? 25), 1, 100);
+      const dryRun = body.dryRun === true;
+      const workerId = crypto.randomUUID();
+      const firebase = dryRun ? null : readFirebaseConfig();
+      const accessToken = dryRun ? '' : await getFirebaseAccessToken(firebase!);
+      const notifications = await fetchNotificationsForDispatch(
+        adminClient,
+        limit,
+        workerId,
+        dryRun,
+      );
+      const results = [];
+
+      for (const notification of notifications) {
+        try {
+          results.push(
+            await dispatchNotification({
+              adminClient,
+              notification,
+              firebase,
+              accessToken,
+              workerId,
+              dryRun,
+            }),
+          );
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          if (!dryRun) {
+            await scheduleNotificationRetry(
+              adminClient,
+              notification,
+              workerId,
+              message,
+            );
+          }
+          results.push({
+            id: notification.id,
+            status: dryRun ? 'would_fail' : 'retry_scheduled',
+            tokens: 0,
+            sent: 0,
+            failed: 0,
+            error: message.slice(0, 500),
+          });
+        }
+      }
+
+      return jsonResponse({
+        ok: true,
+        dryRun,
+        workerId: dryRun ? null : workerId,
+        processed: notifications.length,
+        results,
+      });
+    } catch (error) {
+      const details = error instanceof Error ? error.message : String(error);
+      const body: Record<string, unknown> = {
+        error: 'dispatch_failed',
+        message: 'Nao foi possivel despachar notificacoes mobile.',
+      };
+
+      if (Deno.env.get('GRANITH_DEBUG_ERRORS') === 'true') {
+        body.details = details;
+      }
+
+      return jsonResponse(body, 500);
+    }
+  })
+);
+
+async function fetchNotificationsForDispatch(
+  adminClient: UntypedSupabaseClient,
+  limit: number,
+  workerId: string,
+  dryRun: boolean,
+) {
+  if (!dryRun) {
+    const { data, error } = await adminClient.rpc(
+      'claim_mobile_push_notifications',
+      {
+        p_limit: limit,
+        p_worker_id: workerId,
+      },
     );
-  }
-
-  try {
-    const supabaseUrl = requireEnv('SUPABASE_URL');
-    const serviceRoleKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY');
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    await authorizeDispatch(request, adminClient);
-
-    const body = await readBody(request);
-    const limit = clampNumber(Number(body.limit ?? 25), 1, 100);
-    const dryRun = body.dryRun === true;
-
-    const firebase = dryRun ? null : readFirebaseConfig();
-    const accessToken = dryRun ? '' : await getFirebaseAccessToken(firebase!);
-    const dispatchStartedAt = new Date();
-
-    const { data, error } = await adminClient
-      .from('mobile_push_notifications')
-      .select(
-        'id,recipientUserId,recipientEmployeeId,title,body,category,actionRoute,payload,priority,attempts,maxAttempts',
-      )
-      .eq('status', 'pending')
-      .lte('nextAttemptAt', dispatchStartedAt.toISOString())
-      .order('createdAt', { ascending: true })
-      .limit(limit);
 
     if (error) {
-      throw new Error(`Falha ao buscar notificacoes pendentes: ${error.message}`);
+      throw new Error(`Falha ao reservar notificacoes: ${error.message}`);
     }
 
-    const notifications = (data ?? []) as MobilePushNotification[];
-    const results = [];
-
-    for (const notification of notifications) {
-      const tokens = await fetchNotificationTokens(adminClient, notification);
-
-      if (tokens.length === 0) {
-        if (!dryRun) {
-          await markNotification(adminClient, notification.id, {
-            status: 'failed',
-            errorMessage: 'Nenhum token FCM ativo encontrado para o destinatario.',
-          });
-        }
-        results.push({
-          id: notification.id,
-          status: dryRun ? 'would_fail' : 'failed',
-          tokens: 0,
-          sent: 0,
-          failed: 0,
-        });
-        continue;
-      }
-
-      let sent = 0;
-      const failures: string[] = [];
-      let hasRetryableFailure = false;
-      const nextAttempt = Math.min(
-        Number(notification.attempts ?? 0) + 1,
-        Number(notification.maxAttempts ?? 5),
-      );
-
-      for (const token of tokens) {
-        if (dryRun) {
-          continue;
-        }
-
-        const response = await sendFcmMessage(
-          firebase!.projectId,
-          accessToken,
-          token.fcmToken,
-          notification,
-        );
-
-        if (response.ok) {
-          sent += 1;
-          continue;
-        }
-
-        failures.push(response.errorMessage);
-        hasRetryableFailure = hasRetryableFailure || response.retryable;
-
-        if (response.shouldDisableToken) {
-          await adminClient
-            .from('mobile_device_tokens')
-            .update({
-              isActive: false,
-              revokedAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            })
-            .eq('id', token.id);
-        }
-      }
-
-      if (!dryRun) {
-        if (sent > 0) {
-          await markNotification(adminClient, notification.id, {
-            status: 'sent',
-            sentAt: new Date().toISOString(),
-            errorMessage: failures.join(' | ').slice(0, 1200),
-            attempts: nextAttempt,
-            lastAttemptAt: dispatchStartedAt.toISOString(),
-            nextAttemptAt: null,
-          });
-        } else if (
-          hasRetryableFailure &&
-          nextAttempt < Number(notification.maxAttempts ?? 5)
-        ) {
-          const nextAttemptAt = calculateNextAttemptAt(
-            dispatchStartedAt,
-            nextAttempt,
-          );
-          await markNotification(adminClient, notification.id, {
-            status: 'pending',
-            errorMessage: failures.join(' | ').slice(0, 1200),
-            attempts: nextAttempt,
-            lastAttemptAt: dispatchStartedAt.toISOString(),
-            nextAttemptAt: nextAttemptAt.toISOString(),
-          });
-        } else {
-          await markNotification(adminClient, notification.id, {
-            status: 'failed',
-            sentAt: null,
-            errorMessage: failures.join(' | ').slice(0, 1200),
-            attempts: nextAttempt,
-            lastAttemptAt: dispatchStartedAt.toISOString(),
-            nextAttemptAt: null,
-          });
-        }
-      }
-
-      results.push({
-        id: notification.id,
-        status: dryRun
-          ? 'would_send'
-          : sent > 0
-            ? 'sent'
-            : hasRetryableFailure &&
-                nextAttempt < Number(notification.maxAttempts ?? 5)
-              ? 'retry_scheduled'
-              : 'failed',
-        tokens: tokens.length,
-        sent: dryRun ? tokens.length : sent,
-        failed: dryRun ? 0 : tokens.length - sent,
-        attempt: dryRun ? Number(notification.attempts ?? 0) : nextAttempt,
-      });
-    }
-
-    return jsonResponse({
-      ok: true,
-      dryRun,
-      processed: notifications.length,
-      results,
-    });
-  } catch (error) {
-    const details = error instanceof Error ? error.message : String(error);
-    const body: Record<string, unknown> = {
-      error: 'dispatch_failed',
-      message: 'Nao foi possivel despachar notificacoes mobile.',
-    };
-
-    if (Deno.env.get('GRANITH_DEBUG_ERRORS') === 'true') {
-      body.details = details;
-    }
-
-    return jsonResponse(body, 500);
+    return (data ?? []) as MobilePushNotification[];
   }
-});
+
+  const { data, error } = await adminClient
+    .from('mobile_push_notifications')
+    .select(
+      'id,recipientUserId,recipientEmployeeId,title,body,category,actionRoute,payload,priority,attempts,maxAttempts',
+    )
+    .eq('status', 'pending')
+    .lte('nextAttemptAt', new Date().toISOString())
+    .order('createdAt', { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`Falha ao buscar notificacoes pendentes: ${error.message}`);
+  }
+
+  return (data ?? []) as MobilePushNotification[];
+}
+
+async function dispatchNotification({
+  adminClient,
+  notification,
+  firebase,
+  accessToken,
+  workerId,
+  dryRun,
+}: {
+  adminClient: UntypedSupabaseClient;
+  notification: MobilePushNotification;
+  firebase: FirebaseConfig | null;
+  accessToken: string;
+  workerId: string;
+  dryRun: boolean;
+}) {
+  const tokens = await fetchNotificationTokens(adminClient, notification);
+
+  if (dryRun) {
+    return {
+      id: notification.id,
+      status: tokens.length === 0 ? 'would_retry' : 'would_send',
+      tokens: tokens.length,
+      sent: tokens.length,
+      failed: 0,
+    };
+  }
+
+  if (tokens.length === 0) {
+    const status = await scheduleNotificationRetry(
+      adminClient,
+      notification,
+      workerId,
+      'Nenhum token FCM ativo encontrado para o destinatario.',
+    );
+    return {
+      id: notification.id,
+      status,
+      tokens: 0,
+      sent: 0,
+      failed: 0,
+    };
+  }
+
+  await ensureDeliveryRows(adminClient, notification, tokens);
+  const tokenById = new Map(tokens.map((token) => [token.id, token]));
+  const deliveries = await fetchDeliveryRows(
+    adminClient,
+    notification.id,
+    [...tokenById.keys()],
+  );
+  const attemptStartedAt = new Date();
+
+  for (const delivery of deliveries) {
+    if (delivery.status !== 'pending' || !delivery.deviceTokenId) continue;
+    if (
+      delivery.nextAttemptAt &&
+      new Date(delivery.nextAttemptAt).getTime() > attemptStartedAt.getTime()
+    ) {
+      continue;
+    }
+
+    const token = tokenById.get(delivery.deviceTokenId);
+    if (!token) continue;
+
+    const response = await sendFcmMessage(
+      firebase!.projectId,
+      accessToken,
+      token.fcmToken,
+      notification,
+    );
+    const attempt = Math.min(
+      Number(delivery.attempts ?? 0) + 1,
+      Number(delivery.maxAttempts ?? 5),
+    );
+
+    if (response.ok) {
+      await updateDelivery(adminClient, delivery.id, {
+        status: 'sent',
+        attempts: attempt,
+        lastAttemptAt: attemptStartedAt.toISOString(),
+        sentAt: new Date().toISOString(),
+        nextAttemptAt: null,
+        errorMessage: '',
+      });
+      continue;
+    }
+
+    const canRetry =
+      response.retryable && attempt < Number(delivery.maxAttempts ?? 5);
+    await updateDelivery(adminClient, delivery.id, {
+      status: canRetry ? 'pending' : 'failed',
+      attempts: attempt,
+      lastAttemptAt: attemptStartedAt.toISOString(),
+      sentAt: null,
+      nextAttemptAt: canRetry
+        ? calculateNextAttemptAt(attemptStartedAt, attempt).toISOString()
+        : null,
+      errorMessage: response.errorMessage.slice(0, 1200),
+    });
+
+    if (response.shouldDisableToken) {
+      await adminClient
+        .from('mobile_device_tokens')
+        .update({
+          isActive: false,
+          revokedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', token.id);
+    }
+  }
+
+  const refreshed = await fetchDeliveryRows(
+    adminClient,
+    notification.id,
+    [...tokenById.keys()],
+  );
+  const pending = refreshed.filter((item) => item.status === 'pending');
+  const sent = refreshed.filter((item) => item.status === 'sent');
+  const failed = refreshed.filter((item) => item.status === 'failed');
+  const errors = failed
+    .map((item) => item.id)
+    .length > 0
+    ? `${failed.length} dispositivo(s) falharam definitivamente.`
+    : '';
+  const maxAttempts = refreshed.reduce(
+    (value, item) => Math.max(value, Number(item.attempts ?? 0)),
+    0,
+  );
+
+  if (pending.length > 0) {
+    const nextAttemptAt = pending
+      .map((item) => item.nextAttemptAt)
+      .filter((value): value is string => Boolean(value))
+      .sort()[0] ?? new Date().toISOString();
+    await markNotification(adminClient, notification.id, workerId, {
+      status: 'pending',
+      attempts: maxAttempts,
+      lastAttemptAt: attemptStartedAt.toISOString(),
+      nextAttemptAt,
+      errorMessage: errors,
+    });
+  } else if (sent.length > 0) {
+    await markNotification(adminClient, notification.id, workerId, {
+      status: 'sent',
+      attempts: maxAttempts,
+      sentAt: new Date().toISOString(),
+      lastAttemptAt: attemptStartedAt.toISOString(),
+      nextAttemptAt: null,
+      errorMessage: errors,
+    });
+  } else {
+    await markNotification(adminClient, notification.id, workerId, {
+      status: 'failed',
+      attempts: maxAttempts,
+      sentAt: null,
+      lastAttemptAt: attemptStartedAt.toISOString(),
+      nextAttemptAt: null,
+      errorMessage: errors || 'Falha definitiva em todos os dispositivos.',
+    });
+  }
+
+  return {
+    id: notification.id,
+    status: pending.length > 0
+      ? 'retry_scheduled'
+      : sent.length > 0
+        ? 'sent'
+        : 'failed',
+    tokens: tokens.length,
+    sent: sent.length,
+    failed: failed.length,
+    pending: pending.length,
+    attempt: maxAttempts,
+  };
+}
+
+async function ensureDeliveryRows(
+  adminClient: UntypedSupabaseClient,
+  notification: MobilePushNotification,
+  tokens: MobileDeviceToken[],
+) {
+  const { error } = await adminClient
+    .from('mobile_push_deliveries')
+    .upsert(
+      tokens.map((token) => ({
+        notificationId: notification.id,
+        deviceTokenId: token.id,
+        status: 'pending',
+        attempts: 0,
+        maxAttempts: Number(notification.maxAttempts ?? 5),
+        nextAttemptAt: new Date().toISOString(),
+      })),
+      {
+        onConflict: 'notificationId,deviceTokenId',
+        ignoreDuplicates: true,
+      },
+    );
+
+  if (error) {
+    throw new Error(`Falha ao preparar entregas por dispositivo: ${error.message}`);
+  }
+}
+
+async function fetchDeliveryRows(
+  adminClient: UntypedSupabaseClient,
+  notificationId: string,
+  deviceTokenIds: string[],
+) {
+  const { data, error } = await adminClient
+    .from('mobile_push_deliveries')
+    .select(
+      'id,notificationId,deviceTokenId,status,attempts,maxAttempts,nextAttemptAt',
+    )
+    .eq('notificationId', notificationId)
+    .in('deviceTokenId', deviceTokenIds);
+
+  if (error) {
+    throw new Error(`Falha ao consultar entregas por dispositivo: ${error.message}`);
+  }
+
+  return (data ?? []) as MobilePushDelivery[];
+}
+
+async function updateDelivery(
+  adminClient: UntypedSupabaseClient,
+  id: string,
+  fields: Record<string, unknown>,
+) {
+  const { error } = await adminClient
+    .from('mobile_push_deliveries')
+    .update(fields)
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`Falha ao atualizar entrega ${id}: ${error.message}`);
+  }
+}
+
+async function scheduleNotificationRetry(
+  adminClient: UntypedSupabaseClient,
+  notification: MobilePushNotification,
+  workerId: string,
+  errorMessage: string,
+) {
+  const attempt = Math.min(
+    Number(notification.attempts ?? 0) + 1,
+    Number(notification.maxAttempts ?? 5),
+  );
+  const canRetry = attempt < Number(notification.maxAttempts ?? 5);
+  await markNotification(adminClient, notification.id, workerId, {
+    status: canRetry ? 'pending' : 'failed',
+    attempts: attempt,
+    lastAttemptAt: new Date().toISOString(),
+    nextAttemptAt: canRetry
+      ? calculateNextAttemptAt(new Date(), attempt).toISOString()
+      : null,
+    errorMessage: errorMessage.slice(0, 1200),
+  });
+  return canRetry ? 'retry_scheduled' : 'failed';
+}
 
 async function authorizeDispatch(
   request: Request,
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
 ) {
+  const lease = request.headers.get('x-granith-dispatch-lease')?.trim();
+  if (lease) {
+    const { data, error } = await adminClient.rpc(
+      'consume_mobile_push_dispatch_lease',
+      { p_token: lease },
+    );
+    if (!error && data === true) return;
+    throw new Error('Lease de despacho invalido, expirado ou ja utilizado.');
+  }
+
   const dispatchToken = Deno.env.get('GRANITH_PUSH_DISPATCH_TOKEN')?.trim();
   const providedDispatchToken = request.headers
     .get('x-granith-dispatch-token')
@@ -261,19 +499,29 @@ async function authorizeDispatch(
 
 function canDispatch(profile: { role?: string; permissions?: unknown }) {
   if (profile.role === 'admin') return true;
-  if (profile.role === 'employee') return true;
   const permissions = Array.isArray(profile.permissions)
     ? profile.permissions.map((value) => String(value))
     : [];
   return (
     permissions.includes('settings.manage') ||
     permissions.includes('access.manage') ||
-    permissions.includes('mobile.notifications.dispatch')
+    permissions.includes('mobile.notifications.dispatch') ||
+    permissions.includes('projects.write') ||
+    permissions.includes('people.manage') ||
+    permissions.includes('purchases.write') ||
+    permissions.includes('purchases.approve') ||
+    permissions.includes('purchases.consolidate') ||
+    permissions.includes('fleet.manage') ||
+    permissions.includes('logistics.manage') ||
+    permissions.includes('obras') ||
+    permissions.includes('rh') ||
+    permissions.includes('compras') ||
+    permissions.includes('suprimentos')
   );
 }
 
 async function fetchNotificationTokens(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   notification: MobilePushNotification,
 ) {
   const byId = new Map<string, MobileDeviceToken>();
@@ -314,8 +562,9 @@ async function fetchNotificationTokens(
 }
 
 async function markNotification(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   id: string,
+  workerId: string,
   fields: {
     status: 'pending' | 'sent' | 'failed';
     sentAt?: string | null;
@@ -328,6 +577,8 @@ async function markNotification(
   const updateFields: Record<string, unknown> = {
     status: fields.status,
     errorMessage: fields.errorMessage ?? '',
+    processingAt: null,
+    processingBy: null,
   };
 
   if ('sentAt' in fields) {
@@ -346,7 +597,9 @@ async function markNotification(
   const { error } = await adminClient
     .from('mobile_push_notifications')
     .update(updateFields)
-    .eq('id', id);
+    .eq('id', id)
+    .eq('status', 'processing')
+    .eq('processingBy', workerId);
 
   if (error) {
     throw new Error(`Falha ao atualizar notificacao ${id}: ${error.message}`);
@@ -423,6 +676,8 @@ function calculateNextAttemptAt(now: Date, attempt: number) {
 function notificationData(notification: MobilePushNotification) {
   const raw = {
     notificationId: notification.id,
+    recipientUserId: notification.recipientUserId ?? '',
+    recipientEmployeeId: notification.recipientEmployeeId ?? '',
     category: notification.category,
     actionRoute: notification.actionRoute,
     ...(notification.payload ?? {}),

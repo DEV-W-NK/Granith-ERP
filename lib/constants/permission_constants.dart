@@ -1,9 +1,16 @@
 abstract final class PermissionCodes {
   static const peopleSalaryRead = 'people.salary.read';
+  static const purchasesRead = 'purchases.read';
+  static const purchasesWrite = 'purchases.write';
   static const purchasesApprove = 'purchases.approve';
   static const purchasesConsolidate = 'purchases.consolidate';
   static const purchaseFinanceRead = 'purchase_finance.read';
   static const purchaseFinanceWrite = 'purchase_finance.write';
+  static const fleetRead = 'fleet.read';
+  static const fleetManage = 'fleet.manage';
+  static const logisticsRead = 'logistics.read';
+  static const logisticsManage = 'logistics.manage';
+  static const auditRead = 'audit.read';
   static const aiMonitor = 'ai.monitor';
   static const aiUsageRead = 'ai.usage.read';
   static const aiPricingManage = 'ai.pricing.manage';

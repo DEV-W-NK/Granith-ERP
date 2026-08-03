@@ -2,6 +2,7 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/project_measurement_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProjectMeasurementProjection {
@@ -76,6 +77,7 @@ class ProjectMeasurementService {
   static const String _projectsTable = 'projects';
 
   SupabaseClient get _client => AppSupabase.client;
+  final ArchiveService _archiveService = ArchiveService();
 
   Future<List<ProjectMeasurement>> getMeasurements({String? projectId}) async {
     try {
@@ -219,7 +221,11 @@ class ProjectMeasurementService {
             .single();
     final projectId = (current['projectId'] ?? '').toString();
 
-    await _client.from(_table).delete().eq('id', measurementId);
+    await _archiveService.archive(
+      table: _table,
+      id: measurementId,
+      reason: 'Medicao removida pelo usuario.',
+    );
 
     if (projectId.isNotEmpty) {
       await _recalculateProject(projectId);

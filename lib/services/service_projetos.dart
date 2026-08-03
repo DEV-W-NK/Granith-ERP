@@ -7,12 +7,17 @@ import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/project_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 import 'package:project_granith/services/mobile_push_dispatch_service.dart';
+import 'package:project_granith/services/storage_asset_service.dart';
+import 'package:project_granith/utils/image_upload_validator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ServiceProjetos {
   static const String _table = 'projects';
   static const String _bucket = 'project-images';
+  final ArchiveService _archiveService = ArchiveService();
+  final StorageAssetService _storageAssets = StorageAssetService();
 
   final Set<String> _projectsBeingCreated = {};
   final Set<String> _projectsBeingUpdated = {};
@@ -100,7 +105,10 @@ class ServiceProjetos {
       'geofence_side_meters': project.geofenceSideMeters,
       'tags': project.tags.map((tag) => tag.trim()).toList(),
       'teamSize': project.teamSize,
-      'imageUrl': project.imageUrl,
+      'imageUrl':
+          project.imageUrl == null
+              ? null
+              : _storageAssets.normalizeForPersistence(project.imageUrl!),
       'clientAccountId': project.clientAccountId,
       'client_account_id': project.clientAccountId,
       'clientAccountName': project.clientAccountName,
@@ -349,8 +357,11 @@ class ServiceProjetos {
 
     try {
       _markProjectProcessing(projectKey, 'delete');
-      await _client.from(_table).delete().eq('id', projectId);
-      await _deleteProjectImage(projectId);
+      await _archiveService.archive(
+        table: _table,
+        id: projectId,
+        reason: 'Projeto removido pelo usuario.',
+      );
       _notifyProjectsChanged();
     } catch (e) {
       rethrow;
@@ -391,49 +402,28 @@ class ServiceProjetos {
         await _deleteProjectImage(projectId);
       }
 
+      final bytes =
+          kIsWeb ? webData! : Uint8List.fromList(await file!.readAsBytes());
+      final validated = ImageUploadValidator.validate(bytes);
       final now = DateTime.now();
       final fileName =
-          'project_${now.millisecondsSinceEpoch}_${now.microsecond}.jpg';
+          'project_${now.millisecondsSinceEpoch}_${now.microsecond}.'
+          '${validated.extension}';
       final path = '$projectId/$fileName';
 
-      if (kIsWeb && webData != null) {
-        if (!_isValidImageData(webData)) {
-          throw Exception('Formato de imagem não suportado');
-        }
+      await _client.storage
+          .from(_bucket)
+          .uploadBinary(
+            path,
+            validated.bytes,
+            fileOptions: FileOptions(
+              cacheControl: '3600',
+              upsert: true,
+              contentType: validated.contentType,
+            ),
+          );
 
-        await _client.storage
-            .from(_bucket)
-            .uploadBinary(
-              path,
-              webData,
-              fileOptions: const FileOptions(
-                cacheControl: '3600',
-                upsert: true,
-                contentType: 'image/jpeg',
-              ),
-            );
-      } else if (!kIsWeb && file != null) {
-        if (!await file.exists()) {
-          throw Exception('Arquivo não encontrado');
-        }
-
-        await _client.storage
-            .from(_bucket)
-            .upload(
-              path,
-              file,
-              fileOptions: const FileOptions(
-                cacheControl: '3600',
-                upsert: true,
-                contentType: 'image/jpeg',
-              ),
-            );
-      } else {
-        return null;
-      }
-
-      final publicUrl = _client.storage.from(_bucket).getPublicUrl(path);
-      return publicUrl;
+      return path;
     } catch (e) {
       throw Exception('Erro no upload da imagem: $e');
     } finally {
@@ -463,38 +453,12 @@ class ServiceProjetos {
         return null;
       }
 
-      return _client.storage
-          .from(_bucket)
-          .getPublicUrl('$projectId/${files.first.name}');
+      return _storageAssets.resolveProjectImage(
+        '$projectId/${files.first.name}',
+      );
     } catch (_) {
       return null;
     }
-  }
-
-  bool _isValidImageData(Uint8List data) {
-    if (data.length < 4) return false;
-
-    final signatures = {
-      'jpeg': [0xFF, 0xD8, 0xFF],
-      'png': [0x89, 0x50, 0x4E, 0x47],
-      'webp': [0x52, 0x49, 0x46, 0x46],
-      'gif': [0x47, 0x49, 0x46, 0x38],
-    };
-
-    for (final signature in signatures.values) {
-      var matches = true;
-      for (var i = 0; i < signature.length && i < data.length; i++) {
-        if (data[i] != signature[i]) {
-          matches = false;
-          break;
-        }
-      }
-      if (matches) {
-        return true;
-      }
-    }
-
-    return false;
   }
 
   void debugMarkProjectProcessing(
@@ -518,7 +482,14 @@ class ServiceProjetos {
     _operationTimestamp[key] = timestamp;
   }
 
-  bool debugIsValidImageData(Uint8List data) => _isValidImageData(data);
+  bool debugIsValidImageData(Uint8List data) {
+    try {
+      ImageUploadValidator.validate(data);
+      return true;
+    } on FormatException {
+      return false;
+    }
+  }
 
   Future<void> testStorageConnection() async {
     final files = await _client.storage.from(_bucket).list();
@@ -530,13 +501,13 @@ class ServiceProjetos {
   Future<List<String>> getProjectImages(String projectId) async {
     try {
       final files = await _client.storage.from(_bucket).list(path: projectId);
-      return files
-          .map(
-            (file) => _client.storage
-                .from(_bucket)
-                .getPublicUrl('$projectId/${file.name}'),
-          )
-          .toList();
+      final urls = await Future.wait(
+        files.map(
+          (file) =>
+              _storageAssets.resolveProjectImage('$projectId/${file.name}'),
+        ),
+      );
+      return urls.whereType<String>().toList();
     } catch (_) {
       return [];
     }

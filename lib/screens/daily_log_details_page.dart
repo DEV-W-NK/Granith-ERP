@@ -4,6 +4,7 @@ import 'package:project_granith/controllers/daily_log_controller.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
+import 'package:project_granith/widgets/storage/private_storage_image.dart';
 import 'package:provider/provider.dart';
 
 class DailyLogDetailsPage extends StatefulWidget {
@@ -230,21 +231,20 @@ class _ReportPanel extends StatelessWidget {
                         .map(
                           (url) => ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              url,
+                            child: PrivateStorageImage(
+                              reference: url,
                               width: 130,
                               height: 96,
                               fit: BoxFit.cover,
-                              errorBuilder:
-                                  (_, __, ___) => Container(
-                                    width: 130,
-                                    height: 96,
-                                    color: AppColors.backgroundMid,
-                                    child: const Icon(
-                                      Icons.broken_image_outlined,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
+                              error: Container(
+                                width: 130,
+                                height: 96,
+                                color: AppColors.backgroundMid,
+                                child: const Icon(
+                                  Icons.broken_image_outlined,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
                             ),
                           ),
                         )

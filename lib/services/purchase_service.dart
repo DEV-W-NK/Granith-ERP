@@ -6,6 +6,7 @@ import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
 import 'package:project_granith/models/purchase_model.dart';
 import 'package:project_granith/services/ProjectBudgetService.dart';
+import 'package:project_granith/services/archive_service.dart';
 import 'package:project_granith/services/financial_service.dart';
 import 'package:project_granith/services/inventory_service.dart';
 import 'package:project_granith/services/mobile_push_dispatch_service.dart';
@@ -70,6 +71,7 @@ class PurchaseService {
   final PurchaseDeliveryPersister? _deliveryPersister;
   final PurchaseLoader? _purchaseLoader;
   final DateTime Function() _nowProvider;
+  final ArchiveService _archiveService = ArchiveService();
 
   Future<String> addPurchase(Purchase purchase) async {
     try {
@@ -106,7 +108,11 @@ class PurchaseService {
   }
 
   Future<void> deletePurchase(String id) async {
-    await AppSupabase.client.from(_table).delete().eq('id', id);
+    await _archiveService.archive(
+      table: _table,
+      id: id,
+      reason: 'Compra removida pelo usuario.',
+    );
     _notifyPurchasesChanged();
   }
 
@@ -208,6 +214,26 @@ class PurchaseService {
       throw Exception('Informe o numero da nota fiscal.');
     }
 
+    final consolidationPersister = _consolidationPersister;
+    if (consolidationPersister == null) {
+      await AppSupabase.client.rpc(
+        'consolidate_purchase_atomic',
+        params: {
+          'p_purchase_id': purchase.id,
+          'p_actor_id': consolidatedBy,
+          'p_actor_name': consolidatedByName,
+          'p_invoice_number': invoiceNumber.trim(),
+          'p_invoice_access_key': invoiceAccessKey.trim(),
+          'p_expected_delivery_date': DbValue.toPrimitive(expectedDeliveryDate),
+          'p_notes': notes.trim(),
+        },
+      );
+      _notifyPurchasesChanged(
+        extraScopes: const [AppDataRefreshBus.financialTransactions],
+      );
+      return;
+    }
+
     final now = _nowProvider();
     final financialService = _financialService ?? FinancialService();
     final enrichedPurchase = purchase.copyWith(
@@ -229,35 +255,17 @@ class PurchaseService {
           'Conta a pagar gerada na consolidacao da compra #${purchase.id}. NF: ${invoiceNumber.trim()}. ${notes.trim()}',
     );
 
-    final consolidationPersister = _consolidationPersister;
-    if (consolidationPersister != null) {
-      await consolidationPersister(
-        purchase: enrichedPurchase,
-        transactionId: transactionId,
-        consolidatedBy: consolidatedBy,
-        consolidatedByName: consolidatedByName,
-        consolidatedAt: now,
-        invoiceNumber: invoiceNumber.trim(),
-        invoiceAccessKey: invoiceAccessKey.trim(),
-        expectedDeliveryDate: expectedDeliveryDate,
-        notes: notes.trim(),
-      );
-    } else {
-      await AppSupabase.client
-          .from(_table)
-          .update({
-            'status': PurchaseStatus.ordered.index,
-            'financialTransactionId': transactionId,
-            'invoiceNumber': invoiceNumber.trim(),
-            'invoiceAccessKey': invoiceAccessKey.trim(),
-            'expectedDeliveryDate': DbValue.toPrimitive(expectedDeliveryDate),
-            'notes': notes.trim(),
-            'consolidatedBy': consolidatedBy,
-            'consolidatedByName': consolidatedByName,
-            'consolidatedAt': DbValue.toPrimitive(now),
-          })
-          .eq('id', purchase.id);
-    }
+    await consolidationPersister(
+      purchase: enrichedPurchase,
+      transactionId: transactionId,
+      consolidatedBy: consolidatedBy,
+      consolidatedByName: consolidatedByName,
+      consolidatedAt: now,
+      invoiceNumber: invoiceNumber.trim(),
+      invoiceAccessKey: invoiceAccessKey.trim(),
+      expectedDeliveryDate: expectedDeliveryDate,
+      notes: notes.trim(),
+    );
     _notifyPurchasesChanged(
       extraScopes: const [AppDataRefreshBus.financialTransactions],
     );
@@ -299,12 +307,39 @@ class PurchaseService {
       );
     }
 
+    final deliveryPersister = _deliveryPersister;
+    if (deliveryPersister == null) {
+      await AppSupabase.client.rpc(
+        'confirm_purchase_delivery_atomic',
+        params: {'p_purchase_id': purchase.id, 'p_received_by': receivedBy},
+      );
+
+      if (purchase.projectId.isNotEmpty) {
+        try {
+          await (_projectBudgetService ?? ProjectBudgetService())
+              .syncProjectCurrentCost(purchase.projectId);
+        } catch (e) {
+          // A entrega ja foi confirmada; a visao de custo pode sincronizar depois.
+          // ignore: avoid_print
+          print('[PurchaseService] Aviso: sync de custo falhou: $e');
+        }
+      }
+      _notifyPurchasesChanged(
+        extraScopes: const [
+          AppDataRefreshBus.inventory,
+          AppDataRefreshBus.inventoryMovements,
+          AppDataRefreshBus.projects,
+          AppDataRefreshBus.financialTransactions,
+        ],
+      );
+      return;
+    }
+
     final now = _nowProvider();
     final financialService = _financialService ?? FinancialService();
     final inventoryService = _inventoryService ?? InventoryService();
     final projectBudgetService =
         _projectBudgetService ?? ProjectBudgetService();
-    final deliveryPersister = _deliveryPersister;
     final transactionId = await _ensurePurchasePayable(
       purchase: purchase,
       financialService: financialService,
@@ -314,24 +349,12 @@ class PurchaseService {
           'Conta a pagar criada automaticamente no recebimento da compra #${purchase.id}.',
     );
 
-    if (deliveryPersister != null) {
-      await deliveryPersister(
-        purchase: purchase,
-        transactionId: transactionId,
-        receivedBy: receivedBy,
-        deliveryDate: now,
-      );
-    } else {
-      await AppSupabase.client
-          .from(_table)
-          .update({
-            'status': PurchaseStatus.delivered.index,
-            'deliveryDate': DbValue.toPrimitive(now),
-            'receivedBy': receivedBy,
-            'financialTransactionId': transactionId,
-          })
-          .eq('id', purchase.id);
-    }
+    await deliveryPersister(
+      purchase: purchase,
+      transactionId: transactionId,
+      receivedBy: receivedBy,
+      deliveryDate: now,
+    );
 
     await inventoryService.processPurchaseDelivery(
       purchase: purchase.copyWith(
@@ -371,14 +394,21 @@ class PurchaseService {
       );
     }
 
-    await AppSupabase.client
-        .from(_table)
-        .update({'status': PurchaseStatus.cancelled.index})
-        .eq('id', purchase.id);
+    if (_financialService == null) {
+      await AppSupabase.client.rpc(
+        'cancel_purchase_atomic',
+        params: {'p_purchase_id': purchase.id, 'p_cancelled_by': cancelledBy},
+      );
+    } else {
+      await AppSupabase.client
+          .from(_table)
+          .update({'status': PurchaseStatus.cancelled.index})
+          .eq('id', purchase.id);
 
-    final transactionId = purchase.financialTransactionId;
-    if (transactionId != null && transactionId.isNotEmpty) {
-      await FinancialService().cancelTransaction(transactionId);
+      final transactionId = purchase.financialTransactionId;
+      if (transactionId != null && transactionId.isNotEmpty) {
+        await _financialService.cancelTransaction(transactionId);
+      }
     }
     _notifyPurchasesChanged(
       extraScopes: const [AppDataRefreshBus.financialTransactions],

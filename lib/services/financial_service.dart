@@ -3,9 +3,11 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/core/supabase/supabase_selects.dart';
 import 'package:project_granith/models/financial_transaction_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class FinancialService {
   static const _table = 'financial_transactions';
+  final ArchiveService _archiveService = ArchiveService();
 
   FinancialService();
 
@@ -231,7 +233,11 @@ class FinancialService {
   }
 
   Future<void> deleteTransaction(String id) async {
-    await AppSupabase.client.from(_table).delete().eq('id', id);
+    await _archiveService.archive(
+      table: _table,
+      id: id,
+      reason: 'Lancamento financeiro removido pelo usuario.',
+    );
     _notifyChanged();
   }
 

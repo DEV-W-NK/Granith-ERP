@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
+import 'package:project_granith/features/client_portal/data/client_engineering_document_service.dart';
 import 'package:project_granith/models/client_account_model.dart';
 import 'package:project_granith/models/diario_obra_model.dart';
 import 'package:project_granith/models/project_measurement_model.dart';
@@ -13,13 +14,17 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
     ServiceProjetos? projectService,
     DailyLogService? dailyLogService,
     ProjectMeasurementService? measurementService,
+    ClientEngineeringDocumentService? engineeringDocumentService,
   }) : _projectService = projectService ?? ServiceProjetos(),
        _dailyLogService = dailyLogService ?? DailyLogService(),
-       _measurementService = measurementService ?? ProjectMeasurementService();
+       _measurementService = measurementService ?? ProjectMeasurementService(),
+       _engineeringDocumentService =
+           engineeringDocumentService ?? ClientEngineeringDocumentService();
 
   final ServiceProjetos _projectService;
   final DailyLogService _dailyLogService;
   final ProjectMeasurementService _measurementService;
+  final ClientEngineeringDocumentService _engineeringDocumentService;
 
   bool _isLoading = true;
   String? _errorMessage;
@@ -31,6 +36,11 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       <String, List<DailyLogModel>>{};
   Map<String, List<ProjectMeasurement>> _approvedMeasurementsByProjectId =
       <String, List<ProjectMeasurement>>{};
+  Map<String, List<ClientEngineeringDocument>>
+  _engineeringDocumentsByProjectId =
+      <String, List<ClientEngineeringDocument>>{};
+  Map<String, List<ClientEngineeringReport>> _engineeringReportsByProjectId =
+      <String, List<ClientEngineeringReport>>{};
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -41,6 +51,10 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       _signedLogsByProjectId;
   Map<String, List<ProjectMeasurement>> get approvedMeasurementsByProjectId =>
       _approvedMeasurementsByProjectId;
+  Map<String, List<ClientEngineeringDocument>>
+  get engineeringDocumentsByProjectId => _engineeringDocumentsByProjectId;
+  Map<String, List<ClientEngineeringReport>>
+  get engineeringReportsByProjectId => _engineeringReportsByProjectId;
 
   ClientAccount? get activeAccount {
     if (_accounts.isEmpty) {
@@ -64,6 +78,10 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
   );
   int get totalApprovedMeasurements => _approvedMeasurementsByProjectId.values
       .fold<int>(0, (total, measurements) => total + measurements.length);
+  int get totalEngineeringDocuments => _engineeringDocumentsByProjectId.values
+      .fold<int>(0, (total, documents) => total + documents.length);
+  int get totalEngineeringReports => _engineeringReportsByProjectId.values
+      .fold<int>(0, (total, reports) => total + reports.length);
 
   double get approvedMeasurementsAmount =>
       _approvedMeasurementsByProjectId.values.fold<double>(
@@ -111,6 +129,10 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       _projects = <Project>[];
       _signedLogsByProjectId = <String, List<DailyLogModel>>{};
       _approvedMeasurementsByProjectId = <String, List<ProjectMeasurement>>{};
+      _engineeringDocumentsByProjectId =
+          <String, List<ClientEngineeringDocument>>{};
+      _engineeringReportsByProjectId =
+          <String, List<ClientEngineeringReport>>{};
       _isLoading = false;
       notifyListeners();
       return;
@@ -131,10 +153,16 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       });
       await _loadSignedDailyLogs();
       await _loadApprovedMeasurements();
+      await _loadEngineeringDocuments();
+      await _loadEngineeringReports();
     } catch (error) {
       _projects = <Project>[];
       _signedLogsByProjectId = <String, List<DailyLogModel>>{};
       _approvedMeasurementsByProjectId = <String, List<ProjectMeasurement>>{};
+      _engineeringDocumentsByProjectId =
+          <String, List<ClientEngineeringDocument>>{};
+      _engineeringReportsByProjectId =
+          <String, List<ClientEngineeringReport>>{};
       _errorMessage = 'Nao foi possivel carregar os projetos do cliente.';
       debugPrint('[ClientProjectsPortalViewModel] $error');
     } finally {
@@ -150,6 +178,26 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
   List<ProjectMeasurement> approvedMeasurementsForProject(String projectId) {
     return _approvedMeasurementsByProjectId[projectId] ??
         const <ProjectMeasurement>[];
+  }
+
+  List<ClientEngineeringDocument> engineeringDocumentsForProject(
+    String projectId,
+  ) {
+    return _engineeringDocumentsByProjectId[projectId] ??
+        const <ClientEngineeringDocument>[];
+  }
+
+  List<ClientEngineeringReport> engineeringReportsForProject(String projectId) {
+    return _engineeringReportsByProjectId[projectId] ??
+        const <ClientEngineeringReport>[];
+  }
+
+  Future<Uri> createEngineeringDocumentUri(ClientEngineeringDocument document) {
+    return _engineeringDocumentService.createViewUri(document);
+  }
+
+  Future<Uri> createEngineeringReportUri(ClientEngineeringReport report) {
+    return _engineeringDocumentService.createReportViewUri(report);
   }
 
   Future<void> _loadSignedDailyLogs() async {
@@ -208,6 +256,67 @@ class ClientProjectsPortalViewModel extends ChangeNotifier {
       _approvedMeasurementsByProjectId = <String, List<ProjectMeasurement>>{};
       debugPrint(
         '[ClientProjectsPortalViewModel] Falha ao carregar medicoes aprovadas: $error',
+      );
+    }
+  }
+
+  Future<void> _loadEngineeringDocuments() async {
+    try {
+      final documents = await _engineeringDocumentService
+          .getPublishedForProjects(_projects.map((project) => project.id));
+      final grouped = <String, List<ClientEngineeringDocument>>{};
+      for (final document in documents) {
+        grouped
+            .putIfAbsent(
+              document.projectId,
+              () => <ClientEngineeringDocument>[],
+            )
+            .add(document);
+      }
+      _engineeringDocumentsByProjectId = grouped;
+    } on AssertionError catch (error) {
+      _engineeringDocumentsByProjectId =
+          <String, List<ClientEngineeringDocument>>{};
+      if (!error.toString().contains('_isInitialized')) {
+        debugPrint(
+          '[ClientProjectsPortalViewModel] Falha ao iniciar documentos técnicos: $error',
+        );
+      }
+    } catch (error) {
+      _engineeringDocumentsByProjectId =
+          <String, List<ClientEngineeringDocument>>{};
+      debugPrint(
+        '[ClientProjectsPortalViewModel] Falha ao carregar documentos técnicos: $error',
+      );
+    }
+  }
+
+  Future<void> _loadEngineeringReports() async {
+    try {
+      final reports = await _engineeringDocumentService
+          .getPublishedReportsForProjects(
+            _projects.map((project) => project.id),
+          );
+      final grouped = <String, List<ClientEngineeringReport>>{};
+      for (final report in reports) {
+        grouped
+            .putIfAbsent(report.projectId, () => <ClientEngineeringReport>[])
+            .add(report);
+      }
+      _engineeringReportsByProjectId = grouped;
+    } on AssertionError catch (error) {
+      _engineeringReportsByProjectId =
+          <String, List<ClientEngineeringReport>>{};
+      if (!error.toString().contains('_isInitialized')) {
+        debugPrint(
+          '[ClientProjectsPortalViewModel] Falha ao iniciar relatórios técnicos: $error',
+        );
+      }
+    } catch (error) {
+      _engineeringReportsByProjectId =
+          <String, List<ClientEngineeringReport>>{};
+      debugPrint(
+        '[ClientProjectsPortalViewModel] Falha ao carregar relatórios técnicos: $error',
       );
     }
   }

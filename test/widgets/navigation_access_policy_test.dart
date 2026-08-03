@@ -65,7 +65,7 @@ void main() {
     );
   });
 
-  test('mantem todos os modulos para admin e perfil legado sem permissoes', () {
+  test('mantem tudo para admin e minimo necessario para perfil sem permissoes', () {
     const admin = UserModel(
       uid: 'admin-1',
       email: 'admin@granith.com',
@@ -82,7 +82,14 @@ void main() {
     );
     expect(
       NavigationAccessPolicy.availableModules(modules, legacyEmployee),
-      hasLength(modules.length),
+      orderedEquals([modules.first]),
+    );
+  });
+
+  test('sem perfil autenticado exibe somente o inicio', () {
+    expect(
+      NavigationAccessPolicy.availableModules(modules, null),
+      orderedEquals([modules.first]),
     );
   });
 }

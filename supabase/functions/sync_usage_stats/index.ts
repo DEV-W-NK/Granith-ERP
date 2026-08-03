@@ -1,6 +1,8 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.101.1';
 
-import { corsHeaders } from '../_shared/cors.ts';
+import { corsHeaders, withCors } from '../_shared/cors.ts';
+
+type UntypedSupabaseClient = ReturnType<typeof createClient<any, 'public'>>;
 
 type UsageBucket = {
   timestamp: string;
@@ -24,7 +26,7 @@ const allowedPermissions = new Set([
 
 const allowedIntervals = new Set(['1h', '6h', '12h', '24h', '7d', '30d']);
 
-Deno.serve(async (request) => {
+Deno.serve((request) => withCors(request, async () => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -263,7 +265,7 @@ Deno.serve(async (request) => {
       500,
     );
   }
-});
+}));
 
 function requireEnv(name: string): string {
   const value = Deno.env.get(name);
@@ -315,7 +317,7 @@ async function fetchUsageCounts({
 
   const response = await fetch(
     `https://api.supabase.com/v1/projects/${projectRef}/analytics/endpoints/usage.api-counts${
-      query.toString().isEmpty ? '' : `?${query.toString()}`
+      query.toString().length === 0 ? '' : `?${query.toString()}`
     }`,
     {
       headers: {
@@ -366,7 +368,7 @@ function aggregateDailyOperations(buckets: UsageBucket[]): Record<string, number
 }
 
 async function readRpcMetric(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   functionName: string,
   warnings: string[],
   label: string,

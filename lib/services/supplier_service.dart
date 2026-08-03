@@ -5,6 +5,7 @@ import 'package:project_granith/core/data/app_data_refresh_bus.dart';
 import 'package:project_granith/core/data/db_value.dart';
 import 'package:project_granith/core/supabase/app_supabase.dart';
 import 'package:project_granith/models/supplier_model.dart';
+import 'package:project_granith/services/archive_service.dart';
 
 class CNPJData {
   final String cnpj;
@@ -102,6 +103,7 @@ class CNPJData {
 }
 
 class SupplierService {
+  final ArchiveService _archiveService = ArchiveService();
   static const String _cnpjApiUrl = 'https://www.receitaws.com.br/v1/cnpj';
   static const Duration _timeout = Duration(seconds: 30);
   static const String _table = 'suppliers';
@@ -252,7 +254,11 @@ class SupplierService {
 
   Future<void> deleteSupplier(String id) async {
     try {
-      await AppSupabase.client.from(_table).delete().eq('id', id);
+      await _archiveService.archive(
+        table: _table,
+        id: id,
+        reason: 'Fornecedor removido pelo usuario.',
+      );
       _notifyChanged();
     } catch (e) {
       throw Exception('Erro ao deletar fornecedor: $e');

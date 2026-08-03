@@ -1,12 +1,18 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2.101.1';
 
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  corsHeaders,
+  isAllowedOrigin,
+  withCors,
+} from '../_shared/cors.ts';
+
+type UntypedSupabaseClient = ReturnType<typeof createClient<any, 'public'>>;
 
 const internalLoginDomain = 'internal.granith.local';
 const allowedPermissions = new Set(['access.manage', 'settings.manage']);
 const allowedRoles = new Set(['admin', 'employee']);
 
-Deno.serve(async (request) => {
+Deno.serve((request) => withCors(request, async () => {
   if (request.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -94,9 +100,9 @@ Deno.serve(async (request) => {
 
     return jsonResponse(body, 500);
   }
-});
+}));
 
-async function createInternalUser(adminClient: ReturnType<typeof createClient>, body: Record<string, unknown>) {
+async function createInternalUser(adminClient: UntypedSupabaseClient, body: Record<string, unknown>) {
   const username = normalizeUsername(String(body.username ?? ''));
   const usernameError = validateUsername(username);
   if (usernameError) {
@@ -203,7 +209,7 @@ async function createInternalUser(adminClient: ReturnType<typeof createClient>, 
 }
 
 async function inviteEmployeeByEmail(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   body: Record<string, unknown>,
 ) {
   const email = normalizeEmail(String(body.email ?? ''));
@@ -361,7 +367,7 @@ async function inviteEmployeeByEmail(
 }
 
 async function resolveEmployeeBinding(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   body: Record<string, unknown>,
   options: { requireEmployee?: boolean } = {},
 ) {
@@ -398,11 +404,11 @@ async function resolveEmployeeBinding(
   };
 }
 
-async function findUserByEmail(adminClient: ReturnType<typeof createClient>, email: string) {
+async function findUserByEmail(adminClient: UntypedSupabaseClient, email: string) {
   const { data, error } = await adminClient
     .from('users')
     .select('id,email,employee_id')
-    .ilike('email', email)
+    .eq('email', email)
     .maybeSingle();
 
   if (error) return null;
@@ -410,7 +416,7 @@ async function findUserByEmail(adminClient: ReturnType<typeof createClient>, ema
 }
 
 async function findUserByEmployeeId(
-  adminClient: ReturnType<typeof createClient>,
+  adminClient: UntypedSupabaseClient,
   employeeId: string | null,
 ) {
   if (!employeeId) return null;
@@ -425,7 +431,7 @@ async function findUserByEmployeeId(
   return data ?? null;
 }
 
-async function resetInternalPassword(adminClient: ReturnType<typeof createClient>, body: Record<string, unknown>) {
+async function resetInternalPassword(adminClient: UntypedSupabaseClient, body: Record<string, unknown>) {
   const userId = String(body.userId ?? '').trim();
   const password = String(body.password ?? '');
 
@@ -478,7 +484,7 @@ async function resetInternalPassword(adminClient: ReturnType<typeof createClient
   return jsonResponse({ ok: true });
 }
 
-async function fetchRequesterProfile(adminClient: ReturnType<typeof createClient>, requester: { id: string; email?: string }) {
+async function fetchRequesterProfile(adminClient: UntypedSupabaseClient, requester: { id: string; email?: string }) {
   const byId = await adminClient
     .from('users')
     .select('role,permissions')
@@ -493,7 +499,7 @@ async function fetchRequesterProfile(adminClient: ReturnType<typeof createClient
   const byEmail = await adminClient
     .from('users')
     .select('role,permissions')
-    .ilike('email', email)
+    .eq('email', email)
     .maybeSingle();
 
   return byEmail.data ?? null;
@@ -542,7 +548,13 @@ function normalizeRedirectTo(value: unknown) {
   if (!text) return null;
   try {
     const url = new URL(text);
-    return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : null;
+    if (
+      (url.protocol !== 'http:' && url.protocol !== 'https:') ||
+      !isAllowedOrigin(url.origin)
+    ) {
+      return null;
+    }
+    return url.toString();
   } catch (_) {
     return null;
   }

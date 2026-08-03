@@ -187,28 +187,6 @@ class PurchaseDeliveryRouteService {
       throw Exception('Selecione ao menos uma compra para montar a rota.');
     }
 
-    final now = DateTime.now();
-    final routePayload = DbValue.normalizeMap({
-      'name':
-          name.trim().isEmpty ? 'Rota de ${driverName.trim()}' : name.trim(),
-      'driverId': driverId!.trim(),
-      'driverName': driverName.trim(),
-      'status': PurchaseRouteStatus.planned.name,
-      'scheduledDate': DbValue.toPrimitive(scheduledDate),
-      'notes': notes.trim(),
-      'createdBy': createdBy,
-      'createdAt': DbValue.toPrimitive(now),
-      'updatedAt': DbValue.toPrimitive(now),
-    });
-
-    final routeRow =
-        await AppSupabase.client
-            .from(_routesTable)
-            .insert(routePayload)
-            .select('id')
-            .single();
-    final routeId = routeRow['id'] as String;
-
     final stops = <Map<String, dynamic>>[];
     var sequence = 1;
     for (final purchase in purchases) {
@@ -216,7 +194,6 @@ class PurchaseDeliveryRouteService {
           purchase.pickupAddress.trim().isNotEmpty) {
         stops.add(
           _stopPayload(
-            routeId: routeId,
             purchase: purchase,
             sequence: sequence++,
             type: PurchaseRouteStopType.pickup,
@@ -229,7 +206,6 @@ class PurchaseDeliveryRouteService {
       if (deliveryAddress.isNotEmpty) {
         stops.add(
           _stopPayload(
-            routeId: routeId,
             purchase: purchase,
             sequence: sequence++,
             type: PurchaseRouteStopType.delivery,
@@ -240,17 +216,25 @@ class PurchaseDeliveryRouteService {
     }
 
     if (stops.isEmpty) {
-      await AppSupabase.client.from(_routesTable).delete().eq('id', routeId);
       throw Exception('As compras selecionadas nao possuem enderecos de rota.');
     }
 
-    await AppSupabase.client.from(_stopsTable).insert(stops);
-
-    for (final purchase in purchases) {
-      await AppSupabase.client
-          .from(_purchasesTable)
-          .update({'routeId': routeId})
-          .eq('id', purchase.id);
+    final response = await AppSupabase.client.rpc(
+      'create_purchase_route_atomic',
+      params: {
+        'p_name':
+            name.trim().isEmpty ? 'Rota de ${driverName.trim()}' : name.trim(),
+        'p_driver_id': driverId!.trim(),
+        'p_driver_name': driverName.trim(),
+        'p_scheduled_date': DbValue.toPrimitive(scheduledDate),
+        'p_notes': notes.trim(),
+        'p_created_by': createdBy,
+        'p_stops': stops,
+      },
+    );
+    final routeId = response?.toString() ?? '';
+    if (routeId.isEmpty) {
+      throw StateError('A criacao da rota nao retornou um identificador.');
     }
 
     _notifyRoutesChanged(
@@ -295,14 +279,12 @@ class PurchaseDeliveryRouteService {
   }
 
   Map<String, dynamic> _stopPayload({
-    required String routeId,
     required Purchase purchase,
     required int sequence,
     required PurchaseRouteStopType type,
     required String address,
   }) {
     return DbValue.normalizeMap({
-      'routeId': routeId,
       'purchaseId': purchase.id,
       'stopType': type.name,
       'sequence': sequence,
