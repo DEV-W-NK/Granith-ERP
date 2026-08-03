@@ -65,6 +65,7 @@ void main() {
           uid: 'employee-1',
           email: 'colab@granith.com',
           role: UserRole.employee,
+          permissions: ['projects.read'],
         ),
       );
       final auth = AuthViewModel(service: authService);
@@ -101,6 +102,7 @@ void main() {
           uid: 'employee-1',
           email: 'colab@granith.com',
           role: UserRole.employee,
+          permissions: ['projects.read'],
         ),
       );
       final auth = AuthViewModel(service: authService);
