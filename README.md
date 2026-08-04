@@ -183,6 +183,12 @@ publicacao no portal do cliente, Realtime, cache offline e auditoria
 correlacionada entre os tres aplicativos. O contrato completo esta em
 [`docs/engineering_ecosystem_integration.md`](docs/engineering_ecosystem_integration.md).
 
+## Documentacao Tecnica
+
+Para uma leitura de arquitetura voltada a portifolio, incluindo visao de
+negocio, desafios, bibliotecas e decisoes de implementacao, consulte
+[`docs/README.md`](docs/README.md).
+
 ## Seguranca
 
 O levantamento P0 mais recente, os controles aplicados e o roteiro de
