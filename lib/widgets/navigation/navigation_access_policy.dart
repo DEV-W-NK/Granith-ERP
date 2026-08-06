@@ -91,6 +91,11 @@ abstract final class NavigationAccessPolicy {
       ]),
       30 => _hasAny(permissions, const [
         'mobile.fuel_logs.write',
+        'fleet.read',
+        'fleet.manage',
+        'logistics.read',
+        'logistics.manage',
+        'frota',
         'suprimentos',
         'compras',
       ]),

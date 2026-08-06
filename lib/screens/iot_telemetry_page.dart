@@ -9,6 +9,7 @@ import 'package:project_granith/services/iot_telemetry_service.dart';
 import 'package:project_granith/themes/app_theme.dart';
 import 'package:project_granith/utils/responsive_layout.dart';
 import 'package:project_granith/widgets/animations/granith_motion.dart';
+import 'package:project_granith/widgets/iot/iot_device_provisioning_dialog.dart';
 
 class IoTTelemetryPage extends StatefulWidget {
   const IoTTelemetryPage({super.key});
@@ -101,6 +102,12 @@ class _IoTTelemetryPageState extends State<IoTTelemetryPage> {
     _load();
   }
 
+  Future<void> _openDeviceProvisioning() async {
+    final kit = await showIoTDeviceProvisioningDialog(context);
+    if (kit == null || !mounted) return;
+    await _load(silent: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -124,6 +131,7 @@ class _IoTTelemetryPageState extends State<IoTTelemetryPage> {
                   data: data,
                   refreshing: _refreshing,
                   onRefresh: _load,
+                  onProvisionDevice: _openDeviceProvisioning,
                 ),
               ),
               const SizedBox(height: 14),
@@ -178,11 +186,13 @@ class _IoTHeader extends StatelessWidget {
     required this.data,
     required this.refreshing,
     required this.onRefresh,
+    required this.onProvisionDevice,
   });
 
   final IoTTelemetryDashboardData? data;
   final bool refreshing;
   final Future<void> Function() onRefresh;
+  final Future<void> Function() onProvisionDevice;
 
   @override
   Widget build(BuildContext context) {
@@ -260,6 +270,11 @@ class _IoTHeader extends StatelessWidget {
                   ? 'Conectando'
                   : 'Atualizado ${_ageLabel(data!.loadedAt)}',
           color: AppColors.accentBlue,
+        ),
+        FilledButton.icon(
+          onPressed: refreshing ? null : onProvisionDevice,
+          icon: const Icon(Icons.add_to_queue_rounded),
+          label: const Text('Novo sensor'),
         ),
         IconButton.filledTonal(
           tooltip: 'Atualizar telemetria',

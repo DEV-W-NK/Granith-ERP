@@ -9,6 +9,8 @@ class IoTDeviceRecord {
     this.lastSeenAt,
     this.lastRssiDbm,
     this.firmwareVersion,
+    this.hardwareId,
+    this.telemetryIntervalSeconds = 900,
     this.notes = '',
   });
 
@@ -21,6 +23,8 @@ class IoTDeviceRecord {
   final DateTime? lastSeenAt;
   final int? lastRssiDbm;
   final String? firmwareVersion;
+  final String? hardwareId;
+  final int telemetryIntervalSeconds;
   final String notes;
 
   bool get isActive => status == 'active';
@@ -37,7 +41,54 @@ class IoTDeviceRecord {
       lastSeenAt: _date(row['lastSeenAt']),
       lastRssiDbm: _integerOrNull(row['lastRssiDbm']),
       firmwareVersion: _nullableText(row['firmwareVersion']),
+      hardwareId: _nullableText(row['hardwareId']),
+      telemetryIntervalSeconds:
+          _integerOrNull(row['telemetryIntervalSeconds']) ?? 900,
       notes: _text(row['notes']),
+    );
+  }
+}
+
+class IoTProjectOption {
+  const IoTProjectOption({required this.id, required this.name});
+
+  final String id;
+  final String name;
+
+  factory IoTProjectOption.fromMap(Map<String, dynamic> row) {
+    return IoTProjectOption(
+      id: _text(row['id']),
+      name: _text(row['name'], fallback: 'Obra sem nome'),
+    );
+  }
+}
+
+class IoTProvisioningKit {
+  const IoTProvisioningKit({
+    required this.secret,
+    required this.projectId,
+    required this.deviceName,
+    required this.expiresAt,
+    this.deviceId,
+  });
+
+  final String secret;
+  final String projectId;
+  final String deviceName;
+  final DateTime expiresAt;
+  final String? deviceId;
+
+  factory IoTProvisioningKit.fromMap(Map<String, dynamic> row) {
+    final token =
+        row['token'] is Map
+            ? Map<String, dynamic>.from(row['token'] as Map)
+            : const <String, dynamic>{};
+    return IoTProvisioningKit(
+      secret: _text(row['provisioningSecret']),
+      projectId: _text(token['projectId']),
+      deviceName: _text(token['deviceName'], fallback: 'Sensor IoT'),
+      deviceId: _nullableText(token['deviceId']),
+      expiresAt: _date(token['expiresAt']) ?? DateTime.now(),
     );
   }
 }
