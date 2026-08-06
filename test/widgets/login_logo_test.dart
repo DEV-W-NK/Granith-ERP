@@ -40,7 +40,7 @@ void main() {
     expect(image.image, isA<AssetImage>());
     expect(
       (image.image as AssetImage).assetName,
-      'assets/branding/granith_logo_wordmark.png',
+      'assets/branding/granith_logo_transparent.png',
     );
 
     controller.dispose();

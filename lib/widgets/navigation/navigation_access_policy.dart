@@ -89,6 +89,11 @@ abstract final class NavigationAccessPolicy {
         'projects.write',
         'obras',
       ]),
+      30 => _hasAny(permissions, const [
+        'mobile.fuel_logs.write',
+        'suprimentos',
+        'compras',
+      ]),
       17 || 28 => _hasAny(permissions, const [
         'financial.read',
         'financial.write',

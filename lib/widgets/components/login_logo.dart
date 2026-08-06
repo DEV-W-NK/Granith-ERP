@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_brand.dart';
 import 'package:provider/provider.dart';
 
 class LoginLogo extends StatelessWidget {
@@ -11,6 +12,10 @@ class LoginLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<SystemSettingsViewModel>().settings;
+    final logoWidth = (MediaQuery.sizeOf(context).width * 0.72).clamp(
+      220.0,
+      310.0,
+    );
     final scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: parentController,
@@ -22,34 +27,7 @@ class LoginLogo extends StatelessWidget {
       scale: scaleAnimation,
       child: Column(
         children: [
-          Container(
-            width: 310,
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).width * 0.72,
-            ),
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              color: AppColors.primaryDark.withValues(alpha: 0.32),
-              border: Border.all(
-                color: AppColors.accentGold.withValues(alpha: 0.32),
-                width: 1.4,
-              ),
-              boxShadow: [
-                ...AppColors.glowShadows(AppColors.accentGold),
-                ...AppColors.auraShadows(AppColors.accentGold),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                'assets/branding/granith_logo_wordmark.png',
-                height: 118,
-                fit: BoxFit.contain,
-                alignment: Alignment.center,
-              ),
-            ),
-          ),
+          GranithWordmark(width: logoWidth, height: 108),
           const SizedBox(height: 18),
           Text(
             settings.workspaceTagline,

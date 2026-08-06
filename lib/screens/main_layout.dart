@@ -13,6 +13,7 @@ import 'package:project_granith/screens/budgets_page.dart';
 import 'package:project_granith/screens/dailyLogsPage.dart';
 import 'package:project_granith/screens/geofencing_page.dart';
 import 'package:project_granith/screens/inventory_page.dart';
+import 'package:project_granith/screens/iot_telemetry_page.dart';
 import 'package:project_granith/screens/items_page.dart';
 import 'package:project_granith/screens/labor_finance_analysis_page.dart';
 import 'package:project_granith/screens/material_requisition_page.dart';
@@ -101,6 +102,7 @@ class _MainLayoutState extends State<MainLayout> {
         const SystemSettingsPage(),
         const AdministrativeProfitPage(),
         const TasksPage(),
+        const IoTTelemetryPage(),
       ];
 
   late final List<String> pageTitles =
@@ -136,6 +138,7 @@ class _MainLayoutState extends State<MainLayout> {
         'Configuracoes',
         'Resultado Administrativo',
         'Tarefas',
+        'Monitoramento IoT',
       ];
 
   late final List<IconData> pageIcons =
@@ -171,6 +174,7 @@ class _MainLayoutState extends State<MainLayout> {
         Icons.settings_rounded,
         Icons.query_stats_rounded,
         Icons.task_alt_rounded,
+        Icons.sensors_rounded,
       ];
 
   late final List<NavigationModule> _navigationModules =
@@ -302,6 +306,14 @@ class _MainLayoutState extends State<MainLayout> {
           section: 'Administrativo',
           icon: pageIcons[16],
           aliases: 'geofencing cercas coordenadas mapa localizacao obra ponto',
+        ),
+        NavigationModule(
+          index: 30,
+          title: pageTitles[30],
+          section: 'Administrativo',
+          icon: pageIcons[30],
+          aliases:
+              'iot sensores esp32 telemetria mqtt conectividade sinal obra',
         ),
         NavigationModule(
           index: 21,

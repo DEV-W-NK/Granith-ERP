@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/features/settings/presentation/viewmodels/system_settings_view_model.dart';
 import 'package:project_granith/themes/app_theme.dart';
+import 'package:project_granith/widgets/components/granith_brand.dart';
 import 'package:provider/provider.dart';
 
 class NavigationModule {
@@ -66,11 +67,7 @@ class SidebarMenu extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         child: Column(
           children: [
-            _buildHeader(
-              settings.workspaceName,
-              settings.workspaceTagline,
-              settings.compactNavigation,
-            ),
+            _buildHeader(settings.compactNavigation),
             Expanded(
               child: isExpanded ? _buildExpandedList() : _buildCollapsedRail(),
             ),
@@ -81,7 +78,7 @@ class SidebarMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(String workspaceName, String tagline, bool isCompact) {
+  Widget _buildHeader(bool isCompact) {
     if (!isExpanded) {
       return Container(
         height: 110,
@@ -130,44 +127,14 @@ class SidebarMenu extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: Image.asset(
-              'assets/branding/granith_app_icon.png',
-              width: 42,
-              height: 42,
-              fit: BoxFit.cover,
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  workspaceName.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: isCompact ? 17 : 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  tagline,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: isCompact ? 10 : 11,
-                  ),
-                ),
-              ],
+            child: GranithWordmark(
+              width: isCompact ? 154 : 176,
+              height: 58,
+              scale: 1.65,
             ),
           ),
+          const SizedBox(width: 4),
           IconButton(
             tooltip: 'Recolher menu',
             onPressed: onToggle,
@@ -486,6 +453,8 @@ class SidebarMenu extends StatelessWidget {
         return 'Acessos';
       case 28:
         return 'Resultado Adm.';
+      case 30:
+        return 'Sensores IoT';
       default:
         return module.title;
     }
