@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:project_granith/ViewModels/AuthViewModel.dart';
 import 'package:project_granith/ViewModels/SystemSettingsViewModel.dart';
 import 'package:project_granith/models/user_model.dart';
+import 'package:project_granith/widgets/components/granith_brand.dart';
 import 'package:project_granith/widgets/navigation/sidebar_menu.dart';
 import 'package:provider/provider.dart';
 
@@ -123,7 +124,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('GRANITH'), findsOneWidget);
+      expect(find.byType(GranithWordmark), findsOneWidget);
       expect(find.text('Projetos'), findsOneWidget);
       expect(find.text('Entradas e Saidas'), findsOneWidget);
       expect(find.text('Ponto e Custos'), findsOneWidget);
@@ -173,7 +174,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('GRANITH'), findsNothing);
+      expect(find.byType(GranithWordmark), findsNothing);
       await tester.tap(find.byIcon(Icons.menu_rounded));
       await tester.pumpAndSettle();
       expect(toggled, isTrue);
